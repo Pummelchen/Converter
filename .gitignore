@@ -1,6 +1,4 @@
 .DS_Store
-converter
-.converter_bw64_writer
 Output/*
 !Output/.gitkeep
 Sources/.build/
