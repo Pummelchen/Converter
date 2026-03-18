@@ -16,9 +16,7 @@ final class IntegrationWorkspace {
         try Self.defaultConfig.write(to: root.appendingPathComponent("config.txt"), atomically: true, encoding: .utf8)
         try "# test album\n".write(to: root.appendingPathComponent("album.txt"), atomically: true, encoding: .utf8)
 
-        var env = ProcessInfo.processInfo.environment
-        env["CONVERTER_BW64_WRITER"] = Self.projectRoot.appendingPathComponent(".converter_bw64_writer").path
-        environment = env
+        environment = ProcessInfo.processInfo.environment
     }
 
     deinit {
@@ -138,8 +136,6 @@ final class IntegrationWorkspace {
         for name in names {
             try processRunner.requireExecutable(name)
         }
-        let helper = environment["CONVERTER_BW64_WRITER"] ?? ""
-        XCTAssertTrue(fileManager.isExecutableFile(atPath: helper), "Missing BW64 helper at \(helper)")
     }
 
     func writeAlbum(_ lines: [String]) throws {

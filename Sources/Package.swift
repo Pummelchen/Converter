@@ -7,22 +7,23 @@ let package = Package(
         .macOS(.v14)
     ],
     products: [
-        .executable(name: "converter", targets: ["converter"]),
-        .executable(name: "bw64_writer", targets: ["bw64_writer"])
+        .executable(name: "converter", targets: ["converter"])
     ],
     targets: [
-        .executableTarget(
-            name: "converter",
-            path: "converter",
-            swiftSettings: [
-                .unsafeFlags(["-cross-module-optimization"], .when(configuration: .release))
+        .target(
+            name: "BW64Bridge",
+            path: "BW64Bridge",
+            publicHeadersPath: "include",
+            cxxSettings: [
+                .headerSearchPath("../ThirdParty/libbw64")
             ]
         ),
         .executableTarget(
-            name: "bw64_writer",
-            path: "Tools",
-            cxxSettings: [
-                .headerSearchPath("../ThirdParty/libbw64")
+            name: "converter",
+            dependencies: ["BW64Bridge"],
+            path: "converter",
+            swiftSettings: [
+                .unsafeFlags(["-cross-module-optimization"], .when(configuration: .release))
             ]
         ),
         .testTarget(

@@ -1,4 +1,5 @@
 import Foundation
+import BW64Bridge
 
 final class RuntimeState: @unchecked Sendable {
     private let lock = NSLock()
@@ -373,9 +374,6 @@ final class ConverterTool: @unchecked Sendable {
         try ensureDirectory(cli.srcDir)
         try ensureWritableDirectory(cli.outDir)
         try ensureExecutableDependencies()
-        if cli.action == .full {
-            _ = try bw64WriterURL()
-        }
     }
 
     func withImagePermit<T: Sendable>(_ operation: @escaping @Sendable () throws -> T) async throws -> T {
@@ -1428,29 +1426,33 @@ final class ConverterTool: @unchecked Sendable {
         try verifyAudioOutput(file, codec: "pcm_s32le", sampleRate: config.wavSampleRate, channels: config.wavChannels, qcPolicy: qcPolicy)
     }
 
-    func bw64WriterURL() throws -> URL {
-        if let configuredPath = environment["CONVERTER_BW64_WRITER"] {
-            let url = URL(fileURLWithPath: configuredPath).standardizedFileURL
-            guard fileManager.isExecutableFile(atPath: url.path) else {
-                throw AppError("True BW64 writer helper is missing: \(url.path)")
+    func writeBW64FileFromRawFloatPCM(inputPCM: URL, output: URL, channels: Int, sampleRate: Int, bitDepth: Int = 32) throws {
+        var errorBuffer = Array<CChar>(repeating: 0, count: 4096)
+        let status = errorBuffer.withUnsafeMutableBufferPointer { buffer -> Int32 in
+            inputPCM.path.withCString { inputPath in
+                output.path.withCString { outputPath in
+                    bw64_write_from_f32le_file(
+                        inputPath,
+                        outputPath,
+                        UInt16(channels),
+                        UInt32(sampleRate),
+                        UInt16(bitDepth),
+                        buffer.baseAddress,
+                        buffer.count
+                    )
+                }
             }
-            return url
         }
-
-        let candidatePaths = [
-            cli.scriptDirectory.appendingPathComponent(".converter_bw64_writer"),
-            cli.scriptDirectory.appendingPathComponent("Sources/.build/release/bw64_writer"),
-            cli.scriptDirectory.appendingPathComponent("Sources/.build/arm64-apple-macosx/release/bw64_writer"),
-            cli.scriptDirectory.appendingPathComponent("Sources/.build/apple/Products/Release/bw64_writer")
-        ].map(\.standardizedFileURL)
-
-        if let url = candidatePaths.first(where: { fileManager.isExecutableFile(atPath: $0.path) }) {
-            return url
+        guard status == 0 else {
+            let nulIndex = errorBuffer.firstIndex(of: 0) ?? errorBuffer.endIndex
+            let messageBytes = errorBuffer[..<nulIndex].map { UInt8(bitPattern: $0) }
+            let message = String(decoding: messageBytes, as: UTF8.self)
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            if message.isEmpty {
+                throw AppError("BW64 writer failed for \(output.path)")
+            }
+            throw AppError("BW64 writer failed: \(message)")
         }
-
-        throw AppError(
-            "True BW64 writer helper is missing. Build the project with: swift build --package-path Sources -c release"
-        )
     }
 
     func requireFFmpegEncoder(_ encoder: String) throws {
@@ -2211,34 +2213,35 @@ final class ConverterTool: @unchecked Sendable {
             return output
         }
 
-        let helper = try bw64WriterURL()
+        let rawPCM = try makeTemp(in: output.deletingLastPathComponent(), stem: output.stem, ext: ".f32le")
         let temp = try makeTemp(in: output.deletingLastPathComponent(), stem: output.stem, ext: ".wav")
         do {
-            _ = try runner.runPipeline(
-                producerExecutable: "ffmpeg",
-                producerArguments: [
-                    "-hide_banner", "-nostdin", "-v", "error", "-y",
-                    "-i", source.path,
-                    "-map", "0:a:0",
-                    "-ac", String(config.wavChannels),
-                    "-ar", String(config.wavSampleRate),
-                    "-f", "f32le",
-                    "-acodec", "pcm_f32le",
-                    "-"
-                ],
-                consumerExecutable: helper.path,
-                consumerArguments: [
-                    "--output", temp.path,
-                    "--channels", String(config.wavChannels),
-                    "--sample-rate", String(config.wavSampleRate),
-                    "--bit-depth", "32"
-                ]
+            _ = try runner.run("ffmpeg", [
+                "-hide_banner", "-nostdin", "-v", "error", "-y",
+                "-i", source.path,
+                "-map", "0:a:0",
+                "-ac", String(config.wavChannels),
+                "-ar", String(config.wavSampleRate),
+                "-f", "f32le",
+                "-acodec", "pcm_f32le",
+                rawPCM.path
+            ])
+            try writeBW64FileFromRawFloatPCM(
+                inputPCM: rawPCM,
+                output: temp,
+                channels: config.wavChannels,
+                sampleRate: config.wavSampleRate,
+                bitDepth: 32
             )
             try verifyBW64WAVVariant(temp, source: source)
             try publishTemp(temp, to: output)
+            try? fileManager.removeItem(at: rawPCM)
+            state.unregister(tempFile: rawPCM)
             logger.info("Created external BW64 WAV: \(output.basename)")
             return output
         } catch {
+            try? fileManager.removeItem(at: rawPCM)
+            state.unregister(tempFile: rawPCM)
             try? fileManager.removeItem(at: temp)
             state.unregister(tempFile: temp)
             throw error
