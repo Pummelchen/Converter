@@ -1,0 +1,658 @@
+import Foundation
+import XCTest
+@testable import converter
+
+final class PipelineIntegrationTests: XCTestCase {
+    // Large stderr output used to risk pipe-buffer deadlock; this keeps that path under test.
+    func testRunHandlesLargeStderrWithoutDeadlock() throws {
+        let workspace = try IntegrationWorkspace()
+        let runner = workspace.runner()
+        let semaphore = DispatchSemaphore(value: 0)
+        let outcome = ResultBox<Result<ProcessResult, Error>>()
+
+        DispatchQueue.global(qos: .userInitiated).async {
+            let result = Result { () throws -> ProcessResult in
+                try runner.run("/bin/sh", [
+                    "-c",
+                    "i=0; while [ $i -lt 40000 ]; do printf 'noisy-line-%05d\\n' \"$i\" 1>&2; i=$((i+1)); done"
+                ])
+            }
+            outcome.store(result)
+            semaphore.signal()
+        }
+
+        XCTAssertEqual(semaphore.wait(timeout: .now() + 10), .success, "ProcessRunner.run timed out while draining stderr.")
+        let processResult = try XCTUnwrap(outcome.load()).get()
+        XCTAssertTrue(processResult.stderr.contains("noisy-line-39999"))
+    }
+
+    // Pipelines need concurrent producer/consumer draining so noisy tools do not deadlock each other.
+    func testRunPipelineHandlesLargeProducerOutputWithoutDeadlock() throws {
+        let workspace = try IntegrationWorkspace()
+        let runner = workspace.runner()
+        let semaphore = DispatchSemaphore(value: 0)
+        let outcome = ResultBox<Result<PipelineProcessResult, Error>>()
+
+        DispatchQueue.global(qos: .userInitiated).async {
+            let result = Result { () throws -> PipelineProcessResult in
+                try runner.runPipeline(
+                    producerExecutable: "/bin/sh",
+                    producerArguments: [
+                        "-c",
+                        "i=0; while [ $i -lt 12000 ]; do printf 'payload\\n'; printf 'producer-%05d\\n' \"$i\" 1>&2; i=$((i+1)); done"
+                    ],
+                    consumerExecutable: "/usr/bin/wc",
+                    consumerArguments: ["-l"]
+                )
+            }
+            outcome.store(result)
+            semaphore.signal()
+        }
+
+        XCTAssertEqual(semaphore.wait(timeout: .now() + 10), .success, "ProcessRunner.runPipeline timed out while draining pipes.")
+        let pipelineResult = try XCTUnwrap(outcome.load()).get()
+        XCTAssertEqual(pipelineResult.consumer.stdout.trimmed, "12000")
+        XCTAssertTrue(pipelineResult.producer.stderr.contains("producer-11999"))
+    }
+
+    func testAudioConversionMatrixProducesVerifiedOutputs() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe"])
+
+        let flac = try workspace.createAudio(name: "audio_flac", ext: "flac")
+        let wav = try workspace.createAudio(name: "audio_wav", ext: "wav")
+        let mp3 = try workspace.createAudio(name: "audio_mp3", ext: "mp3")
+        let m4a = try workspace.createAudio(name: "audio_m4a", ext: "m4a")
+        let tool = try workspace.makeTool(arguments: ["-wavtom4a"])
+
+        let checks: [(String, () throws -> URL, (URL) throws -> Void)] = [
+            ("flac->wav", { try tool.convertFLACToWAV(flac) }, { file in
+                try tool.verifyWAVStandard(file)
+                try tool.verifyDurationMatch(source: flac, output: file)
+            }),
+            ("flac->mp3", { try tool.convertFLACToMP3(flac) }, { file in
+                try tool.verifyMP3Standard(file)
+                try tool.verifyDurationMatch(source: flac, output: file)
+            }),
+            ("flac->m4a", { try tool.convertAudioToM4A(flac) }, { file in
+                try tool.verifyAudioOutput(file, codec: "aac", sampleRate: tool.config.m4aSampleRate, channels: tool.config.m4aChannels)
+                try tool.verifyDurationMatch(source: flac, output: file)
+            }),
+            ("wav->flac", { try tool.convertWAVToFLAC(wav) }, { file in
+                try tool.verifyAudioOutput(file, codec: "flac", sampleRate: tool.config.flacSampleRate, channels: tool.config.flacChannels)
+                try tool.verifyDurationMatch(source: wav, output: file)
+            }),
+            ("wav->mp3", { try tool.convertWAVToMP3(wav) }, { file in
+                try tool.verifyMP3Standard(file)
+                try tool.verifyDurationMatch(source: wav, output: file)
+            }),
+            ("wav->m4a", { try tool.convertWAVToM4A(wav) }, { file in
+                try tool.verifyAudioOutput(file, codec: "aac", sampleRate: tool.config.m4aSampleRate, channels: tool.config.m4aChannels)
+                try tool.verifyDurationMatch(source: wav, output: file)
+            }),
+            ("mp3->wav", { try tool.convertMP3ToWAV(mp3) }, { file in
+                try tool.verifyWAVStandard(file)
+                try tool.verifyDurationMatch(source: mp3, output: file)
+            }),
+            ("mp3->flac", { try tool.convertMP3ToFLAC(mp3) }, { file in
+                try tool.verifyAudioOutput(file, codec: "flac", sampleRate: tool.config.flacSampleRate, channels: tool.config.flacChannels)
+                try tool.verifyDurationMatch(source: mp3, output: file)
+            }),
+            ("mp3->m4a", { try tool.convertAudioToM4A(mp3) }, { file in
+                try tool.verifyAudioOutput(file, codec: "aac", sampleRate: tool.config.m4aSampleRate, channels: tool.config.m4aChannels)
+                try tool.verifyDurationMatch(source: mp3, output: file)
+            }),
+            ("m4a->wav", { try tool.convertM4AToWAV(m4a) }, { file in
+                try tool.verifyWAVStandard(file)
+                try tool.verifyDurationMatch(source: m4a, output: file)
+            }),
+            ("m4a->mp3", { try tool.convertM4AToMP3(m4a) }, { file in
+                try tool.verifyMP3Standard(file)
+                try tool.verifyDurationMatch(source: m4a, output: file)
+            }),
+            ("m4a->flac", { try tool.convertM4AToFLAC(m4a) }, { file in
+                try tool.verifyAudioOutput(file, codec: "flac", sampleRate: tool.config.flacSampleRate, channels: tool.config.flacChannels)
+                try tool.verifyDurationMatch(source: m4a, output: file)
+            })
+        ]
+
+        for (label, build, verify) in checks {
+            let output = try build()
+            XCTAssertTrue(FileManager.default.fileExists(atPath: output.path), "Missing output for \(label)")
+            try verify(output)
+        }
+    }
+
+    func testImageConversionsAndDerivativesProduceVerifiedOutputs() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["magick", "ffmpeg", "ffprobe"])
+
+        let png = try workspace.createImage(name: "poster", ext: "png")
+        let jpg = try workspace.createImage(name: "cover", ext: "jpg")
+        let jpeg = try workspace.createImage(name: "scan", ext: "jpeg")
+        let tool = try workspace.makeTool(arguments: ["-aipix"])
+
+        let pngFromJpg = try tool.convertJPGToPNG(jpg)
+        try tool.verifyImageOutput(pngFromJpg, width: tool.config.image8KWidth, height: tool.config.image8KHeight, format: "PNG")
+
+        let pngFromJpeg = try tool.convertJPGToPNG(jpeg)
+        try tool.verifyImageOutput(pngFromJpeg, width: tool.config.image8KWidth, height: tool.config.image8KHeight, format: "PNG")
+
+        let jpgFromPng = try tool.convertPNGToJPEG(png, outputExtension: "jpg")
+        try tool.verifyImageOutput(jpgFromPng, width: tool.config.image8KWidth, height: tool.config.image8KHeight, format: "JPEG")
+
+        let aipix = try tool.aipixFile(png)
+        try tool.verifyImageOutput(aipix.eightK, width: tool.config.image8KWidth, height: tool.config.image8KHeight, format: "PNG")
+        try tool.verifyImageOutput(aipix.fourK, width: tool.config.image4KWidth, height: tool.config.image4KHeight, format: "PNG")
+
+        let nft = try tool.nftFrom8K(aipix.eightK)
+        try tool.verifyImageOutput(nft.nft8K, width: tool.config.image8KWidth, height: tool.config.image8KWidth, format: "PNG")
+        try tool.verifyImageOutput(nft.nft3K, width: tool.config.image3KSize, height: tool.config.image3KSize, format: "PNG")
+        try tool.verifyImageOutput(nft.nft2K, width: tool.config.image2KSize, height: tool.config.image2KSize, format: "PNG")
+
+        let threeK = try tool.squarePNGFrom8K(aipix.eightK, size: tool.config.image3KSize, label: "3K")
+        let twoK = try tool.squarePNGFrom8K(aipix.eightK, size: tool.config.image2KSize, label: "2K")
+        try tool.verifyImageOutput(threeK, width: tool.config.image3KSize, height: tool.config.image3KSize, format: "PNG")
+        try tool.verifyImageOutput(twoK, width: tool.config.image2KSize, height: tool.config.image2KSize, format: "PNG")
+
+        let jpgExtent = try tool.jpegExtentFromPNG(aipix.eightK, requiredWidth: tool.config.image8KWidth, requiredHeight: tool.config.image8KHeight, suffix: "1MB", targetBytes: tool.config.image8KJPG1MBTargetBytes)
+        try tool.verifyImageOutput(jpgExtent, width: tool.config.image8KWidth, height: tool.config.image8KHeight, format: "JPEG", maxBytes: tool.config.image8KJPG1MBTargetBytes)
+    }
+
+    func testImageOutputsAreNormalizedToSRGB() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["magick"])
+
+        let cmykJPG = workspace.output.appendingPathComponent("cmyk_source.jpg")
+        _ = try workspace.runner().run("magick", [
+            "-size", "320x180",
+            "gradient:#224477-#DD8844",
+            "-colorspace", "CMYK",
+            cmykJPG.path
+        ])
+
+        let tool = try workspace.makeTool(arguments: ["-jpgtopng"])
+        let converted = try tool.convertJPGToPNG(cmykJPG)
+        let colorspace = try XCTUnwrap(tool.imageColorSpace(converted))
+        XCTAssertEqual(colorspace.lowercasedASCII, "srgb")
+    }
+
+    func testRejectsJPEGExtensionWithPNGPayload() throws {
+        let workspace = try IntegrationWorkspace()
+        let png = try workspace.createImage(name: "real_png", ext: "png")
+        let fakeJPEG = try workspace.copy(png, as: "fake_photo", ext: "jpg")
+        let tool = try workspace.makeTool(arguments: ["-jpgtopng"])
+        XCTAssertThrowsError(try tool.convertJPGToPNG(fakeJPEG)) { error in
+            XCTAssertTrue(error.localizedDescription.contains("Image format mismatch"))
+        }
+    }
+
+    func testRejectsPNGExtensionWithJPEGPayload() throws {
+        let workspace = try IntegrationWorkspace()
+        let jpg = try workspace.createImage(name: "real_jpg", ext: "jpg")
+        let fakePNG = try workspace.copy(jpg, as: "fake_graphic", ext: "png")
+        let tool = try workspace.makeTool(arguments: ["-pngtojpg"])
+        XCTAssertThrowsError(try tool.convertPNGToJPEG(fakePNG, outputExtension: "jpg")) { error in
+            XCTAssertTrue(error.localizedDescription.contains("Image format mismatch"))
+        }
+    }
+
+    func testRejectsMP3ExtensionWithWAVPayload() throws {
+        let workspace = try IntegrationWorkspace()
+        let wav = try workspace.createAudio(name: "real_wav", ext: "wav")
+        let fakeMP3 = try workspace.copy(wav, as: "fake_song", ext: "mp3")
+        let tool = try workspace.makeTool(arguments: ["-mp3towav"])
+        XCTAssertThrowsError(try tool.convertMP3ToWAV(fakeMP3)) { error in
+            XCTAssertTrue(error.localizedDescription.contains("Audio container mismatch") || error.localizedDescription.contains("Audio codec mismatch"))
+        }
+    }
+
+    func testRejectsFLACExtensionWithMP3Payload() throws {
+        let workspace = try IntegrationWorkspace()
+        let mp3 = try workspace.createAudio(name: "real_mp3", ext: "mp3")
+        let fakeFLAC = try workspace.copy(mp3, as: "fake_lossless", ext: "flac")
+        let tool = try workspace.makeTool(arguments: ["-flactowav"])
+        XCTAssertThrowsError(try tool.convertFLACToWAV(fakeFLAC)) { error in
+            XCTAssertTrue(error.localizedDescription.contains("Audio container mismatch") || error.localizedDescription.contains("Audio codec mismatch"))
+        }
+    }
+
+    func testRejectsM4AExtensionWithMP3Payload() throws {
+        let workspace = try IntegrationWorkspace()
+        let mp3 = try workspace.createAudio(name: "real_mp3", ext: "mp3")
+        let fakeM4A = try workspace.copy(mp3, as: "fake_aac", ext: "m4a")
+        let tool = try workspace.makeTool(arguments: ["-m4atowav"])
+        XCTAssertThrowsError(try tool.convertM4AToWAV(fakeM4A)) { error in
+            XCTAssertTrue(error.localizedDescription.contains("Audio codec mismatch") || error.localizedDescription.contains("Unexpected video stream") || error.localizedDescription.contains("Audio container mismatch"))
+        }
+    }
+
+    func testRejectsWAVBinaryGarbage() throws {
+        let workspace = try IntegrationWorkspace()
+        let garbage = try workspace.writeGarbageFile(name: "broken", ext: "wav")
+        let tool = try workspace.makeTool(arguments: ["-wavtomp3"])
+        XCTAssertThrowsError(try tool.convertWAVToMP3(garbage))
+    }
+
+    func testRejectsMP4ExtensionWithImagePayload() throws {
+        let workspace = try IntegrationWorkspace()
+        let png = try workspace.createImage(name: "still", ext: "png")
+        let fakeMP4 = try workspace.copy(png, as: "still_video", ext: "mp4")
+        let tool = try workspace.makeTool(arguments: ["-mp4toshort"])
+        XCTAssertThrowsError(try tool.shortenMP4(fakeMP4)) { error in
+            XCTAssertTrue(error.localizedDescription.contains("Video container mismatch") || error.localizedDescription.contains("Missing video stream"))
+        }
+    }
+
+    func testRejectsSilentMP3Input() throws {
+        let workspace = try IntegrationWorkspace()
+        let silent = try workspace.createSilentAudio(name: "silent_track", ext: "mp3")
+        let tool = try workspace.makeTool(arguments: ["-mp3towav"])
+        XCTAssertThrowsError(try tool.convertMP3ToWAV(silent)) { error in
+            XCTAssertTrue(error.localizedDescription.contains("silent") || error.localizedDescription.contains("audible"))
+        }
+    }
+
+    func testMP3CleanRemovesArtworkAndExtraStreams() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe", "magick"])
+
+        let taggedMP3 = try workspace.createMP3WithArtwork(name: "artwork_track")
+        let tool = try workspace.makeTool(arguments: ["-mp3clean"])
+
+        XCTAssertNoThrow(try tool.requireVideoStream(taggedMP3), "Fixture should contain attached artwork before cleaning.")
+        try tool.cleanMP3(taggedMP3)
+        try tool.verifyMP3Standard(taggedMP3, qcPolicy: tool.config.deliveryAudioQCPolicy)
+        XCTAssertThrowsError(try tool.requireVideoStream(taggedMP3))
+    }
+
+    func testMP3CleanDoesNotEnforceDeliveryQCOnStreamCopyCleanup() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe", "magick"])
+        try workspace.overwriteConfig(
+            IntegrationWorkspace.defaultConfig + "\nAUDIO_QC_MAX_TRUE_PEAK_DBTP=-1\n"
+        )
+
+        let taggedMP3 = try workspace.createHotMP3WithArtwork(name: "hot_artwork_track")
+        let tool = try workspace.makeTool(arguments: ["-mp3clean"])
+
+        XCTAssertNoThrow(try tool.requireVideoStream(taggedMP3), "Fixture should contain attached artwork before cleaning.")
+        XCTAssertNoThrow(try tool.cleanMP3(taggedMP3))
+        try tool.verifyMP3Standard(taggedMP3, qcPolicy: nil)
+        XCTAssertThrowsError(try tool.requireVideoStream(taggedMP3))
+        XCTAssertThrowsError(try tool.verifyMP3Standard(taggedMP3, qcPolicy: tool.config.deliveryAudioQCPolicy))
+    }
+
+    func testMP3HashAcceptsArtworkAndNonProjectBitrateMP3() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe", "magick"])
+        try workspace.overwriteConfig(
+            IntegrationWorkspace.defaultConfig + "\nMP3_MIN_BITRATE_BPS=300000\n"
+        )
+
+        let taggedMP3 = try workspace.createMP3WithArtwork(name: "hash_artwork_track")
+        let tool = try workspace.makeTool(arguments: ["-mp3tohash"])
+        let expectedHash = try tool.crc32(for: taggedMP3)
+
+        XCTAssertNoThrow(try tool.requireVideoStream(taggedMP3), "Fixture should contain attached artwork before hashing.")
+        XCTAssertNoThrow(try tool.stepMP3Hash())
+
+        let hashed = workspace.output.appendingPathComponent(expectedHash).appendingPathExtension("mp3")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: hashed.path))
+        XCTAssertNoThrow(try tool.requireVideoStream(hashed))
+    }
+
+    func testAcceptsLeadingSilenceWhenAudioBecomesAudibleLater() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe"])
+
+        let delayed = workspace.output.appendingPathComponent("leadingsilence.mp3")
+        _ = try workspace.runner().run("ffmpeg", [
+            "-hide_banner", "-nostdin", "-v", "error", "-y",
+            "-f", "lavfi",
+            "-i", "sine=frequency=440:duration=1.0:sample_rate=48000",
+            "-af", "adelay=3000|3000",
+            "-ac", "2",
+            "-c:a", "libmp3lame",
+            "-b:a", "192k",
+            delayed.path
+        ])
+
+        let tool = try workspace.makeTool(arguments: ["-mp3towav"])
+        let wav = try tool.convertMP3ToWAV(delayed)
+        try tool.verifyWAVStandard(wav)
+    }
+
+    func testRejectsStereoImbalancedOutputWhenPolicyIsStrict() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.overwriteConfig(
+            IntegrationWorkspace.defaultConfig + "\nAUDIO_QC_MAX_STEREO_IMBALANCE_DB=0.10\n"
+        )
+        let input = try workspace.createStereoImbalancedAudio(name: "imbalanced", ext: "wav")
+        let tool = try workspace.makeTool(arguments: ["-wavtom4a"])
+        XCTAssertThrowsError(try tool.convertWAVToM4A(input)) { error in
+            XCTAssertTrue(error.localizedDescription.contains("stereo imbalance"))
+        }
+    }
+
+    func testWAVToM4AAcceptsNonStandardRIFFInput() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe"])
+
+        let riff = try workspace.createPlainRIFFWAV(name: "plain_input")
+        let tool = try workspace.makeTool(arguments: ["-wavtom4a"])
+        let output = try tool.convertWAVToM4A(riff)
+
+        try tool.verifyM4AFile(output, sampleRate: tool.config.m4aSampleRate, channels: tool.config.m4aChannels, qcPolicy: tool.config.deliveryAudioQCPolicy)
+        try tool.verifyDurationMatch(source: riff, output: output)
+    }
+
+    func testAlbumBuildAcceptsNonStandardRIFFWavInputs() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe"])
+
+        _ = try workspace.createPlainRIFFWAV(name: "track01", frequency: 440)
+        _ = try workspace.createPlainRIFFWAV(name: "track02", frequency: 554)
+        try workspace.writeAlbum(["track01", "track02"])
+
+        let tool = try workspace.makeTool(arguments: ["-wavtoalbum"])
+        let album = try tool.buildAlbumFromAlbumFile(extension: "wav", defaultOutputName: "album.rf64.wav")
+        try tool.verifyWAVStandard(album)
+    }
+
+    func testWAVHashAcceptsNonStandardRIFFInput() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe"])
+
+        let riff = try workspace.createPlainRIFFWAV(name: "plain_hash")
+        let tool = try workspace.makeTool(arguments: ["-wavtohash"])
+        let expectedHash = try tool.crc32(for: riff)
+
+        try tool.stepWAVHash()
+
+        let hashed = workspace.output.appendingPathComponent(expectedHash).appendingPathExtension("wav")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: hashed.path))
+        XCTAssertEqual(try tool.crc32(for: hashed), expectedHash)
+        try tool.preflightWAVInput(hashed)
+    }
+
+    func testFullAudioPreparationPreservesOriginalWAVForExternalFLACVariants() async throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe"])
+
+        let riff = try workspace.createPlainRIFFWAV(name: "wav_source", sampleRate: 44_100)
+        let reference = try workspace.copy(riff, as: "wav_source_reference", ext: "wav")
+        let tool = try workspace.makeTool()
+
+        let artifacts = try await tool.fullAudioPreparation(sourceAudio: riff)
+
+        XCTAssertEqual(try tool.audioField(artifacts.wav, "sample_rate"), String(tool.config.wavSampleRate))
+
+        let rf64FLAC = workspace.output.appendingPathComponent("wav_source_RF64.flac")
+        let bw64FLAC = workspace.output.appendingPathComponent("wav_source_BW64.flac")
+        XCTAssertEqual(try tool.audioField(rf64FLAC, "sample_rate"), "44100")
+        XCTAssertEqual(try tool.audioField(bw64FLAC, "sample_rate"), "44100")
+        try tool.verifyCanonicalPCMSampleEquivalence(source: reference, output: rf64FLAC, sampleRate: 44_100, channels: 2, label: "External FLAC", format: .s24le)
+        try tool.verifyCanonicalPCMSampleEquivalence(source: reference, output: bw64FLAC, sampleRate: 44_100, channels: 2, label: "External FLAC", format: .s24le)
+    }
+
+    func testDerivedImageNamingOnlyReplacesTrailing8KMarker() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["magick"])
+
+        let source = try workspace.createImage(
+            name: "mix_8K_take_8K",
+            ext: "png",
+            width: 320,
+            height: 180
+        )
+        let tool = try workspace.makeTool(arguments: ["-pngto3k"])
+
+        let square = try tool.squarePNGFrom8K(source, size: tool.config.image3KSize, label: "3K")
+        let nft = try tool.nftFrom8K(source)
+
+        XCTAssertEqual(square.lastPathComponent, "mix_8K_take_3K.png")
+        XCTAssertEqual(nft.nft8K.lastPathComponent, "mix_8K_take_NFT8K.png")
+        XCTAssertEqual(nft.nft3K.lastPathComponent, "mix_8K_take_NFT3K.png")
+        XCTAssertEqual(nft.nft2K.lastPathComponent, "mix_8K_take_NFT2K.png")
+    }
+
+    func testAIPixPreservesFullStemToAvoidUnderscoreCollisions() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["magick"])
+
+        _ = try workspace.createImage(name: "art_1", ext: "png")
+        _ = try workspace.createImage(name: "art_2", ext: "png")
+
+        let tool = try workspace.makeTool(arguments: ["-aipix"])
+        try tool.stepAIPix()
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("art_1_8K.png").path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("art_2_8K.png").path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("art_8K.png").path))
+    }
+
+    func testVisualSubsCreatesVerifiedPNGViaPublishedOutput() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["magick"])
+
+        let tool = try workspace.makeTool(arguments: ["-visualsubs", "128", "--output-file", "dots.png"])
+        let output = try tool.visualSubs()
+        try tool.verifyImageOutput(output, width: tool.config.image8KWidth, height: tool.config.image8KHeight, format: "PNG")
+        let outputs = try FileManager.default.contentsOfDirectory(at: workspace.output, includingPropertiesForKeys: nil, options: [])
+        XCTAssertFalse(outputs.contains { $0.lastPathComponent.contains(tool.runToken) })
+    }
+
+    func testVisualSubsReservesCenterMarkerAgainstRandomDots() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["magick"])
+
+        let tool = try workspace.makeTool(arguments: ["-visualsubs", "1", "--seed", "976", "--output-file", "center_guard.png"])
+        let output = try tool.visualSubs()
+        let centerPixel = try workspace.runner().run("magick", [
+            output.path,
+            "-format", "%[hex:p{160,90}]",
+            "info:"
+        ]).stdout.trimmed
+
+        XCTAssertEqual(centerPixel.uppercased(), "FFFF00000000")
+    }
+
+    func testCanonicalPCMVerifierRejectsMismatchedLosslessOutput() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe"])
+
+        let source = try workspace.createAudio(name: "source", ext: "wav", frequency: 440)
+        let mismatched = try workspace.createAudio(name: "different_take", ext: "flac", frequency: 554)
+        let tool = try workspace.makeTool(arguments: ["-wavtoflac"])
+
+        XCTAssertThrowsError(
+            try tool.verifyCanonicalPCMSampleEquivalence(
+                source: source,
+                output: mismatched,
+                sampleRate: tool.config.flacSampleRate,
+                channels: tool.config.flacChannels,
+                label: "FLAC output",
+                format: .s24le
+            )
+        ) { error in
+            XCTAssertTrue(error.localizedDescription.contains("Canonical PCM mismatch"))
+        }
+    }
+
+    func testProbeCacheInvalidatesWhenFileFingerprintChanges() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe"])
+
+        let file = try workspace.createAudio(name: "cache_probe", ext: "wav", duration: 1.2, frequency: 440)
+        let tool = try workspace.makeTool(arguments: ["-wavtom4a"])
+        let firstDuration = try XCTUnwrap(tool.mediaDuration(file))
+
+        _ = try workspace.createAudio(name: "cache_probe", ext: "wav", duration: 2.4, frequency: 554)
+        let secondDuration = try XCTUnwrap(tool.mediaDuration(file))
+
+        XCTAssertNotEqual(firstDuration, secondDuration)
+        XCTAssertGreaterThan(secondDuration, firstDuration)
+    }
+
+    func testExistingExternalFLACIsRebuiltWhenCanonicalPCMDoesNotMatchSource() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe"])
+
+        let source = try workspace.createAudio(name: "archive_source", ext: "wav", frequency: 440)
+        let wrong = try workspace.createAudio(name: "wrong_take", ext: "wav", frequency: 659)
+        let output = workspace.output.appendingPathComponent("archive_source_RF64.flac")
+        _ = try workspace.runner().run("ffmpeg", [
+            "-hide_banner", "-nostdin", "-v", "error", "-y",
+            "-i", wrong.path,
+            "-map", "0:a:0",
+            "-c:a", "flac",
+            output.path
+        ])
+
+        let tool = try workspace.makeTool(arguments: ["-wavtoflac"])
+        let rebuilt = try tool.createExternalFLACVariant(source: source, output: output)
+        XCTAssertEqual(rebuilt.standardizedFileURL, output.standardizedFileURL)
+        try tool.verifyFLACFile(rebuilt, qcPolicy: tool.config.deliveryAudioQCPolicy)
+        try tool.verifyCanonicalPCMSampleEquivalence(source: source, output: rebuilt, label: "External FLAC", format: .s24le)
+    }
+
+    func testFullPipelineProducesExpectedOutputsAndLeavesNoScopedTemps() async throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe", "magick"])
+
+        _ = try workspace.createImage(name: "art", ext: "png")
+        _ = try workspace.createAudio(name: "track", ext: "mp3")
+        try Data("foreign-temp".utf8).write(to: workspace.output.appendingPathComponent(".converter-tmp.foreign.decoy.mp3"))
+        try Data("foreign-temp".utf8).write(to: workspace.output.appendingPathComponent(".converter-tmp.foreign.decoy.png"))
+
+        let tool = try workspace.makeTool()
+        defer { tool.cleanupTemps() }
+        try tool.initializeForExecution()
+        try await tool.stepFull()
+
+        let visibleOutputs = try FileManager.default.contentsOfDirectory(at: workspace.output, includingPropertiesForKeys: [.isRegularFileKey], options: [])
+        XCTAssertFalse(visibleOutputs.contains { $0.lastPathComponent.contains(tool.runToken) }, "Run-scoped temp files leaked into Output.")
+
+        let prefix = "art"
+        let base = "track"
+        let expectedFiles = [
+            "\(prefix)_8K.png",
+            "\(prefix)_4K.png",
+            "\(prefix)_3K.png",
+            "\(prefix)_2K.png",
+            "\(prefix)_NFT8K.png",
+            "\(prefix)_NFT3K.png",
+            "\(prefix)_NFT2K.png",
+            "\(base).wav",
+            "\(base).m4a",
+            "\(base).mp3",
+            "\(base)_RF64.wav",
+            "\(base)_BW64.wav",
+            "\(base)_RF64.flac",
+            "\(base)_BW64.flac",
+            "\(base)_8K.mp4",
+            "\(base)_8K_Short.mp4"
+        ]
+
+        for name in expectedFiles {
+            XCTAssertTrue(FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent(name).path), "Missing full-run output \(name)")
+        }
+
+        try tool.verifyWAVStandard(workspace.output.appendingPathComponent("\(base).wav"), qcPolicy: tool.config.deliveryAudioQCPolicy)
+        try tool.verifyAudioOutput(workspace.output.appendingPathComponent("\(base).m4a"), codec: "aac", sampleRate: tool.config.m4aSampleRate, channels: tool.config.m4aChannels, qcPolicy: tool.config.deliveryAudioQCPolicy)
+        try tool.verifyMP3Standard(workspace.output.appendingPathComponent("\(base).mp3"), qcPolicy: tool.config.deliveryAudioQCPolicy)
+        try tool.verifyCanonicalPCMSampleEquivalence(
+            source: workspace.output.appendingPathComponent("\(base).wav"),
+            output: workspace.output.appendingPathComponent("\(base)_RF64.flac"),
+            label: "External FLAC",
+            format: .s24le
+        )
+        try tool.verifyCanonicalPCMSampleEquivalence(
+            source: workspace.output.appendingPathComponent("\(base).wav"),
+            output: workspace.output.appendingPathComponent("\(base)_BW64.flac"),
+            label: "External FLAC",
+            format: .s24le
+        )
+        try tool.verifyExternalWAVVariant(workspace.output.appendingPathComponent("\(base)_RF64.wav"), source: workspace.output.appendingPathComponent("\(base).wav"), expectBext: false)
+        try tool.verifyBW64WAVVariant(workspace.output.appendingPathComponent("\(base)_BW64.wav"), source: workspace.output.appendingPathComponent("\(base).wav"))
+        try tool.verifyVideoOutput(
+            workspace.output.appendingPathComponent("\(base)_8K.mp4"),
+            width: tool.config.videoMP4Width,
+            height: tool.config.videoMP4Height,
+            codec: tool.config.videoMP4VerifyCodec,
+            pixelFormat: tool.config.videoMP4PixelFormat,
+            colorPrimaries: tool.config.videoColorPrimaries,
+            colorTransfer: tool.config.videoColorTransfer,
+            colorSpace: tool.config.videoColorSpace,
+            colorRange: tool.config.videoColorRange
+        )
+        try tool.verifyVideoOutput(
+            workspace.output.appendingPathComponent("\(base)_8K_Short.mp4"),
+            width: tool.config.shortMP4ScaleW,
+            height: tool.config.shortMP4ScaleH,
+            codec: tool.config.shortMP4VerifyCodec,
+            pixelFormat: tool.config.shortMP4PixelFormat,
+            colorPrimaries: tool.config.videoColorPrimaries,
+            colorTransfer: tool.config.videoColorTransfer,
+            colorSpace: tool.config.videoColorSpace,
+            colorRange: tool.config.videoColorRange
+        )
+    }
+
+    func testAlbumBuildFromAlbumFileCreatesVerifiedRF64Wave() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe"])
+
+        _ = try workspace.createAudio(name: "track01", ext: "wav")
+        _ = try workspace.createAudio(name: "track02", ext: "wav", frequency: 554)
+        try workspace.writeAlbum(["track01", "track02"])
+
+        let tool = try workspace.makeTool(arguments: ["-wavtoalbum"])
+        let album = try tool.buildAlbumFromAlbumFile(extension: "wav", defaultOutputName: "album.rf64.wav")
+        try tool.verifyWAVStandard(album)
+        XCTAssertEqual(album.lastPathComponent, "album.rf64.wav")
+    }
+
+    func testSchedulerRespectsResourceClassLimits() async throws {
+        let workspace = try IntegrationWorkspace()
+        let tool = try workspace.makeTool(arguments: ["-wavtom4a"])
+        let counter = ConcurrencyCounter()
+
+        try await withThrowingTaskGroup(of: Void.self) { group in
+            for _ in 0 ..< 8 {
+                group.addTask {
+                    try await tool.withImagePermit {
+                        counter.enter(.image)
+                        defer { counter.leave(.image) }
+                        Thread.sleep(forTimeInterval: 0.05)
+                    }
+                }
+            }
+            for _ in 0 ..< 8 {
+                group.addTask {
+                    try await tool.withAudioPermit {
+                        counter.enter(.audio)
+                        defer { counter.leave(.audio) }
+                        Thread.sleep(forTimeInterval: 0.05)
+                    }
+                }
+            }
+            for _ in 0 ..< 4 {
+                group.addTask {
+                    try await tool.withVideoPermit {
+                        counter.enter(.video)
+                        defer { counter.leave(.video) }
+                        Thread.sleep(forTimeInterval: 0.05)
+                    }
+                }
+            }
+            try await group.waitForAll()
+        }
+
+        XCTAssertLessThanOrEqual(counter.peak(.image), tool.schedulerProfile.image)
+        XCTAssertLessThanOrEqual(counter.peak(.audio), tool.schedulerProfile.audio)
+        XCTAssertLessThanOrEqual(counter.peak(.video), tool.schedulerProfile.video)
+        XCTAssertLessThanOrEqual(counter.peakTotalCount(), tool.schedulerProfile.total)
+    }
+}
