@@ -153,10 +153,11 @@ extension ConverterTool {
                 try self.generateExternalArchivalVariants(baseName: sourceAudio.stem, highQualitySource: sourceAudio)
             }
             let wav = try await withAudioPermit { try self.convertFLACToWAV(sourceAudio) }
+            _ = try await archivalTask
+            try self.masterCanonicalWAVInPlaceIfNeeded(wav)
             async let m4aTask: URL = withAudioPermit { try self.convertWAVToM4A(wav) }
             async let mp3Task: URL = withAudioPermit { try self.convertWAVToMP3(wav) }
             let artifacts = AudioArtifacts(source: sourceAudio, wav: wav, m4a: try await m4aTask, mp3: try await mp3Task)
-            _ = try await archivalTask
             return artifacts
         case "mp3":
             try preflightMP3Input(sourceAudio)
@@ -165,16 +166,22 @@ extension ConverterTool {
             async let archivalTask: ExternalArchivalVariants = withAudioPermit {
                 try self.generateExternalArchivalVariants(baseName: sourceAudio.stem, highQualitySource: wav)
             }
+            _ = try await archivalTask
+            try self.masterCanonicalWAVInPlaceIfNeeded(wav)
             async let m4aTask: URL = withAudioPermit { try self.convertWAVToM4A(wav) }
             let mp3: URL
-            do {
-                mp3 = try ensureStandardMP3Output(from: sourceAudio)
-            } catch {
-                self.logger.info("Full step: rebuild MP3 to configured standard")
-                mp3 = try await withAudioPermit { try self.convertWAVToMP3(wav) }
+            if config.masteringEnabled {
+                self.logger.info("Full step: rebuild MP3 from mastered WAV")
+                mp3 = try await withAudioPermit { try self.convertWAVToMP3(wav, forceRebuild: true) }
+            } else {
+                do {
+                    mp3 = try ensureStandardMP3Output(from: sourceAudio)
+                } catch {
+                    self.logger.info("Full step: rebuild MP3 to configured standard")
+                    mp3 = try await withAudioPermit { try self.convertWAVToMP3(wav) }
+                }
             }
             let artifacts = AudioArtifacts(source: sourceAudio, wav: wav, m4a: try await m4aTask, mp3: mp3)
-            _ = try await archivalTask
             return artifacts
         case "wav":
             try preflightWAVInput(sourceAudio)
@@ -203,10 +210,11 @@ extension ConverterTool {
                 try normalizeWAVInPlace(sourceAudio)
             }
             try preflightWAVStandardInput(sourceAudio)
+            _ = try await archivalTask
+            try self.masterCanonicalWAVInPlaceIfNeeded(sourceAudio)
             async let m4aTask: URL = withAudioPermit { try self.convertWAVToM4A(sourceAudio) }
             async let mp3Task: URL = withAudioPermit { try self.convertWAVToMP3(sourceAudio) }
             let artifacts = AudioArtifacts(source: sourceAudio, wav: sourceAudio, m4a: try await m4aTask, mp3: try await mp3Task)
-            _ = try await archivalTask
             return artifacts
         default:
             throw AppError("Unsupported audio source kind: \(ext)")
@@ -518,6 +526,8 @@ extension ConverterTool {
 
     func execute() async throws {
         switch cli.action {
+        case .doctor:
+            try stepDoctor()
         case .help:
             print(cli.helpText())
         case .list:

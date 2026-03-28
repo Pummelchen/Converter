@@ -2,6 +2,10 @@
 # Centralized project-wide settings for audio, video, and image processing.
 # Edit this file to change audio quality behavior across scripts.
 
+# Optional built-in profile overlay before the rest of this file is applied.
+# Supported: youtube_master, youtube_short, archive, fast_preview
+PROFILE=youtube_master
+
 # WAV standard (used for WAV creation/normalization/validation)
 WAV_SAMPLE_RATE=768000
 WAV_CODEC=pcm_f32le
@@ -24,7 +28,7 @@ M4A_BITRATE=384k
 M4A_SAMPLE_RATE=48000
 M4A_CHANNELS=2
 
-# Audio QC mastering targets (applied to delivery outputs and captured in QC reports)
+# Audio QC targets for delivery verification and mastering decisions
 AUDIO_QC_TARGET_LUFS=-16
 AUDIO_QC_LUFS_TOLERANCE=8
 AUDIO_QC_MAX_TRUE_PEAK_DBTP=-1
@@ -37,9 +41,18 @@ SHORT_AUDIO_QC_TARGET_LUFS=-16
 SHORT_AUDIO_QC_LUFS_TOLERANCE=8
 SHORT_AUDIO_QC_MAX_LOUDNESS_RANGE=20
 
+# Canonical WAV mastering/remediation pass before delivery encodes in full runs
+MASTERING_ENABLED=1
+MASTERING_TARGET_LUFS=-16
+MASTERING_MAX_TRUE_PEAK_DBTP=-1
+MASTERING_MAX_LOUDNESS_RANGE=20
+
 # Video MP4 render settings (used by m4atomp4.sh)
 VIDEO_MP4_ENCODER=hevc_videotoolbox
+VIDEO_MP4_ENCODER_FALLBACKS=libx265
 VIDEO_MP4_VT_QUALITY=70
+VIDEO_MP4_SOFTWARE_PRESET=slow
+VIDEO_MP4_SOFTWARE_CRF=18
 VIDEO_MP4_INPUT_FPS=2
 VIDEO_MP4_AUDIO_BITRATE=384k
 VIDEO_MP4_AUDIO_SAMPLE_RATE=48000
@@ -61,9 +74,11 @@ SHORT_MP4_SCALE_W=4320
 SHORT_MP4_SCALE_H=7680
 SHORT_MP4_VIDEO_PRESET=fast
 SHORT_MP4_VIDEO_CRF=18
+SHORT_MP4_VT_QUALITY=60
 SHORT_MP4_AUDIO_BITRATE=320k
 SHORT_MP4_AUDIO_SAMPLE_RATE=48000
 SHORT_MP4_VIDEO_CODEC=libx264
+SHORT_MP4_VIDEO_FALLBACKS=h264_videotoolbox
 SHORT_MP4_PIXEL_FORMAT=yuv420p
 SHORT_MP4_VERIFY_CODEC=h264
 

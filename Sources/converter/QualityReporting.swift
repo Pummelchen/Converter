@@ -43,6 +43,20 @@ struct AudioQCResult: Codable, Sendable {
 }
 
 extension ProjectConfig {
+    var masteringAudioQCPolicy: AudioQCPolicy {
+        AudioQCPolicy(
+            name: "mastering",
+            targetLUFS: masteringTargetLUFS,
+            lufsTolerance: max(0.5, audioQCLUFSTolerance / 2),
+            maxTruePeakDBTP: masteringMaxTruePeakDBTP,
+            maxLoudnessRange: masteringMaxLoudnessRange,
+            maxDCOffset: audioQCMaxDCOffset,
+            maxStereoImbalanceDB: audioQCMaxStereoImbalanceDB,
+            maxClippedSamples: audioQCMaxClippedSamples,
+            minimumAnalysisSeconds: audioQCMinimumAnalysisSeconds
+        )
+    }
+
     var deliveryAudioQCPolicy: AudioQCPolicy {
         AudioQCPolicy(
             name: "delivery",

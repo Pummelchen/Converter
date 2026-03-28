@@ -152,4 +152,28 @@ final class converterTests: XCTestCase {
         XCTAssertEqual(flacOptions.srcDir.standardizedFileURL.path, root.appendingPathComponent("Output", isDirectory: true).standardizedFileURL.path)
         XCTAssertEqual(flacOptions.outDir.standardizedFileURL.path, root.appendingPathComponent("Output", isDirectory: true).standardizedFileURL.path)
     }
+
+    func testBuiltInFastPreviewProfileOverridesRenderDefaults() throws {
+        let root = URL(fileURLWithPath: "/tmp/converter-test")
+        let logger = Logger(scriptName: "converterTests", debugEnabled: false)
+        let options = try CLIOptions.parse(
+            arguments: ["-help", "--profile", "fast_preview"],
+            environment: [:],
+            scriptDirectory: root,
+            scriptName: "converter"
+        )
+        let config = try ProjectConfig.load(
+            from: root.appendingPathComponent("config.txt"),
+            environment: [:],
+            cli: options,
+            logger: logger
+        )
+
+        XCTAssertEqual(config.profileName, "fast_preview")
+        XCTAssertFalse(config.masteringEnabled)
+        XCTAssertEqual(config.videoMP4Encoder, "h264_videotoolbox")
+        XCTAssertEqual(config.videoMP4VerifyCodec, "h264")
+        XCTAssertEqual(config.videoMP4Width, 1920)
+        XCTAssertEqual(config.videoMP4Height, 1080)
+    }
 }

@@ -396,6 +396,26 @@ final class PipelineIntegrationTests: XCTestCase {
         try tool.verifyCanonicalPCMSampleEquivalence(source: reference, output: bw64FLAC, sampleRate: 44_100, channels: 2, label: "External FLAC", format: .s24le)
     }
 
+    func testFullAudioPreparationRebuildsMP3FromMasteredWAVWhenMasteringIsEnabled() async throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe"])
+        try workspace.overwriteConfig(
+            IntegrationWorkspace.defaultConfig +
+                "\nMASTERING_TARGET_LUFS=-28\n"
+        )
+
+        let mp3 = try workspace.createAudio(name: "master_me", ext: "mp3", duration: 4.5)
+        let tool = try workspace.makeTool(arguments: ["-full"])
+        let originalCRC = try tool.crc32(for: mp3)
+
+        let artifacts = try await tool.fullAudioPreparation(sourceAudio: mp3)
+        let rebuiltMP3 = try XCTUnwrap(artifacts.mp3)
+        let rebuiltCRC = try tool.crc32(for: rebuiltMP3)
+
+        XCTAssertNotEqual(rebuiltCRC, originalCRC, "Mastering-enabled MP3 source input must be rebuilt from the mastered WAV.")
+        try tool.verifyMP3Standard(rebuiltMP3, qcPolicy: tool.config.deliveryAudioQCPolicy)
+    }
+
     func testDerivedImageNamingOnlyReplacesTrailing8KMarker() throws {
         let workspace = try IntegrationWorkspace()
         try workspace.requireCommands(["magick"])
@@ -654,5 +674,94 @@ final class PipelineIntegrationTests: XCTestCase {
         XCTAssertLessThanOrEqual(counter.peak(.audio), tool.schedulerProfile.audio)
         XCTAssertLessThanOrEqual(counter.peak(.video), tool.schedulerProfile.video)
         XCTAssertLessThanOrEqual(counter.peakTotalCount(), tool.schedulerProfile.total)
+    }
+
+    func testDoctorPassesOnHealthyWorkspace() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe", "magick"])
+        _ = try workspace.createImage(name: "poster", ext: "png")
+        _ = try workspace.createAudio(name: "song", ext: "mp3")
+
+        let tool = try workspace.makeTool(arguments: ["-doctor"])
+        XCTAssertNoThrow(try tool.initializeForExecution())
+        XCTAssertNoThrow(try tool.stepDoctor())
+    }
+
+    func testMasterCanonicalWAVRemediatesOutOfPolicyLoudness() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe"])
+        try workspace.overwriteConfig(
+            IntegrationWorkspace.defaultConfig +
+                "\nMASTERING_TARGET_LUFS=-40\n"
+        )
+        let wav = try workspace.createAudio(name: "needs_master", ext: "wav", duration: 4.5)
+        let tool = try workspace.makeTool(arguments: ["-wavtom4a"])
+
+        let before = try tool.audioQCResult(for: wav, policy: tool.config.masteringAudioQCPolicy)
+        XCTAssertFalse(before.passed, "Fixture should start out of mastering policy so remediation is exercised.")
+
+        try tool.masterCanonicalWAVInPlaceIfNeeded(wav)
+
+        XCTAssertNoThrow(try tool.verifyWAVStandard(wav, qcPolicy: tool.config.masteringAudioQCPolicy))
+        let after = try tool.audioQCResult(for: wav, policy: tool.config.masteringAudioQCPolicy)
+        XCTAssertTrue(after.passed)
+    }
+
+    func testMainVideoRenderFallsBackToSoftwareEncoder() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe", "magick"])
+        try workspace.overwriteConfig(
+            IntegrationWorkspace.defaultConfig +
+                "\nVIDEO_MP4_ENCODER=definitely_missing_encoder\n" +
+                "VIDEO_MP4_ENCODER_FALLBACKS=libx264\n" +
+                "VIDEO_MP4_VERIFY_CODEC=h264\n" +
+                "VIDEO_MP4_TAG=avc1\n"
+        )
+
+        let image = try workspace.createImage(name: "poster", ext: "png")
+        let audio = try workspace.createAudio(name: "track", ext: "m4a")
+        let tool = try workspace.makeTool(arguments: ["-m4atomp4"])
+
+        let output = try tool.renderM4AToMP4(imageFile: image, audioFile: audio)
+        try tool.verifyVideoOutput(
+            output,
+            width: tool.config.videoMP4Width,
+            height: tool.config.videoMP4Height,
+            codec: "h264",
+            pixelFormat: tool.config.videoMP4PixelFormat,
+            colorPrimaries: tool.config.videoColorPrimaries,
+            colorTransfer: tool.config.videoColorTransfer,
+            colorSpace: tool.config.videoColorSpace,
+            colorRange: tool.config.videoColorRange
+        )
+    }
+
+    func testShortVideoRenderFallsBackToSoftwareEncoder() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe", "magick"])
+        try workspace.overwriteConfig(
+            IntegrationWorkspace.defaultConfig +
+                "\nSHORT_MP4_VIDEO_CODEC=definitely_missing_short_encoder\n" +
+                "SHORT_MP4_VIDEO_FALLBACKS=libx264\n" +
+                "SHORT_MP4_VERIFY_CODEC=h264\n"
+        )
+
+        let image = try workspace.createImage(name: "poster", ext: "png")
+        let audio = try workspace.createAudio(name: "track", ext: "m4a")
+        let tool = try workspace.makeTool(arguments: ["-mp4toshort"])
+        let main = try tool.renderM4AToMP4(imageFile: image, audioFile: audio)
+
+        let short = try tool.shortenMP4(main)
+        try tool.verifyVideoOutput(
+            short,
+            width: tool.config.shortMP4ScaleW,
+            height: tool.config.shortMP4ScaleH,
+            codec: "h264",
+            pixelFormat: tool.config.shortMP4PixelFormat,
+            colorPrimaries: tool.config.videoColorPrimaries,
+            colorTransfer: tool.config.videoColorTransfer,
+            colorSpace: tool.config.videoColorSpace,
+            colorRange: tool.config.videoColorRange
+        )
     }
 }

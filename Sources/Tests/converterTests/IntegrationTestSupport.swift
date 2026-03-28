@@ -33,6 +33,7 @@ final class IntegrationWorkspace {
 
     static var defaultConfig: String {
         """
+        PROFILE=youtube_master
         PREFLIGHT_SECONDS=1
         DURATION_TOLERANCE_SEC=1.5
         CRC_CHUNK_BYTES=262144
@@ -61,8 +62,15 @@ final class IntegrationWorkspace {
         SHORT_AUDIO_QC_TARGET_LUFS=-16
         SHORT_AUDIO_QC_LUFS_TOLERANCE=12
         SHORT_AUDIO_QC_MAX_LOUDNESS_RANGE=30
+        MASTERING_ENABLED=1
+        MASTERING_TARGET_LUFS=-16
+        MASTERING_MAX_TRUE_PEAK_DBTP=-1
+        MASTERING_MAX_LOUDNESS_RANGE=20
         VIDEO_MP4_ENCODER=hevc_videotoolbox
+        VIDEO_MP4_ENCODER_FALLBACKS=libx264
         VIDEO_MP4_VT_QUALITY=45
+        VIDEO_MP4_SOFTWARE_PRESET=medium
+        VIDEO_MP4_SOFTWARE_CRF=22
         VIDEO_MP4_INPUT_FPS=2
         VIDEO_MP4_AUDIO_BITRATE=192k
         VIDEO_MP4_AUDIO_SAMPLE_RATE=48000
@@ -82,9 +90,11 @@ final class IntegrationWorkspace {
         SHORT_MP4_SCALE_H=160
         SHORT_MP4_VIDEO_PRESET=fast
         SHORT_MP4_VIDEO_CRF=23
+        SHORT_MP4_VT_QUALITY=55
         SHORT_MP4_AUDIO_BITRATE=128k
         SHORT_MP4_AUDIO_SAMPLE_RATE=48000
         SHORT_MP4_VIDEO_CODEC=libx264
+        SHORT_MP4_VIDEO_FALLBACKS=h264_videotoolbox
         SHORT_MP4_PIXEL_FORMAT=yuv420p
         SHORT_MP4_VERIFY_CODEC=h264
         IMAGE_8K_WIDTH=320
@@ -216,6 +226,31 @@ final class IntegrationWorkspace {
             args += ["-c:a", "aac", "-b:a", "192k", "-ar", "48000", target.path]
         default:
             throw AppError("Unsupported silent test audio extension: \(ext)")
+        }
+        _ = try runner().run("ffmpeg", args)
+        return target
+    }
+
+    func createHotAudio(name: String, ext: String, duration: Double = 1.2, frequency: Int = 440, gainDB: Double = 18) throws -> URL {
+        let target = output.appendingPathComponent(name).appendingPathExtension(ext)
+        var args = [
+            "-hide_banner", "-nostdin", "-v", "error", "-y",
+            "-f", "lavfi",
+            "-i", "sine=frequency=\(frequency):duration=\(String(format: "%.3f", duration)):sample_rate=48000",
+            "-ac", "2",
+            "-af", "volume=\(String(format: "%.2f", gainDB))dB"
+        ]
+        switch ext.lowercased() {
+        case "wav":
+            args += ["-c:a", "pcm_f32le", "-ar", "48000", "-f", "wav", "-rf64", "always", "-write_bext", "1", target.path]
+        case "flac":
+            args += ["-c:a", "flac", "-compression_level", "5", "-ar", "48000", target.path]
+        case "mp3":
+            args += ["-c:a", "libmp3lame", "-b:a", "192k", "-ar", "48000", target.path]
+        case "m4a":
+            args += ["-c:a", "aac", "-b:a", "192k", "-ar", "48000", target.path]
+        default:
+            throw AppError("Unsupported hot test audio extension: \(ext)")
         }
         _ = try runner().run("ffmpeg", args)
         return target

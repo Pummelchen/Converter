@@ -1,6 +1,7 @@
 import Foundation
 
 enum Action: String {
+    case doctor
     case full
     case runPix = "run_pix"
     case aipix
@@ -56,6 +57,7 @@ struct CLIOptions {
     var openAfterCreate = false
 
     var outputFile: String?
+    var profileName: String?
     var numDots: Int?
     var dotSize = 10
     var maxAttempts = 10_000
@@ -103,6 +105,8 @@ struct CLIOptions {
         while index < arguments.count {
             let argument = arguments[index]
             switch argument {
+            case "-doctor":
+                options.action = .doctor
             case "-full", "-run":
                 options.action = .full
             case "-run_pix":
@@ -151,6 +155,8 @@ struct CLIOptions {
             case "-list", "--list": options.action = .list
             case "--config":
                 options.configFile = URL(fileURLWithPath: try requireValue(argument))
+            case "--profile":
+                options.profileName = try requireValue(argument)
             case "--src-dir":
                 options.srcDir = URL(fileURLWithPath: try requireValue(argument))
                 options.srcDirExplicit = true
@@ -241,7 +247,7 @@ struct CLIOptions {
     func printActionList() {
         let lines = [
             "Available actions:",
-            "  -full", "  -run", "  -run_pix", "  -aipix", "  -clean", "  -fadewav",
+            "  -doctor", "  -full", "  -run", "  -run_pix", "  -aipix", "  -clean", "  -fadewav",
             "  -flactoalbum", "  -flactohash", "  -flactom4a", "  -flactomp3", "  -flactowav",
             "  -jpgtopng", "  -m4atoflac", "  -m4atomp3", "  -m4atomp4", "  -m4atowav",
             "  -matrix", "  -mp3clean", "  -mp3toalbum", "  -mp3toflac", "  -mp3tohash",
@@ -286,11 +292,17 @@ struct CLIOptions {
         """
         Usage:
           \(scriptName)
+          \(scriptName) -doctor
           \(scriptName) -full
           \(scriptName) -flactomp3
           \(scriptName) -m4atomp4
           \(scriptName) -matrix
           \(scriptName) -visualsubs 9 --output-file dots.png
+
+        Profiles:
+          Built-in profiles: youtube_master, youtube_short, archive, fast_preview
+          Use: --profile NAME
+          Default: config-driven if PROFILE is set, otherwise youtube_master
 
         Full run:
           Default action with no parameter, or use: -full / -run
@@ -355,22 +367,22 @@ struct CLIOptions {
               Output: same files renamed to CRC32-based .mp3 names
 
             -wavtom4a
-              Input: one or more project-standard .wav files in SRC_DIR
+              Input: one or more .wav files in SRC_DIR
               Output: .m4a files
             -wavtomp3
-              Input: one or more project-standard .wav files in SRC_DIR
+              Input: one or more .wav files in SRC_DIR
               Output: .mp3 files
             -wavtoflac
-              Input: one or more project-standard .wav files in SRC_DIR
+              Input: one or more .wav files in SRC_DIR
               Output: .flac files
             -fadewav
-              Input: one or more project-standard .wav files in SRC_DIR
+              Input: one or more .wav files in SRC_DIR
               Output: faded RF64 WAV files
             -wavtoalbum
               Input: album.txt order file plus referenced .wav files
               Output: one RF64 album WAV
             -wavtohash
-              Input: one or more project-standard .wav files in SRC_DIR
+              Input: one or more .wav files in SRC_DIR
               Output: copied CRC32-based .wav files
 
           Picture actions:
@@ -423,6 +435,9 @@ struct CLIOptions {
               Output: _Short.mp4 portrait clips
 
           Maintenance:
+            -doctor
+              Input: no media files required
+              Output: validates toolchain, config, encoder/filter support, directories, and optionally current source media
             -clean
               Input: no special source file requirement
               Output: removes transient/temp files from OUT_DIR
@@ -432,6 +447,7 @@ struct CLIOptions {
 
         Common options:
           --config FILE
+          --profile NAME
           --src-dir DIR
           --out-dir DIR
           --output-dir DIR
