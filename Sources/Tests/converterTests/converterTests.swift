@@ -27,6 +27,7 @@ final class converterTests: XCTestCase {
         XCTAssertTrue(help.contains("Exactly 1 source image"))
         XCTAssertTrue(help.contains(".flac or .wav or .mp3"))
         XCTAssertTrue(help.contains("-mp3toflac"))
+        XCTAssertTrue(help.contains("-mp3toshort"))
         XCTAssertTrue(help.contains("-fadeout START DURATION"))
         XCTAssertTrue(help.contains("-m4atowav"))
         XCTAssertTrue(help.contains("-pngtojpg"))

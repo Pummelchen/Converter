@@ -33,6 +33,7 @@ swift test --package-path Sources
 ./converter
 ./converter -matrix
 ./converter -fadeout 1:30 10
+./converter -mp3toshort
 ./converter -mp3clean
 ./converter -m4atomp4
 ```

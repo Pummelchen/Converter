@@ -24,6 +24,7 @@ enum Action: String {
     case mp3toflac
     case mp3tohash
     case mp3tom4a
+    case mp3toshort
     case mp3towav
     case mp4toshort
     case pngto2k
@@ -135,6 +136,7 @@ struct CLIOptions {
             case "-mp3toflac": options.action = .mp3toflac
             case "-mp3tohash": options.action = .mp3tohash
             case "-mp3tom4a": options.action = .mp3tom4a
+            case "-mp3toshort": options.action = .mp3toshort
             case "-mp3towav": options.action = .mp3towav
             case "-mp4toshort": options.action = .mp4toshort
             case "-pngto2k": options.action = .pngto2k
@@ -267,7 +269,7 @@ struct CLIOptions {
             "  -flactoalbum", "  -flactohash", "  -flactom4a", "  -flactomp3", "  -flactowav",
             "  -jpgtopng", "  -m4atoflac", "  -m4atomp3", "  -m4atomp4", "  -m4atowav",
             "  -matrix", "  -mp3clean", "  -mp3toalbum", "  -mp3toflac", "  -mp3tohash",
-            "  -mp3tom4a", "  -mp3towav", "  -mp4toshort", "  -pngto2k", "  -pngto3k",
+            "  -mp3tom4a", "  -mp3toshort", "  -mp3towav", "  -mp4toshort", "  -pngto2k", "  -pngto3k",
             "  -pngto3k1mb", "  -pngto3k5mb", "  -pngtojpg", "  -pngtonft", "  -pngtojpg1mb",
             "  -pngtojpg2mb", "  -pngtojpg20mb", "  -visualsubs", "  -wavtoalbum",
             "  -wavtoflac", "  -wavtohash", "  -wavtom4a", "  -wavtomp3"
@@ -373,6 +375,9 @@ struct CLIOptions {
             -mp3tom4a
               Input: one or more .mp3 files in SRC_DIR
               Output: .m4a files
+            -mp3toshort
+              Input: exactly 1 .mp3 file plus exactly 1 source image (.png/.jpg/.jpeg) or exactly 1 *_8K.png in SRC_DIR
+              Output: short-ready MP3 normalization when needed, high-quality M4A intermediate, main MP4, and _Short.mp4
             -mp3clean
               Input: one or more .mp3 files in SRC_DIR
               Output: same .mp3 files rewritten as audio-only MP3 with artwork, junk streams, and metadata removed

@@ -333,6 +333,56 @@ final class PipelineIntegrationTests: XCTestCase {
         try tool.verifyDuration(output, expectedSeconds: spec.endSeconds, label: "fadeout output")
     }
 
+    func testMP3ToShortPreparesHighQualityIntermediatesAndBuildsShort() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe", "magick"])
+        try workspace.overwriteConfig(
+            IntegrationWorkspace.defaultConfig +
+                "\nMP3_BITRATE=320k\n" +
+                "MP3_MIN_BITRATE_BPS=300000\n" +
+                "M4A_BITRATE=384k\n"
+        )
+
+        _ = try workspace.createImage(name: "poster", ext: "png", width: 320, height: 180)
+        let sourceMP3 = try workspace.createMP3WithArtwork(name: "song", duration: 2.4)
+        try? FileManager.default.removeItem(at: workspace.output.appendingPathComponent("song_cover.png"))
+        let tool = try workspace.makeTool(arguments: ["-mp3toshort"])
+
+        try tool.stepMP3ToShort()
+
+        let preparedMP3 = workspace.output.appendingPathComponent("song.mp3")
+        let preparedM4A = workspace.output.appendingPathComponent("song.m4a")
+        let eightK = workspace.output.appendingPathComponent("poster_8K.png")
+        let mainVideo = workspace.output.appendingPathComponent("song_8K.mp4")
+        let shortVideo = workspace.output.appendingPathComponent("song_8K_Short.mp4")
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: preparedMP3.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: preparedM4A.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: eightK.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: mainVideo.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: shortVideo.path))
+
+        XCTAssertGreaterThanOrEqual(try tool.audioBitrateBps(preparedMP3), 300_000)
+        try tool.verifyMP3Standard(preparedMP3, qcPolicy: nil)
+        try tool.verifyM4AFile(preparedM4A, sampleRate: tool.config.m4aSampleRate, channels: tool.config.m4aChannels, qcPolicy: nil)
+        try tool.verifyVideoOutput(
+            shortVideo,
+            width: tool.config.shortMP4ScaleW,
+            height: tool.config.shortMP4ScaleH,
+            codec: tool.config.shortMP4VerifyCodec,
+            pixelFormat: tool.config.shortMP4PixelFormat,
+            colorPrimaries: tool.config.videoColorPrimaries,
+            colorTransfer: tool.config.videoColorTransfer,
+            colorSpace: tool.config.videoColorSpace,
+            colorRange: tool.config.videoColorRange
+        )
+        XCTAssertThrowsError(try tool.requireVideoStream(preparedMP3))
+        XCTAssertThrowsError(try tool.requireVideoStream(preparedM4A))
+        XCTAssertNoThrow(try tool.requireVideoStream(mainVideo))
+        XCTAssertNoThrow(try tool.requireVideoStream(shortVideo))
+        XCTAssertEqual(sourceMP3.lastPathComponent, "song.mp3")
+    }
+
     func testMP3HashAcceptsArtworkAndNonProjectBitrateMP3() throws {
         let workspace = try IntegrationWorkspace()
         try workspace.requireCommands(["ffmpeg", "ffprobe", "magick"])

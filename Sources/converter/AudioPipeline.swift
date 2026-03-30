@@ -1,6 +1,106 @@
 import Foundation
 
 extension ConverterTool {
+    func mp3NeedsShortPreparation(_ source: URL) -> Bool {
+        do {
+            try preflightMP3Input(source, requireNoVideo: false)
+            let sampleRate = Int(try audioField(source, "sample_rate") ?? "") ?? 0
+            let channels = Int(try audioField(source, "channels") ?? "") ?? 0
+            let bitrate = try audioBitrateBps(source)
+            let hasOnlyAudio: Bool
+            do {
+                try requireNoVideoStream(source)
+                hasOnlyAudio = true
+            } catch {
+                hasOnlyAudio = false
+            }
+            return sampleRate != config.mp3SampleRate
+                || channels != config.mp3Channels
+                || bitrate < config.mp3MinBitrateBps
+                || !hasOnlyAudio
+        } catch {
+            return true
+        }
+    }
+
+    func ensureShortReadyMP3(_ source: URL) throws -> URL {
+        try preflightMP3Input(source, requireNoVideo: false)
+        try requireFFmpegEncoder("libmp3lame")
+
+        let output = cli.outDir.appendingPathComponent(source.lastPathComponent)
+        if source.standardizedFileURL == output.standardizedFileURL, !mp3NeedsShortPreparation(source) {
+            logger.info("MP3 short source already at project standard: \(source.basename)")
+            return source
+        }
+        if source.standardizedFileURL != output.standardizedFileURL,
+           canReuseOutput(output, verifier: {
+               try verifyMP3Standard(output, qcPolicy: nil)
+           }) {
+            logger.info("Reuse short-ready MP3: \(output.basename)")
+            return output
+        }
+
+        let temp = try makeTemp(in: cli.outDir, stem: source.stem, ext: ".mp3")
+        do {
+            _ = try runner.run("ffmpeg", [
+                "-hide_banner", "-nostdin", "-v", "error", "-y",
+                "-i", source.path,
+                "-map", "0:a:0",
+                "-ar", String(config.mp3SampleRate),
+                "-ac", String(config.mp3Channels),
+                "-c:a", "libmp3lame",
+                "-b:a", config.mp3Bitrate,
+                temp.path
+            ])
+            try verifyMP3Standard(temp, qcPolicy: nil)
+            try verifyDurationMatch(source: source, output: temp)
+            try publishTemp(temp, to: output)
+            logger.info("Prepared MP3 for short: \(output.basename)")
+            return output
+        } catch {
+            try? fileManager.removeItem(at: temp)
+            state.unregister(tempFile: temp)
+            throw error
+        }
+    }
+
+    func convertMP3ToShortReadyM4A(_ source: URL) throws -> URL {
+        try preflightMP3Input(source, requireNoVideo: false)
+        try requireFFmpegEncoder("aac")
+        let output = cli.outDir.appendingPathComponent(source.stem).appendingPathExtension("m4a")
+        if canReuseOutput(output, verifier: {
+            try verifyM4AFile(output, sampleRate: config.m4aSampleRate, channels: config.m4aChannels, qcPolicy: nil)
+            try verifyDurationMatch(source: source, output: output)
+        }) {
+            logger.info("Reuse short-ready M4A: \(output.basename)")
+            return output
+        }
+
+        let temp = try makeTemp(in: cli.outDir, stem: source.stem, ext: ".m4a")
+        do {
+            _ = try runner.run("ffmpeg", [
+                "-hide_banner", "-nostdin", "-v", "error", "-y",
+                "-i", source.path,
+                "-map", "0:a:0",
+                "-c:a", "aac",
+                "-b:a", config.m4aBitrate,
+                "-ar", String(config.m4aSampleRate),
+                "-ac", String(config.m4aChannels),
+                "-vn",
+                temp.path
+            ])
+            try verifyM4AFile(temp, sampleRate: config.m4aSampleRate, channels: config.m4aChannels, qcPolicy: nil)
+            try verifyDurationMatch(source: source, output: temp)
+            try publishTemp(temp, to: output)
+            logger.info("Prepared M4A for short: \(output.basename)")
+            return output
+        } catch {
+            try? fileManager.removeItem(at: temp)
+            state.unregister(tempFile: temp)
+            throw error
+        }
+    }
+
     func verifyDuration(_ file: URL, expectedSeconds: Double, label: String, tolerance: Double? = nil) throws {
         guard let actualDuration = try mediaDuration(file) else {
             throw AppError("Duration probe failed for \(label): \(file.path)")

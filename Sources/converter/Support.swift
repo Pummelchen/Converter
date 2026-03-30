@@ -218,6 +218,29 @@ func parseFlexibleTimecode(_ rawValue: String, label: String) throws -> Double {
     return seconds
 }
 
+func parseBitrateBps(_ rawValue: String) -> Int? {
+    let value = rawValue.trimmed.lowercasedASCII
+    guard !value.isEmpty else {
+        return nil
+    }
+    let multiplier: Double
+    let digits: String
+    if value.hasSuffix("k") {
+        multiplier = 1_000
+        digits = String(value.dropLast())
+    } else if value.hasSuffix("m") {
+        multiplier = 1_000_000
+        digits = String(value.dropLast())
+    } else {
+        multiplier = 1
+        digits = value
+    }
+    guard let parsed = Double(digits), parsed > 0 else {
+        return nil
+    }
+    return Int((parsed * multiplier).rounded())
+}
+
 func formatCommand(_ executable: String, _ arguments: [String]) -> String {
     ([executable] + arguments).map { argument in
         if argument.contains(where: { $0.isWhitespace || $0 == "\"" || $0 == "'" }) {
