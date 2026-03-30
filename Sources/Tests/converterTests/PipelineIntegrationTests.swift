@@ -380,6 +380,7 @@ final class PipelineIntegrationTests: XCTestCase {
         XCTAssertThrowsError(try tool.requireVideoStream(preparedM4A))
         XCTAssertNoThrow(try tool.requireVideoStream(mainVideo))
         XCTAssertNoThrow(try tool.requireVideoStream(shortVideo))
+        try tool.verifyDuration(shortVideo, expectedSeconds: 1.0, label: "short mp4")
         XCTAssertEqual(sourceMP3.lastPathComponent, "song.mp3")
     }
 
@@ -863,5 +864,31 @@ final class PipelineIntegrationTests: XCTestCase {
             colorSpace: tool.config.videoColorSpace,
             colorRange: tool.config.videoColorRange
         )
+    }
+
+    func testShortVideoHardCapsAt58SecondsEvenIfConfigRequestsMore() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe"])
+        try workspace.overwriteConfig(
+            IntegrationWorkspace.defaultConfig +
+                "\nSHORT_MP4_CLIP_SECONDS=75\n"
+        )
+
+        let source = try workspace.createVideoMP4(name: "long_source", duration: 60.5, width: 320, height: 180)
+        let tool = try workspace.makeTool(arguments: ["-mp4toshort"])
+
+        let short = try tool.shortenMP4(source)
+        try tool.verifyVideoOutput(
+            short,
+            width: tool.config.shortMP4ScaleW,
+            height: tool.config.shortMP4ScaleH,
+            codec: tool.config.shortMP4VerifyCodec,
+            pixelFormat: tool.config.shortMP4PixelFormat,
+            colorPrimaries: tool.config.videoColorPrimaries,
+            colorTransfer: tool.config.videoColorTransfer,
+            colorSpace: tool.config.videoColorSpace,
+            colorRange: tool.config.videoColorRange
+        )
+        try tool.verifyDuration(short, expectedSeconds: 58.0, label: "short mp4", tolerance: 0.25)
     }
 }

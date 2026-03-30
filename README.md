@@ -38,6 +38,8 @@ swift test --package-path Sources
 ./converter -m4atomp4
 ```
 
+Short outputs are hard-capped at 58 seconds.
+
 ## Profiles
 Built-in profiles:
 - `youtube_master`

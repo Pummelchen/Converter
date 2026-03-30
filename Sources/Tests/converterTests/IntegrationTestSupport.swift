@@ -256,6 +256,25 @@ final class IntegrationWorkspace {
         return target
     }
 
+    func createVideoMP4(name: String, duration: Double, width: Int = 320, height: Int = 180, frequency: Int = 440) throws -> URL {
+        let target = output.appendingPathComponent(name).appendingPathExtension("mp4")
+        _ = try runner().run("ffmpeg", [
+            "-hide_banner", "-nostdin", "-v", "error", "-y",
+            "-f", "lavfi",
+            "-i", "color=c=#224477:size=\(width)x\(height):rate=2:duration=\(String(format: "%.3f", duration))",
+            "-f", "lavfi",
+            "-i", "sine=frequency=\(frequency):duration=\(String(format: "%.3f", duration)):sample_rate=48000",
+            "-c:v", "libx264",
+            "-pix_fmt", "yuv420p",
+            "-c:a", "aac",
+            "-b:a", "192k",
+            "-ar", "48000",
+            "-shortest",
+            target.path
+        ])
+        return target
+    }
+
     func createStereoImbalancedAudio(name: String, ext: String, duration: Double = 1.2) throws -> URL {
         let target = output.appendingPathComponent(name).appendingPathExtension(ext)
         var args = [

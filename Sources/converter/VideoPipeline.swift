@@ -1,6 +1,38 @@
 import Foundation
 
 extension ConverterTool {
+    private var shortMP4AbsoluteMaximumSeconds: Double { 58.0 }
+
+    func configuredShortClipSeconds() throws -> Double {
+        try parseFlexibleTimecode(config.shortMP4ClipSeconds, label: "SHORT_MP4_CLIP_SECONDS")
+    }
+
+    func effectiveShortClipSeconds(for input: URL) throws -> Double {
+        let configured = try configuredShortClipSeconds()
+        guard let inputDuration = try mediaDuration(input) else {
+            throw AppError("Unable to read numeric video duration from: \(input.path)")
+        }
+        return min(configured, shortMP4AbsoluteMaximumSeconds, inputDuration)
+    }
+
+    func verifyShortMP4Duration(_ output: URL, source: URL) throws {
+        let expectedSeconds = try effectiveShortClipSeconds(for: source)
+        try verifyDuration(output, expectedSeconds: expectedSeconds, label: "short MP4 output", tolerance: 0.5)
+        guard let actualDuration = try mediaDuration(output) else {
+            throw AppError("Unable to read numeric short MP4 duration from: \(output.path)")
+        }
+        if actualDuration > shortMP4AbsoluteMaximumSeconds + 0.1 {
+            throw AppError(
+                String(
+                    format: "Short MP4 exceeds hard limit %.3fs (got %.3fs): %@",
+                    shortMP4AbsoluteMaximumSeconds,
+                    actualDuration,
+                    output.path
+                )
+            )
+        }
+    }
+
     func renderM4AToMP4(imageFile: URL, audioFile: URL) throws -> URL {
         try preflightPNGInput(imageFile)
         try preflightM4AInput(audioFile)
@@ -114,6 +146,7 @@ extension ConverterTool {
     func shortenMP4(_ input: URL) throws -> URL {
         try preflightMP4Input(input, requireAudio: true, requireAudibleAudio: true)
         try requireFFmpegEncoder("aac")
+        let shortDuration = try effectiveShortClipSeconds(for: input)
         let output = cli.outDir.appendingPathComponent("\(input.stem)_Short").appendingPathExtension("mp4")
         if canReuseOutput(output, verifier: {
             try verifyVideoOutput(
@@ -128,6 +161,7 @@ extension ConverterTool {
                 colorRange: config.videoColorRange
             )
             try verifyAudioOutput(output, codec: "aac", sampleRate: config.shortMP4AudioSampleRate, qcPolicy: config.shortFormAudioQCPolicy)
+            try verifyShortMP4Duration(output, source: input)
         }) {
             logger.info("Skip existing short MP4: \(output.basename)")
             return output
@@ -146,7 +180,7 @@ extension ConverterTool {
                 var ffmpegArgs = [
                     "-hide_banner", "-nostdin", "-v", "error", "-y",
                     "-ss", "0",
-                    "-t", config.shortMP4ClipSeconds,
+                    "-t", String(format: "%.6f", shortDuration),
                     "-i", input.path,
                     "-vf", shortFilter,
                     "-c:v", encoder
@@ -180,6 +214,7 @@ extension ConverterTool {
                     colorRange: config.videoColorRange
                 )
                 try verifyAudioOutput(temp, codec: "aac", sampleRate: config.shortMP4AudioSampleRate, qcPolicy: config.shortFormAudioQCPolicy)
+                try verifyShortMP4Duration(temp, source: input)
                 try publishTemp(temp, to: output)
                 logger.info("Created short MP4: \(output.basename) [encoder=\(encoder)]")
                 return output

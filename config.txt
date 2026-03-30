@@ -67,7 +67,7 @@ VIDEO_COLOR_TRANSFER=bt709
 VIDEO_COLOR_SPACE=bt709
 VIDEO_COLOR_RANGE=tv
 
-# Short MP4 render settings (used by mp4toshort.sh)
+# Short MP4 render settings. Output is always hard-capped to 58 seconds even if this value is set higher.
 SHORT_MP4_CLIP_SECONDS=58
 SHORT_MP4_FPS=2
 SHORT_MP4_SCALE_W=4320
