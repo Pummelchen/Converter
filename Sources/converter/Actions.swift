@@ -473,6 +473,26 @@ extension ConverterTool {
         }
     }
 
+    func stepFadeOut() throws {
+        let spec = try cli.fadeOutSpec()
+        let files = try audioFadeOutCandidates()
+        _ = try processBatch(
+            files: files,
+            emptyMessage: "No supported audio files (.flac, .wav, .mp3, .m4a) found in '\(cli.srcDir.path)'.",
+            failWhenEmpty: true
+        ) { file in
+            self.logger.info("Fadeout \(file.basename): start=\(self.actionTimeDisplay(spec.fadeStartSeconds)) duration=\(self.actionTimeDisplay(spec.fadeDurationSeconds))")
+            return try self.fadeOutAudio(file, spec: spec)
+        }
+    }
+
+    func actionTimeDisplay(_ seconds: Double) -> String {
+        if seconds.rounded(.towardZero) == seconds {
+            return String(Int(seconds))
+        }
+        return String(format: "%.3f", seconds)
+    }
+
     func stepWAVToAlbum() throws {
         logger.info("Build WAV album")
         _ = try buildAlbumFromAlbumFile(extension: "wav", defaultOutputName: cli.outputFile ?? "album.rf64.wav")
@@ -528,6 +548,8 @@ extension ConverterTool {
         switch cli.action {
         case .doctor:
             try stepDoctor()
+        case .fadeout:
+            try stepFadeOut()
         case .help:
             print(cli.helpText())
         case .list:

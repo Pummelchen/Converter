@@ -1,6 +1,171 @@
 import Foundation
 
 extension ConverterTool {
+    func verifyDuration(_ file: URL, expectedSeconds: Double, label: String, tolerance: Double? = nil) throws {
+        guard let actualDuration = try mediaDuration(file) else {
+            throw AppError("Duration probe failed for \(label): \(file.path)")
+        }
+        let allowedTolerance = tolerance ?? config.durationToleranceSec
+        let delta = abs(actualDuration - expectedSeconds)
+        if delta > allowedTolerance {
+            throw AppError("Duration mismatch for \(label): got=\(actualDuration) expected=\(expectedSeconds) delta=\(delta) tol=\(allowedTolerance)")
+        }
+    }
+
+    func audioFadeOutCandidates() throws -> [URL] {
+        try files(in: cli.srcDir, matchingExtensions: ["flac", "wav", "mp3", "m4a"])
+            .filter { !$0.stem.hasSuffix("_faded") }
+    }
+
+    func preflightFadeOutSource(_ source: URL) throws {
+        switch source.pathExtension.lowercasedASCII {
+        case "flac":
+            try preflightFLACInput(source)
+        case "wav":
+            try preflightWAVInput(source)
+        case "mp3":
+            try preflightMP3Input(source, requireNoVideo: false)
+        case "m4a":
+            guard source.pathExtension.lowercasedASCII == "m4a" else {
+                throw AppError("Expected .m4a input: \(source.path)")
+            }
+            try preflightAudioInput(
+                source,
+                expectedContainerTokens: ["m4a", "mp4", "ipod", "mov"],
+                expectedAudioCodecs: ["aac"],
+                requireNoVideo: false,
+                requireAudible: true
+            )
+        default:
+            throw AppError("Unsupported fadeout source type: \(source.path)")
+        }
+    }
+
+    func verifyFadeOutOutput(_ file: URL, sourceExtension: String, expectedDuration: Double) throws {
+        switch sourceExtension.lowercasedASCII {
+        case "flac":
+            try verifyFLACFile(file, sampleRate: config.flacSampleRate, channels: config.flacChannels, qcPolicy: config.deliveryAudioQCPolicy)
+        case "wav":
+            try verifyWAVStandard(file, qcPolicy: config.deliveryAudioQCPolicy)
+        case "mp3":
+            try verifyMP3Standard(file, qcPolicy: config.deliveryAudioQCPolicy)
+        case "m4a":
+            try verifyM4AFile(file, sampleRate: config.m4aSampleRate, channels: config.m4aChannels, qcPolicy: config.deliveryAudioQCPolicy)
+        default:
+            throw AppError("Unsupported fadeout output type: \(file.path)")
+        }
+        try verifyDuration(file, expectedSeconds: expectedDuration, label: "fadeout output")
+    }
+
+    func makeFadeOutFFmpegArguments(source: URL, targetDuration: Double, fadeStartSeconds: Double, fadeDurationSeconds: Double, output: URL) throws -> [String] {
+        let fadeFilter = "afade=t=out:st=\(String(format: "%.6f", fadeStartSeconds)):d=\(String(format: "%.6f", fadeDurationSeconds))"
+        let targetSeconds = String(format: "%.6f", targetDuration)
+        switch source.pathExtension.lowercasedASCII {
+        case "flac":
+            return [
+                "-hide_banner", "-nostdin", "-v", "error", "-y",
+                "-i", source.path,
+                "-map", "0:a:0",
+                "-t", targetSeconds,
+                "-af", fadeFilter,
+                "-vn",
+                "-ac", String(config.flacChannels),
+                "-ar", String(config.flacSampleRate),
+                "-c:a", "flac",
+                "-compression_level", String(config.flacCompressionLevel),
+                output.path
+            ]
+        case "wav":
+            return [
+                "-hide_banner", "-nostdin", "-v", "error", "-y",
+                "-i", source.path,
+                "-map", "0:a:0",
+                "-t", targetSeconds,
+                "-af", fadeFilter,
+                "-ac", String(config.wavChannels),
+                "-ar", String(config.wavSampleRate),
+                "-c:a", config.wavCodec,
+                "-f", "wav",
+                "-rf64", "always",
+                "-write_bext", String(config.wavWriteBext),
+                output.path
+            ]
+        case "mp3":
+            try requireFFmpegEncoder("libmp3lame")
+            return [
+                "-hide_banner", "-nostdin", "-v", "error", "-y",
+                "-i", source.path,
+                "-map", "0:a:0",
+                "-t", targetSeconds,
+                "-af", fadeFilter,
+                "-ar", String(config.mp3SampleRate),
+                "-ac", String(config.mp3Channels),
+                "-c:a", "libmp3lame",
+                "-b:a", config.mp3Bitrate,
+                output.path
+            ]
+        case "m4a":
+            try requireFFmpegEncoder("aac")
+            return [
+                "-hide_banner", "-nostdin", "-v", "error", "-y",
+                "-i", source.path,
+                "-map", "0:a:0",
+                "-t", targetSeconds,
+                "-af", fadeFilter,
+                "-c:a", "aac",
+                "-b:a", config.m4aBitrate,
+                "-ar", String(config.m4aSampleRate),
+                "-ac", String(config.m4aChannels),
+                "-vn",
+                output.path
+            ]
+        default:
+            throw AppError("Unsupported fadeout source type: \(source.path)")
+        }
+    }
+
+    func fadeOutAudio(_ source: URL, spec: FadeOutSpec) throws -> URL {
+        try preflightFadeOutSource(source)
+        guard let sourceDuration = try mediaDuration(source) else {
+            throw AppError("Unable to read source duration for fadeout: \(source.path)")
+        }
+        let targetDuration = spec.endSeconds
+        let allowedSourceOverrun = 0.05
+        guard spec.fadeStartSeconds < sourceDuration else {
+            throw AppError("Fade start \(spec.fadeStartSeconds)s is beyond source duration \(sourceDuration)s for \(source.basename)")
+        }
+        if targetDuration - sourceDuration > allowedSourceOverrun {
+            throw AppError("Fade end \(targetDuration)s exceeds source duration \(sourceDuration)s for \(source.basename)")
+        }
+
+        let output = cli.outDir.appendingPathComponent("\(source.stem)_faded").appendingPathExtension(source.pathExtension.lowercasedASCII)
+        if canReuseOutput(output, verifier: {
+            try self.verifyFadeOutOutput(output, sourceExtension: source.pathExtension, expectedDuration: targetDuration)
+        }) {
+            logger.info("Skip existing faded audio: \(output.basename)")
+            return output
+        }
+
+        let temp = try makeTemp(in: cli.outDir, stem: output.stem, ext: ".\(output.pathExtension)")
+        do {
+            _ = try runner.run("ffmpeg", try makeFadeOutFFmpegArguments(
+                source: source,
+                targetDuration: targetDuration,
+                fadeStartSeconds: spec.fadeStartSeconds,
+                fadeDurationSeconds: spec.fadeDurationSeconds,
+                output: temp
+            ))
+            try verifyFadeOutOutput(temp, sourceExtension: source.pathExtension, expectedDuration: targetDuration)
+            try publishTemp(temp, to: output)
+            logger.info("Created faded audio: \(output.basename)")
+            return output
+        } catch {
+            try? fileManager.removeItem(at: temp)
+            state.unregister(tempFile: temp)
+            throw error
+        }
+    }
+
     func ensureStandardMP3Output(from source: URL) throws -> URL {
         let output = cli.outDir.appendingPathComponent(source.lastPathComponent)
         if source.standardizedFileURL == output.standardizedFileURL {

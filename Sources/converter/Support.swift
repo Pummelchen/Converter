@@ -152,6 +152,72 @@ extension URL {
     }
 }
 
+struct FadeOutSpec: Equatable, Sendable {
+    let fadeStartSeconds: Double
+    let fadeDurationSeconds: Double
+
+    var endSeconds: Double {
+        fadeStartSeconds + fadeDurationSeconds
+    }
+}
+
+func parseFlexibleTimecode(_ rawValue: String, label: String) throws -> Double {
+    let value = rawValue.trimmed
+    guard !value.isEmpty else {
+        throw AppError("\(label) is empty")
+    }
+
+    let components = value.split(separator: ":")
+    guard !components.isEmpty, components.count <= 3 else {
+        throw AppError("Invalid \(label) '\(rawValue)'. Use seconds, MM:SS, or HH:MM:SS.")
+    }
+
+    func parseComponent(_ component: Substring, allowFraction: Bool) throws -> Double {
+        let text = String(component)
+        guard !text.isEmpty else {
+            throw AppError("Invalid \(label) '\(rawValue)'. Empty time component.")
+        }
+        if allowFraction {
+            guard let parsed = Double(text), parsed >= 0 else {
+                throw AppError("Invalid \(label) '\(rawValue)'.")
+            }
+            return parsed
+        }
+        guard let parsed = Int(text), parsed >= 0 else {
+            throw AppError("Invalid \(label) '\(rawValue)'.")
+        }
+        return Double(parsed)
+    }
+
+    let seconds: Double
+    switch components.count {
+    case 1:
+        seconds = try parseComponent(components[0], allowFraction: true)
+    case 2:
+        let minutes = try parseComponent(components[0], allowFraction: false)
+        let secs = try parseComponent(components[1], allowFraction: true)
+        guard secs < 60 else {
+            throw AppError("Invalid \(label) '\(rawValue)'. Seconds must be below 60 when using MM:SS.")
+        }
+        seconds = (minutes * 60) + secs
+    case 3:
+        let hours = try parseComponent(components[0], allowFraction: false)
+        let minutes = try parseComponent(components[1], allowFraction: false)
+        let secs = try parseComponent(components[2], allowFraction: true)
+        guard minutes < 60, secs < 60 else {
+            throw AppError("Invalid \(label) '\(rawValue)'. Minutes and seconds must be below 60 when using HH:MM:SS.")
+        }
+        seconds = (hours * 3600) + (minutes * 60) + secs
+    default:
+        throw AppError("Invalid \(label) '\(rawValue)'.")
+    }
+
+    guard seconds.isFinite, seconds >= 0 else {
+        throw AppError("Invalid \(label) '\(rawValue)'.")
+    }
+    return seconds
+}
+
 func formatCommand(_ executable: String, _ arguments: [String]) -> String {
     ([executable] + arguments).map { argument in
         if argument.contains(where: { $0.isWhitespace || $0 == "\"" || $0 == "'" }) {

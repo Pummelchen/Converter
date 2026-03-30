@@ -283,6 +283,36 @@ final class PipelineIntegrationTests: XCTestCase {
         XCTAssertThrowsError(try tool.verifyMP3Standard(taggedMP3, qcPolicy: tool.config.deliveryAudioQCPolicy))
     }
 
+    func testFadeOutProducesTruncatedSameFormatAudioOutput() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe", "magick"])
+
+        let source = try workspace.createMP3WithArtwork(name: "fade_song", duration: 3.0)
+        let tool = try workspace.makeTool(arguments: ["-fadeout", "1.5", "0.75"])
+        let spec = try tool.cli.fadeOutSpec()
+
+        try tool.stepFadeOut()
+
+        let output = workspace.output.appendingPathComponent("fade_song_faded.mp3")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: output.path))
+        try tool.verifyMP3Standard(output, qcPolicy: tool.config.deliveryAudioQCPolicy)
+        XCTAssertThrowsError(try tool.requireVideoStream(output))
+        try tool.verifyDuration(output, expectedSeconds: spec.endSeconds, label: "fadeout output")
+        try tool.verifyDuration(source, expectedSeconds: 3.0, label: "source duration", tolerance: 0.25)
+    }
+
+    func testFadeOutRejectsRangeBeyondSourceDuration() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe"])
+
+        _ = try workspace.createAudio(name: "short_song", ext: "wav", duration: 1.2)
+        let tool = try workspace.makeTool(arguments: ["-fadeout", "1.0", "1.0"])
+
+        XCTAssertThrowsError(try tool.stepFadeOut()) { error in
+            XCTAssertTrue(error.localizedDescription.contains("Fade end"))
+        }
+    }
+
     func testMP3HashAcceptsArtworkAndNonProjectBitrateMP3() throws {
         let workspace = try IntegrationWorkspace()
         try workspace.requireCommands(["ffmpeg", "ffprobe", "magick"])

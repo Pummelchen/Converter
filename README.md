@@ -32,6 +32,7 @@ swift test --package-path Sources
 ./converter -doctor
 ./converter
 ./converter -matrix
+./converter -fadeout 1:30 10
 ./converter -mp3clean
 ./converter -m4atomp4
 ```
@@ -75,6 +76,20 @@ Full run produces:
 - run-local probe/QC caching to avoid redundant ffprobe/magick/audio analysis work
 - bounded scheduler with separate image/audio/video limits
 - integrated BW64 writing inside the main binary
+
+## Fadeout
+Use `-fadeout START DURATION` to create truncated same-format fadeout files from supported audio sources in `Output/`.
+
+Example:
+```bash
+./converter -fadeout 1:30 10
+```
+
+That starts fading at `1:30`, reaches silence at `1:40`, truncates there, and writes new files with the `_faded` suffix:
+- `.flac -> *_faded.flac`
+- `.wav -> *_faded.wav`
+- `.mp3 -> *_faded.mp3`
+- `.m4a -> *_faded.m4a`
 
 ## Notes
 - media inputs are auto-discovered from `Output/` by default

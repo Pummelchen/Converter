@@ -27,6 +27,7 @@ final class converterTests: XCTestCase {
         XCTAssertTrue(help.contains("Exactly 1 source image"))
         XCTAssertTrue(help.contains(".flac or .wav or .mp3"))
         XCTAssertTrue(help.contains("-mp3toflac"))
+        XCTAssertTrue(help.contains("-fadeout START DURATION"))
         XCTAssertTrue(help.contains("-m4atowav"))
         XCTAssertTrue(help.contains("-pngtojpg"))
         XCTAssertTrue(help.contains(".jpg or .jpeg"))
@@ -175,5 +176,35 @@ final class converterTests: XCTestCase {
         XCTAssertEqual(config.videoMP4VerifyCodec, "h264")
         XCTAssertEqual(config.videoMP4Width, 1920)
         XCTAssertEqual(config.videoMP4Height, 1080)
+    }
+
+    func testFadeOutParsesFlexibleTimeArguments() throws {
+        let root = URL(fileURLWithPath: "/tmp/converter-test")
+        let options = try CLIOptions.parse(
+            arguments: ["-fadeout", "1:30", "10"],
+            environment: [:],
+            scriptDirectory: root,
+            scriptName: "converter"
+        )
+        let spec = try options.fadeOutSpec()
+
+        XCTAssertEqual(options.action, .fadeout)
+        XCTAssertEqual(spec.fadeStartSeconds, 90, accuracy: 0.0001)
+        XCTAssertEqual(spec.fadeDurationSeconds, 10, accuracy: 0.0001)
+        XCTAssertEqual(spec.endSeconds, 100, accuracy: 0.0001)
+    }
+
+    func testFadeOutRejectsMissingArguments() throws {
+        let root = URL(fileURLWithPath: "/tmp/converter-test")
+        let options = try CLIOptions.parse(
+            arguments: ["-fadeout", "1:30"],
+            environment: [:],
+            scriptDirectory: root,
+            scriptName: "converter"
+        )
+
+        XCTAssertThrowsError(try options.fadeOutSpec()) { error in
+            XCTAssertTrue(error.localizedDescription.contains("requires two positional values"))
+        }
     }
 }
