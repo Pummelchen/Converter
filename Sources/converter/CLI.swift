@@ -377,7 +377,7 @@ struct CLIOptions {
               Output: .m4a files
             -mp3toshort
               Input: exactly 1 .mp3 file plus exactly 1 source image (.png/.jpg/.jpeg) or exactly 1 *_8K.png in SRC_DIR
-              Output: short-ready MP3 normalization when needed, high-quality M4A intermediate, and _Short.mp4 capped at 58 seconds; landscape 8K inputs also create a main MP4, portrait 8K inputs render the short directly
+              Output: short-ready MP3 normalization when needed, high-quality M4A intermediate, and _Short.mp4 capped at 58 seconds; preserves source MP3 loudness; landscape 8K inputs also create a main MP4, portrait 8K inputs render the short directly
             -mp3clean
               Input: one or more .mp3 files in SRC_DIR
               Output: same .mp3 files rewritten as audio-only MP3 with artwork, junk streams, and metadata removed

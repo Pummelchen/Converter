@@ -191,7 +191,6 @@ extension ConverterTool {
             }
             let wav = try await withAudioPermit { try self.convertFLACToWAV(sourceAudio) }
             _ = try await archivalTask
-            try self.masterCanonicalWAVInPlaceIfNeeded(wav)
             async let m4aTask: URL = withAudioPermit { try self.convertWAVToM4A(wav) }
             async let mp3Task: URL = withAudioPermit { try self.convertWAVToMP3(wav) }
             let artifacts = AudioArtifacts(source: sourceAudio, wav: wav, m4a: try await m4aTask, mp3: try await mp3Task)
@@ -204,19 +203,13 @@ extension ConverterTool {
                 try self.generateExternalArchivalVariants(baseName: sourceAudio.stem, highQualitySource: wav)
             }
             _ = try await archivalTask
-            try self.masterCanonicalWAVInPlaceIfNeeded(wav)
             async let m4aTask: URL = withAudioPermit { try self.convertWAVToM4A(wav) }
             let mp3: URL
-            if config.masteringEnabled {
-                self.logger.info("Full step: rebuild MP3 from mastered WAV")
-                mp3 = try await withAudioPermit { try self.convertWAVToMP3(wav, forceRebuild: true) }
-            } else {
-                do {
-                    mp3 = try ensureStandardMP3Output(from: sourceAudio)
-                } catch {
-                    self.logger.info("Full step: rebuild MP3 to configured standard")
-                    mp3 = try await withAudioPermit { try self.convertWAVToMP3(wav) }
-                }
+            do {
+                mp3 = try ensureStandardMP3Output(from: sourceAudio)
+            } catch {
+                self.logger.info("Full step: rebuild MP3 to configured standard")
+                mp3 = try await withAudioPermit { try self.convertWAVToMP3(wav) }
             }
             let artifacts = AudioArtifacts(source: sourceAudio, wav: wav, m4a: try await m4aTask, mp3: mp3)
             return artifacts
@@ -248,7 +241,6 @@ extension ConverterTool {
             }
             try preflightWAVStandardInput(sourceAudio)
             _ = try await archivalTask
-            try self.masterCanonicalWAVInPlaceIfNeeded(sourceAudio)
             async let m4aTask: URL = withAudioPermit { try self.convertWAVToM4A(sourceAudio) }
             async let mp3Task: URL = withAudioPermit { try self.convertWAVToMP3(sourceAudio) }
             let artifacts = AudioArtifacts(source: sourceAudio, wav: sourceAudio, m4a: try await m4aTask, mp3: try await mp3Task)
@@ -272,9 +264,15 @@ extension ConverterTool {
         let audioArtifacts = try await audioArtifactsTask
 
         logger.info("Full step: M4A -> MP4")
-        let mainVideo = try await withVideoPermit { try self.renderM4AToMP4(imageFile: imageArtifacts.eightK, audioFile: audioArtifacts.m4a) }
+        let mainVideo = try await withVideoPermit {
+            try self.renderM4AToMP4(
+                imageFile: imageArtifacts.eightK,
+                audioFile: audioArtifacts.m4a,
+                audioQCPolicy: nil
+            )
+        }
         logger.info("Full step: MP4 -> Short")
-        _ = try await withVideoPermit { try self.shortenMP4(mainVideo) }
+        _ = try await withVideoPermit { try self.shortenMP4(mainVideo, audioQCPolicy: nil) }
         try cleanTransients()
         logger.info("Full pipeline complete")
     }
@@ -434,12 +432,12 @@ extension ConverterTool {
         }
         if imageDimensions.0 == config.shortMP4ScaleW && imageDimensions.1 == config.shortMP4ScaleH {
             logger.info("MP3 -> Short using portrait 8K image path")
-            _ = try renderM4AToShortMP4(imageFile: image, audioFile: workingM4A)
+            _ = try renderM4AToShortMP4(imageFile: image, audioFile: workingM4A, audioQCPolicy: nil)
             return
         }
         if imageDimensions.0 == config.videoMP4Width && imageDimensions.1 == config.videoMP4Height {
-            let mainVideo = try renderM4AToMP4(imageFile: image, audioFile: workingM4A)
-            _ = try shortenMP4(mainVideo)
+            let mainVideo = try renderM4AToMP4(imageFile: image, audioFile: workingM4A, audioQCPolicy: nil)
+            _ = try shortenMP4(mainVideo, audioQCPolicy: nil)
             return
         }
         throw AppError(
@@ -610,14 +608,14 @@ extension ConverterTool {
             throw AppError("Expected exactly one .m4a in '\(cli.srcDir.path)'.")
         }
         logger.info("M4A -> MP4: \(audio.basename) + \(image.basename)")
-        _ = try renderM4AToMP4(imageFile: image, audioFile: audio)
+        _ = try renderM4AToMP4(imageFile: image, audioFile: audio, audioQCPolicy: nil)
     }
 
     func stepMP4ToShort() throws {
         let files = try files(in: cli.srcDir, matchingExtensions: ["mp4"]).filter { !$0.stem.hasSuffix("_Short") }
         _ = try processBatch(files: files, emptyMessage: "No .mp4 files found in '\(cli.srcDir.path)'.", failWhenEmpty: false) { file in
             self.logger.info("MP4 -> Short: \(file.basename)")
-            return try self.shortenMP4(file)
+            return try self.shortenMP4(file, audioQCPolicy: nil)
         }
     }
 

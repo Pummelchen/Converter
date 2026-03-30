@@ -44,7 +44,7 @@ struct ProjectConfig {
     var shortAudioQCLUFSTolerance = 8.0
     var shortAudioQCMaxLoudnessRange = 20.0
 
-    var masteringEnabled = true
+    var masteringEnabled = false
     var masteringTargetLUFS = -16.0
     var masteringMaxTruePeakDBTP = -1.0
     var masteringMaxLoudnessRange = 20.0

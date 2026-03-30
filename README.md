@@ -40,6 +40,7 @@ swift test --package-path Sources
 
 Short outputs are hard-capped at 58 seconds.
 For `-mp3toshort`, a portrait `*_8K.png` is rendered directly to the short output; a landscape `*_8K.png` still follows the main-video-plus-short path.
+Conversions preserve source loudness by default instead of remastering it down during normal pipeline work, including `-mp3toshort`.
 
 ## Profiles
 Built-in profiles:

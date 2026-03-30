@@ -35,6 +35,8 @@ extension ConverterTool {
         if source.standardizedFileURL != output.standardizedFileURL,
            canReuseOutput(output, verifier: {
                try verifyMP3Standard(output, qcPolicy: nil)
+               try verifyDurationMatch(source: source, output: output)
+               try verifySourceLoudnessPreserved(source: source, output: output)
            }) {
             logger.info("Reuse short-ready MP3: \(output.basename)")
             return output
@@ -54,6 +56,7 @@ extension ConverterTool {
             ])
             try verifyMP3Standard(temp, qcPolicy: nil)
             try verifyDurationMatch(source: source, output: temp)
+            try verifySourceLoudnessPreserved(source: source, output: temp)
             try publishTemp(temp, to: output)
             logger.info("Prepared MP3 for short: \(output.basename)")
             return output
@@ -66,43 +69,22 @@ extension ConverterTool {
 
     func convertMP3ToShortReadyM4A(_ source: URL) throws -> URL {
         try preflightMP3Input(source, requireNoVideo: false)
-        try requireFFmpegEncoder("libmp3lame")
         try requireFFmpegEncoder("aac")
         let output = cli.outDir.appendingPathComponent(source.stem).appendingPathExtension("m4a")
         if canReuseOutput(output, verifier: {
-            try verifyM4AFile(output, sampleRate: config.m4aSampleRate, channels: config.m4aChannels, qcPolicy: config.shortFormAudioQCPolicy)
+            try verifyM4AFile(output, sampleRate: config.m4aSampleRate, channels: config.m4aChannels, qcPolicy: nil)
             try verifyDurationMatch(source: source, output: output)
+            try verifySourceLoudnessPreserved(source: source, output: output)
         }) {
             logger.info("Reuse short-ready M4A: \(output.basename)")
             return output
         }
 
-        let tempWAV = fileManager.temporaryDirectory
-            .appendingPathComponent("converter-short-\(UUID().uuidString.prefix(8))")
-            .appendingPathExtension("wav")
         let temp = try makeTemp(in: cli.outDir, stem: source.stem, ext: ".m4a")
-        defer {
-            try? fileManager.removeItem(at: tempWAV)
-        }
         do {
             _ = try runner.run("ffmpeg", [
                 "-hide_banner", "-nostdin", "-v", "error", "-y",
                 "-i", source.path,
-                "-map", "0:a:0",
-                "-ac", String(config.wavChannels),
-                "-ar", String(config.wavSampleRate),
-                "-c:a", config.wavCodec,
-                "-f", "wav",
-                "-rf64", "always",
-                "-write_bext", String(config.wavWriteBext),
-                tempWAV.path
-            ])
-            try verifyWAVStandard(tempWAV, qcPolicy: nil)
-            try verifyDurationMatch(source: source, output: tempWAV)
-            try masterCanonicalWAVInPlaceIfNeeded(tempWAV)
-            _ = try runner.run("ffmpeg", [
-                "-hide_banner", "-nostdin", "-v", "error", "-y",
-                "-i", tempWAV.path,
                 "-map", "0:a:0",
                 "-c:a", "aac",
                 "-b:a", config.m4aBitrate,
@@ -111,8 +93,9 @@ extension ConverterTool {
                 "-vn",
                 temp.path
             ])
-            try verifyM4AFile(temp, sampleRate: config.m4aSampleRate, channels: config.m4aChannels, qcPolicy: config.shortFormAudioQCPolicy)
+            try verifyM4AFile(temp, sampleRate: config.m4aSampleRate, channels: config.m4aChannels, qcPolicy: nil)
             try verifyDurationMatch(source: source, output: temp)
+            try verifySourceLoudnessPreserved(source: source, output: temp)
             try publishTemp(temp, to: output)
             logger.info("Prepared M4A for short: \(output.basename)")
             return output
@@ -292,10 +275,10 @@ extension ConverterTool {
         let output = cli.outDir.appendingPathComponent(source.lastPathComponent)
         if source.standardizedFileURL == output.standardizedFileURL {
             try preflightMP3Input(source)
-            try verifyMP3Standard(source, qcPolicy: config.deliveryAudioQCPolicy)
+            try verifyMP3Standard(source, qcPolicy: nil)
             return source
         }
-        if canReuseOutput(output, verifier: { try verifyMP3Standard(output, qcPolicy: config.deliveryAudioQCPolicy) }) {
+        if canReuseOutput(output, verifier: { try verifyMP3Standard(output, qcPolicy: nil) }) {
             return output
         }
         let temp = try makeTemp(in: cli.outDir, stem: source.stem, ext: ".mp3")
@@ -330,7 +313,7 @@ extension ConverterTool {
                 "-write_bext", String(config.wavWriteBext),
                 temp.path
             ])
-            try verifyWAVStandard(temp, qcPolicy: config.deliveryAudioQCPolicy)
+            try verifyWAVStandard(temp, qcPolicy: nil)
             try verifyDurationMatch(source: source, output: temp)
             try verifyCanonicalPCMSampleEquivalence(
                 source: source,
@@ -373,7 +356,7 @@ extension ConverterTool {
         try preflightAudioSourceForTranscode(source)
         let output = cli.outDir.appendingPathComponent(source.stem).appendingPathExtension("wav")
         if canReuseOutput(output, verifier: {
-            try verifyWAVStandard(output, qcPolicy: config.deliveryAudioQCPolicy)
+            try verifyWAVStandard(output, qcPolicy: nil)
             try verifyDurationMatch(source: source, output: output)
             try verifyCanonicalPCMSampleEquivalence(
                 source: source,
@@ -407,7 +390,7 @@ extension ConverterTool {
                 "-write_bext", String(config.wavWriteBext),
                 temp.path
             ])
-            try verifyWAVStandard(temp, qcPolicy: config.deliveryAudioQCPolicy)
+            try verifyWAVStandard(temp, qcPolicy: nil)
             try verifyDurationMatch(source: source, output: temp)
             try verifyCanonicalPCMSampleEquivalence(
                 source: source,
@@ -443,8 +426,9 @@ extension ConverterTool {
         try requireFFmpegEncoder("aac")
         let output = cli.outDir.appendingPathComponent(source.stem).appendingPathExtension("m4a")
         if canReuseOutput(output, verifier: {
-            try verifyM4AFile(output, sampleRate: config.m4aSampleRate, channels: config.m4aChannels, qcPolicy: config.deliveryAudioQCPolicy)
+            try verifyM4AFile(output, sampleRate: config.m4aSampleRate, channels: config.m4aChannels, qcPolicy: nil)
             try verifyDurationMatch(source: source, output: output)
+            try verifySourceLoudnessPreserved(source: source, output: output)
         }) {
             logger.info("Skip existing M4A: \(output.basename)")
             return output
@@ -462,8 +446,9 @@ extension ConverterTool {
                 "-vn",
                 temp.path
             ])
-            try verifyM4AFile(temp, sampleRate: config.m4aSampleRate, channels: config.m4aChannels, qcPolicy: config.deliveryAudioQCPolicy)
+            try verifyM4AFile(temp, sampleRate: config.m4aSampleRate, channels: config.m4aChannels, qcPolicy: nil)
             try verifyDurationMatch(source: source, output: temp)
+            try verifySourceLoudnessPreserved(source: source, output: temp)
             try publishTemp(temp, to: output)
             logger.info("Created M4A: \(output.basename)")
             return output
@@ -479,8 +464,9 @@ extension ConverterTool {
         try requireFFmpegEncoder("aac")
         let output = cli.outDir.appendingPathComponent(source.stem).appendingPathExtension("m4a")
         if canReuseOutput(output, verifier: {
-            try verifyM4AFile(output, sampleRate: config.m4aSampleRate, channels: config.m4aChannels, qcPolicy: config.deliveryAudioQCPolicy)
+            try verifyM4AFile(output, sampleRate: config.m4aSampleRate, channels: config.m4aChannels, qcPolicy: nil)
             try verifyDurationMatch(source: source, output: output)
+            try verifySourceLoudnessPreserved(source: source, output: output)
         }) {
             logger.info("Skip existing M4A: \(output.basename)")
             return output
@@ -498,8 +484,9 @@ extension ConverterTool {
                 "-vn",
                 temp.path
             ])
-            try verifyM4AFile(temp, sampleRate: config.m4aSampleRate, channels: config.m4aChannels, qcPolicy: config.deliveryAudioQCPolicy)
+            try verifyM4AFile(temp, sampleRate: config.m4aSampleRate, channels: config.m4aChannels, qcPolicy: nil)
             try verifyDurationMatch(source: source, output: temp)
+            try verifySourceLoudnessPreserved(source: source, output: temp)
             try publishTemp(temp, to: output)
             logger.info("Created M4A: \(output.basename)")
             return output
@@ -516,8 +503,9 @@ extension ConverterTool {
         try requireFFmpegEncoder("libmp3lame")
         let output = cli.outDir.appendingPathComponent(source.stem).appendingPathExtension("mp3")
         if !forceRebuild, canReuseOutput(output, verifier: {
-            try verifyMP3Standard(output, qcPolicy: config.deliveryAudioQCPolicy)
+            try verifyMP3Standard(output, qcPolicy: nil)
             try verifyDurationMatch(source: source, output: output)
+            try verifySourceLoudnessPreserved(source: source, output: output)
         }) {
             logger.info("Skip existing MP3: \(output.basename)")
             return output
@@ -534,8 +522,9 @@ extension ConverterTool {
                 "-b:a", config.mp3Bitrate,
                 temp.path
             ])
-            try verifyMP3Standard(temp, qcPolicy: config.deliveryAudioQCPolicy)
+            try verifyMP3Standard(temp, qcPolicy: nil)
             try verifyDurationMatch(source: source, output: temp)
+            try verifySourceLoudnessPreserved(source: source, output: temp)
             try publishTemp(temp, to: output)
             logger.info("Created MP3: \(output.basename)")
             return output
@@ -563,7 +552,7 @@ extension ConverterTool {
         try preflightAudioSourceForTranscode(source)
         let output = cli.outDir.appendingPathComponent(source.stem).appendingPathExtension("flac")
         if canReuseOutput(output, verifier: {
-            try verifyFLACFile(output, sampleRate: config.flacSampleRate, channels: config.flacChannels, requireAudible: true, qcPolicy: config.deliveryAudioQCPolicy)
+            try verifyFLACFile(output, sampleRate: config.flacSampleRate, channels: config.flacChannels, requireAudible: true, qcPolicy: nil)
             try verifyDurationMatch(source: source, output: output)
             try verifyCanonicalPCMSampleEquivalence(
                 source: source,
@@ -591,7 +580,7 @@ extension ConverterTool {
                 "-map_metadata", "0",
                 temp.path
             ])
-            try verifyFLACFile(temp, sampleRate: config.flacSampleRate, channels: config.flacChannels, qcPolicy: config.deliveryAudioQCPolicy)
+            try verifyFLACFile(temp, sampleRate: config.flacSampleRate, channels: config.flacChannels, qcPolicy: nil)
             try verifyDurationMatch(source: source, output: temp)
             try verifyCanonicalPCMSampleEquivalence(
                 source: source,
@@ -659,7 +648,7 @@ extension ConverterTool {
         let fadeStart = max(0, duration - Double(config.wavFadeDur))
         let output = cli.outDir.appendingPathComponent("\(source.stem)_Faded_rf64").appendingPathExtension("wav")
         if canReuseOutput(output, verifier: {
-            try verifyWAVStandard(output, qcPolicy: config.deliveryAudioQCPolicy)
+            try verifyWAVStandard(output, qcPolicy: nil)
             try verifyDurationMatch(source: source, output: output)
         }) {
             logger.info("Skip existing faded WAV: \(output.basename)")
@@ -679,7 +668,7 @@ extension ConverterTool {
                 "-write_bext", String(config.wavWriteBext),
                 temp.path
             ])
-            try verifyWAVStandard(temp, qcPolicy: config.deliveryAudioQCPolicy)
+            try verifyWAVStandard(temp, qcPolicy: nil)
             try verifyDurationMatch(source: source, output: temp)
             try publishTemp(temp, to: output)
             logger.info("Created faded WAV: \(output.basename)")
@@ -693,7 +682,7 @@ extension ConverterTool {
 
     func createExternalFLACVariant(source: URL, output: URL) throws -> URL {
         if canReuseOutput(output, verifier: {
-            try verifyFLACFile(output, qcPolicy: config.deliveryAudioQCPolicy)
+            try verifyFLACFile(output, qcPolicy: nil)
             try verifyDurationMatch(source: source, output: output)
             try verifyCanonicalPCMSampleEquivalence(source: source, output: output, label: "External FLAC", format: .s24le)
         }) {
@@ -716,7 +705,7 @@ extension ConverterTool {
                     temp.path
                 ])
             }
-            try verifyFLACFile(temp, qcPolicy: config.deliveryAudioQCPolicy)
+            try verifyFLACFile(temp, qcPolicy: nil)
             try verifyDurationMatch(source: source, output: temp)
             try verifyCanonicalPCMSampleEquivalence(source: source, output: temp, label: "External FLAC", format: .s24le)
             try publishTemp(temp, to: output)
@@ -970,7 +959,7 @@ extension ConverterTool {
 
         do {
             _ = try runner.run("ffmpeg", ffArgs)
-            try verifyWAVStandard(temp, qcPolicy: config.deliveryAudioQCPolicy)
+            try verifyWAVStandard(temp, qcPolicy: nil)
             try publishTemp(temp, to: output)
             logger.info("Created album WAV: \(output.path)")
             return output

@@ -2,6 +2,41 @@ import Foundation
 import BW64Bridge
 
 extension ConverterTool {
+    // Loudness comparisons for trimmed renders must use the same leading program segment, not the full source.
+    private func audioQCResultForComparison(_ file: URL, policy: AudioQCPolicy, limitDuration: Double?) throws -> AudioQCResult {
+        guard let limitDuration, limitDuration > 0 else {
+            return try audioQCResult(for: file, policy: policy)
+        }
+
+        if let totalDuration = try mediaDuration(file), totalDuration - limitDuration <= max(0.25, config.durationToleranceSec) {
+            return try audioQCResult(for: file, policy: policy)
+        }
+
+        let temp = fileManager.temporaryDirectory
+            .appendingPathComponent("converter-qc-clip.\(UUID().uuidString)")
+            .appendingPathExtension("wav")
+        defer { try? fileManager.removeItem(at: temp) }
+        do {
+            _ = try runner.run("ffmpeg", [
+                "-hide_banner", "-nostdin", "-v", "error", "-y",
+                "-t", String(format: "%.6f", limitDuration),
+                "-i", file.path,
+                "-map", "0:a:0",
+                "-vn",
+                "-ac", String(config.wavChannels),
+                "-ar", String(config.wavSampleRate),
+                "-c:a", config.wavCodec,
+                "-f", "wav",
+                "-rf64", "always",
+                "-write_bext", String(config.wavWriteBext),
+                temp.path
+            ])
+            return try audioQCResult(for: temp, policy: policy)
+        } catch {
+            throw error
+        }
+    }
+
     func verifyAudibleAudioTrack(_ file: URL) throws -> Bool {
         let fingerprint = try fileProbeFingerprint(file)
         return try probeCache.cachedAudibleResult(key: fingerprint) {
@@ -547,7 +582,7 @@ extension ConverterTool {
     }
 
     func verifyExternalWAVVariant(_ file: URL, source: URL, expectBext: Bool) throws {
-        try verifyExternalWAVStructure(file, expectBext: expectBext, qcPolicy: config.deliveryAudioQCPolicy)
+        try verifyExternalWAVStructure(file, expectBext: expectBext, qcPolicy: nil)
         try verifyDurationMatch(source: source, output: file)
         try verifyCanonicalPCMSampleEquivalence(
             source: source,
@@ -559,7 +594,7 @@ extension ConverterTool {
     }
 
     func verifyBW64WAVVariant(_ file: URL, source: URL) throws {
-        try verifyBW64WAVStructure(file, qcPolicy: config.deliveryAudioQCPolicy)
+        try verifyBW64WAVStructure(file, qcPolicy: nil)
         try verifyDurationMatch(source: source, output: file)
         try verifyCanonicalPCMSampleEquivalence(
             source: source,
@@ -642,6 +677,70 @@ extension ConverterTool {
         if delta > (tolerance ?? config.durationToleranceSec) {
             throw AppError("Duration mismatch exceeds tolerance: src=\(sourceDuration) out=\(outputDuration) delta=\(delta) tol=\(tolerance ?? config.durationToleranceSec)")
         }
+    }
+
+    func verifySourceLoudnessPreserved(source: URL, output: URL, toleranceDB: Double = 0.6) throws {
+        let outputDuration = try mediaDuration(output)
+        let sourceMetrics = try audioQCResultForComparison(source, policy: config.deliveryAudioQCPolicy, limitDuration: outputDuration).metrics
+        let outputMetrics = try audioQCResult(for: output, policy: config.deliveryAudioQCPolicy).metrics
+
+        if let sourceLUFS = sourceMetrics.integratedLUFS, let outputLUFS = outputMetrics.integratedLUFS {
+            let delta = abs(sourceLUFS - outputLUFS)
+            if delta > toleranceDB {
+                throw AppError(
+                    String(
+                        format: "Audio loudness drift exceeds tolerance: src=%.2f LUFS out=%.2f LUFS delta=%.2f tol=%.2f (%@ -> %@)",
+                        sourceLUFS,
+                        outputLUFS,
+                        delta,
+                        toleranceDB,
+                        source.path,
+                        output.path
+                    )
+                )
+            }
+            return
+        }
+
+        let sourcePeak = sourceMetrics.maxVolumeDBFS ?? sourceMetrics.peakLevelDBFS
+        let outputPeak = outputMetrics.maxVolumeDBFS ?? outputMetrics.peakLevelDBFS
+        if let sourcePeak, let outputPeak {
+            let delta = abs(sourcePeak - outputPeak)
+            if delta > toleranceDB {
+                throw AppError(
+                    String(
+                        format: "Audio peak drift exceeds tolerance: src=%.2f dBFS out=%.2f dBFS delta=%.2f tol=%.2f (%@ -> %@)",
+                        sourcePeak,
+                        outputPeak,
+                        delta,
+                        toleranceDB,
+                        source.path,
+                        output.path
+                    )
+                )
+            }
+            return
+        }
+
+        throw AppError("Unable to compare source/output loudness: \(source.path) -> \(output.path)")
+    }
+
+    func loudnessCompensationDB(source: URL, output: URL) throws -> Double {
+        let outputDuration = try mediaDuration(output)
+        let sourceMetrics = try audioQCResultForComparison(source, policy: config.deliveryAudioQCPolicy, limitDuration: outputDuration).metrics
+        let outputMetrics = try audioQCResult(for: output, policy: config.deliveryAudioQCPolicy).metrics
+
+        if let sourceLUFS = sourceMetrics.integratedLUFS, let outputLUFS = outputMetrics.integratedLUFS {
+            return sourceLUFS - outputLUFS
+        }
+
+        let sourcePeak = sourceMetrics.maxVolumeDBFS ?? sourceMetrics.peakLevelDBFS
+        let outputPeak = outputMetrics.maxVolumeDBFS ?? outputMetrics.peakLevelDBFS
+        if let sourcePeak, let outputPeak {
+            return sourcePeak - outputPeak
+        }
+
+        throw AppError("Unable to calculate loudness compensation: \(source.path) -> \(output.path)")
     }
 
     func requireAudioSampleRate(_ file: URL) throws -> Int {
