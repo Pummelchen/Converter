@@ -429,8 +429,22 @@ extension ConverterTool {
             logger.info("MP3 -> Short uses project-standard M4A intermediate")
         }
         let workingM4A = try convertMP3ToShortReadyM4A(workingMP3)
-        let mainVideo = try renderM4AToMP4(imageFile: image, audioFile: workingM4A)
-        _ = try shortenMP4(mainVideo)
+        guard let imageDimensions = try imageDimensions(image) else {
+            throw AppError("Unable to read dimensions: \(image.path)")
+        }
+        if imageDimensions.0 == config.shortMP4ScaleW && imageDimensions.1 == config.shortMP4ScaleH {
+            logger.info("MP3 -> Short using portrait 8K image path")
+            _ = try renderM4AToShortMP4(imageFile: image, audioFile: workingM4A)
+            return
+        }
+        if imageDimensions.0 == config.videoMP4Width && imageDimensions.1 == config.videoMP4Height {
+            let mainVideo = try renderM4AToMP4(imageFile: image, audioFile: workingM4A)
+            _ = try shortenMP4(mainVideo)
+            return
+        }
+        throw AppError(
+            "Short image must be either \(config.videoMP4Width)x\(config.videoMP4Height) or \(config.shortMP4ScaleW)x\(config.shortMP4ScaleH). Got '\(imageDimensions.0)x\(imageDimensions.1)' for '\(image.path)'."
+        )
     }
 
     func stepM4AToWAV() throws {

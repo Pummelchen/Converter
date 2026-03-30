@@ -384,6 +384,102 @@ final class PipelineIntegrationTests: XCTestCase {
         XCTAssertEqual(sourceMP3.lastPathComponent, "song.mp3")
     }
 
+    func testMP3ToShortAcceptsPortrait8KPNGWithoutLandscapeMainRender() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe", "magick"])
+        try workspace.overwriteConfig(
+            IntegrationWorkspace.defaultConfig +
+                "\nMP3_BITRATE=320k\n" +
+                "MP3_MIN_BITRATE_BPS=300000\n" +
+                "M4A_BITRATE=384k\n"
+        )
+
+        _ = try workspace.createImage(
+            name: "Vertical_8K",
+            ext: "png",
+            width: 90,
+            height: 160
+        )
+        let sourceMP3 = try workspace.createMP3WithArtwork(name: "song", duration: 2.4)
+        try? FileManager.default.removeItem(at: workspace.output.appendingPathComponent("song_cover.png"))
+        let tool = try workspace.makeTool(arguments: ["-mp3toshort"])
+
+        try tool.stepMP3ToShort()
+
+        let preparedMP3 = workspace.output.appendingPathComponent("song.mp3")
+        let preparedM4A = workspace.output.appendingPathComponent("song.m4a")
+        let portraitImage = workspace.output.appendingPathComponent("Vertical_8K.png")
+        let mainVideo = workspace.output.appendingPathComponent("song_8K.mp4")
+        let shortVideo = workspace.output.appendingPathComponent("song_8K_Short.mp4")
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: preparedMP3.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: preparedM4A.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: portraitImage.path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: mainVideo.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: shortVideo.path))
+
+        XCTAssertGreaterThanOrEqual(try tool.audioBitrateBps(preparedMP3), 300_000)
+        try tool.verifyMP3Standard(preparedMP3, qcPolicy: nil)
+        try tool.verifyM4AFile(preparedM4A, sampleRate: tool.config.m4aSampleRate, channels: tool.config.m4aChannels, qcPolicy: nil)
+        try tool.verifyVideoOutput(
+            shortVideo,
+            width: tool.config.shortMP4ScaleW,
+            height: tool.config.shortMP4ScaleH,
+            codec: tool.config.shortMP4VerifyCodec,
+            pixelFormat: tool.config.shortMP4PixelFormat,
+            colorPrimaries: tool.config.videoColorPrimaries,
+            colorTransfer: tool.config.videoColorTransfer,
+            colorSpace: tool.config.videoColorSpace,
+            colorRange: tool.config.videoColorRange
+        )
+        XCTAssertThrowsError(try tool.requireVideoStream(preparedMP3))
+        XCTAssertThrowsError(try tool.requireVideoStream(preparedM4A))
+        XCTAssertNoThrow(try tool.requireVideoStream(shortVideo))
+        try tool.verifyDuration(shortVideo, expectedSeconds: 1.0, label: "portrait short mp4")
+        XCTAssertEqual(sourceMP3.lastPathComponent, "song.mp3")
+    }
+
+    func testMP3ToShortPortraitPathMastersAudioBeforeShortRender() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe", "magick"])
+        try workspace.overwriteConfig(
+            IntegrationWorkspace.defaultConfig +
+                "\nAUDIO_QC_MAX_TRUE_PEAK_DBTP=-1\n" +
+                "MP3_BITRATE=320k\n" +
+                "MP3_MIN_BITRATE_BPS=300000\n" +
+                "M4A_BITRATE=384k\n"
+        )
+
+        _ = try workspace.createImage(name: "Vertical_8K", ext: "png", width: 90, height: 160)
+        _ = try workspace.createHotMP3WithArtwork(name: "hot_song", duration: 3.0, gainDB: 24)
+        try? FileManager.default.removeItem(at: workspace.output.appendingPathComponent("hot_song_cover.png"))
+        let tool = try workspace.makeTool(arguments: ["-mp3toshort"])
+
+        XCTAssertNoThrow(try tool.stepMP3ToShort())
+
+        let preparedM4A = workspace.output.appendingPathComponent("hot_song.m4a")
+        let shortVideo = workspace.output.appendingPathComponent("hot_song_8K_Short.mp4")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: preparedM4A.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: shortVideo.path))
+        try tool.verifyM4AFile(
+            preparedM4A,
+            sampleRate: tool.config.m4aSampleRate,
+            channels: tool.config.m4aChannels,
+            qcPolicy: tool.config.shortFormAudioQCPolicy
+        )
+        try tool.verifyVideoOutput(
+            shortVideo,
+            width: tool.config.shortMP4ScaleW,
+            height: tool.config.shortMP4ScaleH,
+            codec: tool.config.shortMP4VerifyCodec,
+            pixelFormat: tool.config.shortMP4PixelFormat,
+            colorPrimaries: tool.config.videoColorPrimaries,
+            colorTransfer: tool.config.videoColorTransfer,
+            colorSpace: tool.config.videoColorSpace,
+            colorRange: tool.config.videoColorRange
+        )
+    }
+
     func testMP3HashAcceptsArtworkAndNonProjectBitrateMP3() throws {
         let workspace = try IntegrationWorkspace()
         try workspace.requireCommands(["ffmpeg", "ffprobe", "magick"])
@@ -806,6 +902,19 @@ final class PipelineIntegrationTests: XCTestCase {
         XCTAssertNoThrow(try tool.verifyWAVStandard(wav, qcPolicy: tool.config.masteringAudioQCPolicy))
         let after = try tool.audioQCResult(for: wav, policy: tool.config.masteringAudioQCPolicy)
         XCTAssertTrue(after.passed)
+    }
+
+    func testMasterCanonicalWAVFallsBackWhenTwoPassMeasurementIsOutOfRange() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe"])
+        let wav = try workspace.createHotAudio(name: "too_hot", ext: "wav", duration: 3.0, gainDB: 24)
+        let tool = try workspace.makeTool(arguments: ["-wavtom4a"])
+
+        let before = try tool.audioQCResult(for: wav, policy: tool.config.masteringAudioQCPolicy)
+        XCTAssertFalse(before.passed, "Hot fixture should force mastering fallback.")
+
+        XCTAssertNoThrow(try tool.masterCanonicalWAVInPlaceIfNeeded(wav))
+        XCTAssertNoThrow(try tool.verifyWAVStandard(wav, qcPolicy: tool.config.masteringAudioQCPolicy))
     }
 
     func testMainVideoRenderFallsBackToSoftwareEncoder() throws {

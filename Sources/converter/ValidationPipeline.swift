@@ -180,35 +180,54 @@ extension ConverterTool {
         return values
     }
 
-    func masterCanonicalWAVInPlaceIfNeeded(_ source: URL) throws {
-        guard config.masteringEnabled else {
-            logger.info("Mastering disabled: \(source.basename)")
-            return
-        }
-        try preflightWAVStandardInput(source)
-        let policy = config.masteringAudioQCPolicy
-        let baselineQC = try audioQCResult(for: source, policy: policy)
-        if baselineQC.passed {
-            logger.info("Mastering skip: \(source.basename)")
-            return
+    func loudnormSecondPassFilter(policy: AudioQCPolicy, measurement: [String: String]) -> String? {
+        guard
+            let measuredI = Double(measurement["input_i"] ?? ""),
+            let measuredLRA = Double(measurement["input_lra"] ?? ""),
+            let measuredTP = Double(measurement["input_tp"] ?? ""),
+            let measuredThresh = Double(measurement["input_thresh"] ?? ""),
+            let offset = Double(measurement["target_offset"] ?? "")
+        else {
+            return nil
         }
 
-        logger.info("Master WAV: \(source.basename)")
-        let measurement = try loudnormMeasurement(for: source, policy: policy)
-        let filter = [
+        let measuredValuesAreUsable =
+            (-99.0 ... 0.0).contains(measuredI) &&
+            (0.0 ... 99.0).contains(measuredLRA) &&
+            (-99.0 ... 99.0).contains(measuredTP) &&
+            (-99.0 ... 0.0).contains(measuredThresh) &&
+            (-99.0 ... 99.0).contains(offset)
+
+        guard measuredValuesAreUsable else {
+            return nil
+        }
+
+        return [
             "loudnorm=I=\(String(format: "%.2f", policy.targetLUFS))",
             "TP=\(String(format: "%.2f", policy.maxTruePeakDBTP))",
             "LRA=\(String(format: "%.2f", policy.maxLoudnessRange))",
-            "measured_I=\(measurement["input_i"] ?? "")",
-            "measured_LRA=\(measurement["input_lra"] ?? "")",
-            "measured_TP=\(measurement["input_tp"] ?? "")",
-            "measured_thresh=\(measurement["input_thresh"] ?? "")",
-            "offset=\(measurement["target_offset"] ?? "")",
+            "measured_I=\(String(format: "%.2f", measuredI))",
+            "measured_LRA=\(String(format: "%.2f", measuredLRA))",
+            "measured_TP=\(String(format: "%.2f", measuredTP))",
+            "measured_thresh=\(String(format: "%.2f", measuredThresh))",
+            "offset=\(String(format: "%.2f", offset))",
             "linear=true",
             "print_format=summary"
         ].joined(separator: ":")
+    }
 
-        let temp = try makeTemp(in: source.deletingLastPathComponent(), stem: "\(source.stem).mastered", ext: ".wav")
+    func loudnormSinglePassFilter(policy: AudioQCPolicy) -> String {
+        [
+            "loudnorm=I=\(String(format: "%.2f", policy.targetLUFS))",
+            "TP=\(String(format: "%.2f", policy.maxTruePeakDBTP))",
+            "LRA=\(String(format: "%.2f", policy.maxLoudnessRange))",
+            "linear=false",
+            "print_format=summary"
+        ].joined(separator: ":")
+    }
+
+    func applyMasteredWAV(_ source: URL, filter: String, policy: AudioQCPolicy) throws {
+        let temp = try makeTemp(in: source.deletingLastPathComponent(), stem: "mastered", ext: ".wav")
         do {
             _ = try runner.run("ffmpeg", [
                 "-hide_banner", "-nostdin", "-v", "error", "-y",
@@ -226,12 +245,42 @@ extension ConverterTool {
             try verifyWAVStandard(temp, qcPolicy: policy)
             try verifyDurationMatch(source: source, output: temp)
             try publishTemp(temp, to: source)
-            logger.info("Mastered WAV: \(source.basename)")
         } catch {
             try? fileManager.removeItem(at: temp)
             state.unregister(tempFile: temp)
             throw error
         }
+    }
+
+    func masterCanonicalWAVInPlaceIfNeeded(_ source: URL) throws {
+        guard config.masteringEnabled else {
+            logger.info("Mastering disabled: \(source.basename)")
+            return
+        }
+        try preflightWAVStandardInput(source)
+        let policy = config.masteringAudioQCPolicy
+        let baselineQC = try audioQCResult(for: source, policy: policy)
+        if baselineQC.passed {
+            logger.info("Mastering skip: \(source.basename)")
+            return
+        }
+
+        logger.info("Master WAV: \(source.basename)")
+        let measurement = try loudnormMeasurement(for: source, policy: policy)
+        if let secondPassFilter = loudnormSecondPassFilter(policy: policy, measurement: measurement) {
+            do {
+                try applyMasteredWAV(source, filter: secondPassFilter, policy: policy)
+                logger.info("Mastered WAV: \(source.basename) [two-pass]")
+                return
+            } catch {
+                logger.warn("Two-pass mastering failed for \(source.basename); retrying one-pass loudnorm: \(error)")
+            }
+        } else {
+            logger.warn("Two-pass mastering measurement out of range for \(source.basename); using one-pass loudnorm fallback")
+        }
+
+        try applyMasteredWAV(source, filter: loudnormSinglePassFilter(policy: policy), policy: policy)
+        logger.info("Mastered WAV: \(source.basename) [one-pass]")
     }
 
     func preflightImageInput(_ file: URL, expectedFormat: String? = nil) throws {

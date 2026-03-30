@@ -7,12 +7,16 @@ extension ConverterTool {
         try parseFlexibleTimecode(config.shortMP4ClipSeconds, label: "SHORT_MP4_CLIP_SECONDS")
     }
 
-    func effectiveShortClipSeconds(for input: URL) throws -> Double {
+    func effectiveShortClipSeconds(forDuration inputDuration: Double) throws -> Double {
         let configured = try configuredShortClipSeconds()
+        return min(configured, shortMP4AbsoluteMaximumSeconds, inputDuration)
+    }
+
+    func effectiveShortClipSeconds(for input: URL) throws -> Double {
         guard let inputDuration = try mediaDuration(input) else {
             throw AppError("Unable to read numeric video duration from: \(input.path)")
         }
-        return min(configured, shortMP4AbsoluteMaximumSeconds, inputDuration)
+        return try effectiveShortClipSeconds(forDuration: inputDuration)
     }
 
     func verifyShortMP4Duration(_ output: URL, source: URL) throws {
@@ -226,6 +230,117 @@ extension ConverterTool {
             }
         }
         throw AppError("All short video encoders failed for \(output.basename): \(lastError?.localizedDescription ?? "unknown error")")
+    }
+
+    func renderM4AToShortMP4(imageFile: URL, audioFile: URL) throws -> URL {
+        try preflightPNGInput(imageFile)
+        try preflightM4AInput(audioFile)
+
+        guard let dimensions = try imageDimensions(imageFile) else {
+            throw AppError("Unable to read dimensions: \(imageFile.path)")
+        }
+        if dimensions.0 != config.shortMP4ScaleW || dimensions.1 != config.shortMP4ScaleH {
+            throw AppError("Short image must be \(config.shortMP4ScaleW)x\(config.shortMP4ScaleH). Got '\(dimensions.0)x\(dimensions.1)' for '\(imageFile.path)'.")
+        }
+        guard let audioDuration = try mediaDuration(audioFile) else {
+            throw AppError("Unable to read numeric audio duration from: \(audioFile.path)")
+        }
+        let inputAudioCodec = try audioField(audioFile, "codec_name") ?? ""
+        let inputAudioSampleRate = Int(try audioField(audioFile, "sample_rate") ?? "") ?? 0
+        let canCopyAAC = inputAudioCodec == "aac" && inputAudioSampleRate == config.shortMP4AudioSampleRate
+        if !canCopyAAC {
+            try requireFFmpegEncoder("aac")
+        }
+        let shortDuration = try effectiveShortClipSeconds(forDuration: audioDuration)
+        let output = cli.outDir.appendingPathComponent("\(audioFile.stem)_8K_Short").appendingPathExtension("mp4")
+        if canReuseOutput(output, verifier: {
+            try verifyVideoOutput(
+                output,
+                width: config.shortMP4ScaleW,
+                height: config.shortMP4ScaleH,
+                codec: config.shortMP4VerifyCodec,
+                pixelFormat: config.shortMP4PixelFormat,
+                colorPrimaries: config.videoColorPrimaries,
+                colorTransfer: config.videoColorTransfer,
+                colorSpace: config.videoColorSpace,
+                colorRange: config.videoColorRange
+            )
+            try verifyAudioOutput(output, codec: "aac", sampleRate: config.shortMP4AudioSampleRate, qcPolicy: config.shortFormAudioQCPolicy)
+            try verifyDuration(output, expectedSeconds: shortDuration, label: "portrait short MP4 output", tolerance: 0.5)
+        }) {
+            logger.info("Skip existing portrait short MP4: \(output.basename)")
+            return output
+        }
+
+        let encoders = try requireAvailableEncoderLadder(config.shortVideoEncoderLadder, label: "Short video")
+        let shortFilter =
+            "scale=\(config.shortMP4ScaleW):\(config.shortMP4ScaleH)," +
+            "fps=\(config.shortMP4FPS)," +
+            "format=\(config.shortMP4PixelFormat)," +
+            "setparams=color_primaries=\(config.videoColorPrimaries):color_trc=\(config.videoColorTransfer):colorspace=\(config.videoColorSpace):range=\(ffmpegFilterRangeValue(config.videoColorRange))"
+        var lastError: Error?
+        for encoder in encoders {
+            let temp = try makeTemp(in: cli.outDir, stem: "\(output.stem).\(encoder)", ext: ".mp4")
+            do {
+                var ffmpegArgs = [
+                    "-hide_banner", "-nostdin", "-v", "error", "-y",
+                    "-loop", "1",
+                    "-framerate", config.shortMP4FPS,
+                    "-i", imageFile.path,
+                    "-i", audioFile.path,
+                    "-t", String(format: "%.6f", shortDuration),
+                    "-vf", shortFilter,
+                    "-c:v", encoder
+                ]
+                if encoder.lowercasedASCII.contains("videotoolbox") {
+                    ffmpegArgs += ["-q:v", config.shortMP4VTQuality]
+                } else {
+                    ffmpegArgs += ["-preset", config.shortMP4VideoPreset, "-crf", config.shortMP4VideoCRF]
+                }
+                ffmpegArgs += [
+                    "-pix_fmt", config.shortMP4PixelFormat,
+                    "-color_primaries", config.videoColorPrimaries,
+                    "-color_trc", config.videoColorTransfer,
+                    "-colorspace", config.videoColorSpace,
+                    "-color_range", config.videoColorRange,
+                    "-shortest",
+                    "-movflags", "+faststart",
+                ]
+                if canCopyAAC {
+                    ffmpegArgs += ["-c:a", "copy"]
+                } else {
+                    ffmpegArgs += [
+                        "-c:a", "aac",
+                        "-b:a", config.shortMP4AudioBitrate,
+                        "-ar", String(config.shortMP4AudioSampleRate)
+                    ]
+                }
+                ffmpegArgs += [temp.path]
+                _ = try runner.run("ffmpeg", ffmpegArgs)
+                try verifyVideoOutput(
+                    temp,
+                    width: config.shortMP4ScaleW,
+                    height: config.shortMP4ScaleH,
+                    codec: config.shortMP4VerifyCodec,
+                    pixelFormat: config.shortMP4PixelFormat,
+                    colorPrimaries: config.videoColorPrimaries,
+                    colorTransfer: config.videoColorTransfer,
+                    colorSpace: config.videoColorSpace,
+                    colorRange: config.videoColorRange
+                )
+                try verifyAudioOutput(temp, codec: "aac", sampleRate: config.shortMP4AudioSampleRate, qcPolicy: config.shortFormAudioQCPolicy)
+                try verifyDuration(temp, expectedSeconds: shortDuration, label: "portrait short MP4 output", tolerance: 0.5)
+                try publishTemp(temp, to: output)
+                logger.info("Created portrait short MP4: \(output.basename) [encoder=\(encoder)]")
+                return output
+            } catch {
+                lastError = error
+                logger.warn("Portrait short video encoder failed (\(encoder)): \(error.localizedDescription)")
+                try? fileManager.removeItem(at: temp)
+                state.unregister(tempFile: temp)
+            }
+        }
+        throw AppError("All portrait short video encoders failed for \(output.basename): \(lastError?.localizedDescription ?? "unknown error")")
     }
 
 }

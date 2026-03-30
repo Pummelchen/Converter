@@ -66,21 +66,43 @@ extension ConverterTool {
 
     func convertMP3ToShortReadyM4A(_ source: URL) throws -> URL {
         try preflightMP3Input(source, requireNoVideo: false)
+        try requireFFmpegEncoder("libmp3lame")
         try requireFFmpegEncoder("aac")
         let output = cli.outDir.appendingPathComponent(source.stem).appendingPathExtension("m4a")
         if canReuseOutput(output, verifier: {
-            try verifyM4AFile(output, sampleRate: config.m4aSampleRate, channels: config.m4aChannels, qcPolicy: nil)
+            try verifyM4AFile(output, sampleRate: config.m4aSampleRate, channels: config.m4aChannels, qcPolicy: config.shortFormAudioQCPolicy)
             try verifyDurationMatch(source: source, output: output)
         }) {
             logger.info("Reuse short-ready M4A: \(output.basename)")
             return output
         }
 
+        let tempWAV = fileManager.temporaryDirectory
+            .appendingPathComponent("converter-short-\(UUID().uuidString.prefix(8))")
+            .appendingPathExtension("wav")
         let temp = try makeTemp(in: cli.outDir, stem: source.stem, ext: ".m4a")
+        defer {
+            try? fileManager.removeItem(at: tempWAV)
+        }
         do {
             _ = try runner.run("ffmpeg", [
                 "-hide_banner", "-nostdin", "-v", "error", "-y",
                 "-i", source.path,
+                "-map", "0:a:0",
+                "-ac", String(config.wavChannels),
+                "-ar", String(config.wavSampleRate),
+                "-c:a", config.wavCodec,
+                "-f", "wav",
+                "-rf64", "always",
+                "-write_bext", String(config.wavWriteBext),
+                tempWAV.path
+            ])
+            try verifyWAVStandard(tempWAV, qcPolicy: nil)
+            try verifyDurationMatch(source: source, output: tempWAV)
+            try masterCanonicalWAVInPlaceIfNeeded(tempWAV)
+            _ = try runner.run("ffmpeg", [
+                "-hide_banner", "-nostdin", "-v", "error", "-y",
+                "-i", tempWAV.path,
                 "-map", "0:a:0",
                 "-c:a", "aac",
                 "-b:a", config.m4aBitrate,
@@ -89,7 +111,7 @@ extension ConverterTool {
                 "-vn",
                 temp.path
             ])
-            try verifyM4AFile(temp, sampleRate: config.m4aSampleRate, channels: config.m4aChannels, qcPolicy: nil)
+            try verifyM4AFile(temp, sampleRate: config.m4aSampleRate, channels: config.m4aChannels, qcPolicy: config.shortFormAudioQCPolicy)
             try verifyDurationMatch(source: source, output: temp)
             try publishTemp(temp, to: output)
             logger.info("Prepared M4A for short: \(output.basename)")
