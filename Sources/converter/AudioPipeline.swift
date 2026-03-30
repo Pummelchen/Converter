@@ -44,13 +44,13 @@ extension ConverterTool {
     func verifyFadeOutOutput(_ file: URL, sourceExtension: String, expectedDuration: Double) throws {
         switch sourceExtension.lowercasedASCII {
         case "flac":
-            try verifyFLACFile(file, sampleRate: config.flacSampleRate, channels: config.flacChannels, qcPolicy: config.deliveryAudioQCPolicy)
+            try verifyFLACFile(file, sampleRate: config.flacSampleRate, channels: config.flacChannels, qcPolicy: nil)
         case "wav":
-            try verifyWAVStandard(file, qcPolicy: config.deliveryAudioQCPolicy)
+            try verifyWAVStandard(file, qcPolicy: nil)
         case "mp3":
-            try verifyMP3Standard(file, qcPolicy: config.deliveryAudioQCPolicy)
+            try verifyMP3Standard(file, qcPolicy: nil)
         case "m4a":
-            try verifyM4AFile(file, sampleRate: config.m4aSampleRate, channels: config.m4aChannels, qcPolicy: config.deliveryAudioQCPolicy)
+            try verifyM4AFile(file, sampleRate: config.m4aSampleRate, channels: config.m4aChannels, qcPolicy: nil)
         default:
             throw AppError("Unsupported fadeout output type: \(file.path)")
         }

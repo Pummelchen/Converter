@@ -313,6 +313,26 @@ final class PipelineIntegrationTests: XCTestCase {
         }
     }
 
+    func testFadeOutDoesNotEnforceDeliveryQCPolicy() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe", "magick"])
+        try workspace.overwriteConfig(
+            IntegrationWorkspace.defaultConfig + "\nAUDIO_QC_MAX_TRUE_PEAK_DBTP=-1\n"
+        )
+
+        _ = try workspace.createHotMP3WithArtwork(name: "hot_fade_song", duration: 3.0, gainDB: 24)
+        let tool = try workspace.makeTool(arguments: ["-fadeout", "1.5", "0.75"])
+        let spec = try tool.cli.fadeOutSpec()
+
+        XCTAssertNoThrow(try tool.stepFadeOut())
+
+        let output = workspace.output.appendingPathComponent("hot_fade_song_faded.mp3")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: output.path))
+        try tool.verifyMP3Standard(output, qcPolicy: nil)
+        XCTAssertThrowsError(try tool.requireVideoStream(output))
+        try tool.verifyDuration(output, expectedSeconds: spec.endSeconds, label: "fadeout output")
+    }
+
     func testMP3HashAcceptsArtworkAndNonProjectBitrateMP3() throws {
         let workspace = try IntegrationWorkspace()
         try workspace.requireCommands(["ffmpeg", "ffprobe", "magick"])
