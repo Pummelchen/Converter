@@ -595,7 +595,7 @@ extension ConverterTool {
 
     func stepWAVHash() throws {
         logger.info("Hash WAV filenames")
-        try hashCopyWAV()
+        try hashRename(ext: "wav")
     }
 
     func stepM4AToMP4() throws {

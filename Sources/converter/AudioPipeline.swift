@@ -855,6 +855,8 @@ extension ConverterTool {
                 try preflightFLACInput(file)
             case "mp3":
                 try preflightMP3Input(file, requireAudible: false, requireNoVideo: false)
+            case "wav":
+                try preflightWAVInput(file)
             default:
                 break
             }
@@ -874,36 +876,6 @@ extension ConverterTool {
             try ensureWritableDirectory(destination.deletingLastPathComponent())
             try fileManager.moveItem(at: file, to: destination)
             logger.info("Renamed \(ext): \(file.basename) -> \(destination.basename)")
-        }
-    }
-
-    func hashCopyWAV() throws {
-        let files = try self.files(in: cli.srcDir, matchingExtensions: ["wav"])
-        if files.isEmpty {
-            logger.warn("No .wav files found in '\(cli.srcDir.path)'.")
-            return
-        }
-        for file in files {
-            try preflightWAVInput(file)
-            let hash = try crc32(for: file)
-            let destination = cli.outDir.appendingPathComponent(hash).appendingPathExtension("wav")
-            if fileManager.fileExists(atPath: destination.path), !cli.overwrite {
-                logger.info("Skip existing hashed WAV: \(destination.basename)")
-                continue
-            }
-            let temp = try makeTemp(in: cli.outDir, stem: hash, ext: ".wav")
-            do {
-                try copyFileIntoTemp(file, temp: temp)
-                if try crc32(for: temp) != hash {
-                    throw AppError("CRC verification failed for copied WAV: \(destination.path)")
-                }
-                try publishTemp(temp, to: destination)
-                logger.info("Copied hashed WAV: \(destination.basename)")
-            } catch {
-                try? fileManager.removeItem(at: temp)
-                state.unregister(tempFile: temp)
-                throw error
-            }
         }
     }
 

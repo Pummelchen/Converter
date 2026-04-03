@@ -553,7 +553,24 @@ final class PipelineIntegrationTests: XCTestCase {
 
         let hashed = workspace.output.appendingPathComponent(expectedHash).appendingPathExtension("mp3")
         XCTAssertTrue(FileManager.default.fileExists(atPath: hashed.path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: taggedMP3.path))
         XCTAssertNoThrow(try tool.requireVideoStream(hashed))
+    }
+
+    func testFLACHashRenamesToCRC32Filename() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe"])
+
+        let flac = try workspace.createAudio(name: "hash_source", ext: "flac")
+        let tool = try workspace.makeTool(arguments: ["-flactohash"])
+        let expectedHash = try tool.crc32(for: flac)
+
+        try tool.stepFLACHash()
+
+        let hashed = workspace.output.appendingPathComponent(expectedHash).appendingPathExtension("flac")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: hashed.path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: flac.path))
+        try tool.preflightFLACInput(hashed)
     }
 
     func testAcceptsLeadingSilenceWhenAudioBecomesAudibleLater() throws {
@@ -629,6 +646,7 @@ final class PipelineIntegrationTests: XCTestCase {
 
         let hashed = workspace.output.appendingPathComponent(expectedHash).appendingPathExtension("wav")
         XCTAssertTrue(FileManager.default.fileExists(atPath: hashed.path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: riff.path))
         XCTAssertEqual(try tool.crc32(for: hashed), expectedHash)
         try tool.preflightWAVInput(hashed)
     }

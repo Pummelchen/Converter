@@ -409,7 +409,7 @@ struct CLIOptions {
               Output: one RF64 album WAV
             -wavtohash
               Input: one or more .wav files in SRC_DIR
-              Output: copied CRC32-based .wav files
+              Output: same files renamed to CRC32-based .wav names
 
           Picture actions:
             -jpgtopng
