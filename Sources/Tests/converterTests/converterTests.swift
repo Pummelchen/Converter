@@ -26,6 +26,7 @@ final class converterTests: XCTestCase {
         let help = options.helpText()
         XCTAssertTrue(help.contains("Exactly 1 source image"))
         XCTAssertTrue(help.contains(".flac or .wav or .mp3"))
+        XCTAssertTrue(help.contains("--hash"))
         XCTAssertTrue(help.contains("-mp3toflac"))
         XCTAssertTrue(help.contains("-mp3toshort"))
         XCTAssertTrue(help.contains("-fadeout START DURATION"))
@@ -135,6 +136,16 @@ final class converterTests: XCTestCase {
 
     func testHashActionsDefaultToProjectOutputDirectory() throws {
         let root = URL(fileURLWithPath: "/tmp/converter-test")
+
+        let unifiedOptions = try CLIOptions.parse(
+            arguments: ["--hash"],
+            environment: [:],
+            scriptDirectory: root,
+            scriptName: "converter"
+        )
+        XCTAssertEqual(unifiedOptions.action, .hash)
+        XCTAssertEqual(unifiedOptions.srcDir.standardizedFileURL.path, root.appendingPathComponent("Output", isDirectory: true).standardizedFileURL.path)
+        XCTAssertEqual(unifiedOptions.outDir.standardizedFileURL.path, root.appendingPathComponent("Output", isDirectory: true).standardizedFileURL.path)
 
         let mp3Options = try CLIOptions.parse(
             arguments: ["-mp3tohash"],

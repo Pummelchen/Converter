@@ -588,6 +588,17 @@ extension ConverterTool {
         try hashRename(ext: "flac")
     }
 
+    func stepUnifiedHash() throws {
+        logger.info("Hash WAV, FLAC, and MP3 filenames")
+        let total =
+            (try hashRename(ext: "wav", warnWhenEmpty: false)) +
+            (try hashRename(ext: "flac", warnWhenEmpty: false)) +
+            (try hashRename(ext: "mp3", warnWhenEmpty: false))
+        if total == 0 {
+            logger.warn("No .wav, .flac, or .mp3 files found in '\(cli.srcDir.path)'.")
+        }
+    }
+
     func stepMP3Hash() throws {
         logger.info("Hash MP3 filenames")
         try hashRename(ext: "mp3")
@@ -621,6 +632,8 @@ extension ConverterTool {
 
     func execute() async throws {
         switch cli.action {
+        case .hash:
+            try stepUnifiedHash()
         case .doctor:
             try stepDoctor()
         case .fadeout:

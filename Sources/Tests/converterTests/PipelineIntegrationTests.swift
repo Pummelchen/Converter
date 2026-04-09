@@ -651,6 +651,38 @@ final class PipelineIntegrationTests: XCTestCase {
         try tool.preflightWAVInput(hashed)
     }
 
+    func testUnifiedHashRenamesWAVFLACAndMP3Together() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe", "magick"])
+
+        let wav = try workspace.createPlainRIFFWAV(name: "mix_wave")
+        let flac = try workspace.createAudio(name: "mix_flac", ext: "flac")
+        let mp3 = try workspace.createMP3WithArtwork(name: "mix_mp3")
+        let tool = try workspace.makeTool(arguments: ["--hash"])
+
+        let wavHash = try tool.crc32(for: wav)
+        let flacHash = try tool.crc32(for: flac)
+        let mp3Hash = try tool.crc32(for: mp3)
+
+        try tool.stepUnifiedHash()
+
+        let hashedWAV = workspace.output.appendingPathComponent(wavHash).appendingPathExtension("wav")
+        let hashedFLAC = workspace.output.appendingPathComponent(flacHash).appendingPathExtension("flac")
+        let hashedMP3 = workspace.output.appendingPathComponent(mp3Hash).appendingPathExtension("mp3")
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: hashedWAV.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: hashedFLAC.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: hashedMP3.path))
+
+        XCTAssertFalse(FileManager.default.fileExists(atPath: wav.path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: flac.path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: mp3.path))
+
+        try tool.preflightWAVInput(hashedWAV)
+        try tool.preflightFLACInput(hashedFLAC)
+        XCTAssertNoThrow(try tool.requireVideoStream(hashedMP3))
+    }
+
     func testFullAudioPreparationPreservesOriginalWAVForExternalFLACVariants() async throws {
         let workspace = try IntegrationWorkspace()
         try workspace.requireCommands(["ffmpeg", "ffprobe"])

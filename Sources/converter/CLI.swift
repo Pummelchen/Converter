@@ -3,6 +3,7 @@ import Foundation
 enum Action: String {
     case doctor
     case fadeout
+    case hash
     case full
     case runPix = "run_pix"
     case aipix
@@ -111,6 +112,8 @@ struct CLIOptions {
                 options.action = .doctor
             case "-fadeout":
                 options.action = .fadeout
+            case "--hash", "-hash":
+                options.action = .hash
             case "-full", "-run":
                 options.action = .full
             case "-run_pix":
@@ -265,7 +268,7 @@ struct CLIOptions {
     func printActionList() {
         let lines = [
             "Available actions:",
-            "  -doctor", "  -fadeout", "  -full", "  -run", "  -run_pix", "  -aipix", "  -clean", "  -fadewav",
+            "  --hash", "  -doctor", "  -fadeout", "  -full", "  -run", "  -run_pix", "  -aipix", "  -clean", "  -fadewav",
             "  -flactoalbum", "  -flactohash", "  -flactom4a", "  -flactomp3", "  -flactowav",
             "  -jpgtopng", "  -m4atoflac", "  -m4atomp3", "  -m4atomp4", "  -m4atowav",
             "  -matrix", "  -mp3clean", "  -mp3toalbum", "  -mp3toflac", "  -mp3tohash",
@@ -310,6 +313,7 @@ struct CLIOptions {
         """
         Usage:
           \(scriptName)
+          \(scriptName) --hash
           \(scriptName) -doctor
           \(scriptName) -fadeout 1:30 10
           \(scriptName) -full
@@ -340,6 +344,9 @@ struct CLIOptions {
         Manual actions by input type:
 
           Audio actions:
+            --hash
+              Input: any mix of .wav, .flac, and .mp3 files in SRC_DIR
+              Output: all found .wav, .flac, and .mp3 files renamed to CRC32-based filenames
             -flactowav
               Input: one or more .flac files in SRC_DIR
               Output: project-standard RF64 WAV files

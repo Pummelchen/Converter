@@ -843,12 +843,16 @@ extension ConverterTool {
         return String(format: "%08X", crc)
     }
 
-    func hashRename(ext: String) throws {
+    @discardableResult
+    func hashRename(ext: String, warnWhenEmpty: Bool = true) throws -> Int {
         let files = try self.files(in: cli.srcDir, matchingExtensions: [ext])
         if files.isEmpty {
-            logger.warn("No .\(ext) files found in '\(cli.srcDir.path)'.")
-            return
+            if warnWhenEmpty {
+                logger.warn("No .\(ext) files found in '\(cli.srcDir.path)'.")
+            }
+            return 0
         }
+        var processed = 0
         for file in files {
             switch ext {
             case "flac":
@@ -876,7 +880,9 @@ extension ConverterTool {
             try ensureWritableDirectory(destination.deletingLastPathComponent())
             try fileManager.moveItem(at: file, to: destination)
             logger.info("Renamed \(ext): \(file.basename) -> \(destination.basename)")
+            processed += 1
         }
+        return processed
     }
 
     func sortNatural(_ urls: [URL]) -> [URL] {
