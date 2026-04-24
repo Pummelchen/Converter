@@ -481,27 +481,40 @@ final class ConverterTool: @unchecked Sendable {
         Thread.sleep(forTimeInterval: cli.sleepSeconds)
     }
 
-    func files(in directory: URL, matchingExtensions extensions: [String]) throws -> [URL] {
-        let allowed = Set(extensions.map { $0.lowercasedASCII })
-        return try fileManager.contentsOfDirectory(at: directory, includingPropertiesForKeys: [.isRegularFileKey], options: [.skipsHiddenFiles])
+    private func discoveredFiles(in directory: URL) throws -> [URL] {
+        let urls: [URL]
+        if cli.recursive {
+            let enumerator = fileManager.enumerator(
+                at: directory,
+                includingPropertiesForKeys: [.isRegularFileKey],
+                options: [.skipsHiddenFiles]
+            )
+            urls = (enumerator?.allObjects as? [URL] ?? [])
+        } else {
+            urls = try fileManager.contentsOfDirectory(
+                at: directory,
+                includingPropertiesForKeys: [.isRegularFileKey],
+                options: [.skipsHiddenFiles]
+            )
+        }
+
+        return urls
             .filter { url in
                 guard let values = try? url.resourceValues(forKeys: [.isRegularFileKey]), values.isRegularFile == true else {
                     return false
                 }
-                return allowed.contains(url.pathExtension.lowercasedASCII)
+                return true
             }
-            .sorted { $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending }
+            .sorted { $0.path.localizedStandardCompare($1.path) == .orderedAscending }
+    }
+
+    func files(in directory: URL, matchingExtensions extensions: [String]) throws -> [URL] {
+        let allowed = Set(extensions.map { $0.lowercasedASCII })
+        return try discoveredFiles(in: directory).filter { allowed.contains($0.pathExtension.lowercasedASCII) }
     }
 
     func files(in directory: URL, predicate: (URL) -> Bool) throws -> [URL] {
-        try fileManager.contentsOfDirectory(at: directory, includingPropertiesForKeys: [.isRegularFileKey], options: [.skipsHiddenFiles])
-            .filter { url in
-                guard let values = try? url.resourceValues(forKeys: [.isRegularFileKey]), values.isRegularFile == true else {
-                    return false
-                }
-                return predicate(url)
-            }
-            .sorted { $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending }
+        try discoveredFiles(in: directory).filter(predicate)
     }
 
     func resolveExplicitPath(_ path: String, baseDirectory: URL) -> URL {

@@ -683,6 +683,33 @@ final class PipelineIntegrationTests: XCTestCase {
         XCTAssertNoThrow(try tool.requireVideoStream(hashedMP3))
     }
 
+    func testUnifiedHashRecursesIntoNestedDirectoriesByDefault() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe"])
+
+        let nested = workspace.output.appendingPathComponent("nested", isDirectory: true)
+        try FileManager.default.createDirectory(at: nested, withIntermediateDirectories: true)
+        let wav = nested.appendingPathComponent("deep.wav")
+        _ = try workspace.runner().run("ffmpeg", [
+            "-hide_banner", "-nostdin", "-v", "error", "-y",
+            "-f", "lavfi",
+            "-i", "sine=frequency=440:duration=1.0:sample_rate=44100",
+            "-ac", "2",
+            "-c:a", "pcm_s16le",
+            wav.path
+        ])
+
+        let tool = try workspace.makeTool(arguments: ["--hash"])
+        let expectedHash = try tool.crc32(for: wav)
+
+        try tool.stepUnifiedHash()
+
+        let hashed = workspace.output.appendingPathComponent(expectedHash).appendingPathExtension("wav")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: hashed.path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: wav.path))
+        try tool.preflightWAVInput(hashed)
+    }
+
     func testFullAudioPreparationPreservesOriginalWAVForExternalFLACVariants() async throws {
         let workspace = try IntegrationWorkspace()
         try workspace.requireCommands(["ffmpeg", "ffprobe"])
