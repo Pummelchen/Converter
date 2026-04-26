@@ -124,6 +124,44 @@ final class PipelineIntegrationTests: XCTestCase {
         }
     }
 
+    func testAudioTranscodesIgnoreAttachedVideoStreams() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe", "magick"])
+
+        let flacWithArtwork = try workspace.createFLACWithArtwork(name: "flac_artwork")
+        let mp3WithArtwork = try workspace.createMP3WithArtwork(name: "mp3_artwork")
+        let tool = try workspace.makeTool(arguments: ["-flactowav"])
+
+        XCTAssertNoThrow(try tool.requireVideoStream(flacWithArtwork), "FLAC fixture should contain attached artwork.")
+        XCTAssertNoThrow(try tool.requireVideoStream(mp3WithArtwork), "MP3 fixture should contain attached artwork.")
+        XCTAssertNoThrow(try tool.preflightFLACInput(flacWithArtwork))
+        XCTAssertNoThrow(try tool.preflightMP3Input(mp3WithArtwork))
+
+        let wavFromFLAC = try tool.convertFLACToWAV(flacWithArtwork)
+        try tool.verifyWAVStandard(wavFromFLAC, qcPolicy: nil)
+        XCTAssertThrowsError(try tool.requireVideoStream(wavFromFLAC), "WAV output should contain audio only.")
+
+        let wavFromMP3 = try tool.convertMP3ToWAV(mp3WithArtwork)
+        try tool.verifyWAVStandard(wavFromMP3, qcPolicy: nil)
+        XCTAssertThrowsError(try tool.requireVideoStream(wavFromMP3), "WAV output should contain audio only.")
+    }
+
+    func testExternalFLACVariantStreamCopiesAudioOnlyFromFLACWithArtwork() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe", "magick"])
+
+        let source = try workspace.createFLACWithArtwork(name: "external_flac_artwork")
+        let output = workspace.output.appendingPathComponent("external_flac_artwork_RF64").appendingPathExtension("flac")
+        let tool = try workspace.makeTool(arguments: ["-flactowav"])
+
+        XCTAssertNoThrow(try tool.requireVideoStream(source), "FLAC fixture should contain attached artwork.")
+        let created = try tool.createExternalFLACVariant(source: source, output: output)
+
+        try tool.verifyFLACFile(created, qcPolicy: nil)
+        XCTAssertThrowsError(try tool.requireVideoStream(created), "External FLAC output should contain audio only.")
+        try tool.verifyCanonicalPCMSampleEquivalence(source: source, output: created, label: "External FLAC", format: .s24le)
+    }
+
     func testImageConversionsAndDerivativesProduceVerifiedOutputs() throws {
         let workspace = try IntegrationWorkspace()
         try workspace.requireCommands(["magick", "ffmpeg", "ffprobe"])

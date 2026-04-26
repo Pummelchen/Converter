@@ -321,6 +321,27 @@ final class IntegrationWorkspace {
         return target
     }
 
+    func createFLACWithArtwork(name: String, duration: Double = 1.2, frequency: Int = 440) throws -> URL {
+        let audio = try createAudio(name: "\(name)_audio", ext: "flac", duration: duration, frequency: frequency)
+        let cover = try createImage(name: "\(name)_cover", ext: "png", width: 320, height: 320)
+        let target = output.appendingPathComponent(name).appendingPathExtension("flac")
+        _ = try runner().run("ffmpeg", [
+            "-hide_banner", "-nostdin", "-v", "error", "-y",
+            "-i", audio.path,
+            "-i", cover.path,
+            "-map", "0:a:0",
+            "-map", "1:v:0",
+            "-c:a", "copy",
+            "-c:v", "png",
+            "-disposition:v:0", "attached_pic",
+            "-metadata:s:v", "title=Album cover",
+            "-metadata:s:v", "comment=Cover (front)",
+            target.path
+        ])
+        try? fileManager.removeItem(at: audio)
+        return target
+    }
+
     func createHotMP3WithArtwork(name: String, duration: Double = 1.2, frequency: Int = 440, gainDB: Double = 24) throws -> URL {
         let audio = output.appendingPathComponent("\(name)_audio").appendingPathExtension("mp3")
         let cover = try createImage(name: "\(name)_cover", ext: "png", width: 320, height: 320)

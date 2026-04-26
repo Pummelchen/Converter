@@ -694,12 +694,21 @@ extension ConverterTool {
         do {
             let ext = source.pathExtension.lowercasedASCII
             if ext == "flac" {
-                try copyFileIntoTemp(source, temp: temp)
+                _ = try runner.run("ffmpeg", [
+                    "-hide_banner", "-nostdin", "-v", "error", "-y",
+                    "-i", source.path,
+                    "-map", "0:a:0",
+                    "-vn",
+                    "-c:a", "copy",
+                    "-map_metadata", "0",
+                    temp.path
+                ])
             } else {
                 _ = try runner.run("ffmpeg", [
                     "-hide_banner", "-nostdin", "-v", "error", "-y",
                     "-i", source.path,
                     "-map", "0:a:0",
+                    "-vn",
                     "-c:a", "flac",
                     "-compression_level", String(config.flacCompressionLevel),
                     temp.path

@@ -379,14 +379,14 @@ extension ConverterTool {
         }
     }
 
-    func preflightFLACInput(_ file: URL, requireAudible: Bool = true) throws {
+    func preflightFLACInput(_ file: URL, requireAudible: Bool = true, requireNoVideo: Bool = false) throws {
         guard file.pathExtension.lowercasedASCII == "flac" else {
             throw AppError("Expected .flac input: \(file.path)")
         }
-        try preflightAudioInput(file, expectedContainerTokens: ["flac"], expectedAudioCodecs: ["flac"], requireNoVideo: true, requireAudible: requireAudible)
+        try preflightAudioInput(file, expectedContainerTokens: ["flac"], expectedAudioCodecs: ["flac"], requireNoVideo: requireNoVideo, requireAudible: requireAudible)
     }
 
-    func preflightMP3Input(_ file: URL, requireAudible: Bool = true, requireNoVideo: Bool = true) throws {
+    func preflightMP3Input(_ file: URL, requireAudible: Bool = true, requireNoVideo: Bool = false) throws {
         guard file.pathExtension.lowercasedASCII == "mp3" else {
             throw AppError("Expected .mp3 input: \(file.path)")
         }
@@ -400,12 +400,12 @@ extension ConverterTool {
         try preflightAudioInput(file, expectedContainerTokens: ["m4a", "mp4", "ipod", "mov"], expectedAudioCodecs: ["aac"], requireNoVideo: true, requireAudible: requireAudible)
     }
 
-    func preflightWAVInput(_ file: URL, requireAudible: Bool = true) throws {
+    func preflightWAVInput(_ file: URL, requireAudible: Bool = true, requireNoVideo: Bool = false) throws {
         guard file.pathExtension.lowercasedASCII == "wav" else {
             throw AppError("Expected .wav input: \(file.path)")
         }
         try verifyWAVHeader(file, expectedContainer: "ANY")
-        try preflightAudioInput(file, expectedContainerTokens: ["wav"], expectedAudioCodecs: nil, requireNoVideo: true, requireAudible: requireAudible)
+        try preflightAudioInput(file, expectedContainerTokens: ["wav"], expectedAudioCodecs: nil, requireNoVideo: requireNoVideo, requireAudible: requireAudible)
     }
 
     func preflightVideoInput(_ file: URL, seconds: Int? = nil, expectedContainerTokens: [String]? = nil, requireAudio: Bool = true, requireAudibleAudio: Bool = true) throws {
@@ -643,8 +643,10 @@ extension ConverterTool {
     }
 
     func preflightWAVStandardInput(_ file: URL) throws {
-        try preflightWAVInput(file)
-        try verifyWAVStandard(file, qcPolicy: nil)
+        try preflightWAVInput(file, requireNoVideo: false)
+        try verifyWAVHeader(file, expectedContainer: "RF64")
+        try requireFormatNameContains(file, anyOf: ["wav"], label: "WAV container")
+        try verifyAudioOutput(file, codec: config.wavCodec, sampleRate: config.wavSampleRate, channels: config.wavChannels, qcPolicy: nil)
     }
 
     func verifyFLACFile(
@@ -652,9 +654,10 @@ extension ConverterTool {
         sampleRate: Int? = nil,
         channels: Int? = nil,
         requireAudible: Bool = true,
+        requireNoVideo: Bool = true,
         qcPolicy: AudioQCPolicy? = nil
     ) throws {
-        try preflightFLACInput(file, requireAudible: requireAudible)
+        try preflightFLACInput(file, requireAudible: requireAudible, requireNoVideo: requireNoVideo)
         try verifyAudioOutput(file, codec: "flac", sampleRate: sampleRate, channels: channels, requireAudible: requireAudible, qcPolicy: qcPolicy)
     }
 
