@@ -331,12 +331,14 @@ struct CLIOptions {
           Default action with no parameter, or use: -full / -run
           Source directory: '\(srcDir.path)'
           Required inputs:
-            - Exactly 1 source image.
-            - Recommended image format: .png
-            - Also accepted for full run: .jpg, .jpeg
+            - Either exactly 1 source image (.png/.jpg/.jpeg), or direct 8K PNG inputs:
+              Horizontal_8K.png for the main MP4 and optional Vertical_8K.png for the short MP4.
+            - If both Horizontal_8K.png and Vertical_8K.png are present, full run renders the main MP4 first,
+              then renders the short directly from Vertical_8K.png.
             - Exactly 1 source audio file: .flac or .wav or .mp3
           Full-run result:
             - Image deliverables: 8K/4K PNG, NFT PNGs, 3K/2K PNG, JPG exports
+              Direct Horizontal_8K.png/Vertical_8K.png inputs are used as-is and skip source-image derivation.
             - Audio/video deliverables: WAV, M4A, MP3, main MP4, short MP4
             - External audio deliverables: *_RF64.flac, *_RF64.wav, *_BW64.flac, *_BW64.wav
               These archival companions are delivery-only and are not reused as full-run source inputs.

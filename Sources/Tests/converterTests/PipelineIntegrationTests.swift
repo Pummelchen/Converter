@@ -1005,6 +1005,55 @@ final class PipelineIntegrationTests: XCTestCase {
         )
     }
 
+    func testFullPipelineUsesNamedHorizontalAndVertical8KPNGs() async throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe", "magick"])
+
+        _ = try workspace.createImage(name: "Horizontal_8K", ext: "png", width: 320, height: 180)
+        _ = try workspace.createImage(name: "Vertical_8K", ext: "png", width: 90, height: 160)
+        let sourceFLAC = try workspace.createAudio(name: "463406_B_PH", ext: "flac")
+
+        let tool = try workspace.makeTool()
+        defer { tool.cleanupTemps() }
+        try tool.initializeForExecution()
+        try await tool.stepFull()
+
+        let base = sourceFLAC.stem
+        let mainOutput = workspace.output.appendingPathComponent("\(base)_8K").appendingPathExtension("mp4")
+        let shortOutput = workspace.output.appendingPathComponent("\(base)_8K_Short").appendingPathExtension("mp4")
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: mainOutput.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: shortOutput.path))
+        XCTAssertFalse(
+            FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("Horizontal_8K_8K.png").path),
+            "Direct Horizontal_8K.png input should not be reprocessed as a generic source image."
+        )
+        try tool.verifyVideoOutput(
+            mainOutput,
+            width: tool.config.videoMP4Width,
+            height: tool.config.videoMP4Height,
+            codec: tool.config.videoMP4VerifyCodec,
+            pixelFormat: tool.config.videoMP4PixelFormat,
+            colorPrimaries: tool.config.videoColorPrimaries,
+            colorTransfer: tool.config.videoColorTransfer,
+            colorSpace: tool.config.videoColorSpace,
+            colorRange: tool.config.videoColorRange
+        )
+        try tool.verifyVideoOutput(
+            shortOutput,
+            width: tool.config.shortMP4ScaleW,
+            height: tool.config.shortMP4ScaleH,
+            codec: tool.config.shortMP4VerifyCodec,
+            pixelFormat: tool.config.shortMP4PixelFormat,
+            colorPrimaries: tool.config.videoColorPrimaries,
+            colorTransfer: tool.config.videoColorTransfer,
+            colorSpace: tool.config.videoColorSpace,
+            colorRange: tool.config.videoColorRange
+        )
+        try tool.verifySourceLoudnessPreserved(source: sourceFLAC, output: mainOutput)
+        try tool.verifySourceLoudnessPreserved(source: sourceFLAC, output: shortOutput)
+    }
+
     func testAlbumBuildFromAlbumFileCreatesVerifiedRF64Wave() throws {
         let workspace = try IntegrationWorkspace()
         try workspace.requireCommands(["ffmpeg", "ffprobe"])

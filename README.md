@@ -59,13 +59,16 @@ Use them with:
 
 ## Full Run Contract
 Place these inputs in `Output/`:
-- exactly 1 source image: `.png` preferred, `.jpg` and `.jpeg` also accepted
+- either exactly 1 source image: `.png` preferred, `.jpg` and `.jpeg` also accepted
+- or direct 8K PNG inputs: `Horizontal_8K.png` for the main MP4 and optional `Vertical_8K.png` for the short MP4
 - exactly 1 source audio file: `.flac`, `.wav`, or `.mp3`
 
 Then run:
 ```bash
 ./converter
 ```
+
+When both `Horizontal_8K.png` and `Vertical_8K.png` are present, full run renders the main MP4 first from `Horizontal_8K.png`, then renders the short MP4 directly from `Vertical_8K.png`. Direct 8K PNG inputs are used as-is and skip source-image derivative generation.
 
 Full run produces:
 - image deliverables: 8K/4K PNG, NFT PNGs, 3K/2K PNG, JPG exports

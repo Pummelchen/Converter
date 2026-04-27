@@ -221,6 +221,11 @@ struct ImageArtifacts {
     let twoK: URL
 }
 
+struct FullRunImageArtifacts {
+    let mainVideoImage: URL
+    let shortVideoImage: URL?
+}
+
 struct AIPixOutputs: Sendable {
     let eightK: URL
     let fourK: URL

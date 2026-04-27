@@ -88,16 +88,61 @@ extension ConverterTool {
         return candidates[0]
     }
 
+    func isNamedFullRunImage(_ file: URL) -> Bool {
+        let name = file.lastPathComponent.lowercasedASCII
+        return name == "horizontal_8k.png" || name == "vertical_8k.png"
+    }
+
+    func namedFullRunImage(_ basename: String) throws -> URL? {
+        let direct = cli.srcDir.appendingPathComponent(basename)
+        if fileManager.fileExists(atPath: direct.path) {
+            return direct
+        }
+
+        let normalizedName = basename.lowercasedASCII
+        let matches = try files(in: cli.srcDir) {
+            $0.lastPathComponent.lowercasedASCII == normalizedName
+        }
+        guard matches.count <= 1 else {
+            throw AppError("Expected at most one \(basename) in '\(cli.srcDir.path)'.")
+        }
+        return matches.first
+    }
+
+    func verifyFullRunImage(_ image: URL, width: Int, height: Int, label: String) throws {
+        try preflightPNGInput(image)
+        guard let dimensions = try imageDimensions(image) else {
+            throw AppError("Unable to read dimensions for \(label): \(image.path)")
+        }
+        if dimensions.0 != width || dimensions.1 != height {
+            throw AppError("\(label) must be \(width)x\(height). Got '\(dimensions.0)x\(dimensions.1)' for '\(image.path)'.")
+        }
+    }
+
     func resolveFullImage() throws -> URL {
         let candidates = try files(in: cli.srcDir, matchingExtensions: ["png", "jpg", "jpeg"])
+            .filter { !isNamedFullRunImage($0) }
         guard candidates.count == 1, let source = candidates.first else {
-            throw AppError("Full pipeline expects exactly one source image (.png/.jpg/.jpeg) in '\(cli.srcDir.path)'.")
+            throw AppError("Full pipeline expects either Horizontal_8K.png for direct render or exactly one source image (.png/.jpg/.jpeg) in '\(cli.srcDir.path)'.")
         }
         return source
     }
 
     func resolveShortRenderImage() throws -> URL {
-        let existing8K = try files(in: cli.srcDir) { $0.pathExtension.lowercasedASCII == "png" && $0.stem.hasSuffix("_8K") }
+        if let vertical = try namedFullRunImage("Vertical_8K.png") {
+            try verifyFullRunImage(vertical, width: config.shortMP4ScaleW, height: config.shortMP4ScaleH, label: "Vertical_8K.png")
+            return vertical
+        }
+        if let horizontal = try namedFullRunImage("Horizontal_8K.png") {
+            try verifyFullRunImage(horizontal, width: config.videoMP4Width, height: config.videoMP4Height, label: "Horizontal_8K.png")
+            return horizontal
+        }
+
+        let existing8K = try files(in: cli.srcDir) {
+            $0.pathExtension.lowercasedASCII == "png"
+                && $0.stem.hasSuffix("_8K")
+                && !isNamedFullRunImage($0)
+        }
         if existing8K.count > 1 {
             throw AppError("Expected at most one *_8K.png in '\(cli.srcDir.path)' for short rendering.")
         }
@@ -116,6 +161,30 @@ extension ConverterTool {
         }
         logger.info("Short step: create 8K image")
         return try aipixFile(sourcePNG).eightK
+    }
+
+    func fullRunImageArtifacts() async throws -> FullRunImageArtifacts {
+        let horizontal = try namedFullRunImage("Horizontal_8K.png")
+        let vertical = try namedFullRunImage("Vertical_8K.png")
+
+        if let horizontal {
+            try verifyFullRunImage(horizontal, width: config.videoMP4Width, height: config.videoMP4Height, label: "Horizontal_8K.png")
+            logger.info("Full step: use Horizontal_8K.png for main MP4")
+            if let vertical {
+                try verifyFullRunImage(vertical, width: config.shortMP4ScaleW, height: config.shortMP4ScaleH, label: "Vertical_8K.png")
+                logger.info("Full step: use Vertical_8K.png for short MP4")
+            }
+            return FullRunImageArtifacts(mainVideoImage: horizontal, shortVideoImage: vertical)
+        }
+
+        if let vertical {
+            try verifyFullRunImage(vertical, width: config.shortMP4ScaleW, height: config.shortMP4ScaleH, label: "Vertical_8K.png")
+            logger.info("Full step: use Vertical_8K.png for short MP4")
+        }
+
+        let sourceImage = try resolveFullImage()
+        let generated = try await fullImagePipeline(sourceImage: sourceImage)
+        return FullRunImageArtifacts(mainVideoImage: generated.eightK, shortVideoImage: vertical)
     }
 
     func shouldPreferM4AIntermediateForMP3Short() -> Bool {
@@ -252,12 +321,10 @@ extension ConverterTool {
 
     func stepFull() async throws {
         logger.info("Full pipeline start")
-        let image = try resolveFullImage()
         let audio = try resolveFullAudio()
-        logger.info("Source image: \(image.basename)")
         logger.info("Source audio: \(audio.basename)")
 
-        async let imageArtifactsTask = fullImagePipeline(sourceImage: image)
+        async let imageArtifactsTask = fullRunImageArtifacts()
         async let audioArtifactsTask = fullAudioPreparation(sourceAudio: audio)
 
         let imageArtifacts = try await imageArtifactsTask
@@ -266,13 +333,24 @@ extension ConverterTool {
         logger.info("Full step: M4A -> MP4")
         let mainVideo = try await withVideoPermit {
             try self.renderM4AToMP4(
-                imageFile: imageArtifacts.eightK,
+                imageFile: imageArtifacts.mainVideoImage,
                 audioFile: audioArtifacts.m4a,
                 audioQCPolicy: nil
             )
         }
-        logger.info("Full step: MP4 -> Short")
-        _ = try await withVideoPermit { try self.shortenMP4(mainVideo, audioQCPolicy: nil) }
+        if let shortImage = imageArtifacts.shortVideoImage {
+            logger.info("Full step: Vertical PNG -> Short")
+            _ = try await withVideoPermit {
+                try self.renderM4AToShortMP4(
+                    imageFile: shortImage,
+                    audioFile: audioArtifacts.m4a,
+                    audioQCPolicy: nil
+                )
+            }
+        } else {
+            logger.info("Full step: MP4 -> Short")
+            _ = try await withVideoPermit { try self.shortenMP4(mainVideo, audioQCPolicy: nil) }
+        }
         try cleanTransients()
         logger.info("Full pipeline complete")
     }

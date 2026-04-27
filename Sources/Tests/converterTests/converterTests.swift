@@ -24,7 +24,8 @@ final class converterTests: XCTestCase {
             scriptName: "converter"
         )
         let help = options.helpText()
-        XCTAssertTrue(help.contains("Exactly 1 source image"))
+        XCTAssertTrue(help.contains("Horizontal_8K.png"))
+        XCTAssertTrue(help.contains("Vertical_8K.png"))
         XCTAssertTrue(help.contains(".flac or .wav or .mp3"))
         XCTAssertTrue(help.contains("--hash"))
         XCTAssertTrue(help.contains("-mp3toflac"))
