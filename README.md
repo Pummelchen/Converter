@@ -101,5 +101,7 @@ That starts fading at `1:30`, reaches silence at `1:40`, truncates there, and wr
 
 ## Notes
 - media inputs are auto-discovered from `Output/` by default
+- source discovery is non-recursive; files inside subfolders of `Output/` are ignored
+- explicit output names and album entries must also resolve directly inside `Output/`, not a subfolder
 - `Output/` is intended as a manually cleaned working directory between runs
 - `Sources/.build/` remains ignored by Git

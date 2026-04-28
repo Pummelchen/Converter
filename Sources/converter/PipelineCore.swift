@@ -473,11 +473,20 @@ final class ConverterTool: @unchecked Sendable {
         try fileManager.copyItem(at: source, to: temp)
     }
 
-    func resolveOutputPath(_ output: String) -> URL {
-        if output.hasPrefix("/") {
-            return URL(fileURLWithPath: output)
+    func requireDirectChild(_ file: URL, of directory: URL, label: String) throws {
+        let parent = file.deletingLastPathComponent().standardizedFileURL.path
+        let base = directory.standardizedFileURL.path
+        if parent != base {
+            throw AppError("\(label) must stay directly in '\(directory.path)': \(file.path)")
         }
-        return cli.outDir.appendingPathComponent(output)
+    }
+
+    func resolveOutputPath(_ output: String) throws -> URL {
+        let resolved = output.hasPrefix("/")
+            ? URL(fileURLWithPath: output)
+            : cli.outDir.appendingPathComponent(output)
+        try requireDirectChild(resolved, of: cli.outDir, label: "Output path")
+        return resolved
     }
 
     // Optional pacing between batch operations for workflows that need slower external tool churn.
@@ -487,21 +496,11 @@ final class ConverterTool: @unchecked Sendable {
     }
 
     private func discoveredFiles(in directory: URL) throws -> [URL] {
-        let urls: [URL]
-        if cli.recursive {
-            let enumerator = fileManager.enumerator(
-                at: directory,
-                includingPropertiesForKeys: [.isRegularFileKey],
-                options: [.skipsHiddenFiles]
-            )
-            urls = (enumerator?.allObjects as? [URL] ?? [])
-        } else {
-            urls = try fileManager.contentsOfDirectory(
-                at: directory,
-                includingPropertiesForKeys: [.isRegularFileKey],
-                options: [.skipsHiddenFiles]
-            )
-        }
+        let urls = try fileManager.contentsOfDirectory(
+            at: directory,
+            includingPropertiesForKeys: [.isRegularFileKey],
+            options: [.skipsHiddenFiles]
+        )
 
         return urls
             .filter { url in
@@ -522,11 +521,12 @@ final class ConverterTool: @unchecked Sendable {
         try discoveredFiles(in: directory).filter(predicate)
     }
 
-    func resolveExplicitPath(_ path: String, baseDirectory: URL) -> URL {
-        if path.hasPrefix("/") {
-            return URL(fileURLWithPath: path)
-        }
-        return baseDirectory.appendingPathComponent(path)
+    func resolveExplicitPath(_ path: String, baseDirectory: URL) throws -> URL {
+        let resolved = path.hasPrefix("/")
+            ? URL(fileURLWithPath: path)
+            : baseDirectory.appendingPathComponent(path)
+        try requireDirectChild(resolved, of: baseDirectory, label: "Input path")
+        return resolved
     }
 
     func ffprobeValue(selector: String? = nil, entries: String, file: URL) throws -> String? {
@@ -759,7 +759,7 @@ final class ConverterTool: @unchecked Sendable {
         if cli.dotSize <= 0 || cli.maxAttempts <= 0 {
             throw AppError("DOT_SIZE and MAX_ATTEMPTS must be positive integers")
         }
-        let output = resolveOutputPath(cli.outputFile ?? "\(numDots).png")
+        let output = try resolveOutputPath(cli.outputFile ?? "\(numDots).png")
         let radius = cli.dotSize / 2
         var rng = VisualSubsRandom(seed: cli.seed ?? UInt64(Date().timeIntervalSince1970))
         let cellSize = max(1, cli.dotSize)

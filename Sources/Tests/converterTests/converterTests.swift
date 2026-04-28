@@ -65,6 +65,34 @@ final class converterTests: XCTestCase {
         }
     }
 
+    func testParserRejectsRecursiveDiscoveryFlag() throws {
+        let root = URL(fileURLWithPath: "/tmp/converter-test")
+        XCTAssertThrowsError(
+            try CLIOptions.parse(
+                arguments: ["--recursive"],
+                environment: [:],
+                scriptDirectory: root,
+                scriptName: "converter"
+            )
+        ) { error in
+            XCTAssertTrue(error.localizedDescription.contains("--recursive is no longer supported"))
+        }
+    }
+
+    func testExplicitPathsMustStayDirectlyInOutput() throws {
+        let tempDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: tempDirectory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: tempDirectory) }
+
+        let tool = try makeTool(tempDirectory: tempDirectory)
+        XCTAssertThrowsError(try tool.resolveOutputPath("nested/out.mp4")) { error in
+            XCTAssertTrue(error.localizedDescription.contains("Output path must stay directly"))
+        }
+        XCTAssertThrowsError(try tool.resolveExplicitPath("nested/track.wav", baseDirectory: tempDirectory)) { error in
+            XCTAssertTrue(error.localizedDescription.contains("Input path must stay directly"))
+        }
+    }
+
     func testMatrixTextMentionsCompletedAudioAndImageGraph() throws {
         let root = URL(fileURLWithPath: "/tmp/converter-test")
         let options = try CLIOptions.parse(

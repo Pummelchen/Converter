@@ -52,7 +52,7 @@ struct CLIOptions {
     var debug = false
     var verbose = false
     var overwrite = false
-    var recursive = true
+    var recursive = false
     var continueOnError = false
     var keepFullName = false
     var lowercasePrefix = false
@@ -196,7 +196,7 @@ struct CLIOptions {
             case "--lowercase-prefix":
                 options.lowercasePrefix = true
             case "--recursive":
-                options.recursive = true
+                throw AppError("--recursive is no longer supported. Converter only scans the current SRC_DIR/Output folder.")
             case "--no-recursive":
                 options.recursive = false
             case "--continue-on-error":
@@ -487,11 +487,13 @@ struct CLIOptions {
           --out-dir DIR
           --output-dir DIR
           --output-file FILE
+            FILE must resolve directly inside OUT_DIR; subfolders are rejected.
           --overwrite
           --keep-full-name
             Full source stems are now preserved by default for output safety.
           --lowercase-prefix
-          --recursive / --no-recursive
+          --no-recursive
+            Accepted for compatibility; scanning is always limited to the current SRC_DIR/Output folder.
           --continue-on-error
           --trailing-silence
           --sharpness FLOAT

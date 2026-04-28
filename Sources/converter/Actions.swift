@@ -604,14 +604,7 @@ extension ConverterTool {
     }
 
     func stepMP3Clean() throws {
-        let mp3Files: [URL]
-        if cli.recursive {
-            let enumerator = fileManager.enumerator(at: cli.srcDir, includingPropertiesForKeys: [.isRegularFileKey], options: [.skipsHiddenFiles])
-            mp3Files = (enumerator?.allObjects as? [URL] ?? []).filter { $0.pathExtension.lowercasedASCII == "mp3" }
-                .sorted { $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending }
-        } else {
-            mp3Files = try files(in: cli.srcDir, matchingExtensions: ["mp3"])
-        }
+        let mp3Files = try files(in: cli.srcDir, matchingExtensions: ["mp3"])
         _ = try processBatch(files: mp3Files, emptyMessage: "No .mp3 files found in '\(cli.srcDir.path)'.", failWhenEmpty: false) { file in
             self.logger.info("Clean MP3 metadata: \(file.basename)")
             try self.cleanMP3(file)

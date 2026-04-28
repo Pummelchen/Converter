@@ -53,7 +53,7 @@ extension ConverterTool {
         let inputAudioSampleRate = Int(try audioField(audioFile, "sample_rate") ?? "") ?? 0
         let canCopyAAC = inputAudioCodec == "aac" && inputAudioSampleRate == config.videoMP4AudioSampleRate
         let defaultName = "\(audioFile.stem)_8K.mp4"
-        let output = resolveOutputPath(cli.outputFile ?? defaultName)
+        let output = try resolveOutputPath(cli.outputFile ?? defaultName)
         if canReuseOutput(output, verifier: {
             try verifyVideoOutput(
                 output,

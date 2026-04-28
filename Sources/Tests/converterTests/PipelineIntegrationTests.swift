@@ -721,7 +721,7 @@ final class PipelineIntegrationTests: XCTestCase {
         XCTAssertNoThrow(try tool.requireVideoStream(hashedMP3))
     }
 
-    func testUnifiedHashRecursesIntoNestedDirectoriesByDefault() throws {
+    func testUnifiedHashIgnoresNestedDirectories() throws {
         let workspace = try IntegrationWorkspace()
         try workspace.requireCommands(["ffmpeg", "ffprobe"])
 
@@ -743,9 +743,8 @@ final class PipelineIntegrationTests: XCTestCase {
         try tool.stepUnifiedHash()
 
         let hashed = workspace.output.appendingPathComponent(expectedHash).appendingPathExtension("wav")
-        XCTAssertTrue(FileManager.default.fileExists(atPath: hashed.path))
-        XCTAssertFalse(FileManager.default.fileExists(atPath: wav.path))
-        try tool.preflightWAVInput(hashed)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: hashed.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: wav.path))
     }
 
     func testFullAudioPreparationPreservesOriginalWAVForExternalFLACVariants() async throws {

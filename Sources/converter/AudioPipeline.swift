@@ -970,7 +970,7 @@ extension ConverterTool {
                 continue
             }
             let candidateName = line.lowercasedASCII.hasSuffix(".\(ext)") ? line : line + ".\(ext)"
-            let file = resolveExplicitPath(candidateName, baseDirectory: cli.srcDir)
+            let file = try resolveExplicitPath(candidateName, baseDirectory: cli.srcDir)
             guard fileManager.fileExists(atPath: file.path) else {
                 logger.warn("Missing track, skipping: \(file.path)")
                 continue
@@ -994,7 +994,7 @@ extension ConverterTool {
         guard !entries.isEmpty else {
             throw AppError("No valid tracks found in '\(albumPath.path)'.")
         }
-        let output = resolveOutputPath(cli.outputFile ?? defaultOutputName)
+        let output = try resolveOutputPath(cli.outputFile ?? defaultOutputName)
         return try buildAlbum(from: entries, output: output)
     }
 
@@ -1006,7 +1006,7 @@ extension ConverterTool {
         for file in flacs {
             try preflightFLACInput(file)
         }
-        let output = resolveOutputPath(cli.outputFile ?? "album.wav")
+        let output = try resolveOutputPath(cli.outputFile ?? "album.wav")
         return try buildAlbum(from: flacs, output: output)
     }
 
