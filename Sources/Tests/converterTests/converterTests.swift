@@ -294,20 +294,28 @@ final class converterTests: XCTestCase {
         }
     }
 
-    func testTailFadeUsesExponentialCurve() throws {
+    func testFadeActionsUseDefaultNormalCurve() throws {
         let tempDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         try FileManager.default.createDirectory(at: tempDirectory, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: tempDirectory) }
 
         let tool = try makeTool(tempDirectory: tempDirectory, arguments: ["-fade", "5"])
-        let args = try tool.makeTailFadeFFmpegArguments(
+        let fadeArgs = try tool.makeTailFadeFFmpegArguments(
             source: tempDirectory.appendingPathComponent("song.flac"),
             fadeStartSeconds: 10,
             fadeDurationSeconds: 5,
             output: tempDirectory.appendingPathComponent("song_faded.flac")
         )
+        let fadeCutArgs = try tool.makeFadeCutFFmpegArguments(
+            source: tempDirectory.appendingPathComponent("song.flac"),
+            targetDuration: 20,
+            fadeStartSeconds: 10,
+            fadeDurationSeconds: 5,
+            output: tempDirectory.appendingPathComponent("song_fadecut.flac")
+        )
 
-        XCTAssertTrue(args.contains { $0.contains("curve=exp") })
+        XCTAssertFalse(fadeArgs.contains { $0.contains("curve=") })
+        XCTAssertFalse(fadeCutArgs.contains { $0.contains("curve=") })
     }
 
     func testFadeCutParsesCutAndFadeDurations() throws {

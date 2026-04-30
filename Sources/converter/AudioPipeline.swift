@@ -207,7 +207,7 @@ extension ConverterTool {
     }
 
     func makeTailFadeFFmpegArguments(source: URL, fadeStartSeconds: Double, fadeDurationSeconds: Double, output: URL) throws -> [String] {
-        let fadeFilter = "afade=t=out:st=\(String(format: "%.6f", fadeStartSeconds)):d=\(String(format: "%.6f", fadeDurationSeconds)):curve=exp"
+        let fadeFilter = "afade=t=out:st=\(String(format: "%.6f", fadeStartSeconds)):d=\(String(format: "%.6f", fadeDurationSeconds))"
         switch source.pathExtension.lowercasedASCII {
         case "flac":
             return [
@@ -257,7 +257,7 @@ extension ConverterTool {
     }
 
     func makeFadeCutFFmpegArguments(source: URL, targetDuration: Double, fadeStartSeconds: Double, fadeDurationSeconds: Double, output: URL) throws -> [String] {
-        let fadeFilter = "afade=t=out:st=\(String(format: "%.6f", fadeStartSeconds)):d=\(String(format: "%.6f", fadeDurationSeconds)):curve=exp"
+        let fadeFilter = "afade=t=out:st=\(String(format: "%.6f", fadeStartSeconds)):d=\(String(format: "%.6f", fadeDurationSeconds))"
         let targetSeconds = String(format: "%.6f", targetDuration)
         switch source.pathExtension.lowercasedASCII {
         case "flac":

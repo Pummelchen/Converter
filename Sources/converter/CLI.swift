@@ -448,7 +448,7 @@ struct CLIOptions {
             -fadecut CUT_SECONDS FADE_SECONDS
               Input: one or more audio files (.flac, .wav, .mp3) in SRC_DIR
               Output: same-format files ending in _fadecut after removing CUT_SECONDS from the end,
-                then applying a stronger exponential fade over the final FADE_SECONDS of the shortened file
+                then applying a normal fade over the final FADE_SECONDS of the shortened file
             -fadeout START DURATION
               Input: one or more audio files (.flac, .wav, .mp3, .m4a) in SRC_DIR
               Output: same-format files ending in _faded after fading from START for DURATION and truncating at START + DURATION

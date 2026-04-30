@@ -96,12 +96,12 @@ Example:
 ./converter -fade 5
 ```
 
-That uses an exponential fade over the final 5 seconds and writes new files with the `_faded` suffix:
+That uses a normal fade over the final 5 seconds and writes new files with the `_faded` suffix:
 - `.flac -> *_faded.flac`
 - `.wav -> *_faded.wav`
 - `.mp3 -> *_faded.mp3`
 
-Use `-fadecut CUT_SECONDS FADE_SECONDS` to remove time from the end first, then apply a stronger exponential fade to the new tail.
+Use `-fadecut CUT_SECONDS FADE_SECONDS` to remove time from the end first, then apply a normal fade to the new tail.
 
 Example:
 ```bash
