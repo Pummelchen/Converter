@@ -30,6 +30,7 @@ final class converterTests: XCTestCase {
         XCTAssertTrue(help.contains("--hash"))
         XCTAssertTrue(help.contains("-mp3toflac"))
         XCTAssertTrue(help.contains("-mp3toshort"))
+        XCTAssertTrue(help.contains("-fade [SECONDS]"))
         XCTAssertTrue(help.contains("-fadeout START DURATION"))
         XCTAssertTrue(help.contains("-m4atowav"))
         XCTAssertTrue(help.contains("-pngtojpg"))
@@ -242,6 +243,54 @@ final class converterTests: XCTestCase {
         XCTAssertEqual(spec.fadeStartSeconds, 90, accuracy: 0.0001)
         XCTAssertEqual(spec.fadeDurationSeconds, 10, accuracy: 0.0001)
         XCTAssertEqual(spec.endSeconds, 100, accuracy: 0.0001)
+    }
+
+    func testTailFadeParsesDefaultAndExplicitDuration() throws {
+        let root = URL(fileURLWithPath: "/tmp/converter-test")
+        let defaultOptions = try CLIOptions.parse(
+            arguments: ["-fade"],
+            environment: [:],
+            scriptDirectory: root,
+            scriptName: "converter"
+        )
+        XCTAssertEqual(defaultOptions.action, .fade)
+        XCTAssertEqual(try defaultOptions.tailFadeSeconds(), 10, accuracy: 0.0001)
+
+        let explicitOptions = try CLIOptions.parse(
+            arguments: ["-fade", "0:05"],
+            environment: [:],
+            scriptDirectory: root,
+            scriptName: "converter"
+        )
+        XCTAssertEqual(explicitOptions.action, .fade)
+        XCTAssertEqual(try explicitOptions.tailFadeSeconds(), 5, accuracy: 0.0001)
+    }
+
+    func testFadeFLACAliasNoLongerFallsThroughToFullRun() throws {
+        let root = URL(fileURLWithPath: "/tmp/converter-test")
+        let options = try CLIOptions.parse(
+            arguments: ["-fadeflac", "5"],
+            environment: [:],
+            scriptDirectory: root,
+            scriptName: "converter"
+        )
+
+        XCTAssertEqual(options.action, .fade)
+        XCTAssertEqual(try options.tailFadeSeconds(), 5, accuracy: 0.0001)
+    }
+
+    func testTailFadeRejectsTooManyArguments() throws {
+        let root = URL(fileURLWithPath: "/tmp/converter-test")
+        let options = try CLIOptions.parse(
+            arguments: ["-fade", "5", "10"],
+            environment: [:],
+            scriptDirectory: root,
+            scriptName: "converter"
+        )
+
+        XCTAssertThrowsError(try options.tailFadeSeconds()) { error in
+            XCTAssertTrue(error.localizedDescription.contains("at most one positional duration"))
+        }
     }
 
     func testFadeOutRejectsMissingArguments() throws {

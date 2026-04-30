@@ -619,6 +619,19 @@ extension ConverterTool {
         }
     }
 
+    func stepFade() throws {
+        let seconds = try cli.tailFadeSeconds()
+        let files = try audioTailFadeCandidates()
+        _ = try processBatch(
+            files: files,
+            emptyMessage: "No supported audio files (.flac, .wav, .mp3) found in '\(cli.srcDir.path)'.",
+            failWhenEmpty: true
+        ) { file in
+            self.logger.info("Fade tail \(file.basename): duration=\(self.actionTimeDisplay(seconds))")
+            return try self.fadeTailAudio(file, fadeSeconds: seconds)
+        }
+    }
+
     func stepFadeOut() throws {
         let spec = try cli.fadeOutSpec()
         let files = try audioFadeOutCandidates()
@@ -707,6 +720,8 @@ extension ConverterTool {
             try stepUnifiedHash()
         case .doctor:
             try stepDoctor()
+        case .fade:
+            try stepFade()
         case .fadeout:
             try stepFadeOut()
         case .help:

@@ -372,6 +372,31 @@ final class PipelineIntegrationTests: XCTestCase {
         try tool.verifyDuration(output, expectedSeconds: spec.endSeconds, label: "fadeout output")
     }
 
+    func testTailFadeProcessesMP3WAVAndFLACWithoutTruncating() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe"])
+
+        let mp3 = try workspace.createAudio(name: "tail_mp3", ext: "mp3", duration: 2.0)
+        let wav = try workspace.createAudio(name: "tail_wav", ext: "wav", duration: 2.0)
+        let flac = try workspace.createAudio(name: "tail_flac", ext: "flac", duration: 2.0)
+        let tool = try workspace.makeTool(arguments: ["-fade", "0.5"])
+
+        try tool.stepFade()
+
+        let mp3Out = workspace.output.appendingPathComponent("tail_mp3_faded.mp3")
+        let wavOut = workspace.output.appendingPathComponent("tail_wav_faded.wav")
+        let flacOut = workspace.output.appendingPathComponent("tail_flac_faded.flac")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: mp3Out.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: wavOut.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: flacOut.path))
+        try tool.verifyTailFadeOutput(mp3Out, sourceExtension: "mp3", expectedDuration: try XCTUnwrap(try tool.mediaDuration(mp3)))
+        try tool.verifyTailFadeOutput(wavOut, sourceExtension: "wav", expectedDuration: try XCTUnwrap(try tool.mediaDuration(wav)))
+        try tool.verifyTailFadeOutput(flacOut, sourceExtension: "flac", expectedDuration: try XCTUnwrap(try tool.mediaDuration(flac)))
+        XCTAssertThrowsError(try tool.requireVideoStream(mp3Out))
+        XCTAssertThrowsError(try tool.requireVideoStream(wavOut))
+        XCTAssertThrowsError(try tool.requireVideoStream(flacOut))
+    }
+
     func testMP3ToShortPreparesHighQualityIntermediatesAndBuildsShort() throws {
         let workspace = try IntegrationWorkspace()
         try workspace.requireCommands(["ffmpeg", "ffprobe", "magick"])
