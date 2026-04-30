@@ -632,6 +632,19 @@ extension ConverterTool {
         }
     }
 
+    func stepFadeCut() throws {
+        let spec = try cli.fadeCutSpec()
+        let files = try audioFadeCutCandidates()
+        _ = try processBatch(
+            files: files,
+            emptyMessage: "No supported audio files (.flac, .wav, .mp3) found in '\(cli.srcDir.path)'.",
+            failWhenEmpty: true
+        ) { file in
+            self.logger.info("Fadecut \(file.basename): cut=\(self.actionTimeDisplay(spec.cutSeconds)) fade=\(self.actionTimeDisplay(spec.fadeDurationSeconds))")
+            return try self.fadeCutAudio(file, spec: spec)
+        }
+    }
+
     func stepFadeOut() throws {
         let spec = try cli.fadeOutSpec()
         let files = try audioFadeOutCandidates()
@@ -722,6 +735,8 @@ extension ConverterTool {
             try stepDoctor()
         case .fade:
             try stepFade()
+        case .fadecut:
+            try stepFadeCut()
         case .fadeout:
             try stepFadeOut()
         case .help:

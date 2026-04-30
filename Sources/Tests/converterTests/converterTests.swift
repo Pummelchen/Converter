@@ -31,6 +31,7 @@ final class converterTests: XCTestCase {
         XCTAssertTrue(help.contains("-mp3toflac"))
         XCTAssertTrue(help.contains("-mp3toshort"))
         XCTAssertTrue(help.contains("-fade [SECONDS]"))
+        XCTAssertTrue(help.contains("-fadecut CUT_SECONDS FADE_SECONDS"))
         XCTAssertTrue(help.contains("-fadeout START DURATION"))
         XCTAssertTrue(help.contains("-m4atowav"))
         XCTAssertTrue(help.contains("-pngtojpg"))
@@ -290,6 +291,35 @@ final class converterTests: XCTestCase {
 
         XCTAssertThrowsError(try options.tailFadeSeconds()) { error in
             XCTAssertTrue(error.localizedDescription.contains("at most one positional duration"))
+        }
+    }
+
+    func testFadeCutParsesCutAndFadeDurations() throws {
+        let root = URL(fileURLWithPath: "/tmp/converter-test")
+        let options = try CLIOptions.parse(
+            arguments: ["-fadecut", "0:05", "10"],
+            environment: [:],
+            scriptDirectory: root,
+            scriptName: "converter"
+        )
+        let spec = try options.fadeCutSpec()
+
+        XCTAssertEqual(options.action, .fadecut)
+        XCTAssertEqual(spec.cutSeconds, 5, accuracy: 0.0001)
+        XCTAssertEqual(spec.fadeDurationSeconds, 10, accuracy: 0.0001)
+    }
+
+    func testFadeCutRejectsMissingArguments() throws {
+        let root = URL(fileURLWithPath: "/tmp/converter-test")
+        let options = try CLIOptions.parse(
+            arguments: ["-fadecut", "5"],
+            environment: [:],
+            scriptDirectory: root,
+            scriptName: "converter"
+        )
+
+        XCTAssertThrowsError(try options.fadeCutSpec()) { error in
+            XCTAssertTrue(error.localizedDescription.contains("requires two positional values"))
         }
     }
 

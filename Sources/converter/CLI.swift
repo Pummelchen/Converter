@@ -3,6 +3,7 @@ import Foundation
 enum Action: String {
     case doctor
     case fade
+    case fadecut
     case fadeout
     case hash
     case full
@@ -113,6 +114,8 @@ struct CLIOptions {
                 options.action = .doctor
             case "-fade", "-fadeflac":
                 options.action = .fade
+            case "-fadecut":
+                options.action = .fadecut
             case "-fadeout":
                 options.action = .fadeout
             case "--hash", "-hash":
@@ -282,10 +285,22 @@ struct CLIOptions {
         return seconds
     }
 
+    func fadeCutSpec() throws -> FadeCutSpec {
+        guard actionArgs.count == 2 else {
+            throw AppError("'-fadecut' requires two positional values: CUT_SECONDS FADE_SECONDS. Example: converter -fadecut 5 10")
+        }
+        let cutSeconds = try parseFlexibleTimecode(actionArgs[0], label: "cut duration")
+        let fadeDurationSeconds = try parseFlexibleTimecode(actionArgs[1], label: "fade duration")
+        guard fadeDurationSeconds > 0 else {
+            throw AppError("Fade duration must be greater than zero.")
+        }
+        return FadeCutSpec(cutSeconds: cutSeconds, fadeDurationSeconds: fadeDurationSeconds)
+    }
+
     func printActionList() {
         let lines = [
             "Available actions:",
-            "  --hash", "  -doctor", "  -fade", "  -fadeout", "  -full", "  -run", "  -run_pix", "  -aipix", "  -clean", "  -fadewav",
+            "  --hash", "  -doctor", "  -fade", "  -fadecut", "  -fadeout", "  -full", "  -run", "  -run_pix", "  -aipix", "  -clean", "  -fadewav",
             "  -flactoalbum", "  -flactohash", "  -flactom4a", "  -flactomp3", "  -flactowav",
             "  -jpgtopng", "  -m4atoflac", "  -m4atomp3", "  -m4atomp4", "  -m4atowav",
             "  -matrix", "  -mp3clean", "  -mp3toalbum", "  -mp3toflac", "  -mp3tohash",
@@ -333,6 +348,7 @@ struct CLIOptions {
           \(scriptName) --hash
           \(scriptName) -doctor
           \(scriptName) -fade 10
+          \(scriptName) -fadecut 5 10
           \(scriptName) -fadeout 1:30 10
           \(scriptName) -full
           \(scriptName) -flactomp3
@@ -429,6 +445,10 @@ struct CLIOptions {
               Output: full-length same-format files ending in _faded after fading the final SECONDS
               Default: 10 seconds when SECONDS is omitted
               Compatibility: -fadeflac is accepted as an alias for -fade
+            -fadecut CUT_SECONDS FADE_SECONDS
+              Input: one or more audio files (.flac, .wav, .mp3) in SRC_DIR
+              Output: same-format files ending in _fadecut after removing CUT_SECONDS from the end,
+                then applying a stronger exponential fade over the final FADE_SECONDS of the shortened file
             -fadeout START DURATION
               Input: one or more audio files (.flac, .wav, .mp3, .m4a) in SRC_DIR
               Output: same-format files ending in _faded after fading from START for DURATION and truncating at START + DURATION

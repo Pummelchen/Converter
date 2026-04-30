@@ -161,6 +161,11 @@ struct FadeOutSpec: Equatable, Sendable {
     }
 }
 
+struct FadeCutSpec: Equatable, Sendable {
+    let cutSeconds: Double
+    let fadeDurationSeconds: Double
+}
+
 func parseFlexibleTimecode(_ rawValue: String, label: String) throws -> Double {
     let value = rawValue.trimmed
     guard !value.isEmpty else {

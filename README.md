@@ -33,6 +33,7 @@ swift test --package-path Sources
 ./converter
 ./converter -matrix
 ./converter -fade 10
+./converter -fadecut 5 10
 ./converter -fadeout 1:30 10
 ./converter -mp3toshort
 ./converter -mp3clean
@@ -99,6 +100,18 @@ That fades the final 5 seconds and writes new files with the `_faded` suffix:
 - `.flac -> *_faded.flac`
 - `.wav -> *_faded.wav`
 - `.mp3 -> *_faded.mp3`
+
+Use `-fadecut CUT_SECONDS FADE_SECONDS` to remove time from the end first, then apply a stronger exponential fade to the new tail.
+
+Example:
+```bash
+./converter -fadecut 5 10
+```
+
+That removes the final 5 seconds, fades the final 10 seconds of the shortened file, and writes:
+- `.flac -> *_fadecut.flac`
+- `.wav -> *_fadecut.wav`
+- `.mp3 -> *_fadecut.mp3`
 
 Use `-fadeout START DURATION` to create truncated same-format fadeout files from supported audio sources in `Output/`.
 

@@ -397,6 +397,43 @@ final class PipelineIntegrationTests: XCTestCase {
         XCTAssertThrowsError(try tool.requireVideoStream(flacOut))
     }
 
+    func testFadeCutProcessesMP3WAVAndFLACWithShortenedDuration() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe"])
+
+        let mp3 = try workspace.createAudio(name: "cut_mp3", ext: "mp3", duration: 3.0)
+        let wav = try workspace.createAudio(name: "cut_wav", ext: "wav", duration: 3.0)
+        let flac = try workspace.createAudio(name: "cut_flac", ext: "flac", duration: 3.0)
+        let tool = try workspace.makeTool(arguments: ["-fadecut", "0.5", "0.75"])
+
+        try tool.stepFadeCut()
+
+        let mp3Out = workspace.output.appendingPathComponent("cut_mp3_fadecut.mp3")
+        let wavOut = workspace.output.appendingPathComponent("cut_wav_fadecut.wav")
+        let flacOut = workspace.output.appendingPathComponent("cut_flac_fadecut.flac")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: mp3Out.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: wavOut.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: flacOut.path))
+        try tool.verifyTailFadeOutput(mp3Out, sourceExtension: "mp3", expectedDuration: try XCTUnwrap(try tool.mediaDuration(mp3)) - 0.5)
+        try tool.verifyTailFadeOutput(wavOut, sourceExtension: "wav", expectedDuration: try XCTUnwrap(try tool.mediaDuration(wav)) - 0.5)
+        try tool.verifyTailFadeOutput(flacOut, sourceExtension: "flac", expectedDuration: try XCTUnwrap(try tool.mediaDuration(flac)) - 0.5)
+        XCTAssertThrowsError(try tool.requireVideoStream(mp3Out))
+        XCTAssertThrowsError(try tool.requireVideoStream(wavOut))
+        XCTAssertThrowsError(try tool.requireVideoStream(flacOut))
+    }
+
+    func testFadeCutRejectsCutThatRemovesEntireSource() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe"])
+
+        _ = try workspace.createAudio(name: "too_short", ext: "wav", duration: 1.0)
+        let tool = try workspace.makeTool(arguments: ["-fadecut", "2", "0.5"])
+
+        XCTAssertThrowsError(try tool.stepFadeCut()) { error in
+            XCTAssertTrue(error.localizedDescription.contains("would remove the entire audio file"))
+        }
+    }
+
     func testMP3ToShortPreparesHighQualityIntermediatesAndBuildsShort() throws {
         let workspace = try IntegrationWorkspace()
         try workspace.requireCommands(["ffmpeg", "ffprobe", "magick"])

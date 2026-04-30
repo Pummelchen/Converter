@@ -117,17 +117,26 @@ extension ConverterTool {
         }
     }
 
+    func isFadeDerivedAudio(_ file: URL) -> Bool {
+        let stem = file.stem.lowercasedASCII
+        return stem.hasSuffix("_faded")
+            || stem.hasSuffix("_faded_rf64")
+            || stem.hasSuffix("_fadecut")
+    }
+
     func audioFadeOutCandidates() throws -> [URL] {
         try files(in: cli.srcDir, matchingExtensions: ["flac", "wav", "mp3", "m4a"])
-            .filter { !$0.stem.lowercasedASCII.hasSuffix("_faded") }
+            .filter { !isFadeDerivedAudio($0) }
     }
 
     func audioTailFadeCandidates() throws -> [URL] {
         try files(in: cli.srcDir, matchingExtensions: ["flac", "wav", "mp3"])
-            .filter {
-                let stem = $0.stem.lowercasedASCII
-                return !stem.hasSuffix("_faded") && !stem.hasSuffix("_faded_rf64")
-            }
+            .filter { !isFadeDerivedAudio($0) }
+    }
+
+    func audioFadeCutCandidates() throws -> [URL] {
+        try files(in: cli.srcDir, matchingExtensions: ["flac", "wav", "mp3"])
+            .filter { !isFadeDerivedAudio($0) }
     }
 
     func preflightFadeOutSource(_ source: URL) throws {
@@ -247,6 +256,60 @@ extension ConverterTool {
         }
     }
 
+    func makeFadeCutFFmpegArguments(source: URL, targetDuration: Double, fadeStartSeconds: Double, fadeDurationSeconds: Double, output: URL) throws -> [String] {
+        let fadeFilter = "afade=t=out:st=\(String(format: "%.6f", fadeStartSeconds)):d=\(String(format: "%.6f", fadeDurationSeconds)):curve=exp"
+        let targetSeconds = String(format: "%.6f", targetDuration)
+        switch source.pathExtension.lowercasedASCII {
+        case "flac":
+            return [
+                "-hide_banner", "-nostdin", "-v", "error", "-y",
+                "-i", source.path,
+                "-map", "0:a:0",
+                "-t", targetSeconds,
+                "-af", fadeFilter,
+                "-vn", "-sn", "-dn",
+                "-ac", String(config.flacChannels),
+                "-ar", String(config.flacSampleRate),
+                "-c:a", "flac",
+                "-compression_level", String(config.flacCompressionLevel),
+                output.path
+            ]
+        case "wav":
+            return [
+                "-hide_banner", "-nostdin", "-v", "error", "-y",
+                "-i", source.path,
+                "-map", "0:a:0",
+                "-t", targetSeconds,
+                "-af", fadeFilter,
+                "-vn", "-sn", "-dn",
+                "-ac", String(config.wavChannels),
+                "-ar", String(config.wavSampleRate),
+                "-c:a", config.wavCodec,
+                "-f", "wav",
+                "-rf64", "always",
+                "-write_bext", String(config.wavWriteBext),
+                output.path
+            ]
+        case "mp3":
+            try requireFFmpegEncoder("libmp3lame")
+            return [
+                "-hide_banner", "-nostdin", "-v", "error", "-y",
+                "-i", source.path,
+                "-map", "0:a:0",
+                "-t", targetSeconds,
+                "-af", fadeFilter,
+                "-vn", "-sn", "-dn",
+                "-ar", String(config.mp3SampleRate),
+                "-ac", String(config.mp3Channels),
+                "-c:a", "libmp3lame",
+                "-b:a", config.mp3Bitrate,
+                output.path
+            ]
+        default:
+            throw AppError("Unsupported fadecut source type: \(source.path)")
+        }
+    }
+
     func makeFadeOutFFmpegArguments(source: URL, targetDuration: Double, fadeStartSeconds: Double, fadeDurationSeconds: Double, output: URL) throws -> [String] {
         let fadeFilter = "afade=t=out:st=\(String(format: "%.6f", fadeStartSeconds)):d=\(String(format: "%.6f", fadeDurationSeconds))"
         let targetSeconds = String(format: "%.6f", targetDuration)
@@ -311,6 +374,46 @@ extension ConverterTool {
             ]
         default:
             throw AppError("Unsupported fadeout source type: \(source.path)")
+        }
+    }
+
+    func fadeCutAudio(_ source: URL, spec: FadeCutSpec) throws -> URL {
+        try preflightTailFadeSource(source)
+        guard let duration = try mediaDuration(source) else {
+            throw AppError("Unable to read source duration for fadecut: \(source.path)")
+        }
+        let targetDuration = duration - spec.cutSeconds
+        guard targetDuration > 0 else {
+            throw AppError("Fadecut would remove the entire audio file: cut=\(spec.cutSeconds)s duration=\(duration)s for \(source.basename)")
+        }
+
+        let fadeSeconds = min(spec.fadeDurationSeconds, targetDuration)
+        let fadeStart = max(0, targetDuration - fadeSeconds)
+        let output = cli.outDir.appendingPathComponent("\(source.stem)_fadecut").appendingPathExtension(source.pathExtension.lowercasedASCII)
+        if canReuseOutput(output, verifier: {
+            try self.verifyTailFadeOutput(output, sourceExtension: source.pathExtension, expectedDuration: targetDuration)
+        }) {
+            logger.info("Skip existing fadecut audio: \(output.basename)")
+            return output
+        }
+
+        let temp = try makeTemp(in: cli.outDir, stem: output.stem, ext: ".\(output.pathExtension)")
+        do {
+            _ = try runner.run("ffmpeg", try makeFadeCutFFmpegArguments(
+                source: source,
+                targetDuration: targetDuration,
+                fadeStartSeconds: fadeStart,
+                fadeDurationSeconds: fadeSeconds,
+                output: temp
+            ))
+            try verifyTailFadeOutput(temp, sourceExtension: source.pathExtension, expectedDuration: targetDuration)
+            try publishTemp(temp, to: output)
+            logger.info("Created fadecut audio: \(output.basename)")
+            return output
+        } catch {
+            try? fileManager.removeItem(at: temp)
+            state.unregister(tempFile: temp)
+            throw error
         }
     }
 
