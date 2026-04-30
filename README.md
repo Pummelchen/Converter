@@ -96,7 +96,7 @@ Example:
 ./converter -fade 5
 ```
 
-That fades the final 5 seconds and writes new files with the `_faded` suffix:
+That uses an exponential fade over the final 5 seconds and writes new files with the `_faded` suffix:
 - `.flac -> *_faded.flac`
 - `.wav -> *_faded.wav`
 - `.mp3 -> *_faded.mp3`

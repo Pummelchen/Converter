@@ -294,6 +294,22 @@ final class converterTests: XCTestCase {
         }
     }
 
+    func testTailFadeUsesExponentialCurve() throws {
+        let tempDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: tempDirectory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: tempDirectory) }
+
+        let tool = try makeTool(tempDirectory: tempDirectory, arguments: ["-fade", "5"])
+        let args = try tool.makeTailFadeFFmpegArguments(
+            source: tempDirectory.appendingPathComponent("song.flac"),
+            fadeStartSeconds: 10,
+            fadeDurationSeconds: 5,
+            output: tempDirectory.appendingPathComponent("song_faded.flac")
+        )
+
+        XCTAssertTrue(args.contains { $0.contains("curve=exp") })
+    }
+
     func testFadeCutParsesCutAndFadeDurations() throws {
         let root = URL(fileURLWithPath: "/tmp/converter-test")
         let options = try CLIOptions.parse(

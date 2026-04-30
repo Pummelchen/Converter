@@ -207,7 +207,7 @@ extension ConverterTool {
     }
 
     func makeTailFadeFFmpegArguments(source: URL, fadeStartSeconds: Double, fadeDurationSeconds: Double, output: URL) throws -> [String] {
-        let fadeFilter = "afade=t=out:st=\(String(format: "%.6f", fadeStartSeconds)):d=\(String(format: "%.6f", fadeDurationSeconds))"
+        let fadeFilter = "afade=t=out:st=\(String(format: "%.6f", fadeStartSeconds)):d=\(String(format: "%.6f", fadeDurationSeconds)):curve=exp"
         switch source.pathExtension.lowercasedASCII {
         case "flac":
             return [
