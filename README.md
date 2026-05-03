@@ -44,6 +44,9 @@ Short outputs are hard-capped at 58 seconds.
 For `-mp3toshort`, a portrait `*_8K.png` is rendered directly to the short output; a landscape `*_8K.png` still follows the main-video-plus-short path.
 Conversions preserve source loudness by default instead of remastering it down during normal pipeline work, including `-mp3toshort`.
 
+## Hash Rename
+Use `./converter --hash` to rename `.wav`, `.flac`, `.mp3`, and `.mp4` files in `Output/` to CRC32-based filenames after media preflight.
+
 ## Profiles
 Built-in profiles:
 - `youtube_master`

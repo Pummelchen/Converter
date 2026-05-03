@@ -28,6 +28,7 @@ final class converterTests: XCTestCase {
         XCTAssertTrue(help.contains("Vertical_8K.png"))
         XCTAssertTrue(help.contains(".flac or .wav or .mp3"))
         XCTAssertTrue(help.contains("--hash"))
+        XCTAssertTrue(help.contains(".wav, .flac, .mp3, and .mp4"))
         XCTAssertTrue(help.contains("-mp3toflac"))
         XCTAssertTrue(help.contains("-mp3toshort"))
         XCTAssertTrue(help.contains("-fade [SECONDS]"))

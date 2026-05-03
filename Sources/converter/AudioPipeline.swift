@@ -1096,6 +1096,8 @@ extension ConverterTool {
                 try preflightMP3Input(file, requireAudible: false, requireNoVideo: false)
             case "wav":
                 try preflightWAVInput(file)
+            case "mp4":
+                try preflightMP4Input(file, requireAudio: false, requireAudibleAudio: false)
             default:
                 break
             }

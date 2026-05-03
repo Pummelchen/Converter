@@ -751,36 +751,42 @@ final class PipelineIntegrationTests: XCTestCase {
         try tool.preflightWAVInput(hashed)
     }
 
-    func testUnifiedHashRenamesWAVFLACAndMP3Together() throws {
+    func testUnifiedHashRenamesWAVFLACMP3AndMP4Together() throws {
         let workspace = try IntegrationWorkspace()
         try workspace.requireCommands(["ffmpeg", "ffprobe", "magick"])
 
         let wav = try workspace.createPlainRIFFWAV(name: "mix_wave")
         let flac = try workspace.createAudio(name: "mix_flac", ext: "flac")
         let mp3 = try workspace.createMP3WithArtwork(name: "mix_mp3")
+        let mp4 = try workspace.createVideoMP4(name: "mix_video", duration: 1.2)
         let tool = try workspace.makeTool(arguments: ["--hash"])
 
         let wavHash = try tool.crc32(for: wav)
         let flacHash = try tool.crc32(for: flac)
         let mp3Hash = try tool.crc32(for: mp3)
+        let mp4Hash = try tool.crc32(for: mp4)
 
         try tool.stepUnifiedHash()
 
         let hashedWAV = workspace.output.appendingPathComponent(wavHash).appendingPathExtension("wav")
         let hashedFLAC = workspace.output.appendingPathComponent(flacHash).appendingPathExtension("flac")
         let hashedMP3 = workspace.output.appendingPathComponent(mp3Hash).appendingPathExtension("mp3")
+        let hashedMP4 = workspace.output.appendingPathComponent(mp4Hash).appendingPathExtension("mp4")
 
         XCTAssertTrue(FileManager.default.fileExists(atPath: hashedWAV.path))
         XCTAssertTrue(FileManager.default.fileExists(atPath: hashedFLAC.path))
         XCTAssertTrue(FileManager.default.fileExists(atPath: hashedMP3.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: hashedMP4.path))
 
         XCTAssertFalse(FileManager.default.fileExists(atPath: wav.path))
         XCTAssertFalse(FileManager.default.fileExists(atPath: flac.path))
         XCTAssertFalse(FileManager.default.fileExists(atPath: mp3.path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: mp4.path))
 
         try tool.preflightWAVInput(hashedWAV)
         try tool.preflightFLACInput(hashedFLAC)
         XCTAssertNoThrow(try tool.requireVideoStream(hashedMP3))
+        try tool.preflightMP4Input(hashedMP4)
     }
 
     func testUnifiedHashIgnoresNestedDirectories() throws {

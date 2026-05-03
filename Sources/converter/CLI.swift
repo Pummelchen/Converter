@@ -381,8 +381,8 @@ struct CLIOptions {
 
           Audio actions:
             --hash
-              Input: any mix of .wav, .flac, and .mp3 files in SRC_DIR
-              Output: all found .wav, .flac, and .mp3 files renamed to CRC32-based filenames
+              Input: any mix of .wav, .flac, .mp3, and .mp4 files in SRC_DIR
+              Output: all found .wav, .flac, .mp3, and .mp4 files renamed to CRC32-based filenames
             -flactowav
               Input: one or more .flac files in SRC_DIR
               Output: project-standard RF64 WAV files

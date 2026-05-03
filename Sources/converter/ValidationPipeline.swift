@@ -420,9 +420,11 @@ extension ConverterTool {
         }
         let probeSeconds = String(seconds ?? config.preflightSeconds)
         _ = try runner.run("ffmpeg", ["-hide_banner", "-nostdin", "-v", "error", "-xerror", "-t", probeSeconds, "-i", file.path, "-f", "null", "-"])
-        let audioIsAudible = try verifyAudibleAudioTrack(file)
-        if requireAudio && requireAudibleAudio && !audioIsAudible {
-            throw AppError("Video verification failed: audio track appears silent or not meaningfully audible: \(file.path)")
+        if requireAudio && requireAudibleAudio {
+            let audioIsAudible = try verifyAudibleAudioTrack(file)
+            if !audioIsAudible {
+                throw AppError("Video verification failed: audio track appears silent or not meaningfully audible: \(file.path)")
+            }
         }
     }
 

@@ -686,13 +686,14 @@ extension ConverterTool {
     }
 
     func stepUnifiedHash() throws {
-        logger.info("Hash WAV, FLAC, and MP3 filenames")
+        logger.info("Hash WAV, FLAC, MP3, and MP4 filenames")
         let total =
             (try hashRename(ext: "wav", warnWhenEmpty: false)) +
             (try hashRename(ext: "flac", warnWhenEmpty: false)) +
-            (try hashRename(ext: "mp3", warnWhenEmpty: false))
+            (try hashRename(ext: "mp3", warnWhenEmpty: false)) +
+            (try hashRename(ext: "mp4", warnWhenEmpty: false))
         if total == 0 {
-            logger.warn("No .wav, .flac, or .mp3 files found in '\(cli.srcDir.path)'.")
+            logger.warn("No .wav, .flac, .mp3, or .mp4 files found in '\(cli.srcDir.path)'.")
         }
     }
 
