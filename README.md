@@ -32,6 +32,8 @@ swift test --package-path Sources
 ./converter -doctor
 ./converter
 ./converter -matrix
+./converter -bass
+./converter -bass 80 5
 ./converter -fade 10
 ./converter -fadecut 5 10
 ./converter -fadeout 1:30 10
@@ -46,6 +48,9 @@ Conversions preserve source loudness by default instead of remastering it down d
 
 ## Hash Rename
 Use `./converter --hash` to rename `.wav`, `.flac`, `.mp3`, and `.mp4` files in `Output/` to CRC32-based filenames after media preflight.
+
+## Bass Boost
+Use `./converter -bass` to create same-format `_bass` copies for `.flac`, `.wav`, `.mp3`, `.m4a`, and `.mp4` files in `Output/`. The default boosts bass around 80 Hz by 5 dB. Use `./converter -bass 80 5` to set frequency and gain manually; non-default settings use a settings-specific suffix such as `_bass_60Hz_7_5dB`.
 
 ## Profiles
 Built-in profiles:

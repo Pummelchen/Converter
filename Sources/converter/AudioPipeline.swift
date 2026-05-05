@@ -124,6 +124,17 @@ extension ConverterTool {
             || stem.hasSuffix("_fadecut")
     }
 
+    func isBassDerivedAudio(_ file: URL) -> Bool {
+        let stem = file.stem.lowercasedASCII
+        return stem.hasSuffix("_bass")
+            || (stem.contains("_bass_") && stem.hasSuffix("db"))
+    }
+
+    func audioBassCandidates() throws -> [URL] {
+        try files(in: cli.srcDir, matchingExtensions: ["flac", "wav", "mp3", "m4a", "mp4"])
+            .filter { !isBassDerivedAudio($0) }
+    }
+
     func audioFadeOutCandidates() throws -> [URL] {
         try files(in: cli.srcDir, matchingExtensions: ["flac", "wav", "mp3", "m4a"])
             .filter { !isFadeDerivedAudio($0) }
@@ -176,6 +187,51 @@ extension ConverterTool {
         }
     }
 
+    func preflightBassSource(_ source: URL) throws {
+        switch source.pathExtension.lowercasedASCII {
+        case "flac":
+            try preflightFLACInput(source, requireNoVideo: false)
+        case "wav":
+            try preflightWAVInput(source, requireNoVideo: false)
+        case "mp3":
+            try preflightMP3Input(source, requireNoVideo: false)
+        case "m4a":
+            try preflightAudioInput(
+                source,
+                expectedContainerTokens: ["m4a", "mp4", "ipod", "mov"],
+                expectedAudioCodecs: ["aac"],
+                requireNoVideo: false,
+                requireAudible: true
+            )
+        case "mp4":
+            try preflightAudioInput(
+                source,
+                expectedContainerTokens: ["mp4", "mov"],
+                expectedAudioCodecs: nil,
+                requireNoVideo: false,
+                requireAudible: true
+            )
+        default:
+            throw AppError("Unsupported bass source type: \(source.path)")
+        }
+    }
+
+    func bassOutputSuffix(for spec: BassBoostSpec) -> String {
+        if spec == BassBoostSpec(frequencyHz: BassBoostSpec.defaultFrequencyHz, gainDB: BassBoostSpec.defaultGainDB) {
+            return "_bass"
+        }
+        func safeComponent(_ value: Double) -> String {
+            ffmpegNumber(value)
+                .replacingOccurrences(of: "-", with: "m")
+                .replacingOccurrences(of: ".", with: "_")
+        }
+        return "_bass_\(safeComponent(spec.frequencyHz))Hz_\(safeComponent(spec.gainDB))dB"
+    }
+
+    func bassFilter(for spec: BassBoostSpec) -> String {
+        "bass=f=\(ffmpegNumber(spec.frequencyHz)):g=\(ffmpegNumber(spec.gainDB)):t=h:w=\(ffmpegNumber(spec.frequencyHz)):p=2:precision=f64"
+    }
+
     func verifyTailFadeOutput(_ file: URL, sourceExtension: String, expectedDuration: Double) throws {
         switch sourceExtension.lowercasedASCII {
         case "flac":
@@ -204,6 +260,141 @@ extension ConverterTool {
             throw AppError("Unsupported fadeout output type: \(file.path)")
         }
         try verifyDuration(file, expectedSeconds: expectedDuration, label: "fadeout output")
+    }
+
+    func verifyBassOutput(_ file: URL, source: URL) throws {
+        switch source.pathExtension.lowercasedASCII {
+        case "flac":
+            try verifyFLACFile(file, sampleRate: config.flacSampleRate, channels: config.flacChannels, qcPolicy: nil)
+        case "wav":
+            try verifyWAVStandard(file, qcPolicy: nil)
+        case "mp3":
+            try verifyMP3Standard(file, qcPolicy: nil)
+        case "m4a":
+            try verifyM4AFile(file, sampleRate: config.m4aSampleRate, channels: config.m4aChannels, qcPolicy: nil)
+        case "mp4":
+            try requireFormatNameContains(file, anyOf: ["mp4", "mov"], label: "MP4 container")
+            if (try? requireVideoStream(source)) != nil {
+                try verifyVideoOutput(file)
+            }
+            try verifyAudioOutput(file, codec: "aac", sampleRate: config.videoMP4AudioSampleRate, qcPolicy: nil)
+        default:
+            throw AppError("Unsupported bass output type: \(file.path)")
+        }
+        try verifyDurationMatch(source: source, output: file)
+    }
+
+    func makeBassFFmpegArguments(source: URL, spec: BassBoostSpec, output: URL) throws -> [String] {
+        let filter = bassFilter(for: spec)
+        switch source.pathExtension.lowercasedASCII {
+        case "flac":
+            return [
+                "-hide_banner", "-nostdin", "-v", "error", "-y",
+                "-i", source.path,
+                "-map", "0:a:0",
+                "-af", filter,
+                "-vn", "-sn", "-dn",
+                "-ac", String(config.flacChannels),
+                "-ar", String(config.flacSampleRate),
+                "-c:a", "flac",
+                "-compression_level", String(config.flacCompressionLevel),
+                output.path
+            ]
+        case "wav":
+            return [
+                "-hide_banner", "-nostdin", "-v", "error", "-y",
+                "-i", source.path,
+                "-map", "0:a:0",
+                "-af", filter,
+                "-vn", "-sn", "-dn",
+                "-ac", String(config.wavChannels),
+                "-ar", String(config.wavSampleRate),
+                "-c:a", config.wavCodec,
+                "-f", "wav",
+                "-rf64", "always",
+                "-write_bext", String(config.wavWriteBext),
+                output.path
+            ]
+        case "mp3":
+            try requireFFmpegEncoder("libmp3lame")
+            return [
+                "-hide_banner", "-nostdin", "-v", "error", "-y",
+                "-i", source.path,
+                "-map", "0:a:0",
+                "-af", filter,
+                "-vn", "-sn", "-dn",
+                "-ar", String(config.mp3SampleRate),
+                "-ac", String(config.mp3Channels),
+                "-c:a", "libmp3lame",
+                "-b:a", config.mp3Bitrate,
+                output.path
+            ]
+        case "m4a":
+            try requireFFmpegEncoder("aac")
+            return [
+                "-hide_banner", "-nostdin", "-v", "error", "-y",
+                "-i", source.path,
+                "-map", "0:a:0",
+                "-af", filter,
+                "-c:a", "aac",
+                "-b:a", config.m4aBitrate,
+                "-ar", String(config.m4aSampleRate),
+                "-ac", String(config.m4aChannels),
+                "-vn",
+                output.path
+            ]
+        case "mp4":
+            try requireFFmpegEncoder("aac")
+            return [
+                "-hide_banner", "-nostdin", "-v", "error", "-y",
+                "-i", source.path,
+                "-map", "0:v:0?",
+                "-map", "0:a:0",
+                "-af", filter,
+                "-c:v", "copy",
+                "-c:a", "aac",
+                "-b:a", config.videoMP4AudioBitrate,
+                "-ar", String(config.videoMP4AudioSampleRate),
+                "-sn", "-dn",
+                "-map_metadata", "0",
+                "-map_chapters", "0",
+                "-movflags", "+faststart",
+                output.path
+            ]
+        default:
+            throw AppError("Unsupported bass source type: \(source.path)")
+        }
+    }
+
+    func bassBoostMedia(_ source: URL, spec: BassBoostSpec) throws -> URL {
+        try preflightBassSource(source)
+        let filters = try ffmpegFilterSet()
+        guard filters.contains("bass") else {
+            throw AppError("Required ffmpeg filter is not available: bass")
+        }
+
+        let output = cli.outDir
+            .appendingPathComponent(source.stem + bassOutputSuffix(for: spec))
+            .appendingPathExtension(source.pathExtension.lowercasedASCII)
+        if canReuseOutput(output, verifier: {
+            try self.verifyBassOutput(output, source: source)
+        }) {
+            logger.info("Skip existing bass-boosted media: \(output.basename)")
+            return output
+        }
+
+        let temp = try makeTemp(in: cli.outDir, stem: output.stem, ext: ".\(output.pathExtension)")
+        do {
+            _ = try runner.run("ffmpeg", try makeBassFFmpegArguments(source: source, spec: spec, output: temp))
+            try verifyBassOutput(temp, source: source)
+            try publishTemp(temp, to: output)
+            logger.info("Created bass-boosted media: \(output.basename)")
+            return output
+        } catch {
+            try? fileManager.removeItem(at: temp)
+            state.unregister(tempFile: temp)
+            throw error
+        }
     }
 
     func makeTailFadeFFmpegArguments(source: URL, fadeStartSeconds: Double, fadeDurationSeconds: Double, output: URL) throws -> [String] {

@@ -372,6 +372,45 @@ final class PipelineIntegrationTests: XCTestCase {
         try tool.verifyDuration(output, expectedSeconds: spec.endSeconds, label: "fadeout output")
     }
 
+    func testBassBoostProcessesAudioAndMP4Inputs() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe"])
+
+        let mp3 = try workspace.createAudio(name: "bass_mp3", ext: "mp3", duration: 1.4, frequency: 60)
+        let wav = try workspace.createAudio(name: "bass_wav", ext: "wav", duration: 1.4, frequency: 60)
+        let flac = try workspace.createAudio(name: "bass_flac", ext: "flac", duration: 1.4, frequency: 60)
+        let m4a = try workspace.createAudio(name: "bass_m4a", ext: "m4a", duration: 1.4, frequency: 60)
+        let mp4 = try workspace.createVideoMP4(name: "bass_video", duration: 1.4, frequency: 60)
+        let tool = try workspace.makeTool(arguments: ["-bass", "80", "5"])
+
+        try tool.stepBass()
+
+        let mp3Out = workspace.output.appendingPathComponent("bass_mp3_bass.mp3")
+        let wavOut = workspace.output.appendingPathComponent("bass_wav_bass.wav")
+        let flacOut = workspace.output.appendingPathComponent("bass_flac_bass.flac")
+        let m4aOut = workspace.output.appendingPathComponent("bass_m4a_bass.m4a")
+        let mp4Out = workspace.output.appendingPathComponent("bass_video_bass.mp4")
+
+        for output in [mp3Out, wavOut, flacOut, m4aOut, mp4Out] {
+            XCTAssertTrue(FileManager.default.fileExists(atPath: output.path), "Missing \(output.lastPathComponent)")
+        }
+
+        try tool.verifyBassOutput(mp3Out, source: mp3)
+        try tool.verifyBassOutput(wavOut, source: wav)
+        try tool.verifyBassOutput(flacOut, source: flac)
+        try tool.verifyBassOutput(m4aOut, source: m4a)
+        try tool.verifyBassOutput(mp4Out, source: mp4)
+        XCTAssertNoThrow(try tool.requireVideoStream(mp4Out))
+    }
+
+    func testBassUsesSettingsSpecificSuffixForManualValues() throws {
+        let workspace = try IntegrationWorkspace()
+        let tool = try workspace.makeTool(arguments: ["-bass", "60", "7.5"])
+        XCTAssertEqual(try tool.cli.bassBoostSpec(), BassBoostSpec(frequencyHz: 60, gainDB: 7.5))
+        XCTAssertEqual(tool.bassOutputSuffix(for: try tool.cli.bassBoostSpec()), "_bass_60Hz_7_5dB")
+        XCTAssertEqual(tool.bassFilter(for: try tool.cli.bassBoostSpec()), "bass=f=60:g=7.5:t=h:w=60:p=2:precision=f64")
+    }
+
     func testTailFadeProcessesMP3WAVAndFLACWithoutTruncating() throws {
         let workspace = try IntegrationWorkspace()
         try workspace.requireCommands(["ffmpeg", "ffprobe"])

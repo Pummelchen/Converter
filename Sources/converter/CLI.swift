@@ -1,6 +1,7 @@
 import Foundation
 
 enum Action: String {
+    case bass
     case doctor
     case fade
     case fadecut
@@ -110,6 +111,8 @@ struct CLIOptions {
         while index < arguments.count {
             let argument = arguments[index]
             switch argument {
+            case "-bass":
+                options.action = .bass
             case "-doctor":
                 options.action = .doctor
             case "-fade", "-fadeflac":
@@ -297,10 +300,29 @@ struct CLIOptions {
         return FadeCutSpec(cutSeconds: cutSeconds, fadeDurationSeconds: fadeDurationSeconds)
     }
 
+    func bassBoostSpec() throws -> BassBoostSpec {
+        guard actionArgs.isEmpty || actionArgs.count == 2 else {
+            throw AppError("'-bass' accepts either no values or FREQUENCY_HZ GAIN_DB. Example: converter -bass 80 5")
+        }
+        if actionArgs.isEmpty {
+            return BassBoostSpec(
+                frequencyHz: BassBoostSpec.defaultFrequencyHz,
+                gainDB: BassBoostSpec.defaultGainDB
+            )
+        }
+        guard let frequency = Double(actionArgs[0]), frequency.isFinite, frequency > 0 else {
+            throw AppError("Bass frequency must be a positive number of Hz.")
+        }
+        guard let gain = Double(actionArgs[1]), gain.isFinite else {
+            throw AppError("Bass gain must be a finite number of dB.")
+        }
+        return BassBoostSpec(frequencyHz: frequency, gainDB: gain)
+    }
+
     func printActionList() {
         let lines = [
             "Available actions:",
-            "  --hash", "  -doctor", "  -fade", "  -fadecut", "  -fadeout", "  -full", "  -run", "  -run_pix", "  -aipix", "  -clean", "  -fadewav",
+            "  --hash", "  -bass", "  -doctor", "  -fade", "  -fadecut", "  -fadeout", "  -full", "  -run", "  -run_pix", "  -aipix", "  -clean", "  -fadewav",
             "  -flactoalbum", "  -flactohash", "  -flactom4a", "  -flactomp3", "  -flactowav",
             "  -jpgtopng", "  -m4atoflac", "  -m4atomp3", "  -m4atomp4", "  -m4atowav",
             "  -matrix", "  -mp3clean", "  -mp3toalbum", "  -mp3toflac", "  -mp3tohash",
@@ -346,6 +368,8 @@ struct CLIOptions {
         Usage:
           \(scriptName)
           \(scriptName) --hash
+          \(scriptName) -bass
+          \(scriptName) -bass 80 5
           \(scriptName) -doctor
           \(scriptName) -fade 10
           \(scriptName) -fadecut 5 10
@@ -383,6 +407,9 @@ struct CLIOptions {
             --hash
               Input: any mix of .wav, .flac, .mp3, and .mp4 files in SRC_DIR
               Output: all found .wav, .flac, .mp3, and .mp4 files renamed to CRC32-based filenames
+            -bass [FREQUENCY_HZ GAIN_DB]
+              Input: one or more .flac, .wav, .mp3, .m4a, or .mp4 files in SRC_DIR
+              Output: same-format files with bass boost applied; default is 0-80 Hz boosted by 5 dB
             -flactowav
               Input: one or more .flac files in SRC_DIR
               Output: project-standard RF64 WAV files

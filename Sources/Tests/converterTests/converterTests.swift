@@ -29,6 +29,8 @@ final class converterTests: XCTestCase {
         XCTAssertTrue(help.contains(".flac or .wav or .mp3"))
         XCTAssertTrue(help.contains("--hash"))
         XCTAssertTrue(help.contains(".wav, .flac, .mp3, and .mp4"))
+        XCTAssertTrue(help.contains("-bass [FREQUENCY_HZ GAIN_DB]"))
+        XCTAssertTrue(help.contains(".flac, .wav, .mp3, .m4a, or .mp4"))
         XCTAssertTrue(help.contains("-mp3toflac"))
         XCTAssertTrue(help.contains("-mp3toshort"))
         XCTAssertTrue(help.contains("-fade [SECONDS]"))
@@ -39,6 +41,50 @@ final class converterTests: XCTestCase {
         XCTAssertTrue(help.contains(".jpg or .jpeg"))
         XCTAssertFalse(help.contains("-jpegtopng"))
         XCTAssertFalse(help.contains("-pngtojpeg"))
+    }
+
+    func testBassParsesDefaultsAndManualValues() throws {
+        let root = URL(fileURLWithPath: "/tmp/converter-test")
+        let defaultOptions = try CLIOptions.parse(
+            arguments: ["-bass"],
+            environment: [:],
+            scriptDirectory: root,
+            scriptName: "converter"
+        )
+        XCTAssertEqual(defaultOptions.action, .bass)
+        XCTAssertEqual(try defaultOptions.bassBoostSpec(), BassBoostSpec(frequencyHz: 80, gainDB: 5))
+
+        let manualOptions = try CLIOptions.parse(
+            arguments: ["-bass", "60", "7.5"],
+            environment: [:],
+            scriptDirectory: root,
+            scriptName: "converter"
+        )
+        XCTAssertEqual(try manualOptions.bassBoostSpec(), BassBoostSpec(frequencyHz: 60, gainDB: 7.5))
+    }
+
+    func testBassRejectsInvalidArguments() throws {
+        let root = URL(fileURLWithPath: "/tmp/converter-test")
+        XCTAssertThrowsError(
+            try CLIOptions.parse(
+                arguments: ["-bass", "80"],
+                environment: [:],
+                scriptDirectory: root,
+                scriptName: "converter"
+            ).bassBoostSpec()
+        ) { error in
+            XCTAssertTrue(error.localizedDescription.contains("FREQUENCY_HZ GAIN_DB"))
+        }
+        XCTAssertThrowsError(
+            try CLIOptions.parse(
+                arguments: ["-bass", "0", "5"],
+                environment: [:],
+                scriptDirectory: root,
+                scriptName: "converter"
+            ).bassBoostSpec()
+        ) { error in
+            XCTAssertTrue(error.localizedDescription.contains("positive"))
+        }
     }
 
     func testResolveFullAudioPrefersHighestQualitySameStemSource() throws {

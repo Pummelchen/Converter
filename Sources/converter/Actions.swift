@@ -611,6 +611,19 @@ extension ConverterTool {
         }
     }
 
+    func stepBass() throws {
+        let spec = try cli.bassBoostSpec()
+        let files = try audioBassCandidates()
+        _ = try processBatch(
+            files: files,
+            emptyMessage: "No supported audio media files (.flac, .wav, .mp3, .m4a, .mp4) found in '\(cli.srcDir.path)'.",
+            failWhenEmpty: true
+        ) { file in
+            self.logger.info("Bass boost \(file.basename): frequency=\(ffmpegNumber(spec.frequencyHz))Hz gain=\(ffmpegNumber(spec.gainDB))dB")
+            return try self.bassBoostMedia(file, spec: spec)
+        }
+    }
+
     func stepFadeWAV() throws {
         let files = try files(in: cli.srcDir, matchingExtensions: ["wav"])
         _ = try processBatch(files: files, emptyMessage: "No .wav files found in '\(cli.srcDir.path)'.", failWhenEmpty: true) { file in
@@ -730,6 +743,8 @@ extension ConverterTool {
 
     func execute() async throws {
         switch cli.action {
+        case .bass:
+            try stepBass()
         case .hash:
             try stepUnifiedHash()
         case .doctor:

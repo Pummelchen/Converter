@@ -166,6 +166,23 @@ struct FadeCutSpec: Equatable, Sendable {
     let fadeDurationSeconds: Double
 }
 
+struct BassBoostSpec: Equatable, Sendable {
+    static let defaultFrequencyHz = 80.0
+    static let defaultGainDB = 5.0
+
+    let frequencyHz: Double
+    let gainDB: Double
+}
+
+func ffmpegNumber(_ value: Double) -> String {
+    if value.rounded(.towardZero) == value {
+        return String(Int(value))
+    }
+    return String(format: "%.6f", value)
+        .replacingOccurrences(of: #"0+$"#, with: "", options: .regularExpression)
+        .replacingOccurrences(of: #"\.$"#, with: "", options: .regularExpression)
+}
+
 func parseFlexibleTimecode(_ rawValue: String, label: String) throws -> Double {
     let value = rawValue.trimmed
     guard !value.isEmpty else {
