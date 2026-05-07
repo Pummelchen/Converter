@@ -7,6 +7,8 @@ enum Action: String {
     case fadecut
     case fadeout
     case hash
+    case loudness
+    case loudscan
     case full
     case runPix = "run_pix"
     case aipix
@@ -123,6 +125,10 @@ struct CLIOptions {
                 options.action = .fadeout
             case "--hash", "-hash":
                 options.action = .hash
+            case "-loudness":
+                options.action = .loudness
+            case "-loudscan":
+                options.action = .loudscan
             case "-full", "-run":
                 options.action = .full
             case "-run_pix":
@@ -319,13 +325,26 @@ struct CLIOptions {
         return BassBoostSpec(frequencyHz: frequency, gainDB: gain)
     }
 
+    func loudnessSpec() throws -> LoudnessSpec {
+        guard actionArgs.count == 1 else {
+            throw AppError("'-loudness' requires TARGET_LUFS. Example: converter -loudness -16")
+        }
+        guard let target = Double(actionArgs[0]), target.isFinite, target <= 0 else {
+            throw AppError("Loudness target must be a finite LUFS value at or below 0, for example -16.")
+        }
+        guard target >= -70 else {
+            throw AppError("Loudness target is too low for practical livestream normalization: \(target) LUFS")
+        }
+        return LoudnessSpec(targetLUFS: target)
+    }
+
     func printActionList() {
         let lines = [
             "Available actions:",
             "  --hash", "  -bass", "  -doctor", "  -fade", "  -fadecut", "  -fadeout", "  -full", "  -run", "  -run_pix", "  -aipix", "  -clean", "  -fadewav",
             "  -flactoalbum", "  -flactohash", "  -flactom4a", "  -flactomp3", "  -flactowav",
             "  -jpgtopng", "  -m4atoflac", "  -m4atomp3", "  -m4atomp4", "  -m4atowav",
-            "  -matrix", "  -mp3clean", "  -mp3toalbum", "  -mp3toflac", "  -mp3tohash",
+            "  -loudscan", "  -loudness", "  -matrix", "  -mp3clean", "  -mp3toalbum", "  -mp3toflac", "  -mp3tohash",
             "  -mp3tom4a", "  -mp3toshort", "  -mp3towav", "  -mp4toshort", "  -pngto2k", "  -pngto3k",
             "  -pngto3k1mb", "  -pngto3k5mb", "  -pngtojpg", "  -pngtonft", "  -pngtojpg1mb",
             "  -pngtojpg2mb", "  -pngtojpg20mb", "  -visualsubs", "  -wavtoalbum",
@@ -370,6 +389,8 @@ struct CLIOptions {
           \(scriptName) --hash
           \(scriptName) -bass
           \(scriptName) -bass 80 5
+          \(scriptName) -loudscan
+          \(scriptName) -loudness -16
           \(scriptName) -doctor
           \(scriptName) -fade 10
           \(scriptName) -fadecut 5 10
@@ -410,6 +431,12 @@ struct CLIOptions {
             -bass [FREQUENCY_HZ GAIN_DB]
               Input: one or more .flac, .wav, .mp3, .m4a, or .mp4 files in SRC_DIR
               Output: same-format files with bass boost applied; default is 0-80 Hz boosted by 5 dB
+            -loudscan
+              Input: one or more .flac, .wav, .mp3, .m4a, or .mp4 files in SRC_DIR
+              Output: four terminal report lines: average, lowest, highest, and top-3 loudest average
+            -loudness TARGET_LUFS
+              Input: one or more .flac, .wav, .mp3, .m4a, or .mp4 files in SRC_DIR
+              Output: same-format files normalized to TARGET_LUFS for livestream-consistent playback
             -flactowav
               Input: one or more .flac files in SRC_DIR
               Output: project-standard RF64 WAV files

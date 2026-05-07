@@ -411,6 +411,58 @@ final class PipelineIntegrationTests: XCTestCase {
         XCTAssertEqual(tool.bassFilter(for: try tool.cli.bassBoostSpec()), "bass=f=60:g=7.5:t=h:w=60:p=2:precision=f64")
     }
 
+    func testLoudScanReportsFourSummaryLines() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe"])
+
+        _ = try workspace.createHotAudio(name: "quiet_scan", ext: "wav", duration: 1.4, gainDB: -12)
+        _ = try workspace.createAudio(name: "middle_scan", ext: "flac", duration: 1.4)
+        _ = try workspace.createHotAudio(name: "loud_scan", ext: "mp3", duration: 1.4, gainDB: 6)
+        let tool = try workspace.makeTool(arguments: ["-loudscan"])
+
+        let lines = try tool.loudScanReportLines()
+
+        XCTAssertEqual(lines.count, 4)
+        XCTAssertTrue(lines[0].contains("Average loudness:"))
+        XCTAssertTrue(lines[1].contains("Lowest loudness:"))
+        XCTAssertTrue(lines[2].contains("Highest loudness:"))
+        XCTAssertTrue(lines[3].contains("Top 3 loudest average:"))
+        XCTAssertTrue(lines[1].contains("quiet_scan.wav"))
+        XCTAssertTrue(lines[2].contains("loud_scan.mp3"))
+    }
+
+    func testLoudnessNormalizeProcessesAudioAndMP4Inputs() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe"])
+
+        let mp3 = try workspace.createHotAudio(name: "level_mp3", ext: "mp3", duration: 1.4, gainDB: 6)
+        let wav = try workspace.createHotAudio(name: "level_wav", ext: "wav", duration: 1.4, gainDB: -6)
+        let flac = try workspace.createAudio(name: "level_flac", ext: "flac", duration: 1.4)
+        let m4a = try workspace.createHotAudio(name: "level_m4a", ext: "m4a", duration: 1.4, gainDB: 3)
+        let mp4 = try workspace.createVideoMP4(name: "level_video", duration: 1.4)
+        let tool = try workspace.makeTool(arguments: ["-loudness", "-18"])
+        let policy = tool.loudnessPolicy(targetLUFS: -18)
+
+        try tool.stepLoudness()
+
+        let mp3Out = workspace.output.appendingPathComponent("level_mp3_loudness_m18LUFS.mp3")
+        let wavOut = workspace.output.appendingPathComponent("level_wav_loudness_m18LUFS.wav")
+        let flacOut = workspace.output.appendingPathComponent("level_flac_loudness_m18LUFS.flac")
+        let m4aOut = workspace.output.appendingPathComponent("level_m4a_loudness_m18LUFS.m4a")
+        let mp4Out = workspace.output.appendingPathComponent("level_video_loudness_m18LUFS.mp4")
+
+        for output in [mp3Out, wavOut, flacOut, m4aOut, mp4Out] {
+            XCTAssertTrue(FileManager.default.fileExists(atPath: output.path), "Missing \(output.lastPathComponent)")
+        }
+
+        try tool.verifyLoudnessOutput(mp3Out, source: mp3, policy: policy)
+        try tool.verifyLoudnessOutput(wavOut, source: wav, policy: policy)
+        try tool.verifyLoudnessOutput(flacOut, source: flac, policy: policy)
+        try tool.verifyLoudnessOutput(m4aOut, source: m4a, policy: policy)
+        try tool.verifyLoudnessOutput(mp4Out, source: mp4, policy: policy)
+        XCTAssertNoThrow(try tool.requireVideoStream(mp4Out))
+    }
+
     func testTailFadeProcessesMP3WAVAndFLACWithoutTruncating() throws {
         let workspace = try IntegrationWorkspace()
         try workspace.requireCommands(["ffmpeg", "ffprobe"])

@@ -624,6 +624,25 @@ extension ConverterTool {
         }
     }
 
+    func stepLoudScan() throws {
+        for line in try loudScanReportLines() {
+            print(line)
+        }
+    }
+
+    func stepLoudness() throws {
+        let spec = try cli.loudnessSpec()
+        let files = try audioLoudnessCandidates()
+        _ = try processBatch(
+            files: files,
+            emptyMessage: "No supported audio media files (.flac, .wav, .mp3, .m4a, .mp4) found in '\(cli.srcDir.path)'.",
+            failWhenEmpty: true
+        ) { file in
+            self.logger.info("Loudness normalize \(file.basename): target=\(ffmpegNumber(spec.targetLUFS)) LUFS")
+            return try self.loudnessNormalizeMedia(file, spec: spec)
+        }
+    }
+
     func stepFadeWAV() throws {
         let files = try files(in: cli.srcDir, matchingExtensions: ["wav"])
         _ = try processBatch(files: files, emptyMessage: "No .wav files found in '\(cli.srcDir.path)'.", failWhenEmpty: true) { file in
@@ -747,6 +766,10 @@ extension ConverterTool {
             try stepBass()
         case .hash:
             try stepUnifiedHash()
+        case .loudscan:
+            try stepLoudScan()
+        case .loudness:
+            try stepLoudness()
         case .doctor:
             try stepDoctor()
         case .fade:

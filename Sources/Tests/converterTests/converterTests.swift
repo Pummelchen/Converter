@@ -31,6 +31,8 @@ final class converterTests: XCTestCase {
         XCTAssertTrue(help.contains(".wav, .flac, .mp3, and .mp4"))
         XCTAssertTrue(help.contains("-bass [FREQUENCY_HZ GAIN_DB]"))
         XCTAssertTrue(help.contains(".flac, .wav, .mp3, .m4a, or .mp4"))
+        XCTAssertTrue(help.contains("-loudscan"))
+        XCTAssertTrue(help.contains("-loudness TARGET_LUFS"))
         XCTAssertTrue(help.contains("-mp3toflac"))
         XCTAssertTrue(help.contains("-mp3toshort"))
         XCTAssertTrue(help.contains("-fade [SECONDS]"))
@@ -84,6 +86,50 @@ final class converterTests: XCTestCase {
             ).bassBoostSpec()
         ) { error in
             XCTAssertTrue(error.localizedDescription.contains("positive"))
+        }
+    }
+
+    func testLoudnessParsesTargetLUFS() throws {
+        let root = URL(fileURLWithPath: "/tmp/converter-test")
+        let options = try CLIOptions.parse(
+            arguments: ["-loudness", "-16"],
+            environment: [:],
+            scriptDirectory: root,
+            scriptName: "converter"
+        )
+        XCTAssertEqual(options.action, .loudness)
+        XCTAssertEqual(try options.loudnessSpec(), LoudnessSpec(targetLUFS: -16))
+
+        let scanOptions = try CLIOptions.parse(
+            arguments: ["-loudscan"],
+            environment: [:],
+            scriptDirectory: root,
+            scriptName: "converter"
+        )
+        XCTAssertEqual(scanOptions.action, .loudscan)
+    }
+
+    func testLoudnessRejectsInvalidTargets() throws {
+        let root = URL(fileURLWithPath: "/tmp/converter-test")
+        XCTAssertThrowsError(
+            try CLIOptions.parse(
+                arguments: ["-loudness"],
+                environment: [:],
+                scriptDirectory: root,
+                scriptName: "converter"
+            ).loudnessSpec()
+        ) { error in
+            XCTAssertTrue(error.localizedDescription.contains("TARGET_LUFS"))
+        }
+        XCTAssertThrowsError(
+            try CLIOptions.parse(
+                arguments: ["-loudness", "12"],
+                environment: [:],
+                scriptDirectory: root,
+                scriptName: "converter"
+            ).loudnessSpec()
+        ) { error in
+            XCTAssertTrue(error.localizedDescription.contains("at or below 0"))
         }
     }
 

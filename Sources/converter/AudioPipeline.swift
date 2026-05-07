@@ -135,6 +135,15 @@ extension ConverterTool {
             .filter { !isBassDerivedAudio($0) }
     }
 
+    func isLoudnessDerivedAudio(_ file: URL) -> Bool {
+        file.stem.lowercasedASCII.contains("_loudness_")
+    }
+
+    func audioLoudnessCandidates(includeDerived: Bool = false) throws -> [URL] {
+        let candidates = try files(in: cli.srcDir, matchingExtensions: ["flac", "wav", "mp3", "m4a", "mp4"])
+        return includeDerived ? candidates : candidates.filter { !isLoudnessDerivedAudio($0) }
+    }
+
     func audioFadeOutCandidates() throws -> [URL] {
         try files(in: cli.srcDir, matchingExtensions: ["flac", "wav", "mp3", "m4a"])
             .filter { !isFadeDerivedAudio($0) }
@@ -187,7 +196,7 @@ extension ConverterTool {
         }
     }
 
-    func preflightBassSource(_ source: URL) throws {
+    func preflightAudioMediaSource(_ source: URL) throws {
         switch source.pathExtension.lowercasedASCII {
         case "flac":
             try preflightFLACInput(source, requireNoVideo: false)
@@ -230,6 +239,64 @@ extension ConverterTool {
 
     func bassFilter(for spec: BassBoostSpec) -> String {
         "bass=f=\(ffmpegNumber(spec.frequencyHz)):g=\(ffmpegNumber(spec.gainDB)):t=h:w=\(ffmpegNumber(spec.frequencyHz)):p=2:precision=f64"
+    }
+
+    func loudnessPolicy(targetLUFS: Double, tolerance: Double = 0.8) -> AudioQCPolicy {
+        AudioQCPolicy(
+            name: "loudness-normalize",
+            targetLUFS: targetLUFS,
+            lufsTolerance: tolerance,
+            maxTruePeakDBTP: config.audioQCMaxTruePeakDBTP,
+            maxLoudnessRange: 50,
+            maxDCOffset: config.audioQCMaxDCOffset,
+            maxStereoImbalanceDB: max(config.audioQCMaxStereoImbalanceDB, 99),
+            maxClippedSamples: max(config.audioQCMaxClippedSamples, 1_000_000),
+            minimumAnalysisSeconds: 0.25
+        )
+    }
+
+    func loudnessOutputSuffix(for spec: LoudnessSpec) -> String {
+        let safeTarget = ffmpegNumber(spec.targetLUFS)
+            .replacingOccurrences(of: "-", with: "m")
+            .replacingOccurrences(of: ".", with: "_")
+        return "_loudness_\(safeTarget)LUFS"
+    }
+
+    func loudnessMeasurement(for file: URL) throws -> LoudnessScanEntry {
+        try preflightAudioMediaSource(file)
+        let result = try audioQCResult(for: file, policy: loudnessPolicy(targetLUFS: config.audioQCTargetLUFS, tolerance: 99))
+        guard let integrated = result.metrics.integratedLUFS, integrated.isFinite else {
+            throw AppError("Unable to measure integrated loudness for \(file.path)")
+        }
+        return LoudnessScanEntry(file: file, integratedLUFS: integrated)
+    }
+
+    func loudScanReportLines(entries: [LoudnessScanEntry]) throws -> [String] {
+        guard !entries.isEmpty else {
+            throw AppError("No loudness entries to report.")
+        }
+        let average = entries.map(\.integratedLUFS).reduce(0, +) / Double(entries.count)
+        let quietest = entries.min { $0.integratedLUFS < $1.integratedLUFS }!
+        let loudest = entries.max { $0.integratedLUFS < $1.integratedLUFS }!
+        let top3 = entries
+            .sorted { $0.integratedLUFS > $1.integratedLUFS }
+            .prefix(3)
+        let top3Average = top3.map(\.integratedLUFS).reduce(0, +) / Double(top3.count)
+        return [
+            String(format: "Average loudness: %.2f LUFS across %d files", average, entries.count),
+            String(format: "Lowest loudness: %.2f LUFS (%@)", quietest.integratedLUFS, quietest.file.basename),
+            String(format: "Highest loudness: %.2f LUFS (%@)", loudest.integratedLUFS, loudest.file.basename),
+            String(format: "Top 3 loudest average: %.2f LUFS", top3Average)
+        ]
+    }
+
+    func loudScanReportLines() throws -> [String] {
+        let files = try audioLoudnessCandidates(includeDerived: true)
+        guard !files.isEmpty else {
+            throw AppError("No supported audio media files (.flac, .wav, .mp3, .m4a, .mp4) found in '\(cli.srcDir.path)'.")
+        }
+        let entries = try files.map { try loudnessMeasurement(for: $0) }
+        return try loudScanReportLines(entries: entries)
     }
 
     func verifyTailFadeOutput(_ file: URL, sourceExtension: String, expectedDuration: Double) throws {
@@ -367,7 +434,7 @@ extension ConverterTool {
     }
 
     func bassBoostMedia(_ source: URL, spec: BassBoostSpec) throws -> URL {
-        try preflightBassSource(source)
+        try preflightAudioMediaSource(source)
         let filters = try ffmpegFilterSet()
         guard filters.contains("bass") else {
             throw AppError("Required ffmpeg filter is not available: bass")
@@ -389,6 +456,138 @@ extension ConverterTool {
             try verifyBassOutput(temp, source: source)
             try publishTemp(temp, to: output)
             logger.info("Created bass-boosted media: \(output.basename)")
+            return output
+        } catch {
+            try? fileManager.removeItem(at: temp)
+            state.unregister(tempFile: temp)
+            throw error
+        }
+    }
+
+    func verifyLoudnessOutput(_ file: URL, source: URL, policy: AudioQCPolicy) throws {
+        switch source.pathExtension.lowercasedASCII {
+        case "flac":
+            try verifyFLACFile(file, sampleRate: config.flacSampleRate, channels: config.flacChannels, qcPolicy: policy)
+        case "wav":
+            try verifyWAVStandard(file, qcPolicy: policy)
+        case "mp3":
+            try verifyMP3Standard(file, qcPolicy: policy)
+        case "m4a":
+            try verifyM4AFile(file, sampleRate: config.m4aSampleRate, channels: config.m4aChannels, qcPolicy: policy)
+        case "mp4":
+            try requireFormatNameContains(file, anyOf: ["mp4", "mov"], label: "MP4 container")
+            if (try? requireVideoStream(source)) != nil {
+                try verifyVideoOutput(file)
+            }
+            try verifyAudioOutput(file, codec: "aac", sampleRate: config.videoMP4AudioSampleRate, qcPolicy: policy)
+        default:
+            throw AppError("Unsupported loudness output type: \(file.path)")
+        }
+        try verifyDurationMatch(source: source, output: file)
+    }
+
+    func makeLoudnessFFmpegArguments(source: URL, filter: String, output: URL) throws -> [String] {
+        switch source.pathExtension.lowercasedASCII {
+        case "flac":
+            return [
+                "-hide_banner", "-nostdin", "-v", "error", "-y",
+                "-i", source.path,
+                "-map", "0:a:0",
+                "-af", filter,
+                "-vn", "-sn", "-dn",
+                "-ac", String(config.flacChannels),
+                "-ar", String(config.flacSampleRate),
+                "-c:a", "flac",
+                "-compression_level", String(config.flacCompressionLevel),
+                output.path
+            ]
+        case "wav":
+            return [
+                "-hide_banner", "-nostdin", "-v", "error", "-y",
+                "-i", source.path,
+                "-map", "0:a:0",
+                "-af", filter,
+                "-vn", "-sn", "-dn",
+                "-ac", String(config.wavChannels),
+                "-ar", String(config.wavSampleRate),
+                "-c:a", config.wavCodec,
+                "-f", "wav",
+                "-rf64", "always",
+                "-write_bext", String(config.wavWriteBext),
+                output.path
+            ]
+        case "mp3":
+            try requireFFmpegEncoder("libmp3lame")
+            return [
+                "-hide_banner", "-nostdin", "-v", "error", "-y",
+                "-i", source.path,
+                "-map", "0:a:0",
+                "-af", filter,
+                "-vn", "-sn", "-dn",
+                "-ar", String(config.mp3SampleRate),
+                "-ac", String(config.mp3Channels),
+                "-c:a", "libmp3lame",
+                "-b:a", config.mp3Bitrate,
+                output.path
+            ]
+        case "m4a":
+            try requireFFmpegEncoder("aac")
+            return [
+                "-hide_banner", "-nostdin", "-v", "error", "-y",
+                "-i", source.path,
+                "-map", "0:a:0",
+                "-af", filter,
+                "-c:a", "aac",
+                "-b:a", config.m4aBitrate,
+                "-ar", String(config.m4aSampleRate),
+                "-ac", String(config.m4aChannels),
+                "-vn",
+                output.path
+            ]
+        case "mp4":
+            try requireFFmpegEncoder("aac")
+            return [
+                "-hide_banner", "-nostdin", "-v", "error", "-y",
+                "-i", source.path,
+                "-map", "0:v:0?",
+                "-map", "0:a:0",
+                "-af", filter,
+                "-c:v", "copy",
+                "-c:a", "aac",
+                "-b:a", config.videoMP4AudioBitrate,
+                "-ar", String(config.videoMP4AudioSampleRate),
+                "-sn", "-dn",
+                "-map_metadata", "0",
+                "-map_chapters", "0",
+                "-movflags", "+faststart",
+                output.path
+            ]
+        default:
+            throw AppError("Unsupported loudness source type: \(source.path)")
+        }
+    }
+
+    func loudnessNormalizeMedia(_ source: URL, spec: LoudnessSpec) throws -> URL {
+        try preflightAudioMediaSource(source)
+        let policy = loudnessPolicy(targetLUFS: spec.targetLUFS)
+        let output = cli.outDir
+            .appendingPathComponent(source.stem + loudnessOutputSuffix(for: spec))
+            .appendingPathExtension(source.pathExtension.lowercasedASCII)
+        if canReuseOutput(output, verifier: {
+            try self.verifyLoudnessOutput(output, source: source, policy: policy)
+        }) {
+            logger.info("Skip existing loudness-normalized media: \(output.basename)")
+            return output
+        }
+
+        let measurement = try loudnormMeasurement(for: source, policy: policy)
+        let filter = loudnormSecondPassFilter(policy: policy, measurement: measurement) ?? loudnormSinglePassFilter(policy: policy)
+        let temp = try makeTemp(in: cli.outDir, stem: output.stem, ext: ".\(output.pathExtension)")
+        do {
+            _ = try runner.run("ffmpeg", try makeLoudnessFFmpegArguments(source: source, filter: filter, output: temp))
+            try verifyLoudnessOutput(temp, source: source, policy: policy)
+            try publishTemp(temp, to: output)
+            logger.info("Created loudness-normalized media: \(output.basename)")
             return output
         } catch {
             try? fileManager.removeItem(at: temp)

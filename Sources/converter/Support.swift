@@ -174,6 +174,15 @@ struct BassBoostSpec: Equatable, Sendable {
     let gainDB: Double
 }
 
+struct LoudnessSpec: Equatable, Sendable {
+    let targetLUFS: Double
+}
+
+struct LoudnessScanEntry: Sendable {
+    let file: URL
+    let integratedLUFS: Double
+}
+
 func ffmpegNumber(_ value: Double) -> String {
     if value.rounded(.towardZero) == value {
         return String(Int(value))
