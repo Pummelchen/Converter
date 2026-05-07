@@ -290,12 +290,33 @@ extension ConverterTool {
         ]
     }
 
-    func loudScanReportLines() throws -> [String] {
+    // Emits optional progress around each expensive loudness probe so long scans do not appear stalled.
+    func loudScanReportLines(progress: ((LoudnessScanProgress) -> Void)? = nil) throws -> [String] {
         let files = try audioLoudnessCandidates(includeDerived: true)
         guard !files.isEmpty else {
             throw AppError("No supported audio media files (.flac, .wav, .mp3, .m4a, .mp4) found in '\(cli.srcDir.path)'.")
         }
-        let entries = try files.map { try loudnessMeasurement(for: $0) }
+
+        var entries: [LoudnessScanEntry] = []
+        entries.reserveCapacity(files.count)
+        for (index, file) in files.enumerated() {
+            progress?(LoudnessScanProgress(
+                processedFiles: index,
+                totalFiles: files.count,
+                currentFile: file,
+                reportLines: [],
+                isMeasuring: true
+            ))
+
+            entries.append(try loudnessMeasurement(for: file))
+            progress?(LoudnessScanProgress(
+                processedFiles: index + 1,
+                totalFiles: files.count,
+                currentFile: file,
+                reportLines: try loudScanReportLines(entries: entries),
+                isMeasuring: false
+            ))
+        }
         return try loudScanReportLines(entries: entries)
     }
 

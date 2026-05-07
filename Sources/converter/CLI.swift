@@ -127,7 +127,7 @@ struct CLIOptions {
                 options.action = .hash
             case "-loudness":
                 options.action = .loudness
-            case "-loudscan":
+            case "-loudscan", "-loundscan":
                 options.action = .loudscan
             case "-full", "-run":
                 options.action = .full

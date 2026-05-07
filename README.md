@@ -55,7 +55,7 @@ Use `./converter --hash` to rename `.wav`, `.flac`, `.mp3`, and `.mp4` files in 
 Use `./converter -bass` to create same-format `_bass` copies for `.flac`, `.wav`, `.mp3`, `.m4a`, and `.mp4` files in `Output/`. The default boosts bass around 80 Hz by 5 dB. Use `./converter -bass 80 5` to set frequency and gain manually; non-default settings use a settings-specific suffix such as `_bass_60Hz_7_5dB`.
 
 ## Loudness
-Use `./converter -loudscan` to print four terminal report lines for supported audio media in `Output/`: average loudness, lowest loudness, highest loudness, and the average of the three loudest files.
+Use `./converter -loudscan` to measure supported audio media in `Output/`. Long scans stream progress as `current/total` files measured and reprint the current four-line report after each file: average loudness, lowest loudness, highest loudness, and the average of the three loudest files.
 
 Use `./converter -loudness -16` to create same-format loudness-normalized copies for `.flac`, `.wav`, `.mp3`, `.m4a`, and `.mp4` files. Outputs are tagged with the target, for example `_loudness_m16LUFS`, so livestream-ready files do not overwrite sources or collide with another target.
 

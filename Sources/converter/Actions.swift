@@ -624,9 +624,26 @@ extension ConverterTool {
         }
     }
 
+    func emitLoudScanReport(_ lines: [String]) {
+        guard !lines.isEmpty else { return }
+        FileHandle.standardOutput.write(Data((lines.joined(separator: "\n") + "\n").utf8))
+    }
+
     func stepLoudScan() throws {
-        for line in try loudScanReportLines() {
-            print(line)
+        logger.info("Loudscan progress starts now. Each file prints the current four-line loudness report.")
+        var printedFinalReport = false
+        let finalLines = try loudScanReportLines { progress in
+            if progress.isMeasuring {
+                self.logger.info("Loudscan \(progress.processedFiles + 1)/\(progress.totalFiles) measuring: \(progress.currentFile.basename)")
+                return
+            }
+
+            self.logger.info("Loudscan \(progress.processedFiles)/\(progress.totalFiles) files processed: \(progress.currentFile.basename)")
+            self.emitLoudScanReport(progress.reportLines)
+            printedFinalReport = progress.processedFiles == progress.totalFiles
+        }
+        if !printedFinalReport {
+            emitLoudScanReport(finalLines)
         }
     }
 

@@ -107,6 +107,14 @@ final class converterTests: XCTestCase {
             scriptName: "converter"
         )
         XCTAssertEqual(scanOptions.action, .loudscan)
+
+        let typoAliasOptions = try CLIOptions.parse(
+            arguments: ["-loundscan"],
+            environment: [:],
+            scriptDirectory: root,
+            scriptName: "converter"
+        )
+        XCTAssertEqual(typoAliasOptions.action, .loudscan)
     }
 
     func testLoudnessRejectsInvalidTargets() throws {

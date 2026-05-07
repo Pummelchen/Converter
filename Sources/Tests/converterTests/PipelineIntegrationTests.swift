@@ -420,7 +420,8 @@ final class PipelineIntegrationTests: XCTestCase {
         _ = try workspace.createHotAudio(name: "loud_scan", ext: "mp3", duration: 1.4, gainDB: 6)
         let tool = try workspace.makeTool(arguments: ["-loudscan"])
 
-        let lines = try tool.loudScanReportLines()
+        var progressEvents: [LoudnessScanProgress] = []
+        let lines = try tool.loudScanReportLines { progressEvents.append($0) }
 
         XCTAssertEqual(lines.count, 4)
         XCTAssertTrue(lines[0].contains("Average loudness:"))
@@ -429,6 +430,13 @@ final class PipelineIntegrationTests: XCTestCase {
         XCTAssertTrue(lines[3].contains("Top 3 loudest average:"))
         XCTAssertTrue(lines[1].contains("quiet_scan.wav"))
         XCTAssertTrue(lines[2].contains("loud_scan.mp3"))
+        XCTAssertEqual(progressEvents.count, 6)
+        XCTAssertEqual(progressEvents.filter { $0.isMeasuring }.count, 3)
+        XCTAssertEqual(progressEvents.filter { !$0.isMeasuring }.count, 3)
+        XCTAssertEqual(progressEvents.first?.processedFiles, 0)
+        XCTAssertEqual(progressEvents.first?.totalFiles, 3)
+        XCTAssertEqual(progressEvents.last?.processedFiles, 3)
+        XCTAssertEqual(progressEvents.last?.reportLines.count, 4)
     }
 
     func testLoudnessNormalizeProcessesAudioAndMP4Inputs() throws {

@@ -183,6 +183,14 @@ struct LoudnessScanEntry: Sendable {
     let integratedLUFS: Double
 }
 
+struct LoudnessScanProgress: Sendable {
+    let processedFiles: Int
+    let totalFiles: Int
+    let currentFile: URL
+    let reportLines: [String]
+    let isMeasuring: Bool
+}
+
 func ffmpegNumber(_ value: Double) -> String {
     if value.rounded(.towardZero) == value {
         return String(Int(value))
