@@ -32,7 +32,7 @@ struct ProjectConfig {
     var m4aSampleRate = 48_000
     var m4aChannels = 2
 
-    var audioQCTargetLUFS = -16.0
+    var audioQCTargetLUFS = LoudnessSpec.defaultTargetLUFS
     var audioQCLUFSTolerance = 8.0
     var audioQCMaxTruePeakDBTP = -1.0
     var audioQCMaxLoudnessRange = 20.0
@@ -40,12 +40,12 @@ struct ProjectConfig {
     var audioQCMaxStereoImbalanceDB = 2.0
     var audioQCMaxClippedSamples = 0
     var audioQCMinimumAnalysisSeconds = 3.0
-    var shortAudioQCTargetLUFS = -16.0
+    var shortAudioQCTargetLUFS = LoudnessSpec.defaultTargetLUFS
     var shortAudioQCLUFSTolerance = 8.0
     var shortAudioQCMaxLoudnessRange = 20.0
 
     var masteringEnabled = false
-    var masteringTargetLUFS = -16.0
+    var masteringTargetLUFS = LoudnessSpec.defaultTargetLUFS
     var masteringMaxTruePeakDBTP = -1.0
     var masteringMaxLoudnessRange = 20.0
 
@@ -200,7 +200,7 @@ struct ProjectConfig {
             shortMP4VideoFallbacks = "libx264"
             shortMP4VTQuality = "65"
             shortMP4AudioBitrate = "256k"
-            shortAudioQCTargetLUFS = -14.0
+            shortAudioQCTargetLUFS = LoudnessSpec.defaultTargetLUFS
             shortAudioQCLUFSTolerance = 6.0
         case .archive:
             mp3Bitrate = "320k"

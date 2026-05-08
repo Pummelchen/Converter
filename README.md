@@ -58,7 +58,9 @@ Use `./converter -bass` to create same-format `_bass` copies for `.flac`, `.wav`
 ## Loudness
 Use `./converter -loudscan` to measure supported audio media in `Output/`. Long scans stream progress as `current/total` files measured and reprint the current four-line report after each file: average loudness, lowest loudness, highest loudness, and the average of the three loudest files.
 
-Use `./converter -loudness` to create same-format loudness-normalized copies for `.flac`, `.wav`, `.mp3`, `.m4a`, and `.mp4` files. The default target is `-12 LUFS` for modern music uploads. Pass a value such as `./converter -loudness -13` for a more dynamic target. Outputs are tagged with the target, for example `_loudness_m12LUFS`, so livestream-ready files do not overwrite sources or collide with another target. Lossy outputs use extra true-peak render headroom and retry when needed so decoded AAC/MP3 stays under the project true-peak ceiling.
+Project-wide delivery, short-form, and mastering/remediation defaults target `-12 LUFS` for modern music uploads, including audio-only outputs and audio streams inside MP4/M4A deliverables.
+
+Use `./converter -loudness` to create same-format loudness-normalized copies for `.flac`, `.wav`, `.mp3`, `.m4a`, and `.mp4` files. Pass a value such as `./converter -loudness -13` for a more dynamic target. Outputs are tagged with the target, for example `_loudness_m12LUFS`, so livestream-ready files do not overwrite sources or collide with another target. Lossy outputs use extra true-peak render headroom and retry when needed so decoded AAC/MP3 stays under the project true-peak ceiling.
 
 ## Profiles
 Built-in profiles:

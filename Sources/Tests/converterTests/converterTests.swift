@@ -89,6 +89,46 @@ final class converterTests: XCTestCase {
         }
     }
 
+    func testProjectLoudnessDefaultsAreMinus12LUFS() throws {
+        let root = URL(fileURLWithPath: "/tmp/converter-test")
+        let logger = Logger(scriptName: "converterTests", debugEnabled: false)
+        let options = try CLIOptions.parse(arguments: ["-help"], environment: [:], scriptDirectory: root, scriptName: "converter")
+        let config = try ProjectConfig.load(
+            from: root.appendingPathComponent("missing-config.txt"),
+            environment: [:],
+            cli: options,
+            logger: logger
+        )
+
+        XCTAssertEqual(config.audioQCTargetLUFS, -12)
+        XCTAssertEqual(config.shortAudioQCTargetLUFS, -12)
+        XCTAssertEqual(config.masteringTargetLUFS, -12)
+        XCTAssertEqual(config.deliveryAudioQCPolicy.targetLUFS, -12)
+        XCTAssertEqual(config.shortFormAudioQCPolicy.targetLUFS, -12)
+        XCTAssertEqual(config.masteringAudioQCPolicy.targetLUFS, -12)
+    }
+
+    func testYouTubeShortProfileKeepsProjectMinus12LUFSTarget() throws {
+        let root = URL(fileURLWithPath: "/tmp/converter-test")
+        let logger = Logger(scriptName: "converterTests", debugEnabled: false)
+        let options = try CLIOptions.parse(
+            arguments: ["--profile", "youtube_short", "-help"],
+            environment: [:],
+            scriptDirectory: root,
+            scriptName: "converter"
+        )
+        let config = try ProjectConfig.load(
+            from: root.appendingPathComponent("missing-config.txt"),
+            environment: [:],
+            cli: options,
+            logger: logger
+        )
+
+        XCTAssertEqual(config.audioQCTargetLUFS, -12)
+        XCTAssertEqual(config.shortAudioQCTargetLUFS, -12)
+        XCTAssertEqual(config.masteringTargetLUFS, -12)
+    }
+
     func testLoudnessParsesTargetLUFS() throws {
         let root = URL(fileURLWithPath: "/tmp/converter-test")
         let defaultOptions = try CLIOptions.parse(
