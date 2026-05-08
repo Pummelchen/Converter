@@ -26,6 +26,17 @@ final class PipelineIntegrationTests: XCTestCase {
         XCTAssertTrue(processResult.stderr.contains("noisy-line-39999"))
     }
 
+    // Long media batches launch thousands of probes; pipe handles must close after every child process.
+    func testRunHandlesRepeatedLaunchesWithoutPipeHandleExhaustion() throws {
+        let workspace = try IntegrationWorkspace()
+        let runner = workspace.runner()
+
+        for index in 0 ..< 400 {
+            let result = try runner.run("/bin/echo", ["probe-\(index)"])
+            XCTAssertEqual(result.stdout.trimmed, "probe-\(index)")
+        }
+    }
+
     // Pipelines need concurrent producer/consumer draining so noisy tools do not deadlock each other.
     func testRunPipelineHandlesLargeProducerOutputWithoutDeadlock() throws {
         let workspace = try IntegrationWorkspace()

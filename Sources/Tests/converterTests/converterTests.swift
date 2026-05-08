@@ -166,6 +166,21 @@ final class converterTests: XCTestCase {
         XCTAssertEqual(typoAliasOptions.action, .loudscan)
     }
 
+    func testLoudnessLimitedRecoveryRequiresTooQuietAndPeakConstrainedOutput() throws {
+        let tempDirectory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("converter-test-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: tempDirectory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: tempDirectory) }
+
+        let tool = try makeTool(tempDirectory: tempDirectory, arguments: ["-loudness"])
+        let policy = tool.loudnessPolicy(targetLUFS: -12)
+
+        XCTAssertFalse(tool.shouldUseLimitedLoudnessRecovery(correctionDB: 0.05, truePeakExcess: 0.4, policy: policy))
+        XCTAssertFalse(tool.shouldUseLimitedLoudnessRecovery(correctionDB: 1.0, truePeakExcess: nil, policy: policy))
+        XCTAssertFalse(tool.shouldUseLimitedLoudnessRecovery(correctionDB: -1.0, truePeakExcess: 0.4, policy: policy))
+        XCTAssertTrue(tool.shouldUseLimitedLoudnessRecovery(correctionDB: 1.0, truePeakExcess: 0.4, policy: policy))
+    }
+
     func testLoudnessRejectsInvalidTargets() throws {
         let root = URL(fileURLWithPath: "/tmp/converter-test")
         XCTAssertThrowsError(

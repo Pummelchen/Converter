@@ -342,6 +342,13 @@ extension ConverterTool {
         return deviation <= max(1.0, policy.lufsTolerance * 1.25)
     }
 
+    func shouldUseLimitedLoudnessRecovery(correctionDB: Double?, truePeakExcess: Double?, policy: AudioQCPolicy) -> Bool {
+        guard let correctionDB, truePeakExcess != nil else {
+            return false
+        }
+        return correctionDB > policy.lufsTolerance
+    }
+
     func loudnessQCFailureMessage(file: URL, result: AudioQCResult) -> String {
         "Audio QC failed for \(file.path): \(result.issues.joined(separator: "; "))"
     }
@@ -800,7 +807,7 @@ extension ConverterTool {
                 let integrated = result.metrics.integratedLUFS
                 let correctionDB = integrated.map { policy.targetLUFS - $0 }
                 let truePeakExcess = loudnessTruePeakExcess(result, policy: policy)
-                if let correctionDB, let truePeakExcess, correctionDB > 0 {
+                if let correctionDB, let truePeakExcess, shouldUseLimitedLoudnessRecovery(correctionDB: correctionDB, truePeakExcess: truePeakExcess, policy: policy) {
                     recoveryGainDB = clampedLoudnessValue(
                         (recoveryGainDB ?? 0) + correctionDB,
                         lowerBound: -12,

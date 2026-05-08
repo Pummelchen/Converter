@@ -19,11 +19,14 @@ private final class PipeCapture: @unchecked Sendable {
     init(handle: FileHandle, qos: DispatchQoS.QoSClass = .userInitiated) {
         group.enter()
         DispatchQueue.global(qos: qos).async {
+            defer {
+                closeHandle(handle)
+                self.group.leave()
+            }
             let captured = (try? handle.readToEnd()) ?? Data()
             self.lock.lock()
             self.data = captured
             self.lock.unlock()
-            self.group.leave()
         }
     }
 
@@ -35,9 +38,13 @@ private final class PipeCapture: @unchecked Sendable {
     }
 }
 
+private func closeHandle(_ handle: FileHandle) {
+    try? handle.close()
+}
+
 private func closeHandles(_ handles: [FileHandle]) {
     for handle in handles {
-        handle.closeFile()
+        closeHandle(handle)
     }
 }
 
@@ -107,7 +114,9 @@ final class ProcessRunner: @unchecked Sendable {
             try process.run()
         } catch {
             closeHandles([stdoutPipe.fileHandleForWriting, stderrPipe.fileHandleForWriting])
-            throw AppError("Failed to launch command: \(formatCommand(executableURL.path, arguments))")
+            _ = stdoutCapture.waitString()
+            _ = stderrCapture.waitString()
+            throw AppError("Failed to launch command: \(formatCommand(executableURL.path, arguments)) | \(error.localizedDescription)")
         }
 
         closeHandles([stdoutPipe.fileHandleForWriting, stderrPipe.fileHandleForWriting])
@@ -187,8 +196,11 @@ final class ProcessRunner: @unchecked Sendable {
             if producer.isRunning {
                 producer.terminate()
             }
+            _ = producerErrorCapture.waitString()
+            _ = consumerOutputCapture.waitString()
+            _ = consumerErrorCapture.waitString()
             throw AppError(
-                "Failed to launch pipeline: \(formatCommand(producerURL.path, producerArguments)) | \(formatCommand(consumerURL.path, consumerArguments))"
+                "Failed to launch pipeline: \(formatCommand(producerURL.path, producerArguments)) | \(formatCommand(consumerURL.path, consumerArguments)) | \(error.localizedDescription)"
             )
         }
 
