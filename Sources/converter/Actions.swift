@@ -657,6 +657,8 @@ extension ConverterTool {
         var processed = 0
         var failures: [String] = []
         for file in files {
+            try ensureDirectory(cli.srcDir)
+            try ensureWritableDirectory(cli.outDir)
             do {
                 logger.info("Loudness normalize \(file.basename): integrated target=\(ffmpegNumber(spec.targetLUFS)) LUFS")
                 _ = try loudnessNormalizeMedia(file, spec: spec)

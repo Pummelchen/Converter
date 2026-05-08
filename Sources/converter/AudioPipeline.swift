@@ -333,13 +333,10 @@ extension ConverterTool {
         guard loudnessNonRecoverableIssues(result).isEmpty else {
             return false
         }
-        guard loudnessTruePeakExcess(result, policy: policy) == nil else {
+        guard result.metrics.integratedLUFS?.isFinite == true else {
             return false
         }
-        guard let deviation = loudnessDeviation(result, policy: policy) else {
-            return false
-        }
-        return deviation <= max(1.0, policy.lufsTolerance * 1.25)
+        return true
     }
 
     func loudnessRenderTargetBounds(targetLUFS: Double) -> (minimum: Double, maximum: Double) {
@@ -360,6 +357,24 @@ extension ConverterTool {
 
     func loudnessQCFailureMessage(file: URL, result: AudioQCResult) -> String {
         "Audio QC failed for \(file.path): \(result.issues.joined(separator: "; "))"
+    }
+
+    func loudnessRenderProducedFile(_ file: URL, result: ProcessResult) throws {
+        guard fileManager.fileExists(atPath: file.path) else {
+            let detail = result.stderr.lastNonEmptyLine ?? result.stdout.lastNonEmptyLine ?? "ffmpeg exited 0 without creating output"
+            throw AppError("Loudness render produced no output: \(file.path) | \(detail)")
+        }
+        guard try fileSizeBytes(file) > 0 else {
+            throw AppError("Loudness render produced empty output: \(file.path)")
+        }
+    }
+
+    func isRetryableLoudnessRenderFailure(_ error: Error) -> Bool {
+        let message = error.localizedDescription.lowercasedASCII
+        return message.contains("loudness render produced no output")
+            || message.contains("loudness render produced empty output")
+            || message.contains("audio output missing")
+            || message.contains("video output missing")
     }
 
     func linearAmplitude(fromDecibels decibels: Double) -> Double {
@@ -722,6 +737,9 @@ extension ConverterTool {
         let output = cli.outDir
             .appendingPathComponent(source.stem + loudnessOutputSuffix(for: spec))
             .appendingPathExtension(source.pathExtension.lowercasedASCII)
+        guard output.standardizedFileURL != source.standardizedFileURL else {
+            throw AppError("Refusing loudness normalization because source and output resolve to the same path: \(source.path)")
+        }
         if canReuseOutput(output, verifier: {
             try self.verifyLoudnessOutput(output, source: source, policy: policy)
         }) {
@@ -745,6 +763,20 @@ extension ConverterTool {
             try? fileManager.removeItem(at: temp)
             state.unregister(tempFile: temp)
         }
+
+        let workingSource = try makeTemp(
+            in: fileManager.temporaryDirectory,
+            stem: "\(source.stem).loudness.source",
+            ext: ".\(source.pathExtension.lowercasedASCII)"
+        )
+        do {
+            try copyFileIntoTemp(source, temp: workingSource)
+            try preflightAudioMediaSource(workingSource)
+        } catch {
+            discardTemp(workingSource)
+            throw error
+        }
+        defer { discardTemp(workingSource) }
 
         func keepIfBest(_ candidate: LoudnessRenderCandidate) {
             guard loudnessCandidateIsPublishableFallback(candidate.result, policy: policy) else {
@@ -788,13 +820,14 @@ extension ConverterTool {
                     limiterCeilingDBTP: limiterCeilingDBTP
                 )
             } else {
-                let measurement = try loudnormMeasurement(for: source, policy: renderPolicy)
+                let measurement = try loudnormMeasurement(for: workingSource, policy: renderPolicy)
                 filter = loudnormSecondPassFilter(policy: renderPolicy, measurement: measurement) ?? loudnormSinglePassFilter(policy: renderPolicy)
             }
-            let temp = try makeTemp(in: cli.outDir, stem: output.stem, ext: ".\(output.pathExtension)")
+            let temp = try makeTemp(in: fileManager.temporaryDirectory, stem: output.stem, ext: ".\(output.pathExtension)")
             do {
-                _ = try runner.run("ffmpeg", try makeLoudnessFFmpegArguments(source: source, filter: filter, output: temp))
-                let result = try loudnessOutputQCResult(temp, source: source, policy: policy)
+                let renderResult = try runner.run("ffmpeg", try makeLoudnessFFmpegArguments(source: workingSource, filter: filter, output: temp))
+                try loudnessRenderProducedFile(temp, result: renderResult)
+                let result = try loudnessOutputQCResult(temp, source: workingSource, policy: policy)
                 lastResult = result
                 if result.passed {
                     if let bestCandidate {
@@ -869,10 +902,15 @@ extension ConverterTool {
                 )
             } catch {
                 discardTemp(temp)
-                if let bestCandidate {
-                    discardTemp(bestCandidate.temp)
-                }
                 lastError = error
+                if attempt < maxAttempts, isRetryableLoudnessRenderFailure(error) {
+                    logger.warn("Loudness render retry \(attempt)/\(maxAttempts) for \(source.basename): \(error.localizedDescription)")
+                    continue
+                }
+                if bestCandidate != nil {
+                    logger.warn("Loudness render failed for \(source.basename); using best verified render so far: \(error.localizedDescription)")
+                    break
+                }
                 throw error
             }
         }

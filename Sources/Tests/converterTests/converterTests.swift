@@ -186,6 +186,62 @@ final class converterTests: XCTestCase {
         XCTAssertEqual(bounds.maximum, LoudnessSpec.maximumTargetLUFS)
     }
 
+    func testLoudnessFallbackAcceptsMediaValidQCIssuesOnly() throws {
+        let tempDirectory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("converter-test-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: tempDirectory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: tempDirectory) }
+
+        let tool = try makeTool(tempDirectory: tempDirectory, arguments: ["-loudness"])
+        let policy = tool.loudnessPolicy(targetLUFS: -12)
+        let metrics = AudioQCMetrics(
+            integratedLUFS: -13.3,
+            truePeakDBTP: -0.6,
+            loudnessRange: 5,
+            dcOffset: 0,
+            stereoImbalanceDB: 0,
+            peakLevelDBFS: -1,
+            clippedSamples: 0,
+            maxVolumeDBFS: -1,
+            analysisLimited: false
+        )
+        let recoverableResult = AudioQCResult(
+            policy: policy.name,
+            targetLUFS: policy.targetLUFS,
+            lufsTolerance: policy.lufsTolerance,
+            maxTruePeakDBTP: policy.maxTruePeakDBTP,
+            maxLoudnessRange: policy.maxLoudnessRange,
+            maxDCOffset: policy.maxDCOffset,
+            maxStereoImbalanceDB: policy.maxStereoImbalanceDB,
+            maxClippedSamples: policy.maxClippedSamples,
+            minimumAnalysisSeconds: policy.minimumAnalysisSeconds,
+            metrics: metrics,
+            passed: false,
+            issues: [
+                "integrated loudness -13.30 LUFS outside target -12.00 +/- 0.80",
+                "true peak -0.60 dBTP exceeds max -1.00"
+            ]
+        )
+        let brokenResult = AudioQCResult(
+            policy: policy.name,
+            targetLUFS: policy.targetLUFS,
+            lufsTolerance: policy.lufsTolerance,
+            maxTruePeakDBTP: policy.maxTruePeakDBTP,
+            maxLoudnessRange: policy.maxLoudnessRange,
+            maxDCOffset: policy.maxDCOffset,
+            maxStereoImbalanceDB: policy.maxStereoImbalanceDB,
+            maxClippedSamples: policy.maxClippedSamples,
+            minimumAnalysisSeconds: policy.minimumAnalysisSeconds,
+            metrics: metrics,
+            passed: false,
+            issues: ["Audio verification failed: output appears silent"]
+        )
+
+        XCTAssertTrue(tool.loudnessCandidateIsPublishableFallback(recoverableResult, policy: policy))
+        XCTAssertFalse(tool.loudnessCandidateIsPublishableFallback(brokenResult, policy: policy))
+        XCTAssertTrue(tool.isRetryableLoudnessRenderFailure(AppError("Loudness render produced no output: temp.mp4")))
+    }
+
     func testLoudnessRejectsInvalidTargets() throws {
         let root = URL(fileURLWithPath: "/tmp/converter-test")
         XCTAssertThrowsError(
