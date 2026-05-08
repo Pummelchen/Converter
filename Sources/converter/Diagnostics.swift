@@ -48,7 +48,7 @@ extension ConverterTool {
         }
 
         let filters = try ffmpegFilterSet()
-        for filter in ["loudnorm", "astats", "volumedetect", "setparams", "bass"] {
+        for filter in ["loudnorm", "astats", "volumedetect", "setparams", "bass", "alimiter"] {
             guard filters.contains(filter) else {
                 throw AppError("Doctor missing ffmpeg filter: \(filter)")
             }

@@ -650,14 +650,29 @@ extension ConverterTool {
     func stepLoudness() throws {
         let spec = try cli.loudnessSpec()
         let files = try audioLoudnessCandidates()
-        _ = try processBatch(
-            files: files,
-            emptyMessage: "No supported audio media files (.flac, .wav, .mp3, .m4a, .mp4) found in '\(cli.srcDir.path)'.",
-            failWhenEmpty: true
-        ) { file in
-            self.logger.info("Loudness normalize \(file.basename): target=\(ffmpegNumber(spec.targetLUFS)) LUFS")
-            return try self.loudnessNormalizeMedia(file, spec: spec)
+        guard !files.isEmpty else {
+            throw AppError("No supported audio media files (.flac, .wav, .mp3, .m4a, .mp4) found in '\(cli.srcDir.path)'.")
         }
+
+        var processed = 0
+        var failures: [String] = []
+        for file in files {
+            do {
+                logger.info("Loudness normalize \(file.basename): integrated target=\(ffmpegNumber(spec.targetLUFS)) LUFS")
+                _ = try loudnessNormalizeMedia(file, spec: spec)
+                processed += 1
+                maybeSleep()
+            } catch {
+                let message = "\(file.basename): \(error.localizedDescription)"
+                logger.error("Loudness normalize failed for \(message)")
+                failures.append(message)
+            }
+        }
+
+        guard failures.isEmpty else {
+            throw AppError("Loudness normalize failed for \(failures.count)/\(files.count) file(s): \(failures.joined(separator: "; "))")
+        }
+        logger.info("Loudness normalize complete: processed=\(processed) failed=0")
     }
 
     func stepFadeWAV() throws {

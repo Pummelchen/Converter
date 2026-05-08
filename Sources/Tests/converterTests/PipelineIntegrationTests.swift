@@ -451,7 +451,7 @@ final class PipelineIntegrationTests: XCTestCase {
         let tool = try workspace.makeTool(arguments: ["-loudness"])
         let policy = tool.loudnessPolicy(targetLUFS: -12)
         XCTAssertEqual(try tool.cli.loudnessSpec(), LoudnessSpec(targetLUFS: -12))
-        XCTAssertEqual(tool.loudnessTruePeakHeadroomAttempts(for: mp4), [1, 2, 3])
+        XCTAssertEqual(tool.loudnessTruePeakHeadroomAttempts(for: mp4), [0, 1, 2, 3])
         XCTAssertEqual(tool.loudnessTruePeakHeadroomAttempts(for: wav), [0])
 
         try tool.stepLoudness()
@@ -472,6 +472,46 @@ final class PipelineIntegrationTests: XCTestCase {
         try tool.verifyLoudnessOutput(m4aOut, source: m4a, policy: policy)
         try tool.verifyLoudnessOutput(mp4Out, source: mp4, policy: policy)
         XCTAssertNoThrow(try tool.requireVideoStream(mp4Out))
+    }
+
+    func testLoudnessNormalizeRecoversPeakLimitedMP4ToIntegratedTarget() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe"])
+        try workspace.overwriteConfig(
+            IntegrationWorkspace.defaultConfig.replacingOccurrences(
+                of: "AUDIO_QC_MAX_TRUE_PEAK_DBTP=0",
+                with: "AUDIO_QC_MAX_TRUE_PEAK_DBTP=-1"
+            )
+        )
+
+        let source = workspace.output.appendingPathComponent("peak_limited").appendingPathExtension("mp4")
+        _ = try workspace.runner().run("ffmpeg", [
+            "-hide_banner", "-nostdin", "-v", "error", "-y",
+            "-f", "lavfi",
+            "-i", "color=c=#111111:size=320x180:rate=2:duration=4",
+            "-f", "lavfi",
+            "-i", "aevalsrc=if(lt(mod(t\\,1)\\,0.02)\\,0.95*sin(2*PI*1000*t)\\,0.04*sin(2*PI*220*t)):s=48000:d=4",
+            "-map", "0:v:0",
+            "-map", "1:a:0",
+            "-c:v", "libx264",
+            "-pix_fmt", "yuv420p",
+            "-c:a", "aac",
+            "-b:a", "192k",
+            "-ar", "48000",
+            "-shortest",
+            source.path
+        ])
+
+        let tool = try workspace.makeTool(arguments: ["-loudness"])
+        let policy = tool.loudnessPolicy(targetLUFS: -12)
+        let sourceMetrics = try tool.audioQCResult(for: source, policy: tool.loudnessPolicy(targetLUFS: -12, tolerance: 99)).metrics
+        XCTAssertLessThan(sourceMetrics.integratedLUFS ?? 0, -14)
+        XCTAssertGreaterThan(sourceMetrics.truePeakDBTP ?? -99, policy.maxTruePeakDBTP)
+
+        let output = try tool.loudnessNormalizeMedia(source, spec: LoudnessSpec(targetLUFS: -12))
+        let result = try tool.loudnessOutputQCResult(output, source: source, policy: policy)
+        XCTAssertTrue(result.passed, result.issues.joined(separator: "; "))
+        XCTAssertNoThrow(try tool.requireVideoStream(output))
     }
 
     func testTailFadeProcessesMP3WAVAndFLACWithoutTruncating() throws {
