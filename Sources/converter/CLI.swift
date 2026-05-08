@@ -332,10 +332,13 @@ struct CLIOptions {
         if actionArgs.isEmpty {
             return LoudnessSpec(targetLUFS: LoudnessSpec.defaultTargetLUFS)
         }
-        guard let target = Double(actionArgs[0]), target.isFinite, target <= 0 else {
-            throw AppError("Loudness target must be a finite LUFS value at or below 0, for example -12.")
+        guard let target = Double(actionArgs[0]), target.isFinite else {
+            throw AppError("Loudness target must be a finite LUFS value, for example -12.")
         }
-        guard target >= -70 else {
+        guard target <= LoudnessSpec.maximumTargetLUFS else {
+            throw AppError("Loudness target must be at or below \(ffmpegNumber(LoudnessSpec.maximumTargetLUFS)) LUFS because ffmpeg loudnorm supports \(ffmpegNumber(LoudnessSpec.minimumTargetLUFS)) to \(ffmpegNumber(LoudnessSpec.maximumTargetLUFS)) LUFS.")
+        }
+        guard target >= LoudnessSpec.minimumTargetLUFS else {
             throw AppError("Loudness target is too low for practical livestream normalization: \(target) LUFS")
         }
         return LoudnessSpec(targetLUFS: target)

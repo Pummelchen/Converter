@@ -349,6 +349,7 @@ struct ProjectConfig {
         if audioQCLUFSTolerance < 0 {
             throw AppError("AUDIO_QC_LUFS_TOLERANCE must be >= 0")
         }
+        try requireLoudnormTarget(audioQCTargetLUFS, "AUDIO_QC_TARGET_LUFS")
         if audioQCMaxTruePeakDBTP > 0 {
             throw AppError("AUDIO_QC_MAX_TRUE_PEAK_DBTP must be <= 0")
         }
@@ -370,9 +371,11 @@ struct ProjectConfig {
         if shortAudioQCLUFSTolerance < 0 {
             throw AppError("SHORT_AUDIO_QC_LUFS_TOLERANCE must be >= 0")
         }
+        try requireLoudnormTarget(shortAudioQCTargetLUFS, "SHORT_AUDIO_QC_TARGET_LUFS")
         if shortAudioQCMaxLoudnessRange < 0 {
             throw AppError("SHORT_AUDIO_QC_MAX_LOUDNESS_RANGE must be >= 0")
         }
+        try requireLoudnormTarget(masteringTargetLUFS, "MASTERING_TARGET_LUFS")
         if masteringMaxTruePeakDBTP > 0 {
             throw AppError("MASTERING_MAX_TRUE_PEAK_DBTP must be <= 0")
         }
@@ -474,6 +477,15 @@ private func requirePositive(_ value: Int, _ name: String) throws {
 private func requireChannels(_ value: Int, _ name: String) throws {
     if !(1 ... 2).contains(value) {
         throw AppError("\(name) must be 1 or 2 (got '\(value)')")
+    }
+}
+
+private func requireLoudnormTarget(_ value: Double, _ name: String) throws {
+    guard value.isFinite else {
+        throw AppError("\(name) must be finite")
+    }
+    guard value >= LoudnessSpec.minimumTargetLUFS, value <= LoudnessSpec.maximumTargetLUFS else {
+        throw AppError("\(name) must be between \(ffmpegNumber(LoudnessSpec.minimumTargetLUFS)) and \(ffmpegNumber(LoudnessSpec.maximumTargetLUFS)) LUFS")
     }
 }
 

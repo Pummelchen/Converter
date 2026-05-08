@@ -342,11 +342,20 @@ extension ConverterTool {
         return deviation <= max(1.0, policy.lufsTolerance * 1.25)
     }
 
-    func shouldUseLimitedLoudnessRecovery(correctionDB: Double?, truePeakExcess: Double?, policy: AudioQCPolicy) -> Bool {
-        guard let correctionDB, truePeakExcess != nil else {
+    func loudnessRenderTargetBounds(targetLUFS: Double) -> (minimum: Double, maximum: Double) {
+        (
+            minimum: max(LoudnessSpec.minimumTargetLUFS, targetLUFS - 12),
+            maximum: min(LoudnessSpec.maximumTargetLUFS, targetLUFS + 12)
+        )
+    }
+
+    func shouldUseLimitedLoudnessRecovery(correctionDB: Double?, truePeakExcess: Double?, truePeakHeadroomDB: Double, policy: AudioQCPolicy) -> Bool {
+        guard let correctionDB else {
             return false
         }
-        return correctionDB > policy.lufsTolerance
+        let outputIsTooQuiet = correctionDB > policy.lufsTolerance
+        let outputIsPeakConstrained = truePeakExcess != nil || truePeakHeadroomDB > 0
+        return outputIsTooQuiet && outputIsPeakConstrained
     }
 
     func loudnessQCFailureMessage(file: URL, result: AudioQCResult) -> String {
@@ -722,8 +731,7 @@ extension ConverterTool {
 
         let headroomAttempts = loudnessTruePeakHeadroomAttempts(for: source)
         let maxAttempts = loudnessMaxRenderAttempts(for: source)
-        let minimumRenderTarget = max(-70, spec.targetLUFS - 12)
-        let maximumRenderTarget = min(0, spec.targetLUFS + 12)
+        let (minimumRenderTarget, maximumRenderTarget) = loudnessRenderTargetBounds(targetLUFS: spec.targetLUFS)
         var renderTargetLUFS = spec.targetLUFS
         var truePeakHeadroomDB = headroomAttempts.first ?? 0
         var recoveryGainDB: Double?
@@ -807,15 +815,21 @@ extension ConverterTool {
                 let integrated = result.metrics.integratedLUFS
                 let correctionDB = integrated.map { policy.targetLUFS - $0 }
                 let truePeakExcess = loudnessTruePeakExcess(result, policy: policy)
-                if let correctionDB, let truePeakExcess, shouldUseLimitedLoudnessRecovery(correctionDB: correctionDB, truePeakExcess: truePeakExcess, policy: policy) {
+                if let correctionDB, shouldUseLimitedLoudnessRecovery(
+                    correctionDB: correctionDB,
+                    truePeakExcess: truePeakExcess,
+                    truePeakHeadroomDB: truePeakHeadroomDB,
+                    policy: policy
+                ) {
                     recoveryGainDB = clampedLoudnessValue(
                         (recoveryGainDB ?? 0) + correctionDB,
                         lowerBound: -12,
                         upperBound: 12
                     )
+                    let recoveryPeakExcess = truePeakExcess ?? 0
                     limiterCeilingDBTP = min(
                         limiterCeilingDBTP,
-                        policy.maxTruePeakDBTP - max(1.0, truePeakExcess + 0.25)
+                        policy.maxTruePeakDBTP - max(1.0, recoveryPeakExcess + 0.25)
                     )
                 } else if let gain = recoveryGainDB, let correctionDB {
                     if abs(correctionDB) > max(0.05, policy.lufsTolerance / 4) {

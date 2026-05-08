@@ -175,10 +175,15 @@ final class converterTests: XCTestCase {
         let tool = try makeTool(tempDirectory: tempDirectory, arguments: ["-loudness"])
         let policy = tool.loudnessPolicy(targetLUFS: -12)
 
-        XCTAssertFalse(tool.shouldUseLimitedLoudnessRecovery(correctionDB: 0.05, truePeakExcess: 0.4, policy: policy))
-        XCTAssertFalse(tool.shouldUseLimitedLoudnessRecovery(correctionDB: 1.0, truePeakExcess: nil, policy: policy))
-        XCTAssertFalse(tool.shouldUseLimitedLoudnessRecovery(correctionDB: -1.0, truePeakExcess: 0.4, policy: policy))
-        XCTAssertTrue(tool.shouldUseLimitedLoudnessRecovery(correctionDB: 1.0, truePeakExcess: 0.4, policy: policy))
+        XCTAssertFalse(tool.shouldUseLimitedLoudnessRecovery(correctionDB: 0.05, truePeakExcess: 0.4, truePeakHeadroomDB: 0, policy: policy))
+        XCTAssertFalse(tool.shouldUseLimitedLoudnessRecovery(correctionDB: 1.0, truePeakExcess: nil, truePeakHeadroomDB: 0, policy: policy))
+        XCTAssertFalse(tool.shouldUseLimitedLoudnessRecovery(correctionDB: -1.0, truePeakExcess: 0.4, truePeakHeadroomDB: 0, policy: policy))
+        XCTAssertTrue(tool.shouldUseLimitedLoudnessRecovery(correctionDB: 1.0, truePeakExcess: 0.4, truePeakHeadroomDB: 0, policy: policy))
+        XCTAssertTrue(tool.shouldUseLimitedLoudnessRecovery(correctionDB: 1.0, truePeakExcess: nil, truePeakHeadroomDB: 2.0, policy: policy))
+
+        let bounds = tool.loudnessRenderTargetBounds(targetLUFS: -12)
+        XCTAssertEqual(bounds.minimum, -24)
+        XCTAssertEqual(bounds.maximum, LoudnessSpec.maximumTargetLUFS)
     }
 
     func testLoudnessRejectsInvalidTargets() throws {
@@ -201,7 +206,17 @@ final class converterTests: XCTestCase {
                 scriptName: "converter"
             ).loudnessSpec()
         ) { error in
-            XCTAssertTrue(error.localizedDescription.contains("at or below 0"))
+            XCTAssertTrue(error.localizedDescription.contains("at or below -5"))
+        }
+        XCTAssertThrowsError(
+            try CLIOptions.parse(
+                arguments: ["-loudness", "-4"],
+                environment: [:],
+                scriptDirectory: root,
+                scriptName: "converter"
+            ).loudnessSpec()
+        ) { error in
+            XCTAssertTrue(error.localizedDescription.contains("at or below -5"))
         }
     }
 
@@ -307,6 +322,17 @@ final class converterTests: XCTestCase {
         )
         XCTAssertThrowsError(try workspace.makeTool(arguments: ["-help"])) { error in
             XCTAssertTrue(error.localizedDescription.contains("SHORT_MP4_CLIP_SECONDS"))
+        }
+    }
+
+    func testInvalidLoudnormConfigTargetIsRejectedDuringLoad() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.overwriteConfig(
+            IntegrationWorkspace.defaultConfig + "\nAUDIO_QC_TARGET_LUFS=-4\n"
+        )
+        XCTAssertThrowsError(try workspace.makeTool(arguments: ["-help"])) { error in
+            XCTAssertTrue(error.localizedDescription.contains("AUDIO_QC_TARGET_LUFS"))
+            XCTAssertTrue(error.localizedDescription.contains("between -70 and -5"))
         }
     }
 
