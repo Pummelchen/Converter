@@ -255,6 +255,35 @@ extension ConverterTool {
         )
     }
 
+    func loudnessRenderPolicy(targetLUFS: Double, truePeakHeadroomDB: Double) -> AudioQCPolicy {
+        let policy = loudnessPolicy(targetLUFS: targetLUFS)
+        return AudioQCPolicy(
+            name: policy.name,
+            targetLUFS: policy.targetLUFS,
+            lufsTolerance: policy.lufsTolerance,
+            maxTruePeakDBTP: policy.maxTruePeakDBTP - max(0, truePeakHeadroomDB),
+            maxLoudnessRange: policy.maxLoudnessRange,
+            maxDCOffset: policy.maxDCOffset,
+            maxStereoImbalanceDB: policy.maxStereoImbalanceDB,
+            maxClippedSamples: policy.maxClippedSamples,
+            minimumAnalysisSeconds: policy.minimumAnalysisSeconds
+        )
+    }
+
+    func loudnessTruePeakHeadroomAttempts(for source: URL) -> [Double] {
+        switch source.pathExtension.lowercasedASCII {
+        case "mp3", "m4a", "mp4":
+            return [1, 2, 3]
+        default:
+            return [0]
+        }
+    }
+
+    func isLoudnessTruePeakFailure(_ error: Error) -> Bool {
+        let description = error.localizedDescription.lowercased()
+        return description.contains("true peak")
+    }
+
     func loudnessOutputSuffix(for spec: LoudnessSpec) -> String {
         let safeTarget = ffmpegNumber(spec.targetLUFS)
             .replacingOccurrences(of: "-", with: "m")
@@ -601,20 +630,33 @@ extension ConverterTool {
             return output
         }
 
-        let measurement = try loudnormMeasurement(for: source, policy: policy)
-        let filter = loudnormSecondPassFilter(policy: policy, measurement: measurement) ?? loudnormSinglePassFilter(policy: policy)
-        let temp = try makeTemp(in: cli.outDir, stem: output.stem, ext: ".\(output.pathExtension)")
-        do {
-            _ = try runner.run("ffmpeg", try makeLoudnessFFmpegArguments(source: source, filter: filter, output: temp))
-            try verifyLoudnessOutput(temp, source: source, policy: policy)
-            try publishTemp(temp, to: output)
-            logger.info("Created loudness-normalized media: \(output.basename)")
-            return output
-        } catch {
-            try? fileManager.removeItem(at: temp)
-            state.unregister(tempFile: temp)
-            throw error
+        let attempts = loudnessTruePeakHeadroomAttempts(for: source)
+        var lastError: Error?
+        for (attemptIndex, truePeakHeadroom) in attempts.enumerated() {
+            let renderPolicy = loudnessRenderPolicy(targetLUFS: spec.targetLUFS, truePeakHeadroomDB: truePeakHeadroom)
+            let measurement = try loudnormMeasurement(for: source, policy: renderPolicy)
+            let filter = loudnormSecondPassFilter(policy: renderPolicy, measurement: measurement) ?? loudnormSinglePassFilter(policy: renderPolicy)
+            let temp = try makeTemp(in: cli.outDir, stem: output.stem, ext: ".\(output.pathExtension)")
+            do {
+                _ = try runner.run("ffmpeg", try makeLoudnessFFmpegArguments(source: source, filter: filter, output: temp))
+                try verifyLoudnessOutput(temp, source: source, policy: policy)
+                try publishTemp(temp, to: output)
+                logger.info("Created loudness-normalized media: \(output.basename)")
+                return output
+            } catch {
+                try? fileManager.removeItem(at: temp)
+                state.unregister(tempFile: temp)
+                lastError = error
+                guard isLoudnessTruePeakFailure(error), attemptIndex + 1 < attempts.count else {
+                    throw error
+                }
+                let nextPolicy = loudnessRenderPolicy(targetLUFS: spec.targetLUFS, truePeakHeadroomDB: attempts[attemptIndex + 1])
+                logger.warn(
+                    "Loudness true peak exceeded after encode; retrying \(source.basename) with \(String(format: "%.2f", nextPolicy.maxTruePeakDBTP)) dBTP render ceiling"
+                )
+            }
         }
+        throw lastError ?? AppError("Unable to create loudness-normalized media: \(source.path)")
     }
 
     func makeTailFadeFFmpegArguments(source: URL, fadeStartSeconds: Double, fadeDurationSeconds: Double, output: URL) throws -> [String] {

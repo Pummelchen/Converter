@@ -35,7 +35,8 @@ swift test --package-path Sources
 ./converter -bass
 ./converter -bass 80 5
 ./converter -loudscan
-./converter -loudness -16
+./converter -loudness
+./converter -loudness -13
 ./converter -fade 10
 ./converter -fadecut 5 10
 ./converter -fadeout 1:30 10
@@ -57,7 +58,7 @@ Use `./converter -bass` to create same-format `_bass` copies for `.flac`, `.wav`
 ## Loudness
 Use `./converter -loudscan` to measure supported audio media in `Output/`. Long scans stream progress as `current/total` files measured and reprint the current four-line report after each file: average loudness, lowest loudness, highest loudness, and the average of the three loudest files.
 
-Use `./converter -loudness -16` to create same-format loudness-normalized copies for `.flac`, `.wav`, `.mp3`, `.m4a`, and `.mp4` files. Outputs are tagged with the target, for example `_loudness_m16LUFS`, so livestream-ready files do not overwrite sources or collide with another target.
+Use `./converter -loudness` to create same-format loudness-normalized copies for `.flac`, `.wav`, `.mp3`, `.m4a`, and `.mp4` files. The default target is `-12 LUFS` for modern music uploads. Pass a value such as `./converter -loudness -13` for a more dynamic target. Outputs are tagged with the target, for example `_loudness_m12LUFS`, so livestream-ready files do not overwrite sources or collide with another target. Lossy outputs use extra true-peak render headroom and retry when needed so decoded AAC/MP3 stays under the project true-peak ceiling.
 
 ## Profiles
 Built-in profiles:

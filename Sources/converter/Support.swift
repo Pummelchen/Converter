@@ -175,6 +175,8 @@ struct BassBoostSpec: Equatable, Sendable {
 }
 
 struct LoudnessSpec: Equatable, Sendable {
+    static let defaultTargetLUFS = -12.0
+
     let targetLUFS: Double
 }
 

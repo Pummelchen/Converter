@@ -448,16 +448,19 @@ final class PipelineIntegrationTests: XCTestCase {
         let flac = try workspace.createAudio(name: "level_flac", ext: "flac", duration: 1.4)
         let m4a = try workspace.createHotAudio(name: "level_m4a", ext: "m4a", duration: 1.4, gainDB: 3)
         let mp4 = try workspace.createVideoMP4(name: "level_video", duration: 1.4)
-        let tool = try workspace.makeTool(arguments: ["-loudness", "-18"])
-        let policy = tool.loudnessPolicy(targetLUFS: -18)
+        let tool = try workspace.makeTool(arguments: ["-loudness"])
+        let policy = tool.loudnessPolicy(targetLUFS: -12)
+        XCTAssertEqual(try tool.cli.loudnessSpec(), LoudnessSpec(targetLUFS: -12))
+        XCTAssertEqual(tool.loudnessTruePeakHeadroomAttempts(for: mp4), [1, 2, 3])
+        XCTAssertEqual(tool.loudnessTruePeakHeadroomAttempts(for: wav), [0])
 
         try tool.stepLoudness()
 
-        let mp3Out = workspace.output.appendingPathComponent("level_mp3_loudness_m18LUFS.mp3")
-        let wavOut = workspace.output.appendingPathComponent("level_wav_loudness_m18LUFS.wav")
-        let flacOut = workspace.output.appendingPathComponent("level_flac_loudness_m18LUFS.flac")
-        let m4aOut = workspace.output.appendingPathComponent("level_m4a_loudness_m18LUFS.m4a")
-        let mp4Out = workspace.output.appendingPathComponent("level_video_loudness_m18LUFS.mp4")
+        let mp3Out = workspace.output.appendingPathComponent("level_mp3_loudness_m12LUFS.mp3")
+        let wavOut = workspace.output.appendingPathComponent("level_wav_loudness_m12LUFS.wav")
+        let flacOut = workspace.output.appendingPathComponent("level_flac_loudness_m12LUFS.flac")
+        let m4aOut = workspace.output.appendingPathComponent("level_m4a_loudness_m12LUFS.m4a")
+        let mp4Out = workspace.output.appendingPathComponent("level_video_loudness_m12LUFS.mp4")
 
         for output in [mp3Out, wavOut, flacOut, m4aOut, mp4Out] {
             XCTAssertTrue(FileManager.default.fileExists(atPath: output.path), "Missing \(output.lastPathComponent)")

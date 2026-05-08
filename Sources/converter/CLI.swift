@@ -326,11 +326,14 @@ struct CLIOptions {
     }
 
     func loudnessSpec() throws -> LoudnessSpec {
-        guard actionArgs.count == 1 else {
-            throw AppError("'-loudness' requires TARGET_LUFS. Example: converter -loudness -16")
+        guard actionArgs.count <= 1 else {
+            throw AppError("'-loudness' accepts an optional TARGET_LUFS. Example: converter -loudness -12")
+        }
+        if actionArgs.isEmpty {
+            return LoudnessSpec(targetLUFS: LoudnessSpec.defaultTargetLUFS)
         }
         guard let target = Double(actionArgs[0]), target.isFinite, target <= 0 else {
-            throw AppError("Loudness target must be a finite LUFS value at or below 0, for example -16.")
+            throw AppError("Loudness target must be a finite LUFS value at or below 0, for example -12.")
         }
         guard target >= -70 else {
             throw AppError("Loudness target is too low for practical livestream normalization: \(target) LUFS")
@@ -390,7 +393,8 @@ struct CLIOptions {
           \(scriptName) -bass
           \(scriptName) -bass 80 5
           \(scriptName) -loudscan
-          \(scriptName) -loudness -16
+          \(scriptName) -loudness
+          \(scriptName) -loudness -13
           \(scriptName) -doctor
           \(scriptName) -fade 10
           \(scriptName) -fadecut 5 10
@@ -434,9 +438,9 @@ struct CLIOptions {
             -loudscan
               Input: one or more .flac, .wav, .mp3, .m4a, or .mp4 files in SRC_DIR
               Output: four terminal report lines: average, lowest, highest, and top-3 loudest average
-            -loudness TARGET_LUFS
+            -loudness [TARGET_LUFS]
               Input: one or more .flac, .wav, .mp3, .m4a, or .mp4 files in SRC_DIR
-              Output: same-format files normalized to TARGET_LUFS for livestream-consistent playback
+              Output: same-format files normalized to TARGET_LUFS for livestream-consistent playback; default is -12 LUFS
             -flactowav
               Input: one or more .flac files in SRC_DIR
               Output: project-standard RF64 WAV files

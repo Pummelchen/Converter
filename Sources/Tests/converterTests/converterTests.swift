@@ -32,7 +32,7 @@ final class converterTests: XCTestCase {
         XCTAssertTrue(help.contains("-bass [FREQUENCY_HZ GAIN_DB]"))
         XCTAssertTrue(help.contains(".flac, .wav, .mp3, .m4a, or .mp4"))
         XCTAssertTrue(help.contains("-loudscan"))
-        XCTAssertTrue(help.contains("-loudness TARGET_LUFS"))
+        XCTAssertTrue(help.contains("-loudness [TARGET_LUFS]"))
         XCTAssertTrue(help.contains("-mp3toflac"))
         XCTAssertTrue(help.contains("-mp3toshort"))
         XCTAssertTrue(help.contains("-fade [SECONDS]"))
@@ -91,6 +91,15 @@ final class converterTests: XCTestCase {
 
     func testLoudnessParsesTargetLUFS() throws {
         let root = URL(fileURLWithPath: "/tmp/converter-test")
+        let defaultOptions = try CLIOptions.parse(
+            arguments: ["-loudness"],
+            environment: [:],
+            scriptDirectory: root,
+            scriptName: "converter"
+        )
+        XCTAssertEqual(defaultOptions.action, .loudness)
+        XCTAssertEqual(try defaultOptions.loudnessSpec(), LoudnessSpec(targetLUFS: -12))
+
         let options = try CLIOptions.parse(
             arguments: ["-loudness", "-16"],
             environment: [:],
@@ -121,13 +130,13 @@ final class converterTests: XCTestCase {
         let root = URL(fileURLWithPath: "/tmp/converter-test")
         XCTAssertThrowsError(
             try CLIOptions.parse(
-                arguments: ["-loudness"],
+                arguments: ["-loudness", "-12", "-13"],
                 environment: [:],
                 scriptDirectory: root,
                 scriptName: "converter"
             ).loudnessSpec()
         ) { error in
-            XCTAssertTrue(error.localizedDescription.contains("TARGET_LUFS"))
+            XCTAssertTrue(error.localizedDescription.contains("optional TARGET_LUFS"))
         }
         XCTAssertThrowsError(
             try CLIOptions.parse(
