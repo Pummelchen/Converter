@@ -14,10 +14,12 @@ struct ProjectConfig {
     var durationToleranceSec = 2.0
     var crcChunkBytes = 8_388_608
 
-    var wavSampleRate = 768_000
+    var wavSampleRate = 192_000
     var wavCodec = "pcm_f32le"
     var wavChannels = 2
     var wavWriteBext = 1
+    let alacSampleFormat = "s32p"
+    let alacBitsPerRawSample = 24
 
     var mp3SampleRate = 48_000
     var mp3Bitrate = "320k"
@@ -28,7 +30,7 @@ struct ProjectConfig {
     var flacChannels = 2
     var flacCompressionLevel = 12
 
-    var m4aBitrate = "384k"
+    var m4aBitrate = "lossless"
     var m4aSampleRate = 48_000
     var m4aChannels = 2
 
@@ -55,7 +57,7 @@ struct ProjectConfig {
     var videoMP4SoftwarePreset = "slow"
     var videoMP4SoftwareCRF = "18"
     var videoMP4InputFPS = "2"
-    var videoMP4AudioBitrate = "384k"
+    var videoMP4AudioBitrate = "lossless"
     var videoMP4AudioSampleRate = 48_000
     var videoMP4Width = 7680
     var videoMP4Height = 4320
@@ -75,7 +77,7 @@ struct ProjectConfig {
     var shortMP4VideoPreset = "fast"
     var shortMP4VideoCRF = "18"
     var shortMP4VTQuality = "60"
-    var shortMP4AudioBitrate = "320k"
+    var shortMP4AudioBitrate = "lossless"
     var shortMP4AudioSampleRate = 48_000
     var shortMP4VideoCodec = "libx264"
     var shortMP4VideoFallbacks = "h264_videotoolbox"
@@ -199,12 +201,12 @@ struct ProjectConfig {
             shortMP4VideoCodec = "h264_videotoolbox"
             shortMP4VideoFallbacks = "libx264"
             shortMP4VTQuality = "65"
-            shortMP4AudioBitrate = "256k"
+            shortMP4AudioBitrate = "lossless"
             shortAudioQCTargetLUFS = LoudnessSpec.defaultTargetLUFS
             shortAudioQCLUFSTolerance = 6.0
         case .archive:
             mp3Bitrate = "320k"
-            m4aBitrate = "384k"
+            m4aBitrate = "lossless"
             flacCompressionLevel = 12
             masteringEnabled = false
         case .fastPreview:
@@ -215,10 +217,10 @@ struct ProjectConfig {
             videoMP4Tag = "avc1"
             videoMP4Width = 1920
             videoMP4Height = 1080
-            videoMP4AudioBitrate = "192k"
+            videoMP4AudioBitrate = "lossless"
             shortMP4VideoCodec = "h264_videotoolbox"
             shortMP4VideoFallbacks = "libx264"
-            shortMP4AudioBitrate = "160k"
+            shortMP4AudioBitrate = "lossless"
             image8KWidth = 1920
             image8KHeight = 1080
             image4KWidth = 1280
@@ -339,13 +341,22 @@ struct ProjectConfig {
         try requirePositive(crcChunkBytes, "CRC_CHUNK_BYTES")
         try requirePositive(wavSampleRate, "WAV_SAMPLE_RATE")
         try requireChannels(wavChannels, "WAV_CHANNELS")
+        if wavSampleRate != 192_000 || wavCodec.lowercasedASCII != "pcm_f32le" || wavChannels != 2 {
+            throw AppError("Internal WAV processing must be 32-bit float, 192 kHz, stereo (WAV_SAMPLE_RATE=192000, WAV_CODEC=pcm_f32le, WAV_CHANNELS=2).")
+        }
         try requirePositive(mp3SampleRate, "MP3_SAMPLE_RATE")
         try requireChannels(mp3Channels, "MP3_CHANNELS")
         try requirePositive(mp3MinBitrateBps, "MP3_MIN_BITRATE_BPS")
+        if mp3SampleRate != 48_000 || mp3Bitrate.lowercasedASCII != "320k" || mp3Channels != 2 {
+            throw AppError("MP3 output must use the project maximum quality setting: 320k, 48 kHz, stereo.")
+        }
         try requirePositive(flacSampleRate, "FLAC_SAMPLE_RATE")
         try requireChannels(flacChannels, "FLAC_CHANNELS")
         try requirePositive(m4aSampleRate, "M4A_SAMPLE_RATE")
         try requireChannels(m4aChannels, "M4A_CHANNELS")
+        if m4aSampleRate != 48_000 || m4aChannels != 2 {
+            throw AppError("M4A output must be ALAC at 48 kHz stereo.")
+        }
         if audioQCLUFSTolerance < 0 {
             throw AppError("AUDIO_QC_LUFS_TOLERANCE must be >= 0")
         }
@@ -387,8 +398,10 @@ struct ProjectConfig {
         try requireNonEmpty(videoMP4SoftwarePreset, "VIDEO_MP4_SOFTWARE_PRESET")
         try requireNumericString(videoMP4SoftwareCRF, "VIDEO_MP4_SOFTWARE_CRF")
         try requirePositiveRateString(videoMP4InputFPS, "VIDEO_MP4_INPUT_FPS")
-        try requireBitrateString(videoMP4AudioBitrate, "VIDEO_MP4_AUDIO_BITRATE")
         try requirePositive(videoMP4AudioSampleRate, "VIDEO_MP4_AUDIO_SAMPLE_RATE")
+        if videoMP4AudioSampleRate != 48_000 {
+            throw AppError("Main MP4 audio output must be ALAC at 24-bit, 48 kHz, stereo.")
+        }
         try requirePositive(videoMP4Width, "VIDEO_MP4_WIDTH")
         try requirePositive(videoMP4Height, "VIDEO_MP4_HEIGHT")
         try requireNonEmpty(videoMP4ScaleFilter, "VIDEO_MP4_SCALE_FILTER")
@@ -401,12 +414,14 @@ struct ProjectConfig {
         try requirePositiveDurationString(shortMP4ClipSeconds, "SHORT_MP4_CLIP_SECONDS")
         try requirePositiveRateString(shortMP4FPS, "SHORT_MP4_FPS")
         try requirePositive(shortMP4AudioSampleRate, "SHORT_MP4_AUDIO_SAMPLE_RATE")
+        if shortMP4AudioSampleRate != 48_000 {
+            throw AppError("Short MP4 audio output must be ALAC at 24-bit, 48 kHz, stereo.")
+        }
         try requirePositive(shortMP4ScaleW, "SHORT_MP4_SCALE_W")
         try requirePositive(shortMP4ScaleH, "SHORT_MP4_SCALE_H")
         try requireNonEmpty(shortMP4VideoPreset, "SHORT_MP4_VIDEO_PRESET")
         try requireNumericString(shortMP4VideoCRF, "SHORT_MP4_VIDEO_CRF")
         try requireNumericString(shortMP4VTQuality, "SHORT_MP4_VT_QUALITY")
-        try requireBitrateString(shortMP4AudioBitrate, "SHORT_MP4_AUDIO_BITRATE")
         try requireNonEmpty(shortMP4VideoCodec, "SHORT_MP4_VIDEO_CODEC")
         try requireNonEmpty(shortMP4PixelFormat, "SHORT_MP4_PIXEL_FORMAT")
         try requireNonEmpty(shortMP4VerifyCodec, "SHORT_MP4_VERIFY_CODEC")

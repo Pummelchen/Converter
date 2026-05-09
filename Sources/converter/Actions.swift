@@ -188,6 +188,9 @@ extension ConverterTool {
     }
 
     func shouldPreferM4AIntermediateForMP3Short() -> Bool {
+        if config.m4aBitrate.lowercasedASCII == "lossless" {
+            return true
+        }
         let mp3Bitrate = parseBitrateBps(config.mp3Bitrate) ?? 0
         let m4aBitrate = parseBitrateBps(config.m4aBitrate) ?? 0
         if m4aBitrate != mp3Bitrate {

@@ -292,7 +292,14 @@ extension ConverterTool {
             logger.info("Mastering disabled: \(source.basename)")
             return
         }
-        try preflightWAVStandardInput(source)
+        try preflightWAVInput(source)
+        do {
+            try preflightWAVStandardInput(source)
+        } catch {
+            logger.info("Normalize WAV before mastering: \(source.basename)")
+            try normalizeWAVInPlace(source)
+            try preflightWAVStandardInput(source)
+        }
         let policy = config.masteringAudioQCPolicy
         let baselineQC = try audioQCResult(for: source, policy: policy)
         if baselineQC.passed {
@@ -397,7 +404,7 @@ extension ConverterTool {
         guard file.pathExtension.lowercasedASCII == "m4a" else {
             throw AppError("Expected .m4a input: \(file.path)")
         }
-        try preflightAudioInput(file, expectedContainerTokens: ["m4a", "mp4", "ipod", "mov"], expectedAudioCodecs: ["aac"], requireNoVideo: true, requireAudible: requireAudible)
+        try preflightAudioInput(file, expectedContainerTokens: ["m4a", "mp4", "ipod", "mov"], expectedAudioCodecs: ["aac", "alac"], requireNoVideo: true, requireAudible: requireAudible)
     }
 
     func preflightWAVInput(_ file: URL, requireAudible: Bool = true, requireNoVideo: Bool = false) throws {
@@ -479,6 +486,8 @@ extension ConverterTool {
         codec: String? = nil,
         sampleRate: Int? = nil,
         channels: Int? = nil,
+        sampleFormat: String? = nil,
+        bitsPerRawSample: Int? = nil,
         requireAudible: Bool = true,
         qcPolicy: AudioQCPolicy? = nil
     ) throws {
@@ -495,6 +504,18 @@ extension ConverterTool {
         }
         if let channels, gotChannels != channels {
             throw AppError("Audio channels mismatch for \(file.path) (got=\(String(describing: gotChannels)) expected=\(channels))")
+        }
+        if let sampleFormat {
+            let gotSampleFormat = (try audioField(file, "sample_fmt") ?? "").lowercasedASCII
+            if gotSampleFormat != sampleFormat.lowercasedASCII {
+                throw AppError("Audio sample format mismatch for \(file.path) (got=\(gotSampleFormat) expected=\(sampleFormat.lowercasedASCII))")
+            }
+        }
+        if let bitsPerRawSample {
+            let gotBits = Int(try audioField(file, "bits_per_raw_sample") ?? "")
+            if gotBits != bitsPerRawSample {
+                throw AppError("Audio raw bit depth mismatch for \(file.path) (got=\(String(describing: gotBits)) expected=\(bitsPerRawSample))")
+            }
         }
         _ = try runner.run("ffmpeg", ["-hide_banner", "-nostdin", "-v", "error", "-xerror", "-i", file.path, "-map", "0:a:0", "-f", "null", "-"])
         if requireAudible {
@@ -671,7 +692,16 @@ extension ConverterTool {
         qcPolicy: AudioQCPolicy? = nil
     ) throws {
         try preflightM4AInput(file, requireAudible: requireAudible)
-        try verifyAudioOutput(file, codec: "aac", sampleRate: sampleRate, channels: channels, requireAudible: requireAudible, qcPolicy: qcPolicy)
+        try verifyAudioOutput(
+            file,
+            codec: "alac",
+            sampleRate: sampleRate,
+            channels: channels,
+            sampleFormat: config.alacSampleFormat,
+            bitsPerRawSample: config.alacBitsPerRawSample,
+            requireAudible: requireAudible,
+            qcPolicy: qcPolicy
+        )
     }
 
     func verifyDurationMatch(source: URL, output: URL, tolerance: Double? = nil) throws {
@@ -868,6 +898,7 @@ extension ConverterTool {
         channels: Int? = nil,
         label: String,
         format: CanonicalPCMFormat = .s32le,
+        maxAllowedDelta: Int64? = nil,
         maxAllowedDifferingSamples: UInt64? = nil
     ) throws {
         let compareSampleRate = try sampleRate ?? requireAudioSampleRate(source)
@@ -886,10 +917,11 @@ extension ConverterTool {
         try decodeAudioToCanonicalPCM(output, output: outputPCM, sampleRate: compareSampleRate, channels: compareChannels, format: format)
         let comparison = try compareCanonicalPCMFiles(sourcePCM, outputPCM, format: format)
         let allowedDifferingSamples = maxAllowedDifferingSamples ?? UInt64(max(4, compareChannels * 4))
-        if comparison.differingSamples > allowedDifferingSamples || comparison.maxDelta > format.maxAllowedDelta {
+        let allowedDelta = maxAllowedDelta ?? format.maxAllowedDelta
+        if comparison.differingSamples > allowedDifferingSamples || comparison.maxDelta > allowedDelta {
             let differingDescription = allowedDifferingSamples == UInt64.max ? "unlimited" : String(allowedDifferingSamples)
             throw AppError(
-                "Canonical PCM mismatch for \(label): src='\(source.path)' out='\(output.path)' differing_samples=\(comparison.differingSamples) max_delta=\(comparison.maxDelta) allowed_differing=\(differingDescription) allowed_delta=\(format.maxAllowedDelta) sample_rate=\(compareSampleRate) channels=\(compareChannels) canonical=\(format.ffmpegCodec)"
+                "Canonical PCM mismatch for \(label): src='\(source.path)' out='\(output.path)' differing_samples=\(comparison.differingSamples) max_delta=\(comparison.maxDelta) allowed_differing=\(differingDescription) allowed_delta=\(allowedDelta) sample_rate=\(compareSampleRate) channels=\(compareChannels) canonical=\(format.ffmpegCodec)"
             )
         }
         logger.debug(

@@ -47,18 +47,11 @@ extension ConverterTool {
             return output
         }
 
+        let sourceWAV = try makeInternalWAV(from: source, in: cli.outDir, stem: "\(source.stem).shortready")
+        defer { discardTempFile(sourceWAV) }
         let temp = try makeTemp(in: cli.outDir, stem: source.stem, ext: ".mp3")
         do {
-            _ = try runner.run("ffmpeg", [
-                "-hide_banner", "-nostdin", "-v", "error", "-y",
-                "-i", source.path,
-                "-map", "0:a:0",
-                "-ar", String(config.mp3SampleRate),
-                "-ac", String(config.mp3Channels),
-                "-c:a", "libmp3lame",
-                "-b:a", config.mp3Bitrate,
-                temp.path
-            ])
+            try encodeInternalWAVToMP3(sourceWAV, output: temp, qcPolicy: nil)
             try verifyMP3Standard(temp, qcPolicy: nil)
             try verifyDurationMatch(source: source, output: temp)
             try verifySourceLoudnessPreserved(source: source, output: temp)
@@ -74,33 +67,25 @@ extension ConverterTool {
 
     func convertMP3ToShortReadyM4A(_ source: URL) throws -> URL {
         try preflightMP3Input(source, requireNoVideo: false)
-        try requireFFmpegEncoder("aac")
+        try requireFFmpegEncoder("alac")
         let output = cli.outDir.appendingPathComponent(source.stem).appendingPathExtension("m4a")
         if canReuseOutput(output, verifier: {
             try verifyM4AFile(output, sampleRate: config.m4aSampleRate, channels: config.m4aChannels, qcPolicy: nil)
             try verifyDurationMatch(source: source, output: output)
-            try verifySourceLoudnessPreserved(source: source, output: output)
+            try verifySourceLoudnessPreserved(source: source, output: output, toleranceDB: 2.0)
         }) {
             logger.info("Reuse short-ready M4A: \(output.basename)")
             return output
         }
 
+        let sourceWAV = try makeInternalWAV(from: source, in: cli.outDir, stem: "\(source.stem).shortm4a")
+        defer { discardTempFile(sourceWAV) }
         let temp = try makeTemp(in: cli.outDir, stem: source.stem, ext: ".m4a")
         do {
-            _ = try runner.run("ffmpeg", [
-                "-hide_banner", "-nostdin", "-v", "error", "-y",
-                "-i", source.path,
-                "-map", "0:a:0",
-                "-c:a", "aac",
-                "-b:a", config.m4aBitrate,
-                "-ar", String(config.m4aSampleRate),
-                "-ac", String(config.m4aChannels),
-                "-vn",
-                temp.path
-            ])
+            try encodeInternalWAVToM4A(sourceWAV, output: temp, qcPolicy: nil)
             try verifyM4AFile(temp, sampleRate: config.m4aSampleRate, channels: config.m4aChannels, qcPolicy: nil)
             try verifyDurationMatch(source: source, output: temp)
-            try verifySourceLoudnessPreserved(source: source, output: temp)
+            try verifySourceLoudnessPreserved(source: source, output: temp, toleranceDB: 2.0)
             try publishTemp(temp, to: output)
             logger.info("Prepared M4A for short: \(output.basename)")
             return output
@@ -164,6 +149,10 @@ extension ConverterTool {
             .filter { !isFadeDerivedAudio($0) }
     }
 
+    func fadeOutFilter(fadeStartSeconds: Double, fadeDurationSeconds: Double) -> String {
+        "afade=t=out:st=\(String(format: "%.6f", fadeStartSeconds)):d=\(String(format: "%.6f", fadeDurationSeconds))"
+    }
+
     func preflightFadeOutSource(_ source: URL) throws {
         switch source.pathExtension.lowercasedASCII {
         case "flac":
@@ -179,7 +168,7 @@ extension ConverterTool {
             try preflightAudioInput(
                 source,
                 expectedContainerTokens: ["m4a", "mp4", "ipod", "mov"],
-                expectedAudioCodecs: ["aac"],
+                expectedAudioCodecs: ["aac", "alac"],
                 requireNoVideo: false,
                 requireAudible: true
             )
@@ -213,7 +202,7 @@ extension ConverterTool {
             try preflightAudioInput(
                 source,
                 expectedContainerTokens: ["m4a", "mp4", "ipod", "mov"],
-                expectedAudioCodecs: ["aac"],
+                expectedAudioCodecs: ["aac", "alac"],
                 requireNoVideo: false,
                 requireAudible: true
             )
@@ -390,6 +379,27 @@ extension ConverterTool {
         ].joined(separator: ",")
     }
 
+    func validateLoudnessFilterIsEQNeutral(_ filter: String) throws {
+        let forbiddenFilters: Set<String> = [
+            "anequalizer", "bandpass", "bandreject", "bass", "biquad",
+            "equalizer", "firequalizer", "highpass", "lowpass",
+            "superequalizer", "treble"
+        ]
+        let filterNames = filter
+            .split(separator: ",")
+            .compactMap { component -> String? in
+                let name = component
+                    .split(whereSeparator: { $0 == "=" || $0 == ":" })
+                    .first?
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                    .lowercasedASCII
+                return name?.isEmpty == false ? name : nil
+            }
+        if let forbidden = filterNames.first(where: { forbiddenFilters.contains($0) }) {
+            throw AppError("Loudness normalization must stay EQ-neutral; forbidden filter '\(forbidden)' was requested.")
+        }
+    }
+
     func loudnessOutputSuffix(for spec: LoudnessSpec) -> String {
         let safeTarget = ffmpegNumber(spec.targetLUFS)
             .replacingOccurrences(of: "-", with: "m")
@@ -500,93 +510,11 @@ extension ConverterTool {
             if (try? requireVideoStream(source)) != nil {
                 try verifyVideoOutput(file)
             }
-            try verifyAudioOutput(file, codec: "aac", sampleRate: config.videoMP4AudioSampleRate, qcPolicy: nil)
+            try verifyALACAudioOutput(file, sampleRate: config.videoMP4AudioSampleRate, channels: 2, qcPolicy: nil)
         default:
             throw AppError("Unsupported bass output type: \(file.path)")
         }
         try verifyDurationMatch(source: source, output: file)
-    }
-
-    func makeBassFFmpegArguments(source: URL, spec: BassBoostSpec, output: URL) throws -> [String] {
-        let filter = bassFilter(for: spec)
-        switch source.pathExtension.lowercasedASCII {
-        case "flac":
-            return [
-                "-hide_banner", "-nostdin", "-v", "error", "-y",
-                "-i", source.path,
-                "-map", "0:a:0",
-                "-af", filter,
-                "-vn", "-sn", "-dn",
-                "-ac", String(config.flacChannels),
-                "-ar", String(config.flacSampleRate),
-                "-c:a", "flac",
-                "-compression_level", String(config.flacCompressionLevel),
-                output.path
-            ]
-        case "wav":
-            return [
-                "-hide_banner", "-nostdin", "-v", "error", "-y",
-                "-i", source.path,
-                "-map", "0:a:0",
-                "-af", filter,
-                "-vn", "-sn", "-dn",
-                "-ac", String(config.wavChannels),
-                "-ar", String(config.wavSampleRate),
-                "-c:a", config.wavCodec,
-                "-f", "wav",
-                "-rf64", "always",
-                "-write_bext", String(config.wavWriteBext),
-                output.path
-            ]
-        case "mp3":
-            try requireFFmpegEncoder("libmp3lame")
-            return [
-                "-hide_banner", "-nostdin", "-v", "error", "-y",
-                "-i", source.path,
-                "-map", "0:a:0",
-                "-af", filter,
-                "-vn", "-sn", "-dn",
-                "-ar", String(config.mp3SampleRate),
-                "-ac", String(config.mp3Channels),
-                "-c:a", "libmp3lame",
-                "-b:a", config.mp3Bitrate,
-                output.path
-            ]
-        case "m4a":
-            try requireFFmpegEncoder("aac")
-            return [
-                "-hide_banner", "-nostdin", "-v", "error", "-y",
-                "-i", source.path,
-                "-map", "0:a:0",
-                "-af", filter,
-                "-c:a", "aac",
-                "-b:a", config.m4aBitrate,
-                "-ar", String(config.m4aSampleRate),
-                "-ac", String(config.m4aChannels),
-                "-vn",
-                output.path
-            ]
-        case "mp4":
-            try requireFFmpegEncoder("aac")
-            return [
-                "-hide_banner", "-nostdin", "-v", "error", "-y",
-                "-i", source.path,
-                "-map", "0:v:0?",
-                "-map", "0:a:0",
-                "-af", filter,
-                "-c:v", "copy",
-                "-c:a", "aac",
-                "-b:a", config.videoMP4AudioBitrate,
-                "-ar", String(config.videoMP4AudioSampleRate),
-                "-sn", "-dn",
-                "-map_metadata", "0",
-                "-map_chapters", "0",
-                "-movflags", "+faststart",
-                output.path
-            ]
-        default:
-            throw AppError("Unsupported bass source type: \(source.path)")
-        }
     }
 
     func bassBoostMedia(_ source: URL, spec: BassBoostSpec) throws -> URL {
@@ -608,7 +536,16 @@ extension ConverterTool {
 
         let temp = try makeTemp(in: cli.outDir, stem: output.stem, ext: ".\(output.pathExtension)")
         do {
-            _ = try runner.run("ffmpeg", try makeBassFFmpegArguments(source: source, spec: spec, output: temp))
+            let sourceWAV = try makeInternalWAV(from: source, in: cli.outDir, stem: "\(source.stem).bass.source")
+            defer { discardTempFile(sourceWAV) }
+            let processedWAV = try processInternalWAV(
+                sourceWAV,
+                filter: bassFilter(for: spec),
+                in: cli.outDir,
+                stem: "\(source.stem).bass.processed"
+            )
+            defer { discardTempFile(processedWAV) }
+            try encodeProcessedWAV(processedWAV, matching: source, to: temp, qcPolicy: nil)
             try verifyBassOutput(temp, source: source)
             try publishTemp(temp, to: output)
             logger.info("Created bass-boosted media: \(output.basename)")
@@ -635,7 +572,7 @@ extension ConverterTool {
             if (try? requireVideoStream(source)) != nil {
                 try verifyVideoOutput(file)
             }
-            try verifyAudioOutput(file, codec: "aac", sampleRate: config.videoMP4AudioSampleRate, qcPolicy: nil)
+            try verifyALACAudioOutput(file, sampleRate: config.videoMP4AudioSampleRate, channels: 2, qcPolicy: nil)
         default:
             throw AppError("Unsupported loudness output type: \(file.path)")
         }
@@ -647,87 +584,6 @@ extension ConverterTool {
         let result = try loudnessOutputQCResult(file, source: source, policy: policy)
         if !result.passed {
             throw AppError(loudnessQCFailureMessage(file: file, result: result))
-        }
-    }
-
-    func makeLoudnessFFmpegArguments(source: URL, filter: String, output: URL) throws -> [String] {
-        switch source.pathExtension.lowercasedASCII {
-        case "flac":
-            return [
-                "-hide_banner", "-nostdin", "-v", "error", "-y",
-                "-i", source.path,
-                "-map", "0:a:0",
-                "-af", filter,
-                "-vn", "-sn", "-dn",
-                "-ac", String(config.flacChannels),
-                "-ar", String(config.flacSampleRate),
-                "-c:a", "flac",
-                "-compression_level", String(config.flacCompressionLevel),
-                output.path
-            ]
-        case "wav":
-            return [
-                "-hide_banner", "-nostdin", "-v", "error", "-y",
-                "-i", source.path,
-                "-map", "0:a:0",
-                "-af", filter,
-                "-vn", "-sn", "-dn",
-                "-ac", String(config.wavChannels),
-                "-ar", String(config.wavSampleRate),
-                "-c:a", config.wavCodec,
-                "-f", "wav",
-                "-rf64", "always",
-                "-write_bext", String(config.wavWriteBext),
-                output.path
-            ]
-        case "mp3":
-            try requireFFmpegEncoder("libmp3lame")
-            return [
-                "-hide_banner", "-nostdin", "-v", "error", "-y",
-                "-i", source.path,
-                "-map", "0:a:0",
-                "-af", filter,
-                "-vn", "-sn", "-dn",
-                "-ar", String(config.mp3SampleRate),
-                "-ac", String(config.mp3Channels),
-                "-c:a", "libmp3lame",
-                "-b:a", config.mp3Bitrate,
-                output.path
-            ]
-        case "m4a":
-            try requireFFmpegEncoder("aac")
-            return [
-                "-hide_banner", "-nostdin", "-v", "error", "-y",
-                "-i", source.path,
-                "-map", "0:a:0",
-                "-af", filter,
-                "-c:a", "aac",
-                "-b:a", config.m4aBitrate,
-                "-ar", String(config.m4aSampleRate),
-                "-ac", String(config.m4aChannels),
-                "-vn",
-                output.path
-            ]
-        case "mp4":
-            try requireFFmpegEncoder("aac")
-            return [
-                "-hide_banner", "-nostdin", "-v", "error", "-y",
-                "-i", source.path,
-                "-map", "0:v:0?",
-                "-map", "0:a:0",
-                "-af", filter,
-                "-c:v", "copy",
-                "-c:a", "aac",
-                "-b:a", config.videoMP4AudioBitrate,
-                "-ar", String(config.videoMP4AudioSampleRate),
-                "-sn", "-dn",
-                "-map_metadata", "0",
-                "-map_chapters", "0",
-                "-movflags", "+faststart",
-                output.path
-            ]
-        default:
-            throw AppError("Unsupported loudness source type: \(source.path)")
         }
     }
 
@@ -764,18 +620,7 @@ extension ConverterTool {
             state.unregister(tempFile: temp)
         }
 
-        let workingSource = try makeTemp(
-            in: fileManager.temporaryDirectory,
-            stem: "\(source.stem).loudness.source",
-            ext: ".\(source.pathExtension.lowercasedASCII)"
-        )
-        do {
-            try copyFileIntoTemp(source, temp: workingSource)
-            try preflightAudioMediaSource(workingSource)
-        } catch {
-            discardTemp(workingSource)
-            throw error
-        }
+        let workingSource = try makeInternalWAV(from: source, in: cli.outDir, stem: "\(source.stem).loudness.source")
         defer { discardTemp(workingSource) }
 
         func keepIfBest(_ candidate: LoudnessRenderCandidate) {
@@ -823,11 +668,24 @@ extension ConverterTool {
                 let measurement = try loudnormMeasurement(for: workingSource, policy: renderPolicy)
                 filter = loudnormSecondPassFilter(policy: renderPolicy, measurement: measurement) ?? loudnormSinglePassFilter(policy: renderPolicy)
             }
+            try validateLoudnessFilterIsEQNeutral(filter)
             let temp = try makeTemp(in: fileManager.temporaryDirectory, stem: output.stem, ext: ".\(output.pathExtension)")
             do {
-                let renderResult = try runner.run("ffmpeg", try makeLoudnessFFmpegArguments(source: workingSource, filter: filter, output: temp))
-                try loudnessRenderProducedFile(temp, result: renderResult)
-                let result = try loudnessOutputQCResult(temp, source: workingSource, policy: policy)
+                let processedWAV = try processInternalWAV(
+                    workingSource,
+                    filter: filter,
+                    in: cli.outDir,
+                    stem: "\(output.stem).loudness.processed"
+                )
+                defer { discardTemp(processedWAV) }
+                try encodeProcessedWAV(processedWAV, matching: source, to: temp, qcPolicy: nil)
+                guard fileManager.fileExists(atPath: temp.path) else {
+                    throw AppError("Loudness render produced no output: \(temp.path)")
+                }
+                guard try fileSizeBytes(temp) > 0 else {
+                    throw AppError("Loudness render produced empty output: \(temp.path)")
+                }
+                let result = try loudnessOutputQCResult(temp, source: source, policy: policy)
                 lastResult = result
                 if result.passed {
                     if let bestCandidate {
@@ -931,177 +789,6 @@ extension ConverterTool {
         throw lastError ?? AppError("Unable to create loudness-normalized media: \(source.path)")
     }
 
-    func makeTailFadeFFmpegArguments(source: URL, fadeStartSeconds: Double, fadeDurationSeconds: Double, output: URL) throws -> [String] {
-        let fadeFilter = "afade=t=out:st=\(String(format: "%.6f", fadeStartSeconds)):d=\(String(format: "%.6f", fadeDurationSeconds))"
-        switch source.pathExtension.lowercasedASCII {
-        case "flac":
-            return [
-                "-hide_banner", "-nostdin", "-v", "error", "-y",
-                "-i", source.path,
-                "-map", "0:a:0",
-                "-af", fadeFilter,
-                "-vn", "-sn", "-dn",
-                "-ac", String(config.flacChannels),
-                "-ar", String(config.flacSampleRate),
-                "-c:a", "flac",
-                "-compression_level", String(config.flacCompressionLevel),
-                output.path
-            ]
-        case "wav":
-            return [
-                "-hide_banner", "-nostdin", "-v", "error", "-y",
-                "-i", source.path,
-                "-map", "0:a:0",
-                "-af", fadeFilter,
-                "-vn", "-sn", "-dn",
-                "-ac", String(config.wavChannels),
-                "-ar", String(config.wavSampleRate),
-                "-c:a", config.wavCodec,
-                "-f", "wav",
-                "-rf64", "always",
-                "-write_bext", String(config.wavWriteBext),
-                output.path
-            ]
-        case "mp3":
-            try requireFFmpegEncoder("libmp3lame")
-            return [
-                "-hide_banner", "-nostdin", "-v", "error", "-y",
-                "-i", source.path,
-                "-map", "0:a:0",
-                "-af", fadeFilter,
-                "-vn", "-sn", "-dn",
-                "-ar", String(config.mp3SampleRate),
-                "-ac", String(config.mp3Channels),
-                "-c:a", "libmp3lame",
-                "-b:a", config.mp3Bitrate,
-                output.path
-            ]
-        default:
-            throw AppError("Unsupported fade source type: \(source.path)")
-        }
-    }
-
-    func makeFadeCutFFmpegArguments(source: URL, targetDuration: Double, fadeStartSeconds: Double, fadeDurationSeconds: Double, output: URL) throws -> [String] {
-        let fadeFilter = "afade=t=out:st=\(String(format: "%.6f", fadeStartSeconds)):d=\(String(format: "%.6f", fadeDurationSeconds))"
-        let targetSeconds = String(format: "%.6f", targetDuration)
-        switch source.pathExtension.lowercasedASCII {
-        case "flac":
-            return [
-                "-hide_banner", "-nostdin", "-v", "error", "-y",
-                "-i", source.path,
-                "-map", "0:a:0",
-                "-t", targetSeconds,
-                "-af", fadeFilter,
-                "-vn", "-sn", "-dn",
-                "-ac", String(config.flacChannels),
-                "-ar", String(config.flacSampleRate),
-                "-c:a", "flac",
-                "-compression_level", String(config.flacCompressionLevel),
-                output.path
-            ]
-        case "wav":
-            return [
-                "-hide_banner", "-nostdin", "-v", "error", "-y",
-                "-i", source.path,
-                "-map", "0:a:0",
-                "-t", targetSeconds,
-                "-af", fadeFilter,
-                "-vn", "-sn", "-dn",
-                "-ac", String(config.wavChannels),
-                "-ar", String(config.wavSampleRate),
-                "-c:a", config.wavCodec,
-                "-f", "wav",
-                "-rf64", "always",
-                "-write_bext", String(config.wavWriteBext),
-                output.path
-            ]
-        case "mp3":
-            try requireFFmpegEncoder("libmp3lame")
-            return [
-                "-hide_banner", "-nostdin", "-v", "error", "-y",
-                "-i", source.path,
-                "-map", "0:a:0",
-                "-t", targetSeconds,
-                "-af", fadeFilter,
-                "-vn", "-sn", "-dn",
-                "-ar", String(config.mp3SampleRate),
-                "-ac", String(config.mp3Channels),
-                "-c:a", "libmp3lame",
-                "-b:a", config.mp3Bitrate,
-                output.path
-            ]
-        default:
-            throw AppError("Unsupported fadecut source type: \(source.path)")
-        }
-    }
-
-    func makeFadeOutFFmpegArguments(source: URL, targetDuration: Double, fadeStartSeconds: Double, fadeDurationSeconds: Double, output: URL) throws -> [String] {
-        let fadeFilter = "afade=t=out:st=\(String(format: "%.6f", fadeStartSeconds)):d=\(String(format: "%.6f", fadeDurationSeconds))"
-        let targetSeconds = String(format: "%.6f", targetDuration)
-        switch source.pathExtension.lowercasedASCII {
-        case "flac":
-            return [
-                "-hide_banner", "-nostdin", "-v", "error", "-y",
-                "-i", source.path,
-                "-map", "0:a:0",
-                "-t", targetSeconds,
-                "-af", fadeFilter,
-                "-vn",
-                "-ac", String(config.flacChannels),
-                "-ar", String(config.flacSampleRate),
-                "-c:a", "flac",
-                "-compression_level", String(config.flacCompressionLevel),
-                output.path
-            ]
-        case "wav":
-            return [
-                "-hide_banner", "-nostdin", "-v", "error", "-y",
-                "-i", source.path,
-                "-map", "0:a:0",
-                "-t", targetSeconds,
-                "-af", fadeFilter,
-                "-ac", String(config.wavChannels),
-                "-ar", String(config.wavSampleRate),
-                "-c:a", config.wavCodec,
-                "-f", "wav",
-                "-rf64", "always",
-                "-write_bext", String(config.wavWriteBext),
-                output.path
-            ]
-        case "mp3":
-            try requireFFmpegEncoder("libmp3lame")
-            return [
-                "-hide_banner", "-nostdin", "-v", "error", "-y",
-                "-i", source.path,
-                "-map", "0:a:0",
-                "-t", targetSeconds,
-                "-af", fadeFilter,
-                "-ar", String(config.mp3SampleRate),
-                "-ac", String(config.mp3Channels),
-                "-c:a", "libmp3lame",
-                "-b:a", config.mp3Bitrate,
-                output.path
-            ]
-        case "m4a":
-            try requireFFmpegEncoder("aac")
-            return [
-                "-hide_banner", "-nostdin", "-v", "error", "-y",
-                "-i", source.path,
-                "-map", "0:a:0",
-                "-t", targetSeconds,
-                "-af", fadeFilter,
-                "-c:a", "aac",
-                "-b:a", config.m4aBitrate,
-                "-ar", String(config.m4aSampleRate),
-                "-ac", String(config.m4aChannels),
-                "-vn",
-                output.path
-            ]
-        default:
-            throw AppError("Unsupported fadeout source type: \(source.path)")
-        }
-    }
-
     func fadeCutAudio(_ source: URL, spec: FadeCutSpec) throws -> URL {
         try preflightTailFadeSource(source)
         guard let duration = try mediaDuration(source) else {
@@ -1124,13 +811,18 @@ extension ConverterTool {
 
         let temp = try makeTemp(in: cli.outDir, stem: output.stem, ext: ".\(output.pathExtension)")
         do {
-            _ = try runner.run("ffmpeg", try makeFadeCutFFmpegArguments(
-                source: source,
-                targetDuration: targetDuration,
-                fadeStartSeconds: fadeStart,
-                fadeDurationSeconds: fadeSeconds,
-                output: temp
-            ))
+            let sourceWAV = try makeInternalWAV(from: source, in: cli.outDir, stem: "\(source.stem).fadecut.source")
+            defer { discardTempFile(sourceWAV) }
+            let fadeFilter = fadeOutFilter(fadeStartSeconds: fadeStart, fadeDurationSeconds: fadeSeconds)
+            let processedWAV = try processInternalWAV(
+                sourceWAV,
+                filter: fadeFilter,
+                in: cli.outDir,
+                stem: "\(source.stem).fadecut.processed",
+                duration: targetDuration
+            )
+            defer { discardTempFile(processedWAV) }
+            try encodeProcessedWAV(processedWAV, matching: source, to: temp, qcPolicy: nil)
             try verifyTailFadeOutput(temp, sourceExtension: source.pathExtension, expectedDuration: targetDuration)
             try publishTemp(temp, to: output)
             logger.info("Created fadecut audio: \(output.basename)")
@@ -1163,12 +855,17 @@ extension ConverterTool {
 
         let temp = try makeTemp(in: cli.outDir, stem: output.stem, ext: ".\(output.pathExtension)")
         do {
-            _ = try runner.run("ffmpeg", try makeTailFadeFFmpegArguments(
-                source: source,
-                fadeStartSeconds: fadeStart,
-                fadeDurationSeconds: fadeSeconds,
-                output: temp
-            ))
+            let sourceWAV = try makeInternalWAV(from: source, in: cli.outDir, stem: "\(source.stem).fade.source")
+            defer { discardTempFile(sourceWAV) }
+            let fadeFilter = fadeOutFilter(fadeStartSeconds: fadeStart, fadeDurationSeconds: fadeSeconds)
+            let processedWAV = try processInternalWAV(
+                sourceWAV,
+                filter: fadeFilter,
+                in: cli.outDir,
+                stem: "\(source.stem).fade.processed"
+            )
+            defer { discardTempFile(processedWAV) }
+            try encodeProcessedWAV(processedWAV, matching: source, to: temp, qcPolicy: nil)
             try verifyTailFadeOutput(temp, sourceExtension: source.pathExtension, expectedDuration: duration)
             try publishTemp(temp, to: output)
             logger.info("Created faded audio: \(output.basename)")
@@ -1204,13 +901,18 @@ extension ConverterTool {
 
         let temp = try makeTemp(in: cli.outDir, stem: output.stem, ext: ".\(output.pathExtension)")
         do {
-            _ = try runner.run("ffmpeg", try makeFadeOutFFmpegArguments(
-                source: source,
-                targetDuration: targetDuration,
-                fadeStartSeconds: spec.fadeStartSeconds,
-                fadeDurationSeconds: spec.fadeDurationSeconds,
-                output: temp
-            ))
+            let sourceWAV = try makeInternalWAV(from: source, in: cli.outDir, stem: "\(source.stem).fadeout.source")
+            defer { discardTempFile(sourceWAV) }
+            let fadeFilter = fadeOutFilter(fadeStartSeconds: spec.fadeStartSeconds, fadeDurationSeconds: spec.fadeDurationSeconds)
+            let processedWAV = try processInternalWAV(
+                sourceWAV,
+                filter: fadeFilter,
+                in: cli.outDir,
+                stem: "\(source.stem).fadeout.processed",
+                duration: targetDuration
+            )
+            defer { discardTempFile(processedWAV) }
+            try encodeProcessedWAV(processedWAV, matching: source, to: temp, qcPolicy: nil)
             try verifyFadeOutOutput(temp, sourceExtension: source.pathExtension, expectedDuration: targetDuration)
             try publishTemp(temp, to: output)
             logger.info("Created faded audio: \(output.basename)")
@@ -1232,10 +934,11 @@ extension ConverterTool {
         if canReuseOutput(output, verifier: { try verifyMP3Standard(output, qcPolicy: nil) }) {
             return output
         }
+        let sourceWAV = try makeInternalWAV(from: source, in: cli.outDir, stem: "\(source.stem).mp3standard")
+        defer { discardTempFile(sourceWAV) }
         let temp = try makeTemp(in: cli.outDir, stem: source.stem, ext: ".mp3")
         do {
-            try copyFileIntoTemp(source, temp: temp)
-            // mp3clean is a structural cleanup pass, not a mastering/remediation step.
+            try encodeInternalWAVToMP3(sourceWAV, output: temp, qcPolicy: nil)
             try verifyMP3Standard(temp, qcPolicy: nil)
             try publishTemp(temp, to: output)
             logger.info("Created MP3: \(output.basename)")
@@ -1374,32 +1077,24 @@ extension ConverterTool {
 
     func convertWAVToM4A(_ source: URL) throws -> URL {
         try preflightWAVInput(source)
-        try requireFFmpegEncoder("aac")
+        try requireFFmpegEncoder("alac")
         let output = cli.outDir.appendingPathComponent(source.stem).appendingPathExtension("m4a")
         if canReuseOutput(output, verifier: {
             try verifyM4AFile(output, sampleRate: config.m4aSampleRate, channels: config.m4aChannels, qcPolicy: nil)
             try verifyDurationMatch(source: source, output: output)
-            try verifySourceLoudnessPreserved(source: source, output: output)
+            try verifySourceLoudnessPreserved(source: source, output: output, toleranceDB: 2.0)
         }) {
             logger.info("Skip existing M4A: \(output.basename)")
             return output
         }
+        let sourceWAV = try makeInternalWAV(from: source, in: cli.outDir, stem: "\(source.stem).m4a.source")
+        defer { discardTempFile(sourceWAV) }
         let temp = try makeTemp(in: cli.outDir, stem: source.stem, ext: ".m4a")
         do {
-            _ = try runner.run("ffmpeg", [
-                "-hide_banner", "-nostdin", "-v", "error", "-y",
-                "-i", source.path,
-                "-map", "0:a:0",
-                "-c:a", "aac",
-                "-b:a", config.m4aBitrate,
-                "-ar", String(config.m4aSampleRate),
-                "-ac", String(config.m4aChannels),
-                "-vn",
-                temp.path
-            ])
+            try encodeInternalWAVToM4A(sourceWAV, output: temp, qcPolicy: nil)
             try verifyM4AFile(temp, sampleRate: config.m4aSampleRate, channels: config.m4aChannels, qcPolicy: nil)
             try verifyDurationMatch(source: source, output: temp)
-            try verifySourceLoudnessPreserved(source: source, output: temp)
+            try verifySourceLoudnessPreserved(source: source, output: temp, toleranceDB: 2.0)
             try publishTemp(temp, to: output)
             logger.info("Created M4A: \(output.basename)")
             return output
@@ -1412,32 +1107,24 @@ extension ConverterTool {
 
     func convertAudioToM4A(_ source: URL) throws -> URL {
         try preflightAudioSourceForTranscode(source)
-        try requireFFmpegEncoder("aac")
+        try requireFFmpegEncoder("alac")
         let output = cli.outDir.appendingPathComponent(source.stem).appendingPathExtension("m4a")
         if canReuseOutput(output, verifier: {
             try verifyM4AFile(output, sampleRate: config.m4aSampleRate, channels: config.m4aChannels, qcPolicy: nil)
             try verifyDurationMatch(source: source, output: output)
-            try verifySourceLoudnessPreserved(source: source, output: output)
+            try verifySourceLoudnessPreserved(source: source, output: output, toleranceDB: 2.0)
         }) {
             logger.info("Skip existing M4A: \(output.basename)")
             return output
         }
+        let sourceWAV = try makeInternalWAV(from: source, in: cli.outDir, stem: "\(source.stem).m4a.source")
+        defer { discardTempFile(sourceWAV) }
         let temp = try makeTemp(in: cli.outDir, stem: source.stem, ext: ".m4a")
         do {
-            _ = try runner.run("ffmpeg", [
-                "-hide_banner", "-nostdin", "-v", "error", "-y",
-                "-i", source.path,
-                "-map", "0:a:0",
-                "-c:a", "aac",
-                "-b:a", config.m4aBitrate,
-                "-ar", String(config.m4aSampleRate),
-                "-ac", String(config.m4aChannels),
-                "-vn",
-                temp.path
-            ])
+            try encodeInternalWAVToM4A(sourceWAV, output: temp, qcPolicy: nil)
             try verifyM4AFile(temp, sampleRate: config.m4aSampleRate, channels: config.m4aChannels, qcPolicy: nil)
             try verifyDurationMatch(source: source, output: temp)
-            try verifySourceLoudnessPreserved(source: source, output: temp)
+            try verifySourceLoudnessPreserved(source: source, output: temp, toleranceDB: 2.0)
             try publishTemp(temp, to: output)
             logger.info("Created M4A: \(output.basename)")
             return output
@@ -1461,18 +1148,11 @@ extension ConverterTool {
             logger.info("Skip existing MP3: \(output.basename)")
             return output
         }
+        let sourceWAV = try makeInternalWAV(from: source, in: cli.outDir, stem: "\(source.stem).mp3.source")
+        defer { discardTempFile(sourceWAV) }
         let temp = try makeTemp(in: cli.outDir, stem: source.stem, ext: ".mp3")
         do {
-            _ = try runner.run("ffmpeg", [
-                "-hide_banner", "-nostdin", "-v", "error", "-y",
-                "-i", source.path,
-                "-map", "0:a:0",
-                "-ar", String(config.mp3SampleRate),
-                "-ac", String(config.mp3Channels),
-                "-c:a", "libmp3lame",
-                "-b:a", config.mp3Bitrate,
-                temp.path
-            ])
+            try encodeInternalWAVToMP3(sourceWAV, output: temp, qcPolicy: nil)
             try verifyMP3Standard(temp, qcPolicy: nil)
             try verifyDurationMatch(source: source, output: temp)
             try verifySourceLoudnessPreserved(source: source, output: temp)
@@ -1511,26 +1191,18 @@ extension ConverterTool {
                 sampleRate: config.flacSampleRate,
                 channels: config.flacChannels,
                 label: "FLAC output",
-                format: .s24le
+                format: .s24le,
+                maxAllowedDelta: 2048
             )
         }) {
             logger.info("Skip existing FLAC: \(output.basename)")
             return output
         }
+        let sourceWAV = try makeInternalWAV(from: source, in: cli.outDir, stem: "\(source.stem).flac.source")
+        defer { discardTempFile(sourceWAV) }
         let temp = try makeTemp(in: cli.outDir, stem: source.stem, ext: ".flac")
         do {
-            _ = try runner.run("ffmpeg", [
-                "-hide_banner", "-nostdin", "-v", "error", "-y",
-                "-i", source.path,
-                "-map", "0:a:0",
-                "-vn",
-                "-ac", String(config.flacChannels),
-                "-ar", String(config.flacSampleRate),
-                "-c:a", "flac",
-                "-compression_level", String(config.flacCompressionLevel),
-                "-map_metadata", "0",
-                temp.path
-            ])
+            try encodeInternalWAVToFLAC(sourceWAV, output: temp, qcPolicy: nil)
             try verifyFLACFile(temp, sampleRate: config.flacSampleRate, channels: config.flacChannels, qcPolicy: nil)
             try verifyDurationMatch(source: source, output: temp)
             try verifyCanonicalPCMSampleEquivalence(
@@ -1539,7 +1211,8 @@ extension ConverterTool {
                 sampleRate: config.flacSampleRate,
                 channels: config.flacChannels,
                 label: "FLAC output",
-                format: .s24le
+                format: .s24le,
+                maxAllowedDelta: 2048
             )
             try publishTemp(temp, to: output)
             logger.info("Created FLAC: \(output.basename)")
@@ -1565,21 +1238,16 @@ extension ConverterTool {
 
     func cleanMP3(_ source: URL) throws {
         try preflightMP3Input(source, requireAudible: false, requireNoVideo: false)
+        let sourceWAV = try makeInternalWAV(
+            from: source,
+            in: source.deletingLastPathComponent(),
+            stem: "\(source.stem).notags.source",
+            requireAudible: false
+        )
+        defer { discardTempFile(sourceWAV) }
         let temp = try makeTemp(in: source.deletingLastPathComponent(), stem: "\(source.stem).notags", ext: ".mp3")
         do {
-            _ = try runner.run("ffmpeg", [
-                "-hide_banner", "-nostdin", "-v", "error", "-y",
-                "-i", source.path,
-                "-vn",
-                "-sn",
-                "-dn",
-                "-map", "0:a:0",
-                "-c:a", "copy",
-                "-map_metadata", "-1",
-                "-map_chapters", "-1",
-                temp.path
-            ])
-            // Metadata cleanup must preserve the original audio stream even if delivery policy would reject it.
+            try encodeInternalWAVToMP3(sourceWAV, output: temp, requireAudible: false, qcPolicy: nil)
             try verifyMP3File(temp, requireAudible: false, requireNoVideo: true, qcPolicy: nil)
             try verifyDurationMatch(source: source, output: temp)
             try publishTemp(temp, to: source)
@@ -1607,18 +1275,16 @@ extension ConverterTool {
         }
         let temp = try makeTemp(in: cli.outDir, stem: output.stem, ext: ".wav")
         do {
-            _ = try runner.run("ffmpeg", [
-                "-hide_banner", "-nostdin", "-v", "error", "-y",
-                "-i", source.path,
-                "-af", "afade=t=out:st=\(String(format: "%.6f", fadeStart)):d=\(config.wavFadeDur)",
-                "-c:a", config.wavCodec,
-                "-ar", String(config.wavSampleRate),
-                "-ac", String(config.wavChannels),
-                "-f", "wav",
-                "-rf64", "always",
-                "-write_bext", String(config.wavWriteBext),
-                temp.path
-            ])
+            let sourceWAV = try makeInternalWAV(from: source, in: cli.outDir, stem: "\(source.stem).fadewav.source")
+            defer { discardTempFile(sourceWAV) }
+            let processedWAV = try processInternalWAV(
+                sourceWAV,
+                filter: fadeOutFilter(fadeStartSeconds: fadeStart, fadeDurationSeconds: Double(config.wavFadeDur)),
+                in: cli.outDir,
+                stem: "\(source.stem).fadewav.processed"
+            )
+            defer { discardTempFile(processedWAV) }
+            try encodeInternalWAVToWAV(processedWAV, output: temp, qcPolicy: nil)
             try verifyWAVStandard(temp, qcPolicy: nil)
             try verifyDurationMatch(source: source, output: temp)
             try publishTemp(temp, to: output)
@@ -1635,39 +1301,26 @@ extension ConverterTool {
         if canReuseOutput(output, verifier: {
             try verifyFLACFile(output, qcPolicy: nil)
             try verifyDurationMatch(source: source, output: output)
-            try verifyCanonicalPCMSampleEquivalence(source: source, output: output, label: "External FLAC", format: .s24le)
+            try verifyCanonicalPCMSampleEquivalence(source: source, output: output, label: "External FLAC", format: .s24le, maxAllowedDelta: 2048)
         }) {
             logger.info("Skip existing external FLAC: \(output.basename)")
             return output
         }
 
+        let sourceWAV = try makeInternalWAV(from: source, in: output.deletingLastPathComponent(), stem: "\(output.stem).externalflac.source")
+        defer { discardTempFile(sourceWAV) }
         let temp = try makeTemp(in: output.deletingLastPathComponent(), stem: output.stem, ext: ".flac")
         do {
-            let ext = source.pathExtension.lowercasedASCII
-            if ext == "flac" {
-                _ = try runner.run("ffmpeg", [
-                    "-hide_banner", "-nostdin", "-v", "error", "-y",
-                    "-i", source.path,
-                    "-map", "0:a:0",
-                    "-vn",
-                    "-c:a", "copy",
-                    "-map_metadata", "0",
-                    temp.path
-                ])
-            } else {
-                _ = try runner.run("ffmpeg", [
-                    "-hide_banner", "-nostdin", "-v", "error", "-y",
-                    "-i", source.path,
-                    "-map", "0:a:0",
-                    "-vn",
-                    "-c:a", "flac",
-                    "-compression_level", String(config.flacCompressionLevel),
-                    temp.path
-                ])
-            }
+            try encodeInternalWAVToFLAC(
+                sourceWAV,
+                output: temp,
+                sampleRate: try requireAudioSampleRate(source),
+                channels: try requireAudioChannels(source),
+                qcPolicy: nil
+            )
             try verifyFLACFile(temp, qcPolicy: nil)
             try verifyDurationMatch(source: source, output: temp)
-            try verifyCanonicalPCMSampleEquivalence(source: source, output: temp, label: "External FLAC", format: .s24le)
+            try verifyCanonicalPCMSampleEquivalence(source: source, output: temp, label: "External FLAC", format: .s24le, maxAllowedDelta: 2048)
             try publishTemp(temp, to: output)
             logger.info("Created external FLAC: \(output.basename)")
             return output

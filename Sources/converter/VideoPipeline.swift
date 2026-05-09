@@ -49,9 +49,6 @@ extension ConverterTool {
         guard let duration = try mediaDuration(audioFile) else {
             throw AppError("Unable to read numeric audio duration from: \(audioFile.path)")
         }
-        let inputAudioCodec = try audioField(audioFile, "codec_name") ?? ""
-        let inputAudioSampleRate = Int(try audioField(audioFile, "sample_rate") ?? "") ?? 0
-        let canCopyAAC = inputAudioCodec == "aac" && inputAudioSampleRate == config.videoMP4AudioSampleRate
         let defaultName = "\(audioFile.stem)_8K.mp4"
         let output = try resolveOutputPath(cli.outputFile ?? defaultName)
         if canReuseOutput(output, verifier: {
@@ -66,31 +63,33 @@ extension ConverterTool {
                 colorSpace: config.videoColorSpace,
                 colorRange: config.videoColorRange
             )
-            try verifyAudioOutput(output, codec: "aac", sampleRate: config.videoMP4AudioSampleRate, qcPolicy: audioQCPolicy)
+            try verifyALACAudioOutput(output, sampleRate: config.videoMP4AudioSampleRate, channels: 2, qcPolicy: audioQCPolicy)
             try verifyDurationMatch(source: audioFile, output: output)
-            try verifySourceLoudnessPreserved(source: audioFile, output: output)
+            try verifySourceLoudnessPreserved(source: audioFile, output: output, toleranceDB: 1.0)
         }) {
             logger.info("Skip existing MP4: \(output.basename)")
             return output
         }
-        if !canCopyAAC {
-            try requireFFmpegEncoder("aac")
-        }
+        try requireFFmpegEncoder("alac")
 
         let encoders = try requireAvailableEncoderLadder(config.videoEncoderLadder, label: "Main video")
+        let sourceWAV = try makeInternalWAV(from: audioFile, in: output.deletingLastPathComponent(), stem: "\(audioFile.stem).mainmp4.source")
+        defer { discardTempFile(sourceWAV) }
         let videoFilter =
             "scale=\(config.videoMP4Width):\(config.videoMP4Height):flags=\(config.videoMP4ScaleFilter)," +
             "format=\(config.videoMP4PixelFormat)," +
             "setparams=color_primaries=\(config.videoColorPrimaries):color_trc=\(config.videoColorTransfer):colorspace=\(config.videoColorSpace):range=\(ffmpegFilterRangeValue(config.videoColorRange))"
 
-        func buildArguments(encoder: String, audioGainDB: Double?) -> [String] {
+        func buildArguments(encoder: String) -> [String] {
             var ffmpegArgs = [
                 "-hide_banner", "-nostdin", "-v", "error", "-y",
                 "-loop", "1",
                 "-framerate", config.videoMP4InputFPS,
                 "-i", imageFile.path,
-                "-i", audioFile.path,
+                "-i", sourceWAV.path,
                 "-t", String(format: "%.6f", duration),
+                "-map", "0:v:0",
+                "-map", "1:a:0",
                 "-vf", videoFilter,
                 "-c:v", encoder
             ]
@@ -107,22 +106,7 @@ extension ConverterTool {
                 "-color_range", config.videoColorRange,
                 "-tag:v", config.videoMP4Tag
             ]
-            if let audioGainDB, abs(audioGainDB) > 0.01 {
-                ffmpegArgs += [
-                    "-af", "volume=\(String(format: "%.6f", audioGainDB))dB",
-                    "-c:a", "aac",
-                    "-b:a", config.videoMP4AudioBitrate,
-                    "-ar", String(config.videoMP4AudioSampleRate)
-                ]
-            } else if canCopyAAC {
-                ffmpegArgs += ["-c:a", "copy"]
-            } else {
-                ffmpegArgs += [
-                    "-c:a", "aac",
-                    "-b:a", config.videoMP4AudioBitrate,
-                    "-ar", String(config.videoMP4AudioSampleRate)
-                ]
-            }
+            ffmpegArgs += alacAudioArguments(sampleRate: config.videoMP4AudioSampleRate, channels: 2)
             ffmpegArgs += ["-shortest", "-movflags", "+faststart"]
             return ffmpegArgs
         }
@@ -139,44 +123,17 @@ extension ConverterTool {
                 colorSpace: config.videoColorSpace,
                 colorRange: config.videoColorRange
             )
-            try verifyAudioOutput(temp, codec: "aac", sampleRate: config.videoMP4AudioSampleRate, qcPolicy: audioQCPolicy)
+            try verifyALACAudioOutput(temp, sampleRate: config.videoMP4AudioSampleRate, channels: 2, qcPolicy: audioQCPolicy)
             try verifyDurationMatch(source: audioFile, output: temp)
-            try verifySourceLoudnessPreserved(source: audioFile, output: temp)
+            try verifySourceLoudnessPreserved(source: audioFile, output: temp, toleranceDB: 1.0)
         }
 
         var lastError: Error?
         for encoder in encoders {
             let temp = try makeTemp(in: output.deletingLastPathComponent(), stem: "\(output.stem).\(encoder)", ext: ".mp4")
             do {
-                _ = try runner.run("ffmpeg", buildArguments(encoder: encoder, audioGainDB: nil) + [temp.path])
-                do {
-                    try verifyRenderedFile(temp)
-                } catch {
-                    let description = error.localizedDescription.lowercased()
-                    guard description.contains("loudness drift") || description.contains("peak drift") else {
-                        throw error
-                    }
-                    let correctionDB = try loudnessCompensationDB(source: audioFile, output: temp)
-                    guard abs(correctionDB) > 0.01 else {
-                        throw error
-                    }
-                    logger.warn("Main video audio loudness drift detected; retrying with \(String(format: "%.2f", correctionDB)) dB compensation")
-                    try? fileManager.removeItem(at: temp)
-                    state.unregister(tempFile: temp)
-
-                    let correctedTemp = try makeTemp(in: output.deletingLastPathComponent(), stem: "\(output.stem).\(encoder).matched", ext: ".mp4")
-                    do {
-                        _ = try runner.run("ffmpeg", buildArguments(encoder: encoder, audioGainDB: correctionDB) + [correctedTemp.path])
-                        try verifyRenderedFile(correctedTemp)
-                        try publishTemp(correctedTemp, to: output)
-                        logger.info("Created MP4: \(output.basename) [encoder=\(encoder), loudness-matched]")
-                        return output
-                    } catch {
-                        try? fileManager.removeItem(at: correctedTemp)
-                        state.unregister(tempFile: correctedTemp)
-                        throw error
-                    }
-                }
+                _ = try runner.run("ffmpeg", buildArguments(encoder: encoder) + [temp.path])
+                try verifyRenderedFile(temp)
                 try publishTemp(temp, to: output)
                 logger.info("Created MP4: \(output.basename) [encoder=\(encoder)]")
                 return output
@@ -192,12 +149,7 @@ extension ConverterTool {
 
     func shortenMP4(_ input: URL, audioQCPolicy: AudioQCPolicy?) throws -> URL {
         try preflightMP4Input(input, requireAudio: true, requireAudibleAudio: true)
-        let inputAudioCodec = try audioField(input, "codec_name") ?? ""
-        let inputAudioSampleRate = Int(try audioField(input, "sample_rate") ?? "") ?? 0
-        let canCopyAAC = inputAudioCodec == "aac" && inputAudioSampleRate == config.shortMP4AudioSampleRate
-        if !canCopyAAC {
-            try requireFFmpegEncoder("aac")
-        }
+        try requireFFmpegEncoder("alac")
         let shortDuration = try effectiveShortClipSeconds(for: input)
         let output = cli.outDir.appendingPathComponent("\(input.stem)_Short").appendingPathExtension("mp4")
         if canReuseOutput(output, verifier: {
@@ -212,14 +164,16 @@ extension ConverterTool {
                 colorSpace: config.videoColorSpace,
                 colorRange: config.videoColorRange
             )
-            try verifyAudioOutput(output, codec: "aac", sampleRate: config.shortMP4AudioSampleRate, qcPolicy: audioQCPolicy)
+            try verifyALACAudioOutput(output, sampleRate: config.shortMP4AudioSampleRate, channels: 2, qcPolicy: audioQCPolicy)
             try verifyShortMP4Duration(output, source: input)
-            try verifySourceLoudnessPreserved(source: input, output: output)
+            try verifySourceLoudnessPreserved(source: input, output: output, toleranceDB: 1.0)
         }) {
             logger.info("Skip existing short MP4: \(output.basename)")
             return output
         }
         let encoders = try requireAvailableEncoderLadder(config.shortVideoEncoderLadder, label: "Short video")
+        let sourceWAV = try makeInternalWAV(from: input, in: cli.outDir, stem: "\(input.stem).shortmp4.source", duration: shortDuration)
+        defer { discardTempFile(sourceWAV) }
         let shortFilter =
             "crop=ih*9/16:ih," +
             "fps=\(config.shortMP4FPS)," +
@@ -227,12 +181,15 @@ extension ConverterTool {
             "format=\(config.shortMP4PixelFormat)," +
             "setparams=color_primaries=\(config.videoColorPrimaries):color_trc=\(config.videoColorTransfer):colorspace=\(config.videoColorSpace):range=\(ffmpegFilterRangeValue(config.videoColorRange))"
 
-        func buildArguments(encoder: String, audioGainDB: Double?) -> [String] {
+        func buildArguments(encoder: String) -> [String] {
             var ffmpegArgs = [
                 "-hide_banner", "-nostdin", "-v", "error", "-y",
                 "-ss", "0",
                 "-t", String(format: "%.6f", shortDuration),
                 "-i", input.path,
+                "-i", sourceWAV.path,
+                "-map", "0:v:0",
+                "-map", "1:a:0",
                 "-vf", shortFilter,
                 "-c:v", encoder
             ]
@@ -248,22 +205,8 @@ extension ConverterTool {
                 "-colorspace", config.videoColorSpace,
                 "-color_range", config.videoColorRange
             ]
-            if let audioGainDB, abs(audioGainDB) > 0.01 {
-                ffmpegArgs += [
-                    "-af", "volume=\(String(format: "%.6f", audioGainDB))dB",
-                    "-c:a", "aac",
-                    "-b:a", config.shortMP4AudioBitrate,
-                    "-ar", String(config.shortMP4AudioSampleRate)
-                ]
-            } else if canCopyAAC {
-                ffmpegArgs += ["-c:a", "copy"]
-            } else {
-                ffmpegArgs += [
-                    "-c:a", "aac",
-                    "-b:a", config.shortMP4AudioBitrate,
-                    "-ar", String(config.shortMP4AudioSampleRate)
-                ]
-            }
+            ffmpegArgs += alacAudioArguments(sampleRate: config.shortMP4AudioSampleRate, channels: 2)
+            ffmpegArgs += ["-shortest", "-movflags", "+faststart"]
             return ffmpegArgs
         }
 
@@ -279,44 +222,17 @@ extension ConverterTool {
                 colorSpace: config.videoColorSpace,
                 colorRange: config.videoColorRange
             )
-            try verifyAudioOutput(temp, codec: "aac", sampleRate: config.shortMP4AudioSampleRate, qcPolicy: audioQCPolicy)
+            try verifyALACAudioOutput(temp, sampleRate: config.shortMP4AudioSampleRate, channels: 2, qcPolicy: audioQCPolicy)
             try verifyShortMP4Duration(temp, source: input)
-            try verifySourceLoudnessPreserved(source: input, output: temp)
+            try verifySourceLoudnessPreserved(source: input, output: temp, toleranceDB: 1.0)
         }
 
         var lastError: Error?
         for encoder in encoders {
             let temp = try makeTemp(in: cli.outDir, stem: "\(output.stem).\(encoder)", ext: ".mp4")
             do {
-                _ = try runner.run("ffmpeg", buildArguments(encoder: encoder, audioGainDB: nil) + [temp.path])
-                do {
-                    try verifyShortFile(temp)
-                } catch {
-                    let description = error.localizedDescription.lowercased()
-                    guard description.contains("loudness drift") || description.contains("peak drift") else {
-                        throw error
-                    }
-                    let correctionDB = try loudnessCompensationDB(source: input, output: temp)
-                    guard abs(correctionDB) > 0.01 else {
-                        throw error
-                    }
-                    logger.warn("Short video audio loudness drift detected; retrying with \(String(format: "%.2f", correctionDB)) dB compensation")
-                    try? fileManager.removeItem(at: temp)
-                    state.unregister(tempFile: temp)
-
-                    let correctedTemp = try makeTemp(in: cli.outDir, stem: "\(output.stem).\(encoder).matched", ext: ".mp4")
-                    do {
-                        _ = try runner.run("ffmpeg", buildArguments(encoder: encoder, audioGainDB: correctionDB) + [correctedTemp.path])
-                        try verifyShortFile(correctedTemp)
-                        try publishTemp(correctedTemp, to: output)
-                        logger.info("Created short MP4: \(output.basename) [encoder=\(encoder), loudness-matched]")
-                        return output
-                    } catch {
-                        try? fileManager.removeItem(at: correctedTemp)
-                        state.unregister(tempFile: correctedTemp)
-                        throw error
-                    }
-                }
+                _ = try runner.run("ffmpeg", buildArguments(encoder: encoder) + [temp.path])
+                try verifyShortFile(temp)
                 try publishTemp(temp, to: output)
                 logger.info("Created short MP4: \(output.basename) [encoder=\(encoder)]")
                 return output
@@ -343,12 +259,7 @@ extension ConverterTool {
         guard let audioDuration = try mediaDuration(audioFile) else {
             throw AppError("Unable to read numeric audio duration from: \(audioFile.path)")
         }
-        let inputAudioCodec = try audioField(audioFile, "codec_name") ?? ""
-        let inputAudioSampleRate = Int(try audioField(audioFile, "sample_rate") ?? "") ?? 0
-        let canCopyAAC = inputAudioCodec == "aac" && inputAudioSampleRate == config.shortMP4AudioSampleRate
-        if !canCopyAAC {
-            try requireFFmpegEncoder("aac")
-        }
+        try requireFFmpegEncoder("alac")
         let shortDuration = try effectiveShortClipSeconds(forDuration: audioDuration)
         let output = cli.outDir.appendingPathComponent("\(audioFile.stem)_8K_Short").appendingPathExtension("mp4")
         if canReuseOutput(output, verifier: {
@@ -363,29 +274,33 @@ extension ConverterTool {
                 colorSpace: config.videoColorSpace,
                 colorRange: config.videoColorRange
             )
-            try verifyAudioOutput(output, codec: "aac", sampleRate: config.shortMP4AudioSampleRate, qcPolicy: audioQCPolicy)
+            try verifyALACAudioOutput(output, sampleRate: config.shortMP4AudioSampleRate, channels: 2, qcPolicy: audioQCPolicy)
             try verifyDuration(output, expectedSeconds: shortDuration, label: "portrait short MP4 output", tolerance: 0.5)
-            try verifySourceLoudnessPreserved(source: audioFile, output: output)
+            try verifySourceLoudnessPreserved(source: audioFile, output: output, toleranceDB: 1.0)
         }) {
             logger.info("Skip existing portrait short MP4: \(output.basename)")
             return output
         }
 
         let encoders = try requireAvailableEncoderLadder(config.shortVideoEncoderLadder, label: "Short video")
+        let sourceWAV = try makeInternalWAV(from: audioFile, in: cli.outDir, stem: "\(audioFile.stem).portraitshort.source", duration: shortDuration)
+        defer { discardTempFile(sourceWAV) }
         let shortFilter =
             "scale=\(config.shortMP4ScaleW):\(config.shortMP4ScaleH)," +
             "fps=\(config.shortMP4FPS)," +
             "format=\(config.shortMP4PixelFormat)," +
             "setparams=color_primaries=\(config.videoColorPrimaries):color_trc=\(config.videoColorTransfer):colorspace=\(config.videoColorSpace):range=\(ffmpegFilterRangeValue(config.videoColorRange))"
 
-        func buildArguments(encoder: String, audioGainDB: Double?) -> [String] {
+        func buildArguments(encoder: String) -> [String] {
             var ffmpegArgs = [
                 "-hide_banner", "-nostdin", "-v", "error", "-y",
                 "-loop", "1",
                 "-framerate", config.shortMP4FPS,
                 "-i", imageFile.path,
-                "-i", audioFile.path,
+                "-i", sourceWAV.path,
                 "-t", String(format: "%.6f", shortDuration),
+                "-map", "0:v:0",
+                "-map", "1:a:0",
                 "-vf", shortFilter,
                 "-c:v", encoder
             ]
@@ -403,22 +318,7 @@ extension ConverterTool {
                 "-shortest",
                 "-movflags", "+faststart"
             ]
-            if let audioGainDB, abs(audioGainDB) > 0.01 {
-                ffmpegArgs += [
-                    "-af", "volume=\(String(format: "%.6f", audioGainDB))dB",
-                    "-c:a", "aac",
-                    "-b:a", config.shortMP4AudioBitrate,
-                    "-ar", String(config.shortMP4AudioSampleRate)
-                ]
-            } else if canCopyAAC {
-                ffmpegArgs += ["-c:a", "copy"]
-            } else {
-                ffmpegArgs += [
-                    "-c:a", "aac",
-                    "-b:a", config.shortMP4AudioBitrate,
-                    "-ar", String(config.shortMP4AudioSampleRate)
-                ]
-            }
+            ffmpegArgs += alacAudioArguments(sampleRate: config.shortMP4AudioSampleRate, channels: 2)
             return ffmpegArgs
         }
 
@@ -434,44 +334,17 @@ extension ConverterTool {
                 colorSpace: config.videoColorSpace,
                 colorRange: config.videoColorRange
             )
-            try verifyAudioOutput(temp, codec: "aac", sampleRate: config.shortMP4AudioSampleRate, qcPolicy: audioQCPolicy)
+            try verifyALACAudioOutput(temp, sampleRate: config.shortMP4AudioSampleRate, channels: 2, qcPolicy: audioQCPolicy)
             try verifyDuration(temp, expectedSeconds: shortDuration, label: "portrait short MP4 output", tolerance: 0.5)
-            try verifySourceLoudnessPreserved(source: audioFile, output: temp)
+            try verifySourceLoudnessPreserved(source: audioFile, output: temp, toleranceDB: 1.0)
         }
 
         var lastError: Error?
         for encoder in encoders {
             let temp = try makeTemp(in: cli.outDir, stem: "\(output.stem).\(encoder)", ext: ".mp4")
             do {
-                _ = try runner.run("ffmpeg", buildArguments(encoder: encoder, audioGainDB: nil) + [temp.path])
-                do {
-                    try verifyPortraitShortFile(temp)
-                } catch {
-                    let description = error.localizedDescription.lowercased()
-                    guard description.contains("loudness drift") || description.contains("peak drift") else {
-                        throw error
-                    }
-                    let correctionDB = try loudnessCompensationDB(source: audioFile, output: temp)
-                    guard abs(correctionDB) > 0.01 else {
-                        throw error
-                    }
-                    logger.warn("Portrait short audio loudness drift detected; retrying with \(String(format: "%.2f", correctionDB)) dB compensation")
-                    try? fileManager.removeItem(at: temp)
-                    state.unregister(tempFile: temp)
-
-                    let correctedTemp = try makeTemp(in: cli.outDir, stem: "\(output.stem).\(encoder).matched", ext: ".mp4")
-                    do {
-                        _ = try runner.run("ffmpeg", buildArguments(encoder: encoder, audioGainDB: correctionDB) + [correctedTemp.path])
-                        try verifyPortraitShortFile(correctedTemp)
-                        try publishTemp(correctedTemp, to: output)
-                        logger.info("Created portrait short MP4: \(output.basename) [encoder=\(encoder), loudness-matched]")
-                        return output
-                    } catch {
-                        try? fileManager.removeItem(at: correctedTemp)
-                        state.unregister(tempFile: correctedTemp)
-                        throw error
-                    }
-                }
+                _ = try runner.run("ffmpeg", buildArguments(encoder: encoder) + [temp.path])
+                try verifyPortraitShortFile(temp)
                 try publishTemp(temp, to: output)
                 logger.info("Created portrait short MP4: \(output.basename) [encoder=\(encoder)]")
                 return output

@@ -186,6 +186,35 @@ final class converterTests: XCTestCase {
         XCTAssertEqual(bounds.maximum, LoudnessSpec.maximumTargetLUFS)
     }
 
+    func testLoudnessFiltersRejectBassAndEQFilters() throws {
+        let tempDirectory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("converter-test-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: tempDirectory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: tempDirectory) }
+
+        let tool = try makeTool(tempDirectory: tempDirectory, arguments: ["-loudness"])
+        let policy = tool.loudnessPolicy(targetLUFS: -12)
+        let singlePass = tool.loudnormSinglePassFilter(policy: policy)
+        let limited = tool.loudnessLimitedRecoveryFilter(policy: policy, recoveryGainDB: 1.25, limiterCeilingDBTP: -2.0)
+        let secondPass = try XCTUnwrap(tool.loudnormSecondPassFilter(policy: policy, measurement: [
+            "input_i": "-16.20",
+            "input_lra": "4.10",
+            "input_tp": "-2.50",
+            "input_thresh": "-26.40",
+            "target_offset": "0.10"
+        ]))
+
+        XCTAssertNoThrow(try tool.validateLoudnessFilterIsEQNeutral(singlePass))
+        XCTAssertNoThrow(try tool.validateLoudnessFilterIsEQNeutral(limited))
+        XCTAssertNoThrow(try tool.validateLoudnessFilterIsEQNeutral(secondPass))
+        XCTAssertThrowsError(try tool.validateLoudnessFilterIsEQNeutral(tool.bassFilter(for: BassBoostSpec(frequencyHz: 80, gainDB: 5)))) { error in
+            XCTAssertTrue(error.localizedDescription.contains("forbidden filter 'bass'"))
+        }
+        XCTAssertThrowsError(try tool.validateLoudnessFilterIsEQNeutral("loudnorm=I=-12:TP=-1:LRA=50,lowpass=f=120")) { error in
+            XCTAssertTrue(error.localizedDescription.contains("forbidden filter 'lowpass'"))
+        }
+    }
+
     func testLoudnessFallbackAcceptsMediaValidQCIssuesOnly() throws {
         let tempDirectory = FileManager.default.temporaryDirectory
             .appendingPathComponent("converter-test-\(UUID().uuidString)", isDirectory: true)
@@ -547,22 +576,9 @@ final class converterTests: XCTestCase {
         defer { try? FileManager.default.removeItem(at: tempDirectory) }
 
         let tool = try makeTool(tempDirectory: tempDirectory, arguments: ["-fade", "5"])
-        let fadeArgs = try tool.makeTailFadeFFmpegArguments(
-            source: tempDirectory.appendingPathComponent("song.flac"),
-            fadeStartSeconds: 10,
-            fadeDurationSeconds: 5,
-            output: tempDirectory.appendingPathComponent("song_faded.flac")
-        )
-        let fadeCutArgs = try tool.makeFadeCutFFmpegArguments(
-            source: tempDirectory.appendingPathComponent("song.flac"),
-            targetDuration: 20,
-            fadeStartSeconds: 10,
-            fadeDurationSeconds: 5,
-            output: tempDirectory.appendingPathComponent("song_fadecut.flac")
-        )
+        let fadeFilter = tool.fadeOutFilter(fadeStartSeconds: 10, fadeDurationSeconds: 5)
 
-        XCTAssertFalse(fadeArgs.contains { $0.contains("curve=") })
-        XCTAssertFalse(fadeCutArgs.contains { $0.contains("curve=") })
+        XCTAssertFalse(fadeFilter.contains("curve="))
     }
 
     func testFadeCutParsesCutAndFadeDurations() throws {

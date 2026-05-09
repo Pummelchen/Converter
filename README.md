@@ -49,6 +49,16 @@ Short outputs are hard-capped at 58 seconds.
 For `-mp3toshort`, a portrait `*_8K.png` is rendered directly to the short output; a landscape `*_8K.png` still follows the main-video-plus-short path.
 Conversions preserve source loudness by default instead of remastering it down during normal pipeline work, including `-mp3toshort`.
 
+## Audio Standards
+All converter audio paths stage through an internal WAV before delivery encoding. The internal working WAV standard is fixed at 32-bit float, 192 kHz, stereo (`pcm_f32le`, RF64 WAV).
+
+Delivery audio standards:
+- MP4 audio: ALAC, 24-bit, 48 kHz, stereo
+- M4A audio: ALAC, 24-bit, 48 kHz, stereo
+- MP3 audio: 320 kbps, 48 kHz, stereo
+
+MP4/M4A delivery paths do not stream-copy AAC and do not use AAC bitrate settings. The legacy bitrate keys in `config.txt` are kept for compatibility but are set to `lossless` and ignored by ALAC encodes.
+
 ## Hash Rename
 Use `./converter --hash` to rename `.wav`, `.flac`, `.mp3`, and `.mp4` files in `Output/` to CRC32-based filenames after media preflight.
 

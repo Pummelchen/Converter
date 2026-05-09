@@ -57,8 +57,8 @@ extension ConverterTool {
 
         _ = try requireAvailableEncoderLadder(config.videoEncoderLadder, label: "Doctor main video")
         _ = try requireAvailableEncoderLadder(config.shortVideoEncoderLadder, label: "Doctor short video")
-        try requireFFmpegEncoder("aac")
-        logger.info("Doctor encoder ok: aac")
+        try requireFFmpegEncoder("alac")
+        logger.info("Doctor encoder ok: alac")
 
         let freeBytes = try availableBytes(at: cli.outDir)
         logger.info("Doctor free space: \(freeBytes) bytes")
