@@ -515,8 +515,6 @@ final class PipelineIntegrationTests: XCTestCase {
         let tool = try workspace.makeTool(arguments: ["-loudness"])
         let policy = tool.loudnessPolicy(targetLUFS: -12)
         XCTAssertEqual(try tool.cli.loudnessSpec(), LoudnessSpec(targetLUFS: -12))
-        XCTAssertEqual(tool.loudnessTruePeakHeadroomAttempts(for: mp4), [0, 1, 2, 3])
-        XCTAssertEqual(tool.loudnessTruePeakHeadroomAttempts(for: wav), [0])
 
         try tool.stepLoudness()
 
@@ -538,7 +536,7 @@ final class PipelineIntegrationTests: XCTestCase {
         XCTAssertNoThrow(try tool.requireVideoStream(mp4Out))
     }
 
-    func testLoudnessNormalizeRecoversPeakLimitedMP4ToIntegratedTarget() throws {
+    func testLoudnessNormalizeKeepsPeakConstrainedMP4Transparent() throws {
         let workspace = try IntegrationWorkspace()
         try workspace.requireCommands(["ffmpeg", "ffprobe"])
         try workspace.overwriteConfig(
@@ -571,10 +569,16 @@ final class PipelineIntegrationTests: XCTestCase {
         let sourceMetrics = try tool.audioQCResult(for: source, policy: tool.loudnessPolicy(targetLUFS: -12, tolerance: 99)).metrics
         XCTAssertLessThan(sourceMetrics.integratedLUFS ?? 0, -14)
         XCTAssertGreaterThan(sourceMetrics.truePeakDBTP ?? -99, policy.maxTruePeakDBTP)
+        let plan = try tool.staticLoudnessGainPlan(for: source, policy: policy)
+        XCTAssertTrue(plan.peakConstrained)
+        XCTAssertGreaterThanOrEqual(plan.appliedGainDB, 0)
+        XCTAssertLessThan(plan.appliedGainDB, plan.requestedGainDB)
 
         let output = try tool.loudnessNormalizeMedia(source, spec: LoudnessSpec(targetLUFS: -12))
         let result = try tool.loudnessOutputQCResult(output, source: source, policy: policy)
-        XCTAssertTrue(result.passed, result.issues.joined(separator: "; "))
+        XCTAssertTrue(tool.loudnessCandidateIsPublishableFallback(result, policy: policy), result.issues.joined(separator: "; "))
+        XCTAssertGreaterThanOrEqual(result.metrics.integratedLUFS ?? -99, (sourceMetrics.integratedLUFS ?? -99) - 0.25)
+        XCTAssertLessThanOrEqual(result.metrics.integratedLUFS ?? 99, policy.targetLUFS + 0.5)
         XCTAssertNoThrow(try tool.requireVideoStream(output))
     }
 

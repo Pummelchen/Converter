@@ -72,7 +72,7 @@ Project-wide delivery, short-form, and mastering/remediation defaults target `-1
 
 Use `./converter -loudness` to create same-format loudness-normalized copies for `.flac`, `.wav`, `.mp3`, `.m4a`, and `.mp4` files. Pass a value such as `./converter -loudness -13` for a more dynamic target. Targets must stay inside FFmpeg loudnorm's supported `-70` to `-5 LUFS` range. Outputs are tagged with the target, for example `_loudness_m12LUFS`, so livestream-ready files do not overwrite sources or collide with another target.
 
-Loudness normalization targets whole-track integrated LUFS, not constant moment-to-moment volume. The first render path uses dynamics-preserving normalization. If a source has high peaks and a low integrated average, the converter retries from measured output and only then enables bounded true-peak recovery limiting so the file can still meet both the integrated LUFS target and project true-peak ceiling.
+Loudness normalization targets whole-track integrated LUFS, not constant moment-to-moment volume. Rendering uses one static gain value only: no EQ, no limiter, no dynamic loudnorm render, and no compression. If a source has high peaks and a low integrated average, the converter caps positive gain at available peak headroom and may warn that the output is peak-constrained instead of damaging the musical dynamics to force the exact target.
 
 ## Profiles
 Built-in profiles:

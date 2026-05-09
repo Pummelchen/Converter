@@ -166,24 +166,16 @@ final class converterTests: XCTestCase {
         XCTAssertEqual(typoAliasOptions.action, .loudscan)
     }
 
-    func testLoudnessLimitedRecoveryRequiresTooQuietAndPeakConstrainedOutput() throws {
+    func testStaticLoudnessGainNeverAttenuatesQuietPeakConstrainedAudio() throws {
         let tempDirectory = FileManager.default.temporaryDirectory
             .appendingPathComponent("converter-test-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: tempDirectory, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: tempDirectory) }
 
         let tool = try makeTool(tempDirectory: tempDirectory, arguments: ["-loudness"])
-        let policy = tool.loudnessPolicy(targetLUFS: -12)
-
-        XCTAssertFalse(tool.shouldUseLimitedLoudnessRecovery(correctionDB: 0.05, truePeakExcess: 0.4, truePeakHeadroomDB: 0, policy: policy))
-        XCTAssertFalse(tool.shouldUseLimitedLoudnessRecovery(correctionDB: 1.0, truePeakExcess: nil, truePeakHeadroomDB: 0, policy: policy))
-        XCTAssertFalse(tool.shouldUseLimitedLoudnessRecovery(correctionDB: -1.0, truePeakExcess: 0.4, truePeakHeadroomDB: 0, policy: policy))
-        XCTAssertTrue(tool.shouldUseLimitedLoudnessRecovery(correctionDB: 1.0, truePeakExcess: 0.4, truePeakHeadroomDB: 0, policy: policy))
-        XCTAssertTrue(tool.shouldUseLimitedLoudnessRecovery(correctionDB: 1.0, truePeakExcess: nil, truePeakHeadroomDB: 2.0, policy: policy))
-
-        let bounds = tool.loudnessRenderTargetBounds(targetLUFS: -12)
-        XCTAssertEqual(bounds.minimum, -24)
-        XCTAssertEqual(bounds.maximum, LoudnessSpec.maximumTargetLUFS)
+        XCTAssertEqual(tool.staticLoudnessAppliedGainDB(requestedGainDB: 4, maxSafeBoostDB: 2), 2)
+        XCTAssertEqual(tool.staticLoudnessAppliedGainDB(requestedGainDB: 4, maxSafeBoostDB: -0.5), 0)
+        XCTAssertEqual(tool.staticLoudnessAppliedGainDB(requestedGainDB: -3, maxSafeBoostDB: -0.5), -3)
     }
 
     func testLoudnessFiltersRejectBassAndEQFilters() throws {
@@ -195,7 +187,7 @@ final class converterTests: XCTestCase {
         let tool = try makeTool(tempDirectory: tempDirectory, arguments: ["-loudness"])
         let policy = tool.loudnessPolicy(targetLUFS: -12)
         let singlePass = tool.loudnormSinglePassFilter(policy: policy)
-        let limited = tool.loudnessLimitedRecoveryFilter(policy: policy, recoveryGainDB: 1.25, limiterCeilingDBTP: -2.0)
+        let staticGain = tool.staticLoudnessGainFilter(gainDB: 1.25)
         let secondPass = try XCTUnwrap(tool.loudnormSecondPassFilter(policy: policy, measurement: [
             "input_i": "-16.20",
             "input_lra": "4.10",
@@ -205,7 +197,7 @@ final class converterTests: XCTestCase {
         ]))
 
         XCTAssertNoThrow(try tool.validateLoudnessFilterIsEQNeutral(singlePass))
-        XCTAssertNoThrow(try tool.validateLoudnessFilterIsEQNeutral(limited))
+        XCTAssertNoThrow(try tool.validateLoudnessFilterIsEQNeutral(staticGain))
         XCTAssertNoThrow(try tool.validateLoudnessFilterIsEQNeutral(secondPass))
         XCTAssertThrowsError(try tool.validateLoudnessFilterIsEQNeutral(tool.bassFilter(for: BassBoostSpec(frequencyHz: 80, gainDB: 5)))) { error in
             XCTAssertTrue(error.localizedDescription.contains("forbidden filter 'bass'"))
@@ -268,7 +260,6 @@ final class converterTests: XCTestCase {
 
         XCTAssertTrue(tool.loudnessCandidateIsPublishableFallback(recoverableResult, policy: policy))
         XCTAssertFalse(tool.loudnessCandidateIsPublishableFallback(brokenResult, policy: policy))
-        XCTAssertTrue(tool.isRetryableLoudnessRenderFailure(AppError("Loudness render produced no output: temp.mp4")))
     }
 
     func testLoudnessRejectsInvalidTargets() throws {

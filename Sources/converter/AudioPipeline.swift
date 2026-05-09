@@ -1,8 +1,12 @@
 import Foundation
 
-private struct LoudnessRenderCandidate {
-    let temp: URL
-    let result: AudioQCResult
+struct LoudnessStaticGainPlan: Equatable {
+    let sourceIntegratedLUFS: Double
+    let sourcePeakDBFS: Double
+    let requestedGainDB: Double
+    let maxSafeBoostDB: Double
+    let appliedGainDB: Double
+    let peakConstrained: Bool
 }
 
 extension ConverterTool {
@@ -264,40 +268,21 @@ extension ConverterTool {
         )
     }
 
-    func loudnessTruePeakHeadroomAttempts(for source: URL) -> [Double] {
-        switch source.pathExtension.lowercasedASCII {
-        case "mp3", "m4a", "mp4":
-            return [0, 1, 2, 3]
-        default:
-            return [0]
+    func staticLoudnessAppliedGainDB(requestedGainDB: Double, maxSafeBoostDB: Double) -> Double {
+        if requestedGainDB > 0 {
+            return max(0, min(requestedGainDB, maxSafeBoostDB))
         }
+        return requestedGainDB
     }
 
-    func loudnessMaxRenderAttempts(for source: URL) -> Int {
-        switch source.pathExtension.lowercasedASCII {
-        case "mp3", "m4a", "mp4":
-            return 8
-        default:
-            return 5
+    func peakDBFSForStaticLoudnessGain(_ metrics: AudioQCMetrics) throws -> Double {
+        let candidates = [metrics.maxVolumeDBFS, metrics.peakLevelDBFS, metrics.truePeakDBTP]
+            .compactMap { $0 }
+            .filter(\.isFinite)
+        if let peak = candidates.max() {
+            return peak
         }
-    }
-
-    func clampedLoudnessValue(_ value: Double, lowerBound: Double, upperBound: Double) -> Double {
-        min(max(value, lowerBound), upperBound)
-    }
-
-    func loudnessDeviation(_ result: AudioQCResult, policy: AudioQCPolicy) -> Double? {
-        guard let integrated = result.metrics.integratedLUFS, integrated.isFinite else {
-            return nil
-        }
-        return abs(integrated - policy.targetLUFS)
-    }
-
-    func loudnessTruePeakExcess(_ result: AudioQCResult, policy: AudioQCPolicy) -> Double? {
-        guard let truePeak = result.metrics.truePeakDBTP, truePeak.isFinite, truePeak > policy.maxTruePeakDBTP else {
-            return nil
-        }
-        return truePeak - policy.maxTruePeakDBTP
+        throw AppError("Unable to measure sample peak for transparent loudness gain.")
     }
 
     func isIntegratedLoudnessIssue(_ issue: String) -> Bool {
@@ -312,12 +297,6 @@ extension ConverterTool {
         result.issues.filter { !isIntegratedLoudnessIssue($0) && !isTruePeakIssue($0) }
     }
 
-    func loudnessCandidateScore(_ result: AudioQCResult, policy: AudioQCPolicy) -> Double {
-        let deviation = loudnessDeviation(result, policy: policy) ?? 99
-        let truePeakPenalty = (loudnessTruePeakExcess(result, policy: policy) ?? 0) * 50
-        return deviation + truePeakPenalty + Double(loudnessNonRecoverableIssues(result).count) * 1_000
-    }
-
     func loudnessCandidateIsPublishableFallback(_ result: AudioQCResult, policy: AudioQCPolicy) -> Bool {
         guard loudnessNonRecoverableIssues(result).isEmpty else {
             return false
@@ -328,55 +307,8 @@ extension ConverterTool {
         return true
     }
 
-    func loudnessRenderTargetBounds(targetLUFS: Double) -> (minimum: Double, maximum: Double) {
-        (
-            minimum: max(LoudnessSpec.minimumTargetLUFS, targetLUFS - 12),
-            maximum: min(LoudnessSpec.maximumTargetLUFS, targetLUFS + 12)
-        )
-    }
-
-    func shouldUseLimitedLoudnessRecovery(correctionDB: Double?, truePeakExcess: Double?, truePeakHeadroomDB: Double, policy: AudioQCPolicy) -> Bool {
-        guard let correctionDB else {
-            return false
-        }
-        let outputIsTooQuiet = correctionDB > policy.lufsTolerance
-        let outputIsPeakConstrained = truePeakExcess != nil || truePeakHeadroomDB > 0
-        return outputIsTooQuiet && outputIsPeakConstrained
-    }
-
     func loudnessQCFailureMessage(file: URL, result: AudioQCResult) -> String {
         "Audio QC failed for \(file.path): \(result.issues.joined(separator: "; "))"
-    }
-
-    func loudnessRenderProducedFile(_ file: URL, result: ProcessResult) throws {
-        guard fileManager.fileExists(atPath: file.path) else {
-            let detail = result.stderr.lastNonEmptyLine ?? result.stdout.lastNonEmptyLine ?? "ffmpeg exited 0 without creating output"
-            throw AppError("Loudness render produced no output: \(file.path) | \(detail)")
-        }
-        guard try fileSizeBytes(file) > 0 else {
-            throw AppError("Loudness render produced empty output: \(file.path)")
-        }
-    }
-
-    func isRetryableLoudnessRenderFailure(_ error: Error) -> Bool {
-        let message = error.localizedDescription.lowercasedASCII
-        return message.contains("loudness render produced no output")
-            || message.contains("loudness render produced empty output")
-            || message.contains("audio output missing")
-            || message.contains("video output missing")
-    }
-
-    func linearAmplitude(fromDecibels decibels: Double) -> Double {
-        pow(10, decibels / 20)
-    }
-
-    func loudnessLimitedRecoveryFilter(policy: AudioQCPolicy, recoveryGainDB: Double, limiterCeilingDBTP: Double) -> String {
-        let limiterLimit = clampedLoudnessValue(linearAmplitude(fromDecibels: limiterCeilingDBTP), lowerBound: 0.01, upperBound: 1)
-        return [
-            loudnormSinglePassFilter(policy: policy),
-            "volume=\(String(format: "%.2f", recoveryGainDB))dB",
-            "alimiter=limit=\(String(format: "%.6f", limiterLimit)):level=false"
-        ].joined(separator: ",")
     }
 
     func validateLoudnessFilterIsEQNeutral(_ filter: String) throws {
@@ -398,6 +330,32 @@ extension ConverterTool {
         if let forbidden = filterNames.first(where: { forbiddenFilters.contains($0) }) {
             throw AppError("Loudness normalization must stay EQ-neutral; forbidden filter '\(forbidden)' was requested.")
         }
+    }
+
+    func staticLoudnessGainFilter(gainDB: Double) -> String {
+        "volume=\(String(format: "%.6f", gainDB))dB"
+    }
+
+    func staticLoudnessGainPlan(for file: URL, policy: AudioQCPolicy) throws -> LoudnessStaticGainPlan {
+        let metrics = try audioQCResult(for: file, policy: loudnessPolicy(targetLUFS: policy.targetLUFS, tolerance: 99)).metrics
+        guard let integrated = metrics.integratedLUFS, integrated.isFinite else {
+            throw AppError("Unable to measure integrated loudness for transparent loudness gain: \(file.path)")
+        }
+        let peak = try peakDBFSForStaticLoudnessGain(metrics)
+        let requestedGain = policy.targetLUFS - integrated
+        let maxSafeBoost = policy.maxTruePeakDBTP - peak
+        let appliedGain = staticLoudnessAppliedGainDB(
+            requestedGainDB: requestedGain,
+            maxSafeBoostDB: maxSafeBoost
+        )
+        return LoudnessStaticGainPlan(
+            sourceIntegratedLUFS: integrated,
+            sourcePeakDBFS: peak,
+            requestedGainDB: requestedGain,
+            maxSafeBoostDB: maxSafeBoost,
+            appliedGainDB: appliedGain,
+            peakConstrained: requestedGain > appliedGain + 0.05
+        )
     }
 
     func loudnessOutputSuffix(for spec: LoudnessSpec) -> String {
@@ -603,190 +561,52 @@ extension ConverterTool {
             return output
         }
 
-        let headroomAttempts = loudnessTruePeakHeadroomAttempts(for: source)
-        let maxAttempts = loudnessMaxRenderAttempts(for: source)
-        let (minimumRenderTarget, maximumRenderTarget) = loudnessRenderTargetBounds(targetLUFS: spec.targetLUFS)
-        var renderTargetLUFS = spec.targetLUFS
-        var truePeakHeadroomDB = headroomAttempts.first ?? 0
-        var recoveryGainDB: Double?
-        var limiterCeilingDBTP = policy.maxTruePeakDBTP - 1
-        var bestCandidate: LoudnessRenderCandidate?
-        var lastError: Error?
-        var lastResult: AudioQCResult?
-        var seenSettings = Set<String>()
-
-        func discardTemp(_ temp: URL) {
-            try? fileManager.removeItem(at: temp)
-            state.unregister(tempFile: temp)
-        }
-
         let workingSource = try makeInternalWAV(from: source, in: cli.outDir, stem: "\(source.stem).loudness.source")
-        defer { discardTemp(workingSource) }
+        defer { discardTempFile(workingSource) }
 
-        func keepIfBest(_ candidate: LoudnessRenderCandidate) {
-            guard loudnessCandidateIsPublishableFallback(candidate.result, policy: policy) else {
-                discardTemp(candidate.temp)
-                return
+        let plan = try staticLoudnessGainPlan(for: workingSource, policy: policy)
+        let filter = staticLoudnessGainFilter(gainDB: plan.appliedGainDB)
+        try validateLoudnessFilterIsEQNeutral(filter)
+        let temp = try makeTemp(in: cli.outDir, stem: output.stem, ext: ".\(output.pathExtension)")
+        do {
+            let processedWAV = try processInternalWAV(
+                workingSource,
+                filter: filter,
+                in: cli.outDir,
+                stem: "\(output.stem).loudness.processed"
+            )
+            defer { discardTempFile(processedWAV) }
+            try encodeProcessedWAV(processedWAV, matching: source, to: temp, qcPolicy: nil)
+            guard fileManager.fileExists(atPath: temp.path) else {
+                throw AppError("Loudness render produced no output: \(temp.path)")
             }
-            if let bestCandidate {
-                let candidateScore = loudnessCandidateScore(candidate.result, policy: policy)
-                let bestScore = loudnessCandidateScore(bestCandidate.result, policy: policy)
-                guard candidateScore < bestScore else {
-                    discardTemp(candidate.temp)
-                    return
-                }
-                discardTemp(bestCandidate.temp)
+            guard try fileSizeBytes(temp) > 0 else {
+                throw AppError("Loudness render produced empty output: \(temp.path)")
             }
-            bestCandidate = candidate
-        }
-
-        for attempt in 1 ... maxAttempts {
-            let settingKey: String
-            if let recoveryGainDB {
-                settingKey = "limited|\(String(format: "%.3f", recoveryGainDB))|\(String(format: "%.3f", limiterCeilingDBTP))"
-            } else {
-                settingKey = "linear|\(String(format: "%.3f", renderTargetLUFS))|\(String(format: "%.3f", truePeakHeadroomDB))"
-            }
-            if seenSettings.contains(settingKey) {
-                if let gain = recoveryGainDB {
-                    recoveryGainDB = clampedLoudnessValue(gain + 0.1, lowerBound: -12, upperBound: 12)
-                } else {
-                    renderTargetLUFS = clampedLoudnessValue(renderTargetLUFS + 0.1, lowerBound: minimumRenderTarget, upperBound: maximumRenderTarget)
-                }
-            }
-            seenSettings.insert(settingKey)
-
-            let renderPolicy = loudnessRenderPolicy(targetLUFS: renderTargetLUFS, truePeakHeadroomDB: truePeakHeadroomDB)
-            let filter: String
-            if let recoveryGainDB {
-                filter = loudnessLimitedRecoveryFilter(
-                    policy: policy,
-                    recoveryGainDB: recoveryGainDB,
-                    limiterCeilingDBTP: limiterCeilingDBTP
+            let result = try loudnessOutputQCResult(temp, source: source, policy: policy)
+            let measured = result.metrics.integratedLUFS.map { String(format: "%.2f", $0) } ?? "unknown"
+            if result.passed {
+                try publishTemp(temp, to: output)
+                logger.info(
+                    "Created loudness-normalized media: \(output.basename) [integrated=\(measured) LUFS gain=\(String(format: "%.2f", plan.appliedGainDB)) dB]"
                 )
-            } else {
-                let measurement = try loudnormMeasurement(for: workingSource, policy: renderPolicy)
-                filter = loudnormSecondPassFilter(policy: renderPolicy, measurement: measurement) ?? loudnormSinglePassFilter(policy: renderPolicy)
+                return output
             }
-            try validateLoudnessFilterIsEQNeutral(filter)
-            let temp = try makeTemp(in: fileManager.temporaryDirectory, stem: output.stem, ext: ".\(output.pathExtension)")
-            do {
-                let processedWAV = try processInternalWAV(
-                    workingSource,
-                    filter: filter,
-                    in: cli.outDir,
-                    stem: "\(output.stem).loudness.processed"
-                )
-                defer { discardTemp(processedWAV) }
-                try encodeProcessedWAV(processedWAV, matching: source, to: temp, qcPolicy: nil)
-                guard fileManager.fileExists(atPath: temp.path) else {
-                    throw AppError("Loudness render produced no output: \(temp.path)")
-                }
-                guard try fileSizeBytes(temp) > 0 else {
-                    throw AppError("Loudness render produced empty output: \(temp.path)")
-                }
-                let result = try loudnessOutputQCResult(temp, source: source, policy: policy)
-                lastResult = result
-                if result.passed {
-                    if let bestCandidate {
-                        discardTemp(bestCandidate.temp)
-                    }
-                    bestCandidate = nil
-                    try publishTemp(temp, to: output)
-                    let measured = result.metrics.integratedLUFS.map { String(format: "%.2f", $0) } ?? "unknown"
-                    logger.info("Created loudness-normalized media: \(output.basename) [integrated=\(measured) LUFS]")
-                    return output
-                }
 
-                keepIfBest(LoudnessRenderCandidate(
-                    temp: temp,
-                    result: result
-                ))
-
-                let integrated = result.metrics.integratedLUFS
-                let correctionDB = integrated.map { policy.targetLUFS - $0 }
-                let truePeakExcess = loudnessTruePeakExcess(result, policy: policy)
-                if let correctionDB, shouldUseLimitedLoudnessRecovery(
-                    correctionDB: correctionDB,
-                    truePeakExcess: truePeakExcess,
-                    truePeakHeadroomDB: truePeakHeadroomDB,
-                    policy: policy
-                ) {
-                    recoveryGainDB = clampedLoudnessValue(
-                        (recoveryGainDB ?? 0) + correctionDB,
-                        lowerBound: -12,
-                        upperBound: 12
-                    )
-                    let recoveryPeakExcess = truePeakExcess ?? 0
-                    limiterCeilingDBTP = min(
-                        limiterCeilingDBTP,
-                        policy.maxTruePeakDBTP - max(1.0, recoveryPeakExcess + 0.25)
-                    )
-                } else if let gain = recoveryGainDB, let correctionDB {
-                    if abs(correctionDB) > max(0.05, policy.lufsTolerance / 4) {
-                        recoveryGainDB = clampedLoudnessValue(gain + correctionDB, lowerBound: -12, upperBound: 12)
-                    }
-                    if let truePeakExcess {
-                        limiterCeilingDBTP -= max(0.5, truePeakExcess + 0.25)
-                    }
-                } else if recoveryGainDB != nil {
-                    if let truePeakExcess {
-                        limiterCeilingDBTP -= max(0.5, truePeakExcess + 0.25)
-                    }
-                } else {
-                    if let correctionDB, abs(correctionDB) > max(0.05, policy.lufsTolerance / 4) {
-                        renderTargetLUFS = clampedLoudnessValue(
-                            renderTargetLUFS + correctionDB,
-                            lowerBound: minimumRenderTarget,
-                            upperBound: maximumRenderTarget
-                        )
-                    }
-                    if let truePeakExcess {
-                        truePeakHeadroomDB = clampedLoudnessValue(
-                            truePeakHeadroomDB + max(0.5, truePeakExcess + 0.25),
-                            lowerBound: 0,
-                            upperBound: 12
-                        )
-                    }
-                }
-
-                let measured = integrated.map { String(format: "%.2f", $0) } ?? "unknown"
-                let nextCeiling = loudnessRenderPolicy(targetLUFS: renderTargetLUFS, truePeakHeadroomDB: truePeakHeadroomDB).maxTruePeakDBTP
-                let modeDescription = recoveryGainDB.map {
-                    "limited_recovery gain=\(String(format: "%.2f", $0))dB limiter=\(String(format: "%.2f", limiterCeilingDBTP))dB"
-                } ?? "linear next_render_target=\(String(format: "%.2f", renderTargetLUFS)) LUFS next_tp_ceiling=\(String(format: "%.2f", nextCeiling)) dBTP"
-                logger.warn(
-                    "Loudness QC retry \(attempt)/\(maxAttempts) for \(source.basename): measured=\(measured) LUFS target=\(String(format: "%.2f", policy.targetLUFS)) mode=\(modeDescription)"
-                )
-            } catch {
-                discardTemp(temp)
-                lastError = error
-                if attempt < maxAttempts, isRetryableLoudnessRenderFailure(error) {
-                    logger.warn("Loudness render retry \(attempt)/\(maxAttempts) for \(source.basename): \(error.localizedDescription)")
-                    continue
-                }
-                if bestCandidate != nil {
-                    logger.warn("Loudness render failed for \(source.basename); using best verified render so far: \(error.localizedDescription)")
-                    break
-                }
-                throw error
+            guard loudnessCandidateIsPublishableFallback(result, policy: policy) else {
+                throw AppError(loudnessQCFailureMessage(file: temp, result: result))
             }
-        }
-
-        if let bestCandidate {
-            try publishTemp(bestCandidate.temp, to: output)
-            let measured = bestCandidate.result.metrics.integratedLUFS.map { String(format: "%.2f", $0) } ?? "unknown"
-            let deviation = loudnessDeviation(bestCandidate.result, policy: policy) ?? 0
+            try publishTemp(temp, to: output)
+            let reason = plan.peakConstrained ? "peak-constrained" : "closest-safe"
             logger.warn(
-                "Created closest safe loudness-normalized media: \(output.basename) [integrated=\(measured) LUFS target=\(String(format: "%.2f", policy.targetLUFS)) deviation=\(String(format: "%.2f", deviation)) dB]"
+                "Created \(reason) loudness media without compression: \(output.basename) [integrated=\(measured) LUFS target=\(String(format: "%.2f", policy.targetLUFS)) gain=\(String(format: "%.2f", plan.appliedGainDB)) dB requested=\(String(format: "%.2f", plan.requestedGainDB)) dB peak=\(String(format: "%.2f", plan.sourcePeakDBFS)) dBFS]"
             )
             return output
+        } catch {
+            try? fileManager.removeItem(at: temp)
+            state.unregister(tempFile: temp)
+            throw error
         }
-
-        if let lastResult {
-            throw AppError(loudnessQCFailureMessage(file: output, result: lastResult))
-        }
-        throw lastError ?? AppError("Unable to create loudness-normalized media: \(source.path)")
     }
 
     func fadeCutAudio(_ source: URL, spec: FadeCutSpec) throws -> URL {
