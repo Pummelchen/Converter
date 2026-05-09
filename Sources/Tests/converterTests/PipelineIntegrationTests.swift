@@ -443,6 +443,38 @@ final class PipelineIntegrationTests: XCTestCase {
         XCTAssertEqual(try tool.cli.bassBoostSpec(), BassBoostSpec(frequencyHz: 60, gainDB: 7.5))
         XCTAssertEqual(tool.bassOutputSuffix(for: try tool.cli.bassBoostSpec()), "_bass_60Hz_7_5dB")
         XCTAssertEqual(tool.bassFilter(for: try tool.cli.bassBoostSpec()), "bass=f=60:g=7.5:t=h:w=60:p=2:precision=f64")
+
+        let cutTool = try workspace.makeTool(arguments: ["-bass", "80", "-5"])
+        XCTAssertEqual(try cutTool.cli.bassBoostSpec(), BassBoostSpec(frequencyHz: 80, gainDB: -5))
+        XCTAssertEqual(cutTool.bassOutputSuffix(for: try cutTool.cli.bassBoostSpec()), "_bass_80Hz_m5dB")
+        XCTAssertEqual(cutTool.bassFilter(for: try cutTool.cli.bassBoostSpec()), "bass=f=80:g=-5:t=h:w=80:p=2:precision=f64")
+    }
+
+    func testBassNegativeGainReducesLowBandEnergy() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe"])
+
+        let source = workspace.output.appendingPathComponent("bass_cut_source").appendingPathExtension("wav")
+        _ = try workspace.runner().run("ffmpeg", [
+            "-hide_banner", "-nostdin", "-v", "error", "-y",
+            "-f", "lavfi",
+            "-i", "aevalsrc=0.18*sin(2*PI*60*t)+0.18*sin(2*PI*1000*t):s=48000:d=4",
+            "-ac", "2",
+            "-c:a", "pcm_f32le",
+            "-ar", "48000",
+            "-f", "wav",
+            "-rf64", "always",
+            "-write_bext", "1",
+            source.path
+        ])
+
+        let tool = try workspace.makeTool(arguments: ["-bass", "80", "-5"])
+        let cutOutput = try tool.bassBoostMedia(source, spec: try tool.cli.bassBoostSpec())
+
+        let sourceRatio = try bassToMidRatioDB(file: source, workspace: workspace)
+        let cutRatio = try bassToMidRatioDB(file: cutOutput, workspace: workspace)
+
+        XCTAssertLessThan(cutRatio - sourceRatio, -2.0, "Negative bass gain must reduce low-band energy.")
     }
 
     func testLoudnessDoesNotApplyBassBoost() throws {

@@ -395,6 +395,7 @@ struct CLIOptions {
           \(scriptName) --hash
           \(scriptName) -bass
           \(scriptName) -bass 80 5
+          \(scriptName) -bass 80 -5
           \(scriptName) -loudscan
           \(scriptName) -loudness
           \(scriptName) -loudness -13
@@ -437,7 +438,7 @@ struct CLIOptions {
               Output: all found .wav, .flac, .mp3, and .mp4 files renamed to CRC32-based filenames
             -bass [FREQUENCY_HZ GAIN_DB]
               Input: one or more .flac, .wav, .mp3, .m4a, or .mp4 files in SRC_DIR
-              Output: same-format files with bass boost applied; default is 0-80 Hz boosted by 5 dB
+              Output: same-format files with bass adjustment applied; default is 0-80 Hz boosted by 5 dB; negative gain reduces bass
             -loudscan
               Input: one or more .flac, .wav, .mp3, .m4a, or .mp4 files in SRC_DIR
               Output: four terminal report lines: average, lowest, highest, and top-3 loudest average

@@ -488,7 +488,7 @@ extension ConverterTool {
         if canReuseOutput(output, verifier: {
             try self.verifyBassOutput(output, source: source)
         }) {
-            logger.info("Skip existing bass-boosted media: \(output.basename)")
+            logger.info("Skip existing bass-adjusted media: \(output.basename)")
             return output
         }
 
@@ -506,7 +506,7 @@ extension ConverterTool {
             try encodeProcessedWAV(processedWAV, matching: source, to: temp, qcPolicy: nil)
             try verifyBassOutput(temp, source: source)
             try publishTemp(temp, to: output)
-            logger.info("Created bass-boosted media: \(output.basename)")
+            logger.info("Created bass-adjusted media: \(output.basename)")
             return output
         } catch {
             try? fileManager.removeItem(at: temp)

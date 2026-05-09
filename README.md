@@ -34,6 +34,7 @@ swift test --package-path Sources
 ./converter -matrix
 ./converter -bass
 ./converter -bass 80 5
+./converter -bass 80 -5
 ./converter -loudscan
 ./converter -loudness
 ./converter -loudness -13
@@ -62,8 +63,8 @@ MP4/M4A delivery paths do not stream-copy AAC and do not use AAC bitrate setting
 ## Hash Rename
 Use `./converter --hash` to rename `.wav`, `.flac`, `.mp3`, and `.mp4` files in `Output/` to CRC32-based filenames after media preflight.
 
-## Bass Boost
-Use `./converter -bass` to create same-format `_bass` copies for `.flac`, `.wav`, `.mp3`, `.m4a`, and `.mp4` files in `Output/`. The default boosts bass around 80 Hz by 5 dB. Use `./converter -bass 80 5` to set frequency and gain manually; non-default settings use a settings-specific suffix such as `_bass_60Hz_7_5dB`.
+## Bass Adjustment
+Use `./converter -bass` to create same-format `_bass` copies for `.flac`, `.wav`, `.mp3`, `.m4a`, and `.mp4` files in `Output/`. The default boosts bass around 80 Hz by 5 dB. Use `./converter -bass 80 5` to boost manually, or `./converter -bass 80 -5` to reduce the 0-80 Hz range by 5 dB. Non-default settings use a settings-specific suffix such as `_bass_60Hz_7_5dB` or `_bass_80Hz_m5dB`.
 
 ## Loudness
 Use `./converter -loudscan` to measure supported audio media in `Output/`. Long scans stream progress as `current/total` files measured and reprint the current four-line report after each file: average loudness, lowest loudness, highest loudness, and the average of the three loudest files.

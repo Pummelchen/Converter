@@ -622,7 +622,8 @@ extension ConverterTool {
             emptyMessage: "No supported audio media files (.flac, .wav, .mp3, .m4a, .mp4) found in '\(cli.srcDir.path)'.",
             failWhenEmpty: true
         ) { file in
-            self.logger.info("Bass boost \(file.basename): frequency=\(ffmpegNumber(spec.frequencyHz))Hz gain=\(ffmpegNumber(spec.gainDB))dB")
+            let mode = spec.gainDB < 0 ? "reduce" : "boost"
+            self.logger.info("Bass \(mode) \(file.basename): frequency=\(ffmpegNumber(spec.frequencyHz))Hz gain=\(ffmpegNumber(spec.gainDB))dB")
             return try self.bassBoostMedia(file, spec: spec)
         }
     }

@@ -63,6 +63,14 @@ final class converterTests: XCTestCase {
             scriptName: "converter"
         )
         XCTAssertEqual(try manualOptions.bassBoostSpec(), BassBoostSpec(frequencyHz: 60, gainDB: 7.5))
+
+        let cutOptions = try CLIOptions.parse(
+            arguments: ["-bass", "80", "-5"],
+            environment: [:],
+            scriptDirectory: root,
+            scriptName: "converter"
+        )
+        XCTAssertEqual(try cutOptions.bassBoostSpec(), BassBoostSpec(frequencyHz: 80, gainDB: -5))
     }
 
     func testBassRejectsInvalidArguments() throws {
