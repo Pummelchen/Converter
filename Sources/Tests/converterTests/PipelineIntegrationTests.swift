@@ -1366,14 +1366,14 @@ final class PipelineIntegrationTests: XCTestCase {
 
         _ = try workspace.createImage(name: "Horizontal_8K", ext: "png", width: 320, height: 180)
         _ = try workspace.createImage(name: "Vertical_8K", ext: "png", width: 90, height: 160)
-        _ = try workspace.createHotAudio(name: "10", ext: "flac", duration: 1.2, frequency: 660, gainDB: -6)
-        _ = try workspace.createHotAudio(name: "1", ext: "mp3", duration: 1.2, frequency: 330, gainDB: 6)
-        _ = try workspace.createHotAudio(name: "2", ext: "wav", duration: 1.2, frequency: 440, gainDB: 0)
+        _ = try workspace.createHotAudio(name: "10 - Storm", ext: "flac", duration: 1.2, frequency: 660, gainDB: -6)
+        _ = try workspace.createHotAudio(name: "1 - Sun", ext: "mp3", duration: 1.2, frequency: 330, gainDB: 6)
+        _ = try workspace.createHotAudio(name: "2 - Rain", ext: "wav", duration: 1.2, frequency: 440, gainDB: 0)
 
         let tool = try workspace.makeTool(arguments: ["-album"])
         defer { tool.cleanupTemps() }
         try tool.initializeForExecution()
-        XCTAssertEqual(try tool.albumAudioCandidates().map(\.lastPathComponent), ["1.mp3", "2.wav", "10.flac"])
+        XCTAssertEqual(try tool.albumAudioCandidates().map(\.lastPathComponent), ["1 - Sun.mp3", "2 - Rain.wav", "10 - Storm.flac"])
 
         try await tool.stepAlbum()
 

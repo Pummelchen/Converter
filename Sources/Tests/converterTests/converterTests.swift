@@ -52,13 +52,13 @@ final class converterTests: XCTestCase {
         try FileManager.default.createDirectory(at: tempDirectory, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: tempDirectory) }
 
-        for name in ["10.flac", "1.mp3", "2.wav", "album.wav", "3_loudness_m12LUFS.mp3"] {
+        for name in ["10 - Storm.flac", "1 - Sun.mp3", "2 - Rain.wav", "album.wav", "3_loudness_m12LUFS.mp3"] {
             FileManager.default.createFile(atPath: tempDirectory.appendingPathComponent(name).path, contents: Data("x".utf8))
         }
 
         let tool = try makeTool(tempDirectory: tempDirectory, arguments: ["-album"])
         XCTAssertEqual(tool.cli.action, .album)
-        XCTAssertEqual(try tool.albumAudioCandidates().map(\.lastPathComponent), ["1.mp3", "2.wav", "10.flac"])
+        XCTAssertEqual(try tool.albumAudioCandidates().map(\.lastPathComponent), ["1 - Sun.mp3", "2 - Rain.wav", "10 - Storm.flac"])
     }
 
     func testBassParsesDefaultsAndManualValues() throws {

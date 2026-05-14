@@ -1325,6 +1325,15 @@ extension ConverterTool {
     }
 
     func sortAlbumAudioTracks(_ urls: [URL]) -> [URL] {
+        func leadingTrackNumber(_ file: URL) -> Int? {
+            let stem = file.deletingPathExtension().lastPathComponent.trimmingCharacters(in: .whitespacesAndNewlines)
+            let digits = stem.prefix { $0.isNumber }
+            guard !digits.isEmpty else {
+                return nil
+            }
+            return Int(digits)
+        }
+
         func extensionRank(_ file: URL) -> Int {
             switch file.pathExtension.lowercasedASCII {
             case "flac": return 0
@@ -1337,6 +1346,21 @@ extension ConverterTool {
         return urls.sorted { lhs, rhs in
             let lhsStem = lhs.deletingPathExtension().lastPathComponent
             let rhsStem = rhs.deletingPathExtension().lastPathComponent
+            let lhsNumber = leadingTrackNumber(lhs)
+            let rhsNumber = leadingTrackNumber(rhs)
+            if lhsNumber != rhsNumber {
+                switch (lhsNumber, rhsNumber) {
+                case let (left?, right?):
+                    return left < right
+                case (_?, nil):
+                    return true
+                case (nil, _?):
+                    return false
+                case (nil, nil):
+                    break
+                }
+            }
+
             let stemOrder = lhsStem.localizedStandardCompare(rhsStem)
             if stemOrder != .orderedSame {
                 return stemOrder == .orderedAscending
