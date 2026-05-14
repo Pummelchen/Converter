@@ -24,6 +24,8 @@ final class converterTests: XCTestCase {
             scriptName: "converter"
         )
         let help = options.helpText()
+        XCTAssertTrue(help.contains("-album"))
+        XCTAssertTrue(help.contains("natural numeric filename order"))
         XCTAssertTrue(help.contains("Horizontal_8K.png"))
         XCTAssertTrue(help.contains("Vertical_8K.png"))
         XCTAssertTrue(help.contains(".flac or .wav or .mp3"))
@@ -43,6 +45,20 @@ final class converterTests: XCTestCase {
         XCTAssertTrue(help.contains(".jpg or .jpeg"))
         XCTAssertFalse(help.contains("-jpegtopng"))
         XCTAssertFalse(help.contains("-pngtojpeg"))
+    }
+
+    func testAlbumActionParsesAndSortsNaturallyIgnoringExtension() throws {
+        let tempDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: tempDirectory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: tempDirectory) }
+
+        for name in ["10.flac", "1.mp3", "2.wav", "album.wav", "3_loudness_m12LUFS.mp3"] {
+            FileManager.default.createFile(atPath: tempDirectory.appendingPathComponent(name).path, contents: Data("x".utf8))
+        }
+
+        let tool = try makeTool(tempDirectory: tempDirectory, arguments: ["-album"])
+        XCTAssertEqual(tool.cli.action, .album)
+        XCTAssertEqual(try tool.albumAudioCandidates().map(\.lastPathComponent), ["1.mp3", "2.wav", "10.flac"])
     }
 
     func testBassParsesDefaultsAndManualValues() throws {

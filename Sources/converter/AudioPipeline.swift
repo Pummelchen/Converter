@@ -1324,6 +1324,124 @@ extension ConverterTool {
         urls.sorted { $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending }
     }
 
+    func sortAlbumAudioTracks(_ urls: [URL]) -> [URL] {
+        func extensionRank(_ file: URL) -> Int {
+            switch file.pathExtension.lowercasedASCII {
+            case "flac": return 0
+            case "wav": return 1
+            case "mp3": return 2
+            default: return 9
+            }
+        }
+
+        return urls.sorted { lhs, rhs in
+            let lhsStem = lhs.deletingPathExtension().lastPathComponent
+            let rhsStem = rhs.deletingPathExtension().lastPathComponent
+            let stemOrder = lhsStem.localizedStandardCompare(rhsStem)
+            if stemOrder != .orderedSame {
+                return stemOrder == .orderedAscending
+            }
+
+            let lhsRank = extensionRank(lhs)
+            let rhsRank = extensionRank(rhs)
+            if lhsRank != rhsRank {
+                return lhsRank < rhsRank
+            }
+            return lhs.lastPathComponent.localizedStandardCompare(rhs.lastPathComponent) == .orderedAscending
+        }
+    }
+
+    func isAlbumDerivedAudio(_ file: URL) -> Bool {
+        let stem = file.stem.lowercasedASCII
+        return stem == "album"
+            || stem == "album_from_mp3"
+            || stem.hasPrefix("album.")
+            || isExternalArchivalAudioVariant(file)
+            || isLoudnessDerivedAudio(file)
+            || isBassDerivedAudio(file)
+            || isFadeDerivedAudio(file)
+    }
+
+    func albumAudioCandidates() throws -> [URL] {
+        let candidates = try files(in: cli.srcDir, matchingExtensions: ["mp3", "wav", "flac"])
+            .filter { !isAlbumDerivedAudio($0) }
+        return sortAlbumAudioTracks(candidates)
+    }
+
+    func preflightAlbumAudioInput(_ file: URL) throws {
+        switch file.pathExtension.lowercasedASCII {
+        case "flac":
+            try preflightFLACInput(file)
+        case "wav":
+            try preflightWAVInput(file)
+        case "mp3":
+            try preflightMP3Input(file)
+        default:
+            throw AppError("Unsupported album audio input: \(file.path)")
+        }
+    }
+
+    func normalizeAlbumTrackToWAV(_ source: URL, index: Int, total: Int, policy: AudioQCPolicy) throws -> URL {
+        try preflightAlbumAudioInput(source)
+        logger.info("Album loudness normalize \(index)/\(total): \(source.basename)")
+        let workingSource = try makeInternalWAV(from: source, in: cli.outDir, stem: "album.track.\(index).source.\(source.stem)")
+        defer { discardTempFile(workingSource) }
+
+        let plan = try staticLoudnessGainPlan(for: workingSource, policy: policy)
+        let filter = staticLoudnessGainFilter(gainDB: plan.appliedGainDB)
+        try validateLoudnessFilterIsEQNeutral(filter)
+        let processed = try processInternalWAV(
+            workingSource,
+            filter: filter,
+            in: cli.outDir,
+            stem: "album.track.\(index).normalized.\(source.stem)"
+        )
+        do {
+            try verifyWAVStandard(processed, qcPolicy: nil)
+            try verifyDurationMatch(source: source, output: processed)
+            let result = try audioQCResult(for: processed, policy: policy)
+            if result.passed {
+                let measured = result.metrics.integratedLUFS.map { String(format: "%.2f", $0) } ?? "unknown"
+                logger.info("Album track ready: \(source.basename) [integrated=\(measured) LUFS]")
+                return processed
+            }
+
+            guard loudnessCandidateIsPublishableFallback(result, policy: policy) else {
+                discardTempFile(processed)
+                throw AppError(loudnessQCFailureMessage(file: processed, result: result))
+            }
+            let measured = result.metrics.integratedLUFS.map { String(format: "%.2f", $0) } ?? "unknown"
+            logger.warn("Album track peak-constrained without compression: \(source.basename) [integrated=\(measured) LUFS target=\(String(format: "%.2f", policy.targetLUFS))]")
+            return processed
+        } catch {
+            discardTempFile(processed)
+            throw error
+        }
+    }
+
+    func buildNumberedAlbumFromDirectory(defaultOutputName: String = "album.wav") throws -> URL {
+        let tracks = try albumAudioCandidates()
+        guard tracks.count >= 2 else {
+            throw AppError("Album pipeline expects at least two source audio files (.mp3/.wav/.flac) in '\(cli.srcDir.path)'.")
+        }
+
+        logger.info("Album track order: \(tracks.map(\.basename).joined(separator: ", "))")
+        let policy = loudnessPolicy(targetLUFS: LoudnessSpec.defaultTargetLUFS)
+        var normalizedTracks: [URL] = []
+        defer {
+            for track in normalizedTracks {
+                discardTempFile(track)
+            }
+        }
+
+        for (offset, track) in tracks.enumerated() {
+            normalizedTracks.append(try normalizeAlbumTrackToWAV(track, index: offset + 1, total: tracks.count, policy: policy))
+        }
+
+        let output = try resolveOutputPath(cli.outputFile ?? defaultOutputName)
+        return try buildAlbum(from: normalizedTracks, output: output)
+    }
+
     func buildAlbum(from entries: [URL], output: URL) throws -> URL {
         guard !entries.isEmpty else {
             throw AppError("No valid album inputs provided.")

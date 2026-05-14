@@ -322,11 +322,7 @@ extension ConverterTool {
         }
     }
 
-    func stepFull() async throws {
-        logger.info("Full pipeline start")
-        let audio = try resolveFullAudio()
-        logger.info("Source audio: \(audio.basename)")
-
+    func runFullProductionPipeline(sourceAudio audio: URL) async throws {
         async let imageArtifactsTask = fullRunImageArtifacts()
         async let audioArtifactsTask = fullAudioPreparation(sourceAudio: audio)
 
@@ -355,7 +351,22 @@ extension ConverterTool {
             _ = try await withVideoPermit { try self.shortenMP4(mainVideo, audioQCPolicy: nil) }
         }
         try cleanTransients()
+    }
+
+    func stepFull() async throws {
+        logger.info("Full pipeline start")
+        let audio = try resolveFullAudio()
+        logger.info("Source audio: \(audio.basename)")
+        try await runFullProductionPipeline(sourceAudio: audio)
         logger.info("Full pipeline complete")
+    }
+
+    func stepAlbum() async throws {
+        logger.info("Album pipeline start")
+        let album = try buildNumberedAlbumFromDirectory()
+        logger.info("Album source audio: \(album.basename)")
+        try await runFullProductionPipeline(sourceAudio: album)
+        logger.info("Album pipeline complete")
     }
 
     func stepRunPix() async throws {
@@ -800,6 +811,8 @@ extension ConverterTool {
 
     func execute() async throws {
         switch cli.action {
+        case .album:
+            try await stepAlbum()
         case .bass:
             try stepBass()
         case .hash:

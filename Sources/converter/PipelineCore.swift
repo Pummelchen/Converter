@@ -341,14 +341,14 @@ final class ConverterTool: @unchecked Sendable {
             try runner.requireExecutable(tool)
         }
         switch cli.action {
-        case .aipix, .jpgtopng, .pngtojpg, .pngtonft, .pngto2k, .pngto3k, .pngto3k1mb, .pngto3k5mb,
+        case .album, .aipix, .jpgtopng, .pngtojpg, .pngtonft, .pngto2k, .pngto3k, .pngto3k1mb, .pngto3k5mb,
              .pngtojpg1mb, .pngtojpg2mb, .pngtojpg20mb, .runPix, .visualsubs, .full, .m4atomp4, .mp3toshort:
             try runner.requireExecutable("magick")
         default:
             break
         }
         switch cli.action {
-        case .wavtomp3, .flactomp3, .mp3towav, .mp3tom4a, .mp3clean, .mp3toalbum, .mp3tohash, .bass, .fade, .fadecut, .fadeout, .loudscan, .loudness, .full:
+        case .album, .wavtomp3, .flactomp3, .mp3towav, .mp3tom4a, .mp3clean, .mp3toalbum, .mp3tohash, .bass, .fade, .fadecut, .fadeout, .loudscan, .loudness, .full:
             try runner.requireExecutable("ffmpeg")
         default:
             break

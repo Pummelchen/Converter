@@ -31,6 +31,7 @@ swift test --package-path Sources
 ./converter -help
 ./converter -doctor
 ./converter
+./converter -album
 ./converter -matrix
 ./converter -bass
 ./converter -bass 80 5
@@ -49,6 +50,8 @@ swift test --package-path Sources
 Short outputs are hard-capped at 58 seconds.
 For `-mp3toshort`, a portrait `*_8K.png` is rendered directly to the short output; a landscape `*_8K.png` still follows the main-video-plus-short path.
 Conversions preserve source loudness by default instead of remastering it down during normal pipeline work, including `-mp3toshort`.
+
+`./converter -album` is the album version of the full production run. It scans `Output/` for `.mp3`, `.wav`, and `.flac` tracks, sorts them by natural numeric filename order while ignoring the extension, loudness-normalizes each track to `-12 LUFS`, builds one RF64 `album.wav`, then continues through the same full-run image, MP4, and short-render pipeline.
 
 ## Audio Standards
 All converter audio paths stage through an internal WAV before delivery encoding. The internal working WAV standard is fixed at 32-bit float, 192 kHz, stereo (`pcm_f32le`, RF64 WAV).

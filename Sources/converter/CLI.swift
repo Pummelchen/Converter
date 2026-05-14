@@ -1,6 +1,7 @@
 import Foundation
 
 enum Action: String {
+    case album
     case bass
     case doctor
     case fade
@@ -115,6 +116,8 @@ struct CLIOptions {
             switch argument {
             case "-bass":
                 options.action = .bass
+            case "-album":
+                options.action = .album
             case "-doctor":
                 options.action = .doctor
             case "-fade", "-fadeflac":
@@ -347,7 +350,7 @@ struct CLIOptions {
     func printActionList() {
         let lines = [
             "Available actions:",
-            "  --hash", "  -bass", "  -doctor", "  -fade", "  -fadecut", "  -fadeout", "  -full", "  -run", "  -run_pix", "  -aipix", "  -clean", "  -fadewav",
+            "  --hash", "  -album", "  -bass", "  -doctor", "  -fade", "  -fadecut", "  -fadeout", "  -full", "  -run", "  -run_pix", "  -aipix", "  -clean", "  -fadewav",
             "  -flactoalbum", "  -flactohash", "  -flactom4a", "  -flactomp3", "  -flactowav",
             "  -jpgtopng", "  -m4atoflac", "  -m4atomp3", "  -m4atomp4", "  -m4atowav",
             "  -loudscan", "  -loudness", "  -matrix", "  -mp3clean", "  -mp3toalbum", "  -mp3toflac", "  -mp3tohash",
@@ -392,6 +395,7 @@ struct CLIOptions {
         """
         Usage:
           \(scriptName)
+          \(scriptName) -album
           \(scriptName) --hash
           \(scriptName) -bass
           \(scriptName) -bass 80 5
@@ -429,6 +433,12 @@ struct CLIOptions {
             - Audio/video deliverables: WAV, M4A, MP3, main MP4, short MP4
             - External audio deliverables: *_RF64.flac, *_RF64.wav, *_BW64.flac, *_BW64.wav
               These archival companions are delivery-only and are not reused as full-run source inputs.
+
+        Album run:
+          Use: -album
+          Input: two or more .mp3, .wav, or .flac files in SRC_DIR plus the same full-run image inputs.
+          Order: natural numeric filename order by stem, ignoring extension, so 1, 2, 10 is correct.
+          Output: one loudness-normalized RF64 album WAV, then the same audio/video deliverables as -run.
 
         Manual actions by input type:
 

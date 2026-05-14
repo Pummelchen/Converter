@@ -1360,6 +1360,69 @@ final class PipelineIntegrationTests: XCTestCase {
         try tool.verifySourceLoudnessPreserved(source: sourceFLAC, output: shortOutput)
     }
 
+    func testAlbumPipelineSortsMixedAudioNormalizesAndContinuesFullRun() async throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe", "magick"])
+
+        _ = try workspace.createImage(name: "Horizontal_8K", ext: "png", width: 320, height: 180)
+        _ = try workspace.createImage(name: "Vertical_8K", ext: "png", width: 90, height: 160)
+        _ = try workspace.createHotAudio(name: "10", ext: "flac", duration: 1.2, frequency: 660, gainDB: -6)
+        _ = try workspace.createHotAudio(name: "1", ext: "mp3", duration: 1.2, frequency: 330, gainDB: 6)
+        _ = try workspace.createHotAudio(name: "2", ext: "wav", duration: 1.2, frequency: 440, gainDB: 0)
+
+        let tool = try workspace.makeTool(arguments: ["-album"])
+        defer { tool.cleanupTemps() }
+        try tool.initializeForExecution()
+        XCTAssertEqual(try tool.albumAudioCandidates().map(\.lastPathComponent), ["1.mp3", "2.wav", "10.flac"])
+
+        try await tool.stepAlbum()
+
+        let expectedFiles = [
+            "album.wav",
+            "album.m4a",
+            "album.mp3",
+            "album_RF64.wav",
+            "album_BW64.wav",
+            "album_RF64.flac",
+            "album_BW64.flac",
+            "album_8K.mp4",
+            "album_8K_Short.mp4"
+        ]
+        for name in expectedFiles {
+            XCTAssertTrue(FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent(name).path), "Missing album pipeline output \(name)")
+        }
+
+        let albumWAV = workspace.output.appendingPathComponent("album.wav")
+        let mainOutput = workspace.output.appendingPathComponent("album_8K.mp4")
+        let shortOutput = workspace.output.appendingPathComponent("album_8K_Short.mp4")
+        try tool.verifyWAVStandard(albumWAV, qcPolicy: tool.loudnessPolicy(targetLUFS: -12, tolerance: 3))
+        try tool.verifyVideoOutput(
+            mainOutput,
+            width: tool.config.videoMP4Width,
+            height: tool.config.videoMP4Height,
+            codec: tool.config.videoMP4VerifyCodec,
+            pixelFormat: tool.config.videoMP4PixelFormat,
+            colorPrimaries: tool.config.videoColorPrimaries,
+            colorTransfer: tool.config.videoColorTransfer,
+            colorSpace: tool.config.videoColorSpace,
+            colorRange: tool.config.videoColorRange
+        )
+        try tool.verifyVideoOutput(
+            shortOutput,
+            width: tool.config.shortMP4ScaleW,
+            height: tool.config.shortMP4ScaleH,
+            codec: tool.config.shortMP4VerifyCodec,
+            pixelFormat: tool.config.shortMP4PixelFormat,
+            colorPrimaries: tool.config.videoColorPrimaries,
+            colorTransfer: tool.config.videoColorTransfer,
+            colorSpace: tool.config.videoColorSpace,
+            colorRange: tool.config.videoColorRange
+        )
+
+        let allFiles = try FileManager.default.contentsOfDirectory(at: workspace.output, includingPropertiesForKeys: [.isRegularFileKey], options: [])
+        XCTAssertFalse(allFiles.contains { $0.lastPathComponent.contains("album.track") }, "Album track normalization temps leaked into Output.")
+    }
+
     func testAlbumBuildFromAlbumFileCreatesVerifiedRF64Wave() throws {
         let workspace = try IntegrationWorkspace()
         try workspace.requireCommands(["ffmpeg", "ffprobe"])
