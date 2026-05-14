@@ -437,7 +437,7 @@ struct CLIOptions {
         Album run:
           Use: -album
           Input: two or more .mp3, .wav, or .flac files in SRC_DIR plus the same full-run image inputs.
-          Order: natural numeric filename order by stem, ignoring extension, so 1, 2, 10 is correct.
+          Order: natural numeric filename order.
           Output: one loudness-normalized RF64 album WAV, then the same audio/video deliverables as -run.
 
         Manual actions by input type:
