@@ -807,14 +807,7 @@ extension ConverterTool {
         }
 
         let targetLUFS = NoiseSpec.targetLUFS
-        let tolerance: Double
-        if spec.seconds < 1 {
-            tolerance = 8.0
-        } else if spec.seconds < 3 {
-            tolerance = 4.0
-        } else {
-            tolerance = 2.0
-        }
+        let tolerance = noiseLUFSTolerance(for: spec)
         let minimumAudibleDBFS = -60.0
 
         func verifySegment(label: String, start: Double) throws {
@@ -837,6 +830,32 @@ extension ConverterTool {
 
         try verifySegment(label: "Leading", start: boundaryMargin)
         try verifySegment(label: "Trailing", start: max(0, expectedDuration - spec.seconds + boundaryMargin))
+    }
+
+    func noiseLUFSTolerance(for spec: NoiseSpec) -> Double {
+        if spec.seconds < 1 {
+            return 8.0
+        }
+        if spec.seconds < 3 {
+            return 4.0
+        }
+        return 2.0
+    }
+
+    func noiseLoudnessPolicy(for spec: NoiseSpec) -> AudioQCPolicy {
+        loudnessPolicy(targetLUFS: NoiseSpec.targetLUFS, tolerance: noiseLUFSTolerance(for: spec))
+    }
+
+    func noiseGenerationSampleRate() -> Int {
+        // Generate noise at the lowest delivery rate so later downsampling cannot strip power and lower LUFS.
+        let deliveryRates = [
+            config.mp3SampleRate,
+            config.flacSampleRate,
+            config.m4aSampleRate,
+            config.videoMP4AudioSampleRate,
+            config.shortMP4AudioSampleRate
+        ].filter { $0 > 0 }
+        return deliveryRates.min() ?? config.wavSampleRate
     }
 
     func verifyNoiseOutput(_ file: URL, source: URL, expectedDuration: Double, spec: NoiseSpec) throws {
@@ -900,7 +919,7 @@ extension ConverterTool {
             _ = try runner.run("ffmpeg", [
                 "-hide_banner", "-nostdin", "-v", "error", "-y",
                 "-f", "lavfi",
-                "-i", "anoisesrc=c=white:r=\(config.wavSampleRate):a=0.5:d=\(String(format: "%.6f", spec.seconds)):s=\(seed)",
+                "-i", "anoisesrc=c=white:r=\(noiseGenerationSampleRate()):a=0.5:d=\(String(format: "%.6f", spec.seconds)):s=\(seed)",
                 "-map", "0:a:0",
                 "-vn", "-sn", "-dn",
                 "-ac", String(config.wavChannels),
@@ -924,11 +943,10 @@ extension ConverterTool {
         let rawNoise = try makeRawNoiseSegmentWAV(spec: spec, stem: "\(stem).raw")
         defer { discardTempFile(rawNoise) }
 
-        let policy = loudnessPolicy(targetLUFS: NoiseSpec.targetLUFS, tolerance: spec.seconds < 1 ? 4.0 : 2.0)
-        let plan = try staticLoudnessGainPlan(for: rawNoise, policy: policy)
+        let policy = noiseLoudnessPolicy(for: spec)
         let processed = try processInternalWAV(
             rawNoise,
-            filter: staticLoudnessGainFilter(gainDB: plan.appliedGainDB),
+            filter: loudnormSinglePassFilter(policy: policy),
             in: cli.outDir,
             stem: "\(stem).normalized"
         )

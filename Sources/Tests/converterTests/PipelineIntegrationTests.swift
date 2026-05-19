@@ -745,6 +745,42 @@ final class PipelineIntegrationTests: XCTestCase {
         XCTAssertEqual(try tool.audioNoiseCandidates().map(\.lastPathComponent), ["song.flac"])
     }
 
+    func testNoiseSegmentUsesDynamicLoudnormForProductionDurations() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe"])
+
+        let tool = try workspace.makeTool(arguments: ["-noise", "3"])
+        let spec = try tool.cli.noiseSpec()
+        let noise = try tool.makeNormalizedNoiseSegmentWAV(spec: spec, stem: "production.noise")
+        defer { tool.discardTempFile(noise) }
+
+        let result = try tool.audioQCResult(for: noise, policy: tool.noiseLoudnessPolicy(for: spec))
+        XCTAssertTrue(result.passed, result.issues.joined(separator: "; "))
+        XCTAssertEqual(result.metrics.integratedLUFS ?? -99, NoiseSpec.targetLUFS, accuracy: tool.noiseLUFSTolerance(for: spec))
+    }
+
+    func testNoisePaddingStaysAtTargetAfterFLACDeliveryEncode() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe"])
+
+        let flac = try workspace.createAudio(name: "delivery_noise", ext: "flac", duration: 0.8)
+        let tool = try workspace.makeTool(arguments: ["-noise", "6"])
+        let spec = try tool.cli.noiseSpec()
+
+        let output = try tool.addNoiseToMedia(flac, spec: spec)
+        let sourceDuration = try XCTUnwrap(try tool.mediaDuration(flac))
+        let expectedDuration = tool.noiseExpectedDuration(sourceDuration: sourceDuration, spec: spec)
+        try tool.verifyNoiseOutput(output, source: flac, expectedDuration: expectedDuration, spec: spec)
+
+        let leadingLUFS = try tool.audioSegmentIntegratedLUFS(
+            file: output,
+            startSeconds: 0.05,
+            durationSeconds: spec.seconds - 0.1,
+            targetLUFS: NoiseSpec.targetLUFS
+        )
+        XCTAssertEqual(leadingLUFS, NoiseSpec.targetLUFS, accuracy: tool.noiseLUFSTolerance(for: spec))
+    }
+
     func testFadeCutProcessesMP3WAVAndFLACWithShortenedDuration() throws {
         let workspace = try IntegrationWorkspace()
         try workspace.requireCommands(["ffmpeg", "ffprobe"])
