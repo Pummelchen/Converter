@@ -348,7 +348,7 @@ final class ConverterTool: @unchecked Sendable {
             break
         }
         switch cli.action {
-        case .album, .wavtomp3, .flactomp3, .mp3towav, .mp3tom4a, .mp3clean, .mp3toalbum, .mp3tohash, .bass, .fade, .fadecut, .fadeout, .loudscan, .loudness, .full:
+        case .album, .wavtomp3, .flactomp3, .mp3towav, .mp3tom4a, .mp3clean, .mp3toalbum, .mp3tohash, .bass, .fade, .fadecut, .fadeout, .loudscan, .loudness, .silence, .full:
             try runner.requireExecutable("ffmpeg")
         default:
             break

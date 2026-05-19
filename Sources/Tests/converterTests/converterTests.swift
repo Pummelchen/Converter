@@ -35,6 +35,7 @@ final class converterTests: XCTestCase {
         XCTAssertTrue(help.contains(".flac, .wav, .mp3, .m4a, or .mp4"))
         XCTAssertTrue(help.contains("-loudscan"))
         XCTAssertTrue(help.contains("-loudness [TARGET_LUFS]"))
+        XCTAssertTrue(help.contains("-silence SECONDS"))
         XCTAssertTrue(help.contains("-mp3toflac"))
         XCTAssertTrue(help.contains("-mp3toshort"))
         XCTAssertTrue(help.contains("-fade [SECONDS]"))
@@ -110,6 +111,42 @@ final class converterTests: XCTestCase {
             ).bassBoostSpec()
         ) { error in
             XCTAssertTrue(error.localizedDescription.contains("positive"))
+        }
+    }
+
+    func testSilenceParsesDuration() throws {
+        let root = URL(fileURLWithPath: "/tmp/converter-test")
+        let options = try CLIOptions.parse(
+            arguments: ["-silence", "1:30"],
+            environment: [:],
+            scriptDirectory: root,
+            scriptName: "converter"
+        )
+        XCTAssertEqual(options.action, .silence)
+        XCTAssertEqual(try options.silenceSpec(), SilenceSpec(seconds: 90))
+    }
+
+    func testSilenceRejectsInvalidArguments() throws {
+        let root = URL(fileURLWithPath: "/tmp/converter-test")
+        XCTAssertThrowsError(
+            try CLIOptions.parse(
+                arguments: ["-silence"],
+                environment: [:],
+                scriptDirectory: root,
+                scriptName: "converter"
+            ).silenceSpec()
+        ) { error in
+            XCTAssertTrue(error.localizedDescription.contains("requires one positional duration"))
+        }
+        XCTAssertThrowsError(
+            try CLIOptions.parse(
+                arguments: ["-silence", "0"],
+                environment: [:],
+                scriptDirectory: root,
+                scriptName: "converter"
+            ).silenceSpec()
+        ) { error in
+            XCTAssertTrue(error.localizedDescription.contains("greater than zero"))
         }
     }
 

@@ -118,6 +118,19 @@ extension ConverterTool {
             || stem.hasSuffix("_fadecut")
     }
 
+    func isSilenceDerivedMedia(_ file: URL) -> Bool {
+        let stem = file.stem.lowercasedASCII
+        guard let marker = stem.range(of: "_silence_") else {
+            return false
+        }
+        let suffix = stem[marker.upperBound...]
+        guard suffix.hasSuffix("s") else {
+            return false
+        }
+        let numericToken = suffix.dropLast()
+        return !numericToken.isEmpty && numericToken.allSatisfy { $0.isNumber || $0 == "_" }
+    }
+
     func isBassDerivedAudio(_ file: URL) -> Bool {
         let stem = file.stem.lowercasedASCII
         return stem.hasSuffix("_bass")
@@ -153,8 +166,28 @@ extension ConverterTool {
             .filter { !isFadeDerivedAudio($0) }
     }
 
+    func audioSilenceCandidates() throws -> [URL] {
+        try files(in: cli.srcDir, matchingExtensions: ["wav", "flac", "mp4"])
+            .filter { !isSilenceDerivedMedia($0) }
+    }
+
     func fadeOutFilter(fadeStartSeconds: Double, fadeDurationSeconds: Double) -> String {
         "afade=t=out:st=\(String(format: "%.6f", fadeStartSeconds)):d=\(String(format: "%.6f", fadeDurationSeconds))"
+    }
+
+    func silenceAudioFilter(for spec: SilenceSpec) -> String {
+        "adelay=\(spec.delayMilliseconds):all=1,apad=pad_dur=\(String(format: "%.6f", spec.seconds))"
+    }
+
+    func silenceOutputSuffix(for spec: SilenceSpec) -> String {
+        let safeSeconds = ffmpegNumber(spec.seconds)
+            .replacingOccurrences(of: "-", with: "m")
+            .replacingOccurrences(of: ".", with: "_")
+        return "_silence_\(safeSeconds)s"
+    }
+
+    func silenceExpectedDuration(sourceDuration: Double, spec: SilenceSpec) -> Double {
+        sourceDuration + spec.effectiveLeadingSeconds + spec.seconds
     }
 
     func preflightFadeOutSource(_ source: URL) throws {
@@ -191,6 +224,25 @@ extension ConverterTool {
             try preflightMP3Input(source, requireNoVideo: false)
         default:
             throw AppError("Unsupported fade source type: \(source.path)")
+        }
+    }
+
+    func preflightSilenceSource(_ source: URL) throws {
+        switch source.pathExtension.lowercasedASCII {
+        case "flac":
+            try preflightFLACInput(source, requireNoVideo: false)
+        case "wav":
+            try preflightWAVInput(source, requireNoVideo: false)
+        case "mp4":
+            try preflightAudioInput(
+                source,
+                expectedContainerTokens: ["mp4", "mov"],
+                expectedAudioCodecs: nil,
+                requireNoVideo: false,
+                requireAudible: true
+            )
+        default:
+            throw AppError("Unsupported silence source type: \(source.path)")
         }
     }
 
@@ -601,6 +653,211 @@ extension ConverterTool {
             logger.warn(
                 "Created \(reason) loudness media without compression: \(output.basename) [integrated=\(measured) LUFS target=\(String(format: "%.2f", policy.targetLUFS)) gain=\(String(format: "%.2f", plan.appliedGainDB)) dB requested=\(String(format: "%.2f", plan.requestedGainDB)) dB peak=\(String(format: "%.2f", plan.sourcePeakDBFS)) dBFS]"
             )
+            return output
+        } catch {
+            try? fileManager.removeItem(at: temp)
+            state.unregister(tempFile: temp)
+            throw error
+        }
+    }
+
+    func audioSegmentMaxVolumeDBFS(file: URL, startSeconds: Double, durationSeconds: Double) throws -> Double {
+        let result = try runner.run("ffmpeg", [
+            "-hide_banner", "-nostdin", "-v", "info",
+            "-ss", String(format: "%.6f", max(0, startSeconds)),
+            "-t", String(format: "%.6f", durationSeconds),
+            "-i", file.path,
+            "-map", "0:a:0",
+            "-af", "volumedetect",
+            "-f", "null",
+            "-"
+        ])
+        for line in result.stderr.split(whereSeparator: \.isNewline).map(String.init).reversed() where line.contains("max_volume:") {
+            let tail = line.components(separatedBy: "max_volume:").last?.trimmed ?? ""
+            let rawValue = tail.components(separatedBy: " dB").first?.trimmed ?? tail
+            if rawValue == "-inf" {
+                return -1_000
+            }
+            if let value = Double(rawValue) {
+                return value
+            }
+        }
+        throw AppError("Unable to verify silent audio segment in \(file.path)")
+    }
+
+    func verifySilencePadding(_ file: URL, expectedDuration: Double, spec: SilenceSpec) throws {
+        let boundaryMargin = min(0.05, spec.seconds / 4, spec.effectiveLeadingSeconds / 4)
+        let leadingProbeSeconds = min(0.5, max(0, spec.effectiveLeadingSeconds - boundaryMargin))
+        let trailingProbeSeconds = min(0.5, max(0, spec.seconds - boundaryMargin))
+        guard leadingProbeSeconds >= 0.05, trailingProbeSeconds >= 0.05 else {
+            return
+        }
+        let maxSilentVolumeDBFS = -80.0
+        let leadingMax = try audioSegmentMaxVolumeDBFS(file: file, startSeconds: 0, durationSeconds: leadingProbeSeconds)
+        if leadingMax > maxSilentVolumeDBFS {
+            throw AppError("Leading silence verification failed for \(file.path): max_volume=\(String(format: "%.2f", leadingMax)) dBFS")
+        }
+        let trailingStart = max(0, expectedDuration - spec.seconds + boundaryMargin)
+        let trailingMax = try audioSegmentMaxVolumeDBFS(file: file, startSeconds: trailingStart, durationSeconds: trailingProbeSeconds)
+        if trailingMax > maxSilentVolumeDBFS {
+            throw AppError("Trailing silence verification failed for \(file.path): max_volume=\(String(format: "%.2f", trailingMax)) dBFS")
+        }
+    }
+
+    func verifySilenceOutput(_ file: URL, source: URL, expectedDuration: Double, spec: SilenceSpec) throws {
+        switch source.pathExtension.lowercasedASCII {
+        case "flac":
+            try verifyFLACFile(file, sampleRate: config.flacSampleRate, channels: config.flacChannels, qcPolicy: nil)
+        case "wav":
+            try verifyWAVStandard(file, qcPolicy: nil)
+        case "mp4":
+            try requireFormatNameContains(file, anyOf: ["mp4", "mov"], label: "MP4 container")
+            if (try? requireVideoStream(source)) != nil {
+                try verifyVideoOutput(file)
+            }
+            try verifyALACAudioOutput(file, sampleRate: config.videoMP4AudioSampleRate, channels: 2, qcPolicy: nil)
+        default:
+            throw AppError("Unsupported silence output type: \(file.path)")
+        }
+        try verifyDuration(file, expectedSeconds: expectedDuration, label: "silence output")
+        try verifySilencePadding(file, expectedDuration: expectedDuration, spec: spec)
+    }
+
+    func makeSilencePaddedWAV(from source: URL, spec: SilenceSpec, expectedDuration: Double) throws -> URL {
+        let sourceWAV = try makeInternalWAV(from: source, in: cli.outDir, stem: "\(source.stem).silence.source")
+        defer { discardTempFile(sourceWAV) }
+
+        let paddedWAV = try makeTemp(in: cli.outDir, stem: "\(source.stem).silence.padded", ext: ".wav")
+        do {
+            _ = try runner.run("ffmpeg", [
+                "-hide_banner", "-nostdin", "-v", "error", "-y",
+                "-i", sourceWAV.path,
+                "-map", "0:a:0",
+                "-af", silenceAudioFilter(for: spec),
+                "-t", String(format: "%.6f", expectedDuration),
+                "-vn", "-sn", "-dn",
+                "-ac", String(config.wavChannels),
+                "-ar", String(config.wavSampleRate),
+                "-c:a", config.wavCodec,
+                "-f", "wav",
+                "-rf64", "always",
+                "-write_bext", String(config.wavWriteBext),
+                paddedWAV.path
+            ])
+            try verifyWAVStandard(paddedWAV, qcPolicy: nil)
+            try verifyDuration(paddedWAV, expectedSeconds: expectedDuration, label: "silence-padded WAV")
+            try verifySilencePadding(paddedWAV, expectedDuration: expectedDuration, spec: spec)
+            return paddedWAV
+        } catch {
+            discardTempFile(paddedWAV)
+            throw error
+        }
+    }
+
+    func encodeSilencePaddedMP4(source: URL, paddedWAV: URL, output: URL, expectedDuration: Double, spec: SilenceSpec) throws {
+        try verifyWAVStandard(paddedWAV, qcPolicy: nil)
+        try requireFFmpegEncoder("alac")
+        let hasVideo = (try? requireVideoStream(source)) != nil
+
+        if !hasVideo {
+            _ = try runner.run("ffmpeg", [
+                "-hide_banner", "-nostdin", "-v", "error", "-y",
+                "-i", source.path,
+                "-i", paddedWAV.path,
+                "-map", "1:a:0",
+                "-vn", "-sn", "-dn"
+            ] + alacAudioArguments(sampleRate: config.videoMP4AudioSampleRate, channels: 2) + [
+                "-map_metadata", "0",
+                "-map_chapters", "0",
+                "-movflags", "+faststart",
+                output.path
+            ])
+            return
+        }
+
+        let encoders = try requireAvailableEncoderLadder(config.videoEncoderLadder, label: "Silence MP4 video")
+        let videoFilter =
+            "tpad=start_duration=\(String(format: "%.6f", spec.effectiveLeadingSeconds)):stop_duration=\(String(format: "%.6f", spec.seconds)):start_mode=clone:stop_mode=clone," +
+            "format=\(config.videoMP4PixelFormat)," +
+            "setparams=color_primaries=\(config.videoColorPrimaries):color_trc=\(config.videoColorTransfer):colorspace=\(config.videoColorSpace):range=\(ffmpegFilterRangeValue(config.videoColorRange))"
+
+        func buildArguments(encoder: String) -> [String] {
+            let normalizedEncoder = encoder.lowercasedASCII
+            let videoTag = normalizedEncoder.contains("264") ? "avc1" : config.videoMP4Tag
+            var args = [
+                "-hide_banner", "-nostdin", "-v", "error", "-y",
+                "-i", source.path,
+                "-i", paddedWAV.path,
+                "-map", "0:v:0",
+                "-map", "1:a:0",
+                "-vf", videoFilter,
+                "-c:v", encoder
+            ]
+            if encoder.lowercasedASCII.contains("videotoolbox") {
+                args += ["-q:v", config.videoMP4VTQuality]
+            } else {
+                args += ["-preset", config.videoMP4SoftwarePreset, "-crf", config.videoMP4SoftwareCRF]
+            }
+            args += [
+                "-pix_fmt", config.videoMP4PixelFormat,
+                "-color_primaries", config.videoColorPrimaries,
+                "-color_trc", config.videoColorTransfer,
+                "-colorspace", config.videoColorSpace,
+                "-color_range", config.videoColorRange,
+                "-tag:v", videoTag
+            ]
+            args += alacAudioArguments(sampleRate: config.videoMP4AudioSampleRate, channels: 2)
+            args += [
+                "-t", String(format: "%.6f", expectedDuration),
+                "-map_metadata", "0",
+                "-map_chapters", "0",
+                "-movflags", "+faststart"
+            ]
+            return args
+        }
+
+        var lastError: Error?
+        for encoder in encoders {
+            do {
+                _ = try runner.run("ffmpeg", buildArguments(encoder: encoder) + [output.path])
+                return
+            } catch {
+                lastError = error
+                logger.warn("Silence MP4 video encoder failed (\(encoder)): \(error.localizedDescription)")
+                try? fileManager.removeItem(at: output)
+            }
+        }
+        throw AppError("All silence MP4 video encoders failed for \(output.basename): \(lastError?.localizedDescription ?? "unknown error")")
+    }
+
+    func addSilenceToMedia(_ source: URL, spec: SilenceSpec) throws -> URL {
+        try preflightSilenceSource(source)
+        guard let sourceDuration = try mediaDuration(source) else {
+            throw AppError("Unable to read source duration for silence padding: \(source.path)")
+        }
+        let expectedDuration = silenceExpectedDuration(sourceDuration: sourceDuration, spec: spec)
+        let output = cli.outDir
+            .appendingPathComponent(source.stem + silenceOutputSuffix(for: spec))
+            .appendingPathExtension(source.pathExtension.lowercasedASCII)
+        if canReuseOutput(output, verifier: {
+            try self.verifySilenceOutput(output, source: source, expectedDuration: expectedDuration, spec: spec)
+        }) {
+            logger.info("Skip existing silence-padded media: \(output.basename)")
+            return output
+        }
+
+        let temp = try makeTemp(in: cli.outDir, stem: output.stem, ext: ".\(output.pathExtension)")
+        do {
+            let paddedWAV = try makeSilencePaddedWAV(from: source, spec: spec, expectedDuration: expectedDuration)
+            defer { discardTempFile(paddedWAV) }
+            if source.pathExtension.lowercasedASCII == "mp4" {
+                try encodeSilencePaddedMP4(source: source, paddedWAV: paddedWAV, output: temp, expectedDuration: expectedDuration, spec: spec)
+            } else {
+                try encodeProcessedWAV(paddedWAV, matching: source, to: temp, qcPolicy: nil)
+            }
+            try verifySilenceOutput(temp, source: source, expectedDuration: expectedDuration, spec: spec)
+            try publishTemp(temp, to: output)
+            logger.info("Created silence-padded media: \(output.basename)")
             return output
         } catch {
             try? fileManager.removeItem(at: temp)

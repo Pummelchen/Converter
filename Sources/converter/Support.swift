@@ -166,6 +166,18 @@ struct FadeCutSpec: Equatable, Sendable {
     let fadeDurationSeconds: Double
 }
 
+struct SilenceSpec: Equatable, Sendable {
+    let seconds: Double
+
+    var delayMilliseconds: Int {
+        Int((seconds * 1000).rounded())
+    }
+
+    var effectiveLeadingSeconds: Double {
+        Double(delayMilliseconds) / 1000
+    }
+}
+
 struct BassBoostSpec: Equatable, Sendable {
     static let defaultFrequencyHz = 80.0
     static let defaultGainDB = 5.0

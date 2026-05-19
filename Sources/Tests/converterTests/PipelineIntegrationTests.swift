@@ -639,6 +639,68 @@ final class PipelineIntegrationTests: XCTestCase {
         XCTAssertThrowsError(try tool.requireVideoStream(flacOut))
     }
 
+    func testSilenceAddsLeadingAndTrailingPaddingToWAVFLACAndMP4() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe"])
+
+        let wav = try workspace.createAudio(name: "pad_wav", ext: "wav", duration: 1.2)
+        let flac = try workspace.createAudio(name: "pad_flac", ext: "flac", duration: 1.2)
+        let mp4 = try workspace.createVideoMP4(name: "pad_video", duration: 1.2)
+        let tool = try workspace.makeTool(arguments: ["-silence", "0.5"])
+        let spec = try tool.cli.silenceSpec()
+
+        try tool.stepSilence()
+
+        let wavOut = workspace.output.appendingPathComponent("pad_wav_silence_0_5s.wav")
+        let flacOut = workspace.output.appendingPathComponent("pad_flac_silence_0_5s.flac")
+        let mp4Out = workspace.output.appendingPathComponent("pad_video_silence_0_5s.mp4")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: wavOut.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: flacOut.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: mp4Out.path))
+
+        for (source, output) in [(wav, wavOut), (flac, flacOut), (mp4, mp4Out)] {
+            let sourceDuration = try XCTUnwrap(try tool.mediaDuration(source))
+            let expectedDuration = tool.silenceExpectedDuration(sourceDuration: sourceDuration, spec: spec)
+            try tool.verifySilenceOutput(output, source: source, expectedDuration: expectedDuration, spec: spec)
+            let middleMaxVolume = try tool.audioSegmentMaxVolumeDBFS(file: output, startSeconds: spec.effectiveLeadingSeconds + 0.2, durationSeconds: 0.2)
+            XCTAssertGreaterThan(middleMaxVolume, -60, "Original audio must still be audible after inserted leading silence.")
+        }
+        XCTAssertNoThrow(try tool.requireVideoStream(mp4Out))
+    }
+
+    func testSilenceIgnoresPreviouslyGeneratedSilenceOutputs() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe"])
+
+        _ = try workspace.createAudio(name: "song", ext: "flac", duration: 1.0)
+        _ = try workspace.createAudio(name: "song_silence_30s", ext: "flac", duration: 1.0)
+        let tool = try workspace.makeTool(arguments: ["-silence", "0.5"])
+
+        XCTAssertEqual(try tool.audioSilenceCandidates().map(\.lastPathComponent), ["song.flac"])
+    }
+
+    func testSilenceMP4UsesH264SafeTagForSoftwareEncoder() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe"])
+        try workspace.overwriteConfig(
+            IntegrationWorkspace.defaultConfig
+                + "\nVIDEO_MP4_ENCODER=libx264\n"
+                + "VIDEO_MP4_ENCODER_FALLBACKS=\n"
+                + "VIDEO_MP4_TAG=hvc1\n"
+        )
+
+        let mp4 = try workspace.createVideoMP4(name: "software_pad_video", duration: 1.2)
+        let tool = try workspace.makeTool(arguments: ["-silence", "0.5"])
+        let spec = try tool.cli.silenceSpec()
+
+        try tool.stepSilence()
+
+        let output = workspace.output.appendingPathComponent("software_pad_video_silence_0_5s.mp4")
+        let expectedDuration = tool.silenceExpectedDuration(sourceDuration: try XCTUnwrap(try tool.mediaDuration(mp4)), spec: spec)
+        try tool.verifySilenceOutput(output, source: mp4, expectedDuration: expectedDuration, spec: spec)
+        XCTAssertEqual(try tool.videoField(output, "codec_name"), "h264")
+    }
+
     func testFadeCutProcessesMP3WAVAndFLACWithShortenedDuration() throws {
         let workspace = try IntegrationWorkspace()
         try workspace.requireCommands(["ffmpeg", "ffprobe"])

@@ -739,6 +739,19 @@ extension ConverterTool {
         }
     }
 
+    func stepSilence() throws {
+        let spec = try cli.silenceSpec()
+        let files = try audioSilenceCandidates()
+        _ = try processBatch(
+            files: files,
+            emptyMessage: "No supported media files (.wav, .flac, .mp4) found in '\(cli.srcDir.path)'.",
+            failWhenEmpty: true
+        ) { file in
+            self.logger.info("Add silence \(file.basename): before=\(self.actionTimeDisplay(spec.seconds)) after=\(self.actionTimeDisplay(spec.seconds))")
+            return try self.addSilenceToMedia(file, spec: spec)
+        }
+    }
+
     func actionTimeDisplay(_ seconds: Double) -> String {
         if seconds.rounded(.towardZero) == seconds {
             return String(Int(seconds))
@@ -821,6 +834,8 @@ extension ConverterTool {
             try stepLoudScan()
         case .loudness:
             try stepLoudness()
+        case .silence:
+            try stepSilence()
         case .doctor:
             try stepDoctor()
         case .fade:

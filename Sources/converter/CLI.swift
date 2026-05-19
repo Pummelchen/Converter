@@ -10,6 +10,7 @@ enum Action: String {
     case hash
     case loudness
     case loudscan
+    case silence
     case full
     case runPix = "run_pix"
     case aipix
@@ -132,6 +133,8 @@ struct CLIOptions {
                 options.action = .loudness
             case "-loudscan", "-loundscan":
                 options.action = .loudscan
+            case "-silence":
+                options.action = .silence
             case "-full", "-run":
                 options.action = .full
             case "-run_pix":
@@ -309,6 +312,17 @@ struct CLIOptions {
         return FadeCutSpec(cutSeconds: cutSeconds, fadeDurationSeconds: fadeDurationSeconds)
     }
 
+    func silenceSpec() throws -> SilenceSpec {
+        guard actionArgs.count == 1 else {
+            throw AppError("'-silence' requires one positional duration. Example: converter -silence 30")
+        }
+        let seconds = try parseFlexibleTimecode(actionArgs[0], label: "silence duration")
+        guard seconds > 0 else {
+            throw AppError("Silence duration must be greater than zero.")
+        }
+        return SilenceSpec(seconds: seconds)
+    }
+
     func bassBoostSpec() throws -> BassBoostSpec {
         guard actionArgs.isEmpty || actionArgs.count == 2 else {
             throw AppError("'-bass' accepts either no values or FREQUENCY_HZ GAIN_DB. Example: converter -bass 80 5")
@@ -356,7 +370,7 @@ struct CLIOptions {
             "  -loudscan", "  -loudness", "  -matrix", "  -mp3clean", "  -mp3toalbum", "  -mp3toflac", "  -mp3tohash",
             "  -mp3tom4a", "  -mp3toshort", "  -mp3towav", "  -mp4toshort", "  -pngto2k", "  -pngto3k",
             "  -pngto3k1mb", "  -pngto3k5mb", "  -pngtojpg", "  -pngtonft", "  -pngtojpg1mb",
-            "  -pngtojpg2mb", "  -pngtojpg20mb", "  -visualsubs", "  -wavtoalbum",
+            "  -pngtojpg2mb", "  -pngtojpg20mb", "  -silence", "  -visualsubs", "  -wavtoalbum",
             "  -wavtoflac", "  -wavtohash", "  -wavtom4a", "  -wavtomp3"
         ]
         print(lines.joined(separator: "\n"))
@@ -407,6 +421,7 @@ struct CLIOptions {
           \(scriptName) -fade 10
           \(scriptName) -fadecut 5 10
           \(scriptName) -fadeout 1:30 10
+          \(scriptName) -silence 30
           \(scriptName) -full
           \(scriptName) -flactomp3
           \(scriptName) -m4atomp4
@@ -455,6 +470,9 @@ struct CLIOptions {
             -loudness [TARGET_LUFS]
               Input: one or more .flac, .wav, .mp3, .m4a, or .mp4 files in SRC_DIR
               Output: same-format files normalized to TARGET_LUFS for livestream-consistent playback; default is -12 LUFS
+            -silence SECONDS
+              Input: one or more .wav, .flac, or .mp4 files in SRC_DIR
+              Output: same-format files ending in _silence_SECONDSs with SECONDS of silence before and after the original media
             -flactowav
               Input: one or more .flac files in SRC_DIR
               Output: project-standard RF64 WAV files
