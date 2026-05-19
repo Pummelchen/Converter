@@ -42,7 +42,8 @@ swift test --package-path Sources
 ./converter -fade 10
 ./converter -fadecut 5 10
 ./converter -fadeout 1:30 10
-./converter -silence 30
+./converter -silence
+./converter -silence 45
 ./converter -mp3toshort
 ./converter -mp3clean
 ./converter -m4atomp4
@@ -80,11 +81,12 @@ Use `./converter -loudness` to create same-format loudness-normalized copies for
 Loudness normalization targets whole-track integrated LUFS, not constant moment-to-moment volume. Rendering uses one static gain value only: no EQ, no limiter, no dynamic loudnorm render, and no compression. If a source has high peaks and a low integrated average, the converter caps positive gain at available peak headroom and may warn that the output is peak-constrained instead of damaging the musical dynamics to force the exact target.
 
 ## Silence Padding
-Use `./converter -silence SECONDS` to add silent lead-in and tail padding to `.wav`, `.flac`, and `.mp4` files in `Output/`.
+Use `./converter -silence [SECONDS]` to add silent lead-in and tail padding to `.wav`, `.flac`, and `.mp4` files in `Output/`. When `SECONDS` is omitted, the default is 30 seconds.
 
 Example:
 ```bash
-./converter -silence 30
+./converter -silence
+./converter -silence 45
 ```
 
 That writes same-format files such as `song_silence_30s.wav`, `song_silence_30s.flac`, or `video_silence_30s.mp4`. WAV outputs remain RF64 `pcm_f32le`; FLAC and MP4 outputs are re-encoded to the project quality settings. MP4 outputs keep video present by extending first and last frames while the audio receives matching leading and trailing silence.

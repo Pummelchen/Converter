@@ -35,7 +35,7 @@ final class converterTests: XCTestCase {
         XCTAssertTrue(help.contains(".flac, .wav, .mp3, .m4a, or .mp4"))
         XCTAssertTrue(help.contains("-loudscan"))
         XCTAssertTrue(help.contains("-loudness [TARGET_LUFS]"))
-        XCTAssertTrue(help.contains("-silence SECONDS"))
+        XCTAssertTrue(help.contains("-silence [SECONDS]"))
         XCTAssertTrue(help.contains("-mp3toflac"))
         XCTAssertTrue(help.contains("-mp3toshort"))
         XCTAssertTrue(help.contains("-fade [SECONDS]"))
@@ -114,29 +114,38 @@ final class converterTests: XCTestCase {
         }
     }
 
-    func testSilenceParsesDuration() throws {
+    func testSilenceParsesDefaultAndExplicitDuration() throws {
         let root = URL(fileURLWithPath: "/tmp/converter-test")
+        let defaultOptions = try CLIOptions.parse(
+            arguments: ["-silence"],
+            environment: [:],
+            scriptDirectory: root,
+            scriptName: "converter"
+        )
+        XCTAssertEqual(defaultOptions.action, .silence)
+        XCTAssertEqual(try defaultOptions.silenceSpec(), SilenceSpec(seconds: 30))
+
         let options = try CLIOptions.parse(
-            arguments: ["-silence", "1:30"],
+            arguments: ["-silence", "45"],
             environment: [:],
             scriptDirectory: root,
             scriptName: "converter"
         )
         XCTAssertEqual(options.action, .silence)
-        XCTAssertEqual(try options.silenceSpec(), SilenceSpec(seconds: 90))
+        XCTAssertEqual(try options.silenceSpec(), SilenceSpec(seconds: 45))
     }
 
     func testSilenceRejectsInvalidArguments() throws {
         let root = URL(fileURLWithPath: "/tmp/converter-test")
         XCTAssertThrowsError(
             try CLIOptions.parse(
-                arguments: ["-silence"],
+                arguments: ["-silence", "30", "45"],
                 environment: [:],
                 scriptDirectory: root,
                 scriptName: "converter"
             ).silenceSpec()
         ) { error in
-            XCTAssertTrue(error.localizedDescription.contains("requires one positional duration"))
+            XCTAssertTrue(error.localizedDescription.contains("at most one positional duration"))
         }
         XCTAssertThrowsError(
             try CLIOptions.parse(

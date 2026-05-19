@@ -312,11 +312,14 @@ struct CLIOptions {
         return FadeCutSpec(cutSeconds: cutSeconds, fadeDurationSeconds: fadeDurationSeconds)
     }
 
-    func silenceSpec() throws -> SilenceSpec {
-        guard actionArgs.count == 1 else {
-            throw AppError("'-silence' requires one positional duration. Example: converter -silence 30")
+    func silenceSpec(defaultSeconds: Double = 30) throws -> SilenceSpec {
+        guard actionArgs.count <= 1 else {
+            throw AppError("'-silence' accepts at most one positional duration. Example: converter -silence 45")
         }
-        let seconds = try parseFlexibleTimecode(actionArgs[0], label: "silence duration")
+        guard let rawValue = actionArgs.first else {
+            return SilenceSpec(seconds: defaultSeconds)
+        }
+        let seconds = try parseFlexibleTimecode(rawValue, label: "silence duration")
         guard seconds > 0 else {
             throw AppError("Silence duration must be greater than zero.")
         }
@@ -421,7 +424,8 @@ struct CLIOptions {
           \(scriptName) -fade 10
           \(scriptName) -fadecut 5 10
           \(scriptName) -fadeout 1:30 10
-          \(scriptName) -silence 30
+          \(scriptName) -silence
+          \(scriptName) -silence 45
           \(scriptName) -full
           \(scriptName) -flactomp3
           \(scriptName) -m4atomp4
@@ -470,9 +474,9 @@ struct CLIOptions {
             -loudness [TARGET_LUFS]
               Input: one or more .flac, .wav, .mp3, .m4a, or .mp4 files in SRC_DIR
               Output: same-format files normalized to TARGET_LUFS for livestream-consistent playback; default is -12 LUFS
-            -silence SECONDS
+            -silence [SECONDS]
               Input: one or more .wav, .flac, or .mp4 files in SRC_DIR
-              Output: same-format files ending in _silence_SECONDSs with SECONDS of silence before and after the original media
+              Output: same-format files ending in _silence_SECONDSs with SECONDS of silence before and after the original media; default is 30 seconds
             -flactowav
               Input: one or more .flac files in SRC_DIR
               Output: project-standard RF64 WAV files
