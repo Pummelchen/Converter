@@ -73,9 +73,8 @@ final class ProcessRunner: @unchecked Sendable {
             throw AppError("Required command not found: \(name)")
         }
 
-        let pathEntries = (environment["PATH"] ?? "/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin").split(separator: ":")
-        for entry in pathEntries {
-            let candidate = URL(fileURLWithPath: String(entry)).appendingPathComponent(name)
+        for entry in DependencyBootstrapper.executableSearchPathEntries(environment: environment) {
+            let candidate = URL(fileURLWithPath: entry).appendingPathComponent(name)
             if fileManager.isExecutableFile(atPath: candidate.path) {
                 return candidate
             }

@@ -26,6 +26,22 @@ chmod +x ./converter
 swift test --package-path Sources
 ```
 
+## Runtime Dependencies
+On startup, operational commands auto-check the required external tools and silently install missing Homebrew formulae before media processing starts.
+
+Homebrew formulae:
+- `ffmpeg`, which provides `ffmpeg` and `ffprobe`
+- `imagemagick`, which provides `magick`
+
+macOS system commands:
+- `awk`
+- `sed`
+
+Python packages:
+- none
+
+If Homebrew itself is missing and a required formula must be installed, converter attempts a non-interactive Homebrew install first. Set `CONVERTER_AUTO_INSTALL_DEPS=0` to disable auto-install and fail fast instead.
+
 ## Core Commands
 ```bash
 ./converter -help

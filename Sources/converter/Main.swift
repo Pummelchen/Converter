@@ -6,7 +6,7 @@ struct ConverterMain {
         let fileManager = FileManager.default
         let currentPath = fileManager.currentDirectoryPath
         let currentURL = URL(fileURLWithPath: currentPath)
-        let environment = ProcessInfo.processInfo.environment
+        var environment = DependencyBootstrapper.enrichedEnvironment(ProcessInfo.processInfo.environment)
         let executablePath = CommandLine.arguments.first ?? "converter"
         let executableURL = URL(fileURLWithPath: executablePath, relativeTo: currentURL).standardizedFileURL
         let scriptDirectory = environment["CONVERTER_ROOT"].map { URL(fileURLWithPath: $0) } ?? executableURL.deletingLastPathComponent()
@@ -24,6 +24,7 @@ struct ConverterMain {
             )
             let runLogger = Logger(scriptName: scriptName, debugEnabled: cli.debug)
             logger = runLogger
+            try DependencyBootstrapper.ensureRuntimeDependencies(environment: &environment, logger: runLogger, action: cli.action)
             let config = try ProjectConfig.load(from: cli.configFile, environment: environment, cli: cli, logger: runLogger)
             let runner = ProcessRunner(logger: runLogger, environment: environment, debugEnabled: cli.debug)
             let instance = ConverterTool(cli: cli, config: config, logger: runLogger, runner: runner, environment: environment)

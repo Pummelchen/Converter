@@ -15,6 +15,34 @@ final class converterTests: XCTestCase {
         return ConverterTool(cli: options, config: ProjectConfig(), logger: logger, runner: runner, environment: environment)
     }
 
+    func testDependencyManifestMatchesCurrentRuntimeTools() throws {
+        XCTAssertEqual(DependencyBootstrapper.systemExecutables, ["awk", "sed"])
+        XCTAssertEqual(
+            DependencyBootstrapper.homebrewFormulaDependencies,
+            [
+                HomebrewFormulaDependency(formula: "ffmpeg", executables: ["ffmpeg", "ffprobe"]),
+                HomebrewFormulaDependency(formula: "imagemagick", executables: ["magick"])
+            ]
+        )
+        XCTAssertTrue(DependencyBootstrapper.pythonPackages.isEmpty)
+    }
+
+    func testDependencyBootstrapEnrichesPathWithHomebrewLocations() throws {
+        let enriched = DependencyBootstrapper.enrichedEnvironment(["PATH": "/usr/bin:/bin"])
+        let path = try XCTUnwrap(enriched["PATH"])
+        XCTAssertTrue(path.contains("/opt/homebrew/bin"))
+        XCTAssertTrue(path.contains("/usr/local/bin"))
+        XCTAssertTrue(path.hasPrefix("/usr/bin:/bin"))
+    }
+
+    func testHelpListAndMatrixSkipRuntimeDependencyBootstrap() throws {
+        XCTAssertFalse(Action.help.requiresRuntimeDependencyBootstrap)
+        XCTAssertFalse(Action.list.requiresRuntimeDependencyBootstrap)
+        XCTAssertFalse(Action.matrix.requiresRuntimeDependencyBootstrap)
+        XCTAssertTrue(Action.full.requiresRuntimeDependencyBootstrap)
+        XCTAssertTrue(Action.noise.requiresRuntimeDependencyBootstrap)
+    }
+
     func testHelpTextMentionsFullRunContract() throws {
         let root = URL(fileURLWithPath: "/tmp/converter-test")
         let options = try CLIOptions.parse(
