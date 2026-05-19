@@ -216,7 +216,7 @@ extension ConverterTool {
     }
 
     func noiseExpectedDuration(sourceDuration: Double, spec: NoiseSpec) -> Double {
-        sourceDuration + (spec.seconds * 2)
+        sourceDuration + (spec.seconds * 2) + (NoiseSpec.transitionSilenceSeconds * 2)
     }
 
     func preflightFadeOutSource(_ source: URL) throws {
@@ -740,22 +740,63 @@ extension ConverterTool {
                 return value
             }
         }
+        let fallback = try runner.run("ffmpeg", [
+            "-hide_banner", "-nostdin", "-v", "info",
+            "-i", file.path,
+            "-ss", String(format: "%.6f", max(0, startSeconds)),
+            "-t", String(format: "%.6f", durationSeconds),
+            "-map", "0:a:0",
+            "-af", "astats=metadata=0:reset=0:measure_overall=Peak_level",
+            "-f", "null",
+            "-"
+        ])
+        for line in fallback.stderr.split(whereSeparator: \.isNewline).map(String.init).reversed() where line.contains("Peak level dB:") {
+            let tail = line.components(separatedBy: "Peak level dB:").last?.trimmed ?? ""
+            if tail == "-inf" {
+                return -1_000
+            }
+            if let value = Double(tail) {
+                return value
+            }
+        }
         throw AppError("Unable to verify silent audio segment in \(file.path)")
     }
 
     func audioSegmentIntegratedLUFS(file: URL, startSeconds: Double, durationSeconds: Double, targetLUFS: Double) throws -> Double {
-        let result = try runner.run("ffmpeg", [
-            "-hide_banner", "-nostdin", "-v", "info",
-            "-ss", String(format: "%.6f", max(0, startSeconds)),
-            "-t", String(format: "%.6f", durationSeconds),
-            "-i", file.path,
-            "-map", "0:a:0",
-            "-af", "loudnorm=I=\(String(format: "%.2f", targetLUFS)):TP=\(String(format: "%.2f", config.audioQCMaxTruePeakDBTP)):LRA=50.00:print_format=json",
-            "-f", "null",
-            "-"
-        ])
-        let loudnorm = try parseLoudnormJSON(from: result.stderr)
-        guard let integrated = parseAudioDB(loudnorm["input_i"] as? String), integrated.isFinite else {
+        let filter = "loudnorm=I=\(String(format: "%.2f", targetLUFS)):TP=\(String(format: "%.2f", config.audioQCMaxTruePeakDBTP)):LRA=50.00:print_format=json"
+        func runProbe(accurateSeek: Bool) throws -> ProcessResult {
+            if accurateSeek {
+                return try runner.run("ffmpeg", [
+                    "-hide_banner", "-nostdin", "-v", "info",
+                    "-i", file.path,
+                    "-ss", String(format: "%.6f", max(0, startSeconds)),
+                    "-t", String(format: "%.6f", durationSeconds),
+                    "-map", "0:a:0",
+                    "-af", filter,
+                    "-f", "null",
+                    "-"
+                ])
+            }
+            return try runner.run("ffmpeg", [
+                "-hide_banner", "-nostdin", "-v", "info",
+                "-ss", String(format: "%.6f", max(0, startSeconds)),
+                "-t", String(format: "%.6f", durationSeconds),
+                "-i", file.path,
+                "-map", "0:a:0",
+                "-af", filter,
+                "-f", "null",
+                "-"
+            ])
+        }
+
+        let result = try runProbe(accurateSeek: false)
+        let loudnorm = try? parseLoudnormJSON(from: result.stderr)
+        if let integrated = parseAudioDB(loudnorm?["input_i"] as? String), integrated.isFinite {
+            return integrated
+        }
+        let accurateResult = try runProbe(accurateSeek: true)
+        let accurateLoudnorm = try parseLoudnormJSON(from: accurateResult.stderr)
+        guard let integrated = parseAudioDB(accurateLoudnorm["input_i"] as? String), integrated.isFinite else {
             throw AppError("Unable to verify noise loudness segment in \(file.path)")
         }
         return integrated
@@ -811,7 +852,12 @@ extension ConverterTool {
         let minimumAudibleDBFS = -60.0
 
         func verifySegment(label: String, start: Double) throws {
-            let maxVolume = try audioSegmentMaxVolumeDBFS(file: file, startSeconds: start, durationSeconds: probeSeconds)
+            let maxVolume: Double
+            do {
+                maxVolume = try audioSegmentMaxVolumeDBFS(file: file, startSeconds: start, durationSeconds: probeSeconds)
+            } catch {
+                throw AppError("\(label) noise peak verification failed for \(file.path): start=\(String(format: "%.3f", start)) duration=\(String(format: "%.3f", probeSeconds)) error=\(error.localizedDescription)")
+            }
             if maxVolume <= minimumAudibleDBFS {
                 throw AppError("\(label) noise verification failed for \(file.path): max_volume=\(String(format: "%.2f", maxVolume)) dBFS")
             }
@@ -830,6 +876,32 @@ extension ConverterTool {
 
         try verifySegment(label: "Leading", start: boundaryMargin)
         try verifySegment(label: "Trailing", start: max(0, expectedDuration - spec.seconds + boundaryMargin))
+
+        let silenceMargin = min(0.05, NoiseSpec.transitionSilenceSeconds / 4)
+        let silenceProbeSeconds = max(0, NoiseSpec.transitionSilenceSeconds - (silenceMargin * 2))
+        guard silenceProbeSeconds >= 0.20 else {
+            return
+        }
+
+        func verifySilenceGap(label: String, start: Double) throws {
+            let probeStart = start + silenceMargin
+            let maxVolume: Double
+            do {
+                maxVolume = try audioSegmentMaxVolumeDBFS(
+                    file: file,
+                    startSeconds: probeStart,
+                    durationSeconds: silenceProbeSeconds
+                )
+            } catch {
+                throw AppError("\(label) transition silence peak verification failed for \(file.path): start=\(String(format: "%.3f", probeStart)) duration=\(String(format: "%.3f", silenceProbeSeconds)) error=\(error.localizedDescription)")
+            }
+            if maxVolume > -55.0 {
+                throw AppError("\(label) transition silence verification failed for \(file.path): max_volume=\(String(format: "%.2f", maxVolume)) dBFS")
+            }
+        }
+
+        try verifySilenceGap(label: "Leading", start: spec.seconds)
+        try verifySilenceGap(label: "Trailing", start: max(0, expectedDuration - spec.seconds - NoiseSpec.transitionSilenceSeconds))
     }
 
     func noiseLUFSTolerance(for spec: NoiseSpec) -> Double {
@@ -977,13 +1049,18 @@ extension ConverterTool {
         defer { discardTempFile(trailingNoise) }
 
         let paddedWAV = try makeTemp(in: cli.outDir, stem: "\(source.stem).noise.padded", ext: ".wav")
+        let transitionSilence = "anullsrc=r=\(config.wavSampleRate):cl=stereo:d=\(String(format: "%.6f", NoiseSpec.transitionSilenceSeconds))"
         do {
             _ = try runner.run("ffmpeg", [
                 "-hide_banner", "-nostdin", "-v", "error", "-y",
                 "-i", leadingNoise.path,
+                "-f", "lavfi",
+                "-i", transitionSilence,
                 "-i", sourceWAV.path,
+                "-f", "lavfi",
+                "-i", transitionSilence,
                 "-i", trailingNoise.path,
-                "-filter_complex", "[0:a:0][1:a:0][2:a:0]concat=n=3:v=0:a=1,aformat=sample_fmts=flt:sample_rates=\(config.wavSampleRate):channel_layouts=stereo[out]",
+                "-filter_complex", "[0:a:0][1:a:0][2:a:0][3:a:0][4:a:0]concat=n=5:v=0:a=1,aformat=sample_fmts=flt:sample_rates=\(config.wavSampleRate):channel_layouts=stereo[out]",
                 "-map", "[out]",
                 "-vn", "-sn", "-dn",
                 "-ac", String(config.wavChannels),
@@ -1106,8 +1183,8 @@ extension ConverterTool {
             paddedWAV: paddedWAV,
             output: output,
             expectedDuration: expectedDuration,
-            leadingSeconds: spec.seconds,
-            trailingSeconds: spec.seconds,
+            leadingSeconds: spec.seconds + NoiseSpec.transitionSilenceSeconds,
+            trailingSeconds: spec.seconds + NoiseSpec.transitionSilenceSeconds,
             label: "Noise"
         )
     }

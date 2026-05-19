@@ -180,6 +180,7 @@ struct SilenceSpec: Equatable, Sendable {
 
 struct NoiseSpec: Equatable, Sendable {
     static let targetLUFS = LoudnessSpec.defaultTargetLUFS
+    static let transitionSilenceSeconds = 2.0
 
     let seconds: Double
 }

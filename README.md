@@ -99,7 +99,7 @@ Use `./converter -loudness` to create same-format loudness-normalized copies for
 Loudness normalization targets whole-track integrated LUFS, not constant moment-to-moment volume. Rendering uses one static gain value only: no EQ, no limiter, no dynamic loudnorm render, and no compression. If a source has high peaks and a low integrated average, the converter caps positive gain at available peak headroom and may warn that the output is peak-constrained instead of damaging the musical dynamics to force the exact target.
 
 ## Noise Padding
-Use `./converter -noise [SECONDS]` to add random-noise lead-in and tail padding to `.flac`, `.wav`, `.mp3`, `.m4a`, and `.mp4` files in `Output/`. When `SECONDS` is omitted, the default is 30 seconds. The generated noise sections are normalized to `-12 LUFS`.
+Use `./converter -noise [SECONDS]` to add random-noise lead-in and tail padding to `.flac`, `.wav`, `.mp3`, `.m4a`, and `.mp4` files in `Output/`. When `SECONDS` is omitted, the default is 30 seconds. The generated noise sections are normalized to `-12 LUFS`, with a fixed 2-second silence gap before and after the original media.
 
 Example:
 ```bash
@@ -107,7 +107,7 @@ Example:
 ./converter -noise 45
 ```
 
-That writes same-format files such as `song_noise_30s.flac`, `song_noise_30s.wav`, `song_noise_30s.mp3`, `song_noise_30s.m4a`, or `video_noise_30s.mp4`. WAV outputs remain RF64 `pcm_f32le`; compressed/lossless outputs are re-encoded to the project quality settings. MP4 outputs keep video present by extending first and last frames while the audio receives matching leading and trailing noise.
+That writes same-format files such as `song_noise_30s.flac`, `song_noise_30s.wav`, `song_noise_30s.mp3`, `song_noise_30s.m4a`, or `video_noise_30s.mp4`. The audio layout is `noise -> 2s silence -> original media -> 2s silence -> noise`. WAV outputs remain RF64 `pcm_f32le`; compressed/lossless outputs are re-encoded to the project quality settings. MP4 outputs keep video present by extending first and last frames while the audio receives matching leading and trailing noise plus the silent transitions.
 
 ## Silence Padding
 Use `./converter -silence [SECONDS]` to add silent lead-in and tail padding to `.wav`, `.flac`, and `.mp4` files in `Output/`. When `SECONDS` is omitted, the default is 30 seconds.

@@ -495,7 +495,7 @@ struct CLIOptions {
               Output: same-format files normalized to TARGET_LUFS for livestream-consistent playback; default is -12 LUFS
             -noise [SECONDS]
               Input: one or more .flac, .wav, .mp3, .m4a, or .mp4 files in SRC_DIR
-              Output: same-format files ending in _noise_SECONDSs with random noise at -12 LUFS before and after the original media; default is 30 seconds
+              Output: same-format files ending in _noise_SECONDSs: noise, 2s silence, source, 2s silence, noise; noise is -12 LUFS and default is 30 seconds
             -silence [SECONDS]
               Input: one or more .wav, .flac, or .mp4 files in SRC_DIR
               Output: same-format files ending in _silence_SECONDSs with SECONDS of silence before and after the original media; default is 30 seconds

@@ -728,7 +728,13 @@ final class PipelineIntegrationTests: XCTestCase {
             let sourceDuration = try XCTUnwrap(try tool.mediaDuration(source))
             let expectedDuration = tool.noiseExpectedDuration(sourceDuration: sourceDuration, spec: spec)
             try tool.verifyNoiseOutput(output, source: source, expectedDuration: expectedDuration, spec: spec)
-            let middleMaxVolume = try tool.audioSegmentMaxVolumeDBFS(file: output, startSeconds: spec.seconds + 0.2, durationSeconds: 0.2)
+            let leadingGapMaxVolume = try tool.audioSegmentMaxVolumeDBFS(file: output, startSeconds: spec.seconds + 0.2, durationSeconds: 0.2)
+            XCTAssertLessThan(leadingGapMaxVolume, -55, "Noise output must insert silence between leading noise and the original audio.")
+            let middleMaxVolume = try tool.audioSegmentMaxVolumeDBFS(
+                file: output,
+                startSeconds: spec.seconds + NoiseSpec.transitionSilenceSeconds + 0.2,
+                durationSeconds: 0.2
+            )
             XCTAssertGreaterThan(middleMaxVolume, -60, "Original audio must still be audible after inserted noise.")
         }
         XCTAssertNoThrow(try tool.requireVideoStream(workspace.output.appendingPathComponent("noise_video_noise_0_5s.mp4")))

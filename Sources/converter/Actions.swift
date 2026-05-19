@@ -760,7 +760,7 @@ extension ConverterTool {
             emptyMessage: "No supported media files (.flac, .wav, .mp3, .m4a, .mp4) found in '\(cli.srcDir.path)'.",
             failWhenEmpty: true
         ) { file in
-            self.logger.info("Add noise \(file.basename): before=\(self.actionTimeDisplay(spec.seconds)) after=\(self.actionTimeDisplay(spec.seconds)) level=-12 LUFS")
+            self.logger.info("Add noise \(file.basename): before=\(self.actionTimeDisplay(spec.seconds)) silence=\(self.actionTimeDisplay(NoiseSpec.transitionSilenceSeconds)) after=\(self.actionTimeDisplay(spec.seconds)) level=-12 LUFS")
             return try self.addNoiseToMedia(file, spec: spec)
         }
     }
