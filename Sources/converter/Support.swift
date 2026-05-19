@@ -178,6 +178,12 @@ struct SilenceSpec: Equatable, Sendable {
     }
 }
 
+struct NoiseSpec: Equatable, Sendable {
+    static let targetLUFS = LoudnessSpec.defaultTargetLUFS
+
+    let seconds: Double
+}
+
 struct BassBoostSpec: Equatable, Sendable {
     static let defaultFrequencyHz = 80.0
     static let defaultGainDB = 5.0

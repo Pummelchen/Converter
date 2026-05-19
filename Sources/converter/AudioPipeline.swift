@@ -131,6 +131,19 @@ extension ConverterTool {
         return !numericToken.isEmpty && numericToken.allSatisfy { $0.isNumber || $0 == "_" }
     }
 
+    func isNoiseDerivedMedia(_ file: URL) -> Bool {
+        let stem = file.stem.lowercasedASCII
+        guard let marker = stem.range(of: "_noise_") else {
+            return false
+        }
+        let suffix = stem[marker.upperBound...]
+        guard suffix.hasSuffix("s") else {
+            return false
+        }
+        let numericToken = suffix.dropLast()
+        return !numericToken.isEmpty && numericToken.allSatisfy { $0.isNumber || $0 == "_" }
+    }
+
     func isBassDerivedAudio(_ file: URL) -> Bool {
         let stem = file.stem.lowercasedASCII
         return stem.hasSuffix("_bass")
@@ -171,6 +184,11 @@ extension ConverterTool {
             .filter { !isSilenceDerivedMedia($0) }
     }
 
+    func audioNoiseCandidates() throws -> [URL] {
+        try files(in: cli.srcDir, matchingExtensions: ["flac", "wav", "mp3", "m4a", "mp4"])
+            .filter { !isNoiseDerivedMedia($0) }
+    }
+
     func fadeOutFilter(fadeStartSeconds: Double, fadeDurationSeconds: Double) -> String {
         "afade=t=out:st=\(String(format: "%.6f", fadeStartSeconds)):d=\(String(format: "%.6f", fadeDurationSeconds))"
     }
@@ -188,6 +206,17 @@ extension ConverterTool {
 
     func silenceExpectedDuration(sourceDuration: Double, spec: SilenceSpec) -> Double {
         sourceDuration + spec.effectiveLeadingSeconds + spec.seconds
+    }
+
+    func noiseOutputSuffix(for spec: NoiseSpec) -> String {
+        let safeSeconds = ffmpegNumber(spec.seconds)
+            .replacingOccurrences(of: "-", with: "m")
+            .replacingOccurrences(of: ".", with: "_")
+        return "_noise_\(safeSeconds)s"
+    }
+
+    func noiseExpectedDuration(sourceDuration: Double, spec: NoiseSpec) -> Double {
+        sourceDuration + (spec.seconds * 2)
     }
 
     func preflightFadeOutSource(_ source: URL) throws {
@@ -243,6 +272,35 @@ extension ConverterTool {
             )
         default:
             throw AppError("Unsupported silence source type: \(source.path)")
+        }
+    }
+
+    func preflightNoiseSource(_ source: URL) throws {
+        switch source.pathExtension.lowercasedASCII {
+        case "flac":
+            try preflightFLACInput(source, requireNoVideo: false)
+        case "wav":
+            try preflightWAVInput(source, requireNoVideo: false)
+        case "mp3":
+            try preflightMP3Input(source, requireNoVideo: false)
+        case "m4a":
+            try preflightAudioInput(
+                source,
+                expectedContainerTokens: ["m4a", "mp4", "ipod", "mov"],
+                expectedAudioCodecs: ["aac", "alac"],
+                requireNoVideo: false,
+                requireAudible: true
+            )
+        case "mp4":
+            try preflightAudioInput(
+                source,
+                expectedContainerTokens: ["mp4", "mov"],
+                expectedAudioCodecs: nil,
+                requireNoVideo: false,
+                requireAudible: true
+            )
+        default:
+            throw AppError("Unsupported noise source type: \(source.path)")
         }
     }
 
@@ -685,6 +743,24 @@ extension ConverterTool {
         throw AppError("Unable to verify silent audio segment in \(file.path)")
     }
 
+    func audioSegmentIntegratedLUFS(file: URL, startSeconds: Double, durationSeconds: Double, targetLUFS: Double) throws -> Double {
+        let result = try runner.run("ffmpeg", [
+            "-hide_banner", "-nostdin", "-v", "info",
+            "-ss", String(format: "%.6f", max(0, startSeconds)),
+            "-t", String(format: "%.6f", durationSeconds),
+            "-i", file.path,
+            "-map", "0:a:0",
+            "-af", "loudnorm=I=\(String(format: "%.2f", targetLUFS)):TP=\(String(format: "%.2f", config.audioQCMaxTruePeakDBTP)):LRA=50.00:print_format=json",
+            "-f", "null",
+            "-"
+        ])
+        let loudnorm = try parseLoudnormJSON(from: result.stderr)
+        guard let integrated = parseAudioDB(loudnorm["input_i"] as? String), integrated.isFinite else {
+            throw AppError("Unable to verify noise loudness segment in \(file.path)")
+        }
+        return integrated
+    }
+
     func verifySilencePadding(_ file: URL, expectedDuration: Double, spec: SilenceSpec) throws {
         let boundaryMargin = min(0.05, spec.seconds / 4, spec.effectiveLeadingSeconds / 4)
         let leadingProbeSeconds = min(0.5, max(0, spec.effectiveLeadingSeconds - boundaryMargin))
@@ -723,6 +799,69 @@ extension ConverterTool {
         try verifySilencePadding(file, expectedDuration: expectedDuration, spec: spec)
     }
 
+    func verifyNoisePadding(_ file: URL, expectedDuration: Double, spec: NoiseSpec) throws {
+        let boundaryMargin = min(0.05, spec.seconds / 4)
+        let probeSeconds = max(0, spec.seconds - (boundaryMargin * 2))
+        guard probeSeconds >= 0.20 else {
+            return
+        }
+
+        let targetLUFS = NoiseSpec.targetLUFS
+        let tolerance: Double
+        if spec.seconds < 1 {
+            tolerance = 8.0
+        } else if spec.seconds < 3 {
+            tolerance = 4.0
+        } else {
+            tolerance = 2.0
+        }
+        let minimumAudibleDBFS = -60.0
+
+        func verifySegment(label: String, start: Double) throws {
+            let maxVolume = try audioSegmentMaxVolumeDBFS(file: file, startSeconds: start, durationSeconds: probeSeconds)
+            if maxVolume <= minimumAudibleDBFS {
+                throw AppError("\(label) noise verification failed for \(file.path): max_volume=\(String(format: "%.2f", maxVolume)) dBFS")
+            }
+            let integrated = try audioSegmentIntegratedLUFS(
+                file: file,
+                startSeconds: start,
+                durationSeconds: probeSeconds,
+                targetLUFS: targetLUFS
+            )
+            if abs(integrated - targetLUFS) > tolerance {
+                throw AppError(
+                    "\(label) noise loudness verification failed for \(file.path): integrated=\(String(format: "%.2f", integrated)) LUFS target=\(String(format: "%.2f", targetLUFS)) +/- \(String(format: "%.2f", tolerance))"
+                )
+            }
+        }
+
+        try verifySegment(label: "Leading", start: boundaryMargin)
+        try verifySegment(label: "Trailing", start: max(0, expectedDuration - spec.seconds + boundaryMargin))
+    }
+
+    func verifyNoiseOutput(_ file: URL, source: URL, expectedDuration: Double, spec: NoiseSpec) throws {
+        switch source.pathExtension.lowercasedASCII {
+        case "flac":
+            try verifyFLACFile(file, sampleRate: config.flacSampleRate, channels: config.flacChannels, qcPolicy: nil)
+        case "wav":
+            try verifyWAVStandard(file, qcPolicy: nil)
+        case "mp3":
+            try verifyMP3Standard(file, qcPolicy: nil)
+        case "m4a":
+            try verifyM4AFile(file, sampleRate: config.m4aSampleRate, channels: config.m4aChannels, qcPolicy: nil)
+        case "mp4":
+            try requireFormatNameContains(file, anyOf: ["mp4", "mov"], label: "MP4 container")
+            if (try? requireVideoStream(source)) != nil {
+                try verifyVideoOutput(file)
+            }
+            try verifyALACAudioOutput(file, sampleRate: config.videoMP4AudioSampleRate, channels: 2, qcPolicy: nil)
+        default:
+            throw AppError("Unsupported noise output type: \(file.path)")
+        }
+        try verifyDuration(file, expectedSeconds: expectedDuration, label: "noise output")
+        try verifyNoisePadding(file, expectedDuration: expectedDuration, spec: spec)
+    }
+
     func makeSilencePaddedWAV(from source: URL, spec: SilenceSpec, expectedDuration: Double) throws -> URL {
         let sourceWAV = try makeInternalWAV(from: source, in: cli.outDir, stem: "\(source.stem).silence.source")
         defer { discardTempFile(sourceWAV) }
@@ -754,7 +893,108 @@ extension ConverterTool {
         }
     }
 
-    func encodeSilencePaddedMP4(source: URL, paddedWAV: URL, output: URL, expectedDuration: Double, spec: SilenceSpec) throws {
+    func makeRawNoiseSegmentWAV(spec: NoiseSpec, stem: String) throws -> URL {
+        let temp = try makeTemp(in: cli.outDir, stem: stem, ext: ".wav")
+        let seed = Int.random(in: 1 ... Int(Int32.max))
+        do {
+            _ = try runner.run("ffmpeg", [
+                "-hide_banner", "-nostdin", "-v", "error", "-y",
+                "-f", "lavfi",
+                "-i", "anoisesrc=c=white:r=\(config.wavSampleRate):a=0.5:d=\(String(format: "%.6f", spec.seconds)):s=\(seed)",
+                "-map", "0:a:0",
+                "-vn", "-sn", "-dn",
+                "-ac", String(config.wavChannels),
+                "-ar", String(config.wavSampleRate),
+                "-c:a", config.wavCodec,
+                "-f", "wav",
+                "-rf64", "always",
+                "-write_bext", String(config.wavWriteBext),
+                temp.path
+            ])
+            try verifyWAVStandard(temp, qcPolicy: nil)
+            try verifyDuration(temp, expectedSeconds: spec.seconds, label: "raw noise segment", tolerance: 0.5)
+            return temp
+        } catch {
+            discardTempFile(temp)
+            throw error
+        }
+    }
+
+    func makeNormalizedNoiseSegmentWAV(spec: NoiseSpec, stem: String) throws -> URL {
+        let rawNoise = try makeRawNoiseSegmentWAV(spec: spec, stem: "\(stem).raw")
+        defer { discardTempFile(rawNoise) }
+
+        let policy = loudnessPolicy(targetLUFS: NoiseSpec.targetLUFS, tolerance: spec.seconds < 1 ? 4.0 : 2.0)
+        let plan = try staticLoudnessGainPlan(for: rawNoise, policy: policy)
+        let processed = try processInternalWAV(
+            rawNoise,
+            filter: staticLoudnessGainFilter(gainDB: plan.appliedGainDB),
+            in: cli.outDir,
+            stem: "\(stem).normalized"
+        )
+        do {
+            try verifyWAVStandard(processed, qcPolicy: nil)
+            try verifyDuration(processed, expectedSeconds: spec.seconds, label: "normalized noise segment", tolerance: 0.5)
+            let result = try audioQCResult(for: processed, policy: policy)
+            if !loudnessNonRecoverableIssues(result).isEmpty {
+                throw AppError(loudnessQCFailureMessage(file: processed, result: result))
+            }
+            guard let integrated = result.metrics.integratedLUFS, abs(integrated - policy.targetLUFS) <= policy.lufsTolerance else {
+                let measured = result.metrics.integratedLUFS.map { String(format: "%.2f", $0) } ?? "unknown"
+                throw AppError("Noise segment loudness verification failed for \(processed.path): integrated=\(measured) LUFS target=\(String(format: "%.2f", policy.targetLUFS)) +/- \(String(format: "%.2f", policy.lufsTolerance))")
+            }
+            return processed
+        } catch {
+            discardTempFile(processed)
+            throw error
+        }
+    }
+
+    func makeNoisePaddedWAV(from source: URL, spec: NoiseSpec, expectedDuration: Double) throws -> URL {
+        let sourceWAV = try makeInternalWAV(from: source, in: cli.outDir, stem: "\(source.stem).noise.source")
+        defer { discardTempFile(sourceWAV) }
+        let leadingNoise = try makeNormalizedNoiseSegmentWAV(spec: spec, stem: "\(source.stem).noise.leading")
+        defer { discardTempFile(leadingNoise) }
+        let trailingNoise = try makeNormalizedNoiseSegmentWAV(spec: spec, stem: "\(source.stem).noise.trailing")
+        defer { discardTempFile(trailingNoise) }
+
+        let paddedWAV = try makeTemp(in: cli.outDir, stem: "\(source.stem).noise.padded", ext: ".wav")
+        do {
+            _ = try runner.run("ffmpeg", [
+                "-hide_banner", "-nostdin", "-v", "error", "-y",
+                "-i", leadingNoise.path,
+                "-i", sourceWAV.path,
+                "-i", trailingNoise.path,
+                "-filter_complex", "[0:a:0][1:a:0][2:a:0]concat=n=3:v=0:a=1,aformat=sample_fmts=flt:sample_rates=\(config.wavSampleRate):channel_layouts=stereo[out]",
+                "-map", "[out]",
+                "-vn", "-sn", "-dn",
+                "-ac", String(config.wavChannels),
+                "-ar", String(config.wavSampleRate),
+                "-c:a", config.wavCodec,
+                "-f", "wav",
+                "-rf64", "always",
+                "-write_bext", String(config.wavWriteBext),
+                paddedWAV.path
+            ])
+            try verifyWAVStandard(paddedWAV, qcPolicy: nil)
+            try verifyDuration(paddedWAV, expectedSeconds: expectedDuration, label: "noise-padded WAV")
+            try verifyNoisePadding(paddedWAV, expectedDuration: expectedDuration, spec: spec)
+            return paddedWAV
+        } catch {
+            discardTempFile(paddedWAV)
+            throw error
+        }
+    }
+
+    func encodeDurationPaddedMP4(
+        source: URL,
+        paddedWAV: URL,
+        output: URL,
+        expectedDuration: Double,
+        leadingSeconds: Double,
+        trailingSeconds: Double,
+        label: String
+    ) throws {
         try verifyWAVStandard(paddedWAV, qcPolicy: nil)
         try requireFFmpegEncoder("alac")
         let hasVideo = (try? requireVideoStream(source)) != nil
@@ -775,9 +1015,9 @@ extension ConverterTool {
             return
         }
 
-        let encoders = try requireAvailableEncoderLadder(config.videoEncoderLadder, label: "Silence MP4 video")
+        let encoders = try requireAvailableEncoderLadder(config.videoEncoderLadder, label: "\(label) MP4 video")
         let videoFilter =
-            "tpad=start_duration=\(String(format: "%.6f", spec.effectiveLeadingSeconds)):stop_duration=\(String(format: "%.6f", spec.seconds)):start_mode=clone:stop_mode=clone," +
+            "tpad=start_duration=\(String(format: "%.6f", leadingSeconds)):stop_duration=\(String(format: "%.6f", trailingSeconds)):start_mode=clone:stop_mode=clone," +
             "format=\(config.videoMP4PixelFormat)," +
             "setparams=color_primaries=\(config.videoColorPrimaries):color_trc=\(config.videoColorTransfer):colorspace=\(config.videoColorSpace):range=\(ffmpegFilterRangeValue(config.videoColorRange))"
 
@@ -823,11 +1063,35 @@ extension ConverterTool {
                 return
             } catch {
                 lastError = error
-                logger.warn("Silence MP4 video encoder failed (\(encoder)): \(error.localizedDescription)")
+                logger.warn("\(label) MP4 video encoder failed (\(encoder)): \(error.localizedDescription)")
                 try? fileManager.removeItem(at: output)
             }
         }
-        throw AppError("All silence MP4 video encoders failed for \(output.basename): \(lastError?.localizedDescription ?? "unknown error")")
+        throw AppError("All \(label.lowercasedASCII) MP4 video encoders failed for \(output.basename): \(lastError?.localizedDescription ?? "unknown error")")
+    }
+
+    func encodeSilencePaddedMP4(source: URL, paddedWAV: URL, output: URL, expectedDuration: Double, spec: SilenceSpec) throws {
+        try encodeDurationPaddedMP4(
+            source: source,
+            paddedWAV: paddedWAV,
+            output: output,
+            expectedDuration: expectedDuration,
+            leadingSeconds: spec.effectiveLeadingSeconds,
+            trailingSeconds: spec.seconds,
+            label: "Silence"
+        )
+    }
+
+    func encodeNoisePaddedMP4(source: URL, paddedWAV: URL, output: URL, expectedDuration: Double, spec: NoiseSpec) throws {
+        try encodeDurationPaddedMP4(
+            source: source,
+            paddedWAV: paddedWAV,
+            output: output,
+            expectedDuration: expectedDuration,
+            leadingSeconds: spec.seconds,
+            trailingSeconds: spec.seconds,
+            label: "Noise"
+        )
     }
 
     func addSilenceToMedia(_ source: URL, spec: SilenceSpec) throws -> URL {
@@ -858,6 +1122,42 @@ extension ConverterTool {
             try verifySilenceOutput(temp, source: source, expectedDuration: expectedDuration, spec: spec)
             try publishTemp(temp, to: output)
             logger.info("Created silence-padded media: \(output.basename)")
+            return output
+        } catch {
+            try? fileManager.removeItem(at: temp)
+            state.unregister(tempFile: temp)
+            throw error
+        }
+    }
+
+    func addNoiseToMedia(_ source: URL, spec: NoiseSpec) throws -> URL {
+        try preflightNoiseSource(source)
+        guard let sourceDuration = try mediaDuration(source) else {
+            throw AppError("Unable to read source duration for noise padding: \(source.path)")
+        }
+        let expectedDuration = noiseExpectedDuration(sourceDuration: sourceDuration, spec: spec)
+        let output = cli.outDir
+            .appendingPathComponent(source.stem + noiseOutputSuffix(for: spec))
+            .appendingPathExtension(source.pathExtension.lowercasedASCII)
+        if canReuseOutput(output, verifier: {
+            try self.verifyNoiseOutput(output, source: source, expectedDuration: expectedDuration, spec: spec)
+        }) {
+            logger.info("Skip existing noise-padded media: \(output.basename)")
+            return output
+        }
+
+        let temp = try makeTemp(in: cli.outDir, stem: output.stem, ext: ".\(output.pathExtension)")
+        do {
+            let paddedWAV = try makeNoisePaddedWAV(from: source, spec: spec, expectedDuration: expectedDuration)
+            defer { discardTempFile(paddedWAV) }
+            if source.pathExtension.lowercasedASCII == "mp4" {
+                try encodeNoisePaddedMP4(source: source, paddedWAV: paddedWAV, output: temp, expectedDuration: expectedDuration, spec: spec)
+            } else {
+                try encodeProcessedWAV(paddedWAV, matching: source, to: temp, qcPolicy: nil)
+            }
+            try verifyNoiseOutput(temp, source: source, expectedDuration: expectedDuration, spec: spec)
+            try publishTemp(temp, to: output)
+            logger.info("Created noise-padded media: \(output.basename)")
             return output
         } catch {
             try? fileManager.removeItem(at: temp)

@@ -752,6 +752,19 @@ extension ConverterTool {
         }
     }
 
+    func stepNoise() throws {
+        let spec = try cli.noiseSpec()
+        let files = try audioNoiseCandidates()
+        _ = try processBatch(
+            files: files,
+            emptyMessage: "No supported media files (.flac, .wav, .mp3, .m4a, .mp4) found in '\(cli.srcDir.path)'.",
+            failWhenEmpty: true
+        ) { file in
+            self.logger.info("Add noise \(file.basename): before=\(self.actionTimeDisplay(spec.seconds)) after=\(self.actionTimeDisplay(spec.seconds)) level=-12 LUFS")
+            return try self.addNoiseToMedia(file, spec: spec)
+        }
+    }
+
     func actionTimeDisplay(_ seconds: Double) -> String {
         if seconds.rounded(.towardZero) == seconds {
             return String(Int(seconds))
@@ -834,6 +847,8 @@ extension ConverterTool {
             try stepLoudScan()
         case .loudness:
             try stepLoudness()
+        case .noise:
+            try stepNoise()
         case .silence:
             try stepSilence()
         case .doctor:

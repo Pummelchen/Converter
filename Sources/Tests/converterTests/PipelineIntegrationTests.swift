@@ -701,6 +701,50 @@ final class PipelineIntegrationTests: XCTestCase {
         XCTAssertEqual(try tool.videoField(output, "codec_name"), "h264")
     }
 
+    func testNoiseAddsLeadingAndTrailingNoiseToAudioMedia() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe"])
+
+        let wav = try workspace.createAudio(name: "noise_wav", ext: "wav", duration: 0.8)
+        let flac = try workspace.createAudio(name: "noise_flac", ext: "flac", duration: 0.8)
+        let mp3 = try workspace.createAudio(name: "noise_mp3", ext: "mp3", duration: 0.8)
+        let m4a = try workspace.createAudio(name: "noise_m4a", ext: "m4a", duration: 0.8)
+        let mp4 = try workspace.createVideoMP4(name: "noise_video", duration: 0.8)
+        let tool = try workspace.makeTool(arguments: ["-noise", "0.5"])
+        let spec = try tool.cli.noiseSpec()
+
+        try tool.stepNoise()
+
+        let outputs: [(source: URL, output: URL)] = [
+            (wav, workspace.output.appendingPathComponent("noise_wav_noise_0_5s.wav")),
+            (flac, workspace.output.appendingPathComponent("noise_flac_noise_0_5s.flac")),
+            (mp3, workspace.output.appendingPathComponent("noise_mp3_noise_0_5s.mp3")),
+            (m4a, workspace.output.appendingPathComponent("noise_m4a_noise_0_5s.m4a")),
+            (mp4, workspace.output.appendingPathComponent("noise_video_noise_0_5s.mp4"))
+        ]
+
+        for (source, output) in outputs {
+            XCTAssertTrue(FileManager.default.fileExists(atPath: output.path))
+            let sourceDuration = try XCTUnwrap(try tool.mediaDuration(source))
+            let expectedDuration = tool.noiseExpectedDuration(sourceDuration: sourceDuration, spec: spec)
+            try tool.verifyNoiseOutput(output, source: source, expectedDuration: expectedDuration, spec: spec)
+            let middleMaxVolume = try tool.audioSegmentMaxVolumeDBFS(file: output, startSeconds: spec.seconds + 0.2, durationSeconds: 0.2)
+            XCTAssertGreaterThan(middleMaxVolume, -60, "Original audio must still be audible after inserted noise.")
+        }
+        XCTAssertNoThrow(try tool.requireVideoStream(workspace.output.appendingPathComponent("noise_video_noise_0_5s.mp4")))
+    }
+
+    func testNoiseIgnoresPreviouslyGeneratedNoiseOutputs() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe"])
+
+        _ = try workspace.createAudio(name: "song", ext: "flac", duration: 1.0)
+        _ = try workspace.createAudio(name: "song_noise_30s", ext: "flac", duration: 1.0)
+        let tool = try workspace.makeTool(arguments: ["-noise", "0.5"])
+
+        XCTAssertEqual(try tool.audioNoiseCandidates().map(\.lastPathComponent), ["song.flac"])
+    }
+
     func testFadeCutProcessesMP3WAVAndFLACWithShortenedDuration() throws {
         let workspace = try IntegrationWorkspace()
         try workspace.requireCommands(["ffmpeg", "ffprobe"])

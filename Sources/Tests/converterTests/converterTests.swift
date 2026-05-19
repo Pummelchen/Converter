@@ -35,6 +35,7 @@ final class converterTests: XCTestCase {
         XCTAssertTrue(help.contains(".flac, .wav, .mp3, .m4a, or .mp4"))
         XCTAssertTrue(help.contains("-loudscan"))
         XCTAssertTrue(help.contains("-loudness [TARGET_LUFS]"))
+        XCTAssertTrue(help.contains("-noise [SECONDS]"))
         XCTAssertTrue(help.contains("-silence [SECONDS]"))
         XCTAssertTrue(help.contains("-mp3toflac"))
         XCTAssertTrue(help.contains("-mp3toshort"))
@@ -154,6 +155,51 @@ final class converterTests: XCTestCase {
                 scriptDirectory: root,
                 scriptName: "converter"
             ).silenceSpec()
+        ) { error in
+            XCTAssertTrue(error.localizedDescription.contains("greater than zero"))
+        }
+    }
+
+    func testNoiseParsesDefaultAndExplicitDuration() throws {
+        let root = URL(fileURLWithPath: "/tmp/converter-test")
+        let defaultOptions = try CLIOptions.parse(
+            arguments: ["-noise"],
+            environment: [:],
+            scriptDirectory: root,
+            scriptName: "converter"
+        )
+        XCTAssertEqual(defaultOptions.action, .noise)
+        XCTAssertEqual(try defaultOptions.noiseSpec(), NoiseSpec(seconds: 30))
+
+        let options = try CLIOptions.parse(
+            arguments: ["-noise", "45"],
+            environment: [:],
+            scriptDirectory: root,
+            scriptName: "converter"
+        )
+        XCTAssertEqual(options.action, .noise)
+        XCTAssertEqual(try options.noiseSpec(), NoiseSpec(seconds: 45))
+    }
+
+    func testNoiseRejectsInvalidArguments() throws {
+        let root = URL(fileURLWithPath: "/tmp/converter-test")
+        XCTAssertThrowsError(
+            try CLIOptions.parse(
+                arguments: ["-noise", "30", "45"],
+                environment: [:],
+                scriptDirectory: root,
+                scriptName: "converter"
+            ).noiseSpec()
+        ) { error in
+            XCTAssertTrue(error.localizedDescription.contains("at most one positional duration"))
+        }
+        XCTAssertThrowsError(
+            try CLIOptions.parse(
+                arguments: ["-noise", "0"],
+                environment: [:],
+                scriptDirectory: root,
+                scriptName: "converter"
+            ).noiseSpec()
         ) { error in
             XCTAssertTrue(error.localizedDescription.contains("greater than zero"))
         }
