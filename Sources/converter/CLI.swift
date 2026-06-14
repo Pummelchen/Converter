@@ -56,7 +56,7 @@ enum Action: String {
 }
 
 struct CLIOptions {
-    var action: Action = .full
+    var action: Action = .help
     var debug = false
     var verbose = false
     var overwrite = false
@@ -428,7 +428,7 @@ struct CLIOptions {
     func helpText() -> String {
         """
         Usage:
-          \(scriptName)
+          \(scriptName)                 # show this help
           \(scriptName) -album
           \(scriptName) --hash
           \(scriptName) -bass
@@ -457,7 +457,7 @@ struct CLIOptions {
           Default: config-driven if PROFILE is set, otherwise youtube_master
 
         Full run:
-          Default action with no parameter, or use: -full / -run
+          Use: -full / -run
           Source directory: '\(srcDir.path)'
           Required inputs:
             - Either exactly 1 source image (.png/.jpg/.jpeg), or direct 8K PNG inputs:

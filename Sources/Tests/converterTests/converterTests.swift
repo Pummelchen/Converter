@@ -43,6 +43,18 @@ final class converterTests: XCTestCase {
         XCTAssertTrue(Action.noise.requiresRuntimeDependencyBootstrap)
     }
 
+    func testNoArgumentsShowHelpInsteadOfFullRun() throws {
+        let root = URL(fileURLWithPath: "/tmp/converter-test")
+        let options = try CLIOptions.parse(
+            arguments: [],
+            environment: [:],
+            scriptDirectory: root,
+            scriptName: "converter"
+        )
+        XCTAssertEqual(options.action, .help)
+        XCTAssertFalse(options.action.requiresRuntimeDependencyBootstrap)
+    }
+
     func testHelpTextMentionsFullRunContract() throws {
         let root = URL(fileURLWithPath: "/tmp/converter-test")
         let options = try CLIOptions.parse(
@@ -65,6 +77,8 @@ final class converterTests: XCTestCase {
         XCTAssertTrue(help.contains("-loudness [TARGET_LUFS]"))
         XCTAssertTrue(help.contains("-noise [SECONDS]"))
         XCTAssertTrue(help.contains("-silence [SECONDS]"))
+        XCTAssertTrue(help.contains("Use: -full / -run"))
+        XCTAssertFalse(help.contains("Default action with no parameter"))
         XCTAssertTrue(help.contains("-mp3toflac"))
         XCTAssertTrue(help.contains("-mp3toshort"))
         XCTAssertTrue(help.contains("-fade [SECONDS]"))

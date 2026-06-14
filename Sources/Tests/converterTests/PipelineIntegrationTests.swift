@@ -1211,7 +1211,7 @@ final class PipelineIntegrationTests: XCTestCase {
 
         let riff = try workspace.createPlainRIFFWAV(name: "wav_source", sampleRate: 44_100)
         let reference = try workspace.copy(riff, as: "wav_source_reference", ext: "wav")
-        let tool = try workspace.makeTool()
+        let tool = try workspace.makeTool(arguments: ["-full"])
 
         let artifacts = try await tool.fullAudioPreparation(sourceAudio: riff)
 
@@ -1375,7 +1375,7 @@ final class PipelineIntegrationTests: XCTestCase {
         try Data("foreign-temp".utf8).write(to: workspace.output.appendingPathComponent(".converter-tmp.foreign.decoy.mp3"))
         try Data("foreign-temp".utf8).write(to: workspace.output.appendingPathComponent(".converter-tmp.foreign.decoy.png"))
 
-        let tool = try workspace.makeTool()
+        let tool = try workspace.makeTool(arguments: ["-full"])
         defer { tool.cleanupTemps() }
         try tool.initializeForExecution()
         try await tool.stepFull()
@@ -1467,7 +1467,7 @@ final class PipelineIntegrationTests: XCTestCase {
         _ = try workspace.createImage(name: "Vertical_8K", ext: "png", width: 90, height: 160)
         let sourceFLAC = try workspace.createAudio(name: "463406_B_PH", ext: "flac")
 
-        let tool = try workspace.makeTool()
+        let tool = try workspace.makeTool(arguments: ["-full"])
         defer { tool.cleanupTemps() }
         try tool.initializeForExecution()
         try await tool.stepFull()

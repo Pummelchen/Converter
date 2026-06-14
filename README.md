@@ -47,6 +47,7 @@ If Homebrew itself is missing and a required formula must be installed, converte
 ./converter -help
 ./converter -doctor
 ./converter
+./converter -full
 ./converter -album
 ./converter -matrix
 ./converter -bass
@@ -70,6 +71,8 @@ If Homebrew itself is missing and a required formula must be installed, converte
 Short outputs are hard-capped at 58 seconds.
 For `-mp3toshort`, a portrait `*_8K.png` is rendered directly to the short output; a landscape `*_8K.png` still follows the main-video-plus-short path.
 Conversions preserve source loudness by default instead of remastering it down during normal pipeline work, including `-mp3toshort`.
+
+Running `./converter` without parameters prints help and does not start media processing. Use `./converter -full` or `./converter -run` for the full production pipeline.
 
 `./converter -album` is the album version of the full production run. It scans `Output/` for `.mp3`, `.wav`, and `.flac` tracks, sorts them in natural numeric filename order, loudness-normalizes each track to `-12 LUFS`, builds one RF64 `album.wav`, then continues through the same full-run image, MP4, and short-render pipeline.
 
@@ -143,7 +146,7 @@ Place these inputs in `Output/`:
 
 Then run:
 ```bash
-./converter
+./converter -full
 ```
 
 When both `Horizontal_8K.png` and `Vertical_8K.png` are present, full run renders the main MP4 first from `Horizontal_8K.png`, then renders the short MP4 directly from `Vertical_8K.png`. Direct 8K PNG inputs are used as-is and skip source-image derivative generation.
