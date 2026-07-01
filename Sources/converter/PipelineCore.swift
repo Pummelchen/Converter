@@ -520,9 +520,15 @@ final class ConverterTool: @unchecked Sendable {
     func publishTemp(_ temp: URL, to destination: URL) throws {
         try ensureWritableDirectory(destination.deletingLastPathComponent())
         if fileManager.fileExists(atPath: destination.path) {
-            try fileManager.removeItem(at: destination)
+            _ = try fileManager.replaceItemAt(
+                destination,
+                withItemAt: temp,
+                backupItemName: nil,
+                options: []
+            )
+        } else {
+            try fileManager.moveItem(at: temp, to: destination)
         }
-        try fileManager.moveItem(at: temp, to: destination)
         state.unregister(tempFile: temp)
     }
 

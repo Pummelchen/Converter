@@ -111,6 +111,22 @@ final class PipelineIntegrationTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: foreignTemp.path))
     }
 
+    func testPublishTempReplacesExistingDestination() throws {
+        let workspace = try IntegrationWorkspace()
+        let tool = try workspace.makeTool(arguments: ["-full"])
+        let destination = workspace.output.appendingPathComponent("song_8K.mp4")
+        let temp = try tool.makeTemp(in: workspace.output, stem: "mainmp4.libx264", ext: ".mp4")
+        try Data("old-final".utf8).write(to: destination)
+        try Data("new-final".utf8).write(to: temp)
+
+        try tool.publishTemp(temp, to: destination)
+
+        XCTAssertEqual(try String(contentsOf: destination, encoding: .utf8), "new-final")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: temp.path))
+        tool.cleanupTemps()
+        XCTAssertFalse(FileManager.default.fileExists(atPath: temp.path))
+    }
+
     func testShortMP4OutputStemsDoNotRepeatShortSuffixes() throws {
         let workspace = try IntegrationWorkspace()
         let tool = try workspace.makeTool(arguments: ["-mp4toshort"])
