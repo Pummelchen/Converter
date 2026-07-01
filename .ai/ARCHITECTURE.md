@@ -96,7 +96,7 @@ Evidence:
 3. Image flow accepts direct `Horizontal_8K.png` and optional `Vertical_8K.png`, or derives image assets from one source image.
 4. Audio flow normalizes/prepares internal WAV and delivery M4A/MP3, and generates external RF64/BW64 archival deliverables.
 5. Main MP4 is rendered from M4A plus the main image.
-6. Short MP4 is rendered directly from `Vertical_8K.png` when present, otherwise shortened from the main MP4.
+6. Short MP4 is rendered directly from `Vertical_8K.png` when present, otherwise from `*_NFT8K.png` centered in the portrait frame with black top/bottom padding.
 7. Transients are cleaned.
 
 Evidence:
@@ -157,7 +157,7 @@ Evidence:
 Video functions render:
 
 - main MP4 from image + M4A, using configured main encoder ladder;
-- short MP4, capped to 58 seconds, using configured short encoder ladder;
+- short MP4, capped to 58 seconds, using configured short encoder ladder and fit/pad still-image rendering for `*_NFT8K.png` inputs;
 - portrait-image short renders when a vertical 8K PNG is available.
 
 Video validation checks dimensions, codecs, pixel format, color metadata, ALAC audio, duration, and source loudness preservation.

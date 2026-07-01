@@ -844,13 +844,15 @@ final class PipelineIntegrationTests: XCTestCase {
         let preparedMP3 = workspace.output.appendingPathComponent("song.mp3")
         let preparedM4A = workspace.output.appendingPathComponent("song.m4a")
         let eightK = workspace.output.appendingPathComponent("poster_8K.png")
+        let nft8K = workspace.output.appendingPathComponent("poster_NFT8K.png")
         let mainVideo = workspace.output.appendingPathComponent("song_8K.mp4")
         let shortVideo = workspace.output.appendingPathComponent("song_8K_Short.mp4")
 
         XCTAssertTrue(FileManager.default.fileExists(atPath: preparedMP3.path))
         XCTAssertTrue(FileManager.default.fileExists(atPath: preparedM4A.path))
         XCTAssertTrue(FileManager.default.fileExists(atPath: eightK.path))
-        XCTAssertTrue(FileManager.default.fileExists(atPath: mainVideo.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: nft8K.path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: mainVideo.path))
         XCTAssertTrue(FileManager.default.fileExists(atPath: shortVideo.path))
 
         XCTAssertGreaterThanOrEqual(try tool.audioBitrateBps(preparedMP3), 300_000)
@@ -869,9 +871,12 @@ final class PipelineIntegrationTests: XCTestCase {
         )
         XCTAssertThrowsError(try tool.requireVideoStream(preparedMP3))
         XCTAssertThrowsError(try tool.requireVideoStream(preparedM4A))
-        XCTAssertNoThrow(try tool.requireVideoStream(mainVideo))
         XCTAssertNoThrow(try tool.requireVideoStream(shortVideo))
         try tool.verifyDuration(shortVideo, expectedSeconds: 1.0, label: "short mp4")
+        let frame = try workspace.extractFirstVideoFrame(from: shortVideo, name: "song_short_frame")
+        XCTAssertLessThan(try workspace.meanGrayValue(image: frame, crop: "90x10+0+0"), 0.05)
+        XCTAssertLessThan(try workspace.meanGrayValue(image: frame, crop: "90x10+0+150"), 0.05)
+        XCTAssertGreaterThan(try workspace.meanGrayValue(image: frame, crop: "30x30+30+65"), 0.05)
         XCTAssertEqual(sourceMP3.lastPathComponent, "song.mp3")
     }
 
@@ -1413,6 +1418,7 @@ final class PipelineIntegrationTests: XCTestCase {
         let mp3Output = workspace.output.appendingPathComponent("\(base).mp3")
         let mp4Output = workspace.output.appendingPathComponent("\(base)_8K.mp4")
         let shortOutput = workspace.output.appendingPathComponent("\(base)_8K_Short.mp4")
+        let shortFrame = try workspace.extractFirstVideoFrame(from: shortOutput, name: "full_short_frame")
         try tool.verifyWAVStandard(wavOutput, qcPolicy: nil)
         try tool.verifyM4AFile(m4aOutput, sampleRate: tool.config.m4aSampleRate, channels: tool.config.m4aChannels, qcPolicy: nil)
         try tool.verifyMP3Standard(mp3Output, qcPolicy: nil)
@@ -1457,6 +1463,8 @@ final class PipelineIntegrationTests: XCTestCase {
             colorSpace: tool.config.videoColorSpace,
             colorRange: tool.config.videoColorRange
         )
+        XCTAssertLessThan(try workspace.meanGrayValue(image: shortFrame, crop: "90x10+0+0"), 0.05)
+        XCTAssertLessThan(try workspace.meanGrayValue(image: shortFrame, crop: "90x10+0+150"), 0.05)
     }
 
     func testFullPipelineUsesNamedHorizontalAndVertical8KPNGs() async throws {

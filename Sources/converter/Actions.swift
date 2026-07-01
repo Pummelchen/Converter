@@ -128,14 +128,30 @@ extension ConverterTool {
         return source
     }
 
+    func existingNFT8KImage() throws -> URL? {
+        let matches = try files(in: cli.srcDir) {
+            $0.pathExtension.lowercasedASCII == "png" && $0.stem.hasSuffix("_NFT8K")
+        }
+        guard matches.count <= 1 else {
+            throw AppError("Expected at most one *_NFT8K.png in '\(cli.srcDir.path)' for short rendering.")
+        }
+        if let nft = matches.first {
+            try verifyFullRunImage(nft, width: config.image8KWidth, height: config.image8KWidth, label: "*_NFT8K.png")
+        }
+        return matches.first
+    }
+
     func resolveShortRenderImage() throws -> URL {
         if let vertical = try namedFullRunImage("Vertical_8K.png") {
             try verifyFullRunImage(vertical, width: config.shortMP4ScaleW, height: config.shortMP4ScaleH, label: "Vertical_8K.png")
             return vertical
         }
+        if let nft = try existingNFT8KImage() {
+            return nft
+        }
         if let horizontal = try namedFullRunImage("Horizontal_8K.png") {
             try verifyFullRunImage(horizontal, width: config.videoMP4Width, height: config.videoMP4Height, label: "Horizontal_8K.png")
-            return horizontal
+            return try nftFrom8K(horizontal).nft8K
         }
 
         let existing8K = try files(in: cli.srcDir) {
@@ -147,7 +163,8 @@ extension ConverterTool {
             throw AppError("Expected at most one *_8K.png in '\(cli.srcDir.path)' for short rendering.")
         }
         if let image = existing8K.first {
-            return image
+            try verifyFullRunImage(image, width: config.videoMP4Width, height: config.videoMP4Height, label: "*_8K.png")
+            return try nftFrom8K(image).nft8K
         }
 
         let sourceImage = try resolveFullImage()
@@ -159,8 +176,9 @@ extension ConverterTool {
         } else {
             sourcePNG = sourceImage
         }
-        logger.info("Short step: create 8K image")
-        return try aipixFile(sourcePNG).eightK
+        logger.info("Short step: create NFT8K image")
+        let eightK = try aipixFile(sourcePNG).eightK
+        return try nftFrom8K(eightK).nft8K
     }
 
     func fullRunImageArtifacts() async throws -> FullRunImageArtifacts {
@@ -173,8 +191,11 @@ extension ConverterTool {
             if let vertical {
                 try verifyFullRunImage(vertical, width: config.shortMP4ScaleW, height: config.shortMP4ScaleH, label: "Vertical_8K.png")
                 logger.info("Full step: use Vertical_8K.png for short MP4")
+            } else {
+                logger.info("Full step: create NFT8K PNG for short MP4")
             }
-            return FullRunImageArtifacts(mainVideoImage: horizontal, shortVideoImage: vertical)
+            let shortImage = try vertical ?? nftFrom8K(horizontal).nft8K
+            return FullRunImageArtifacts(mainVideoImage: horizontal, shortVideoImage: shortImage)
         }
 
         if let vertical {
@@ -184,7 +205,7 @@ extension ConverterTool {
 
         let sourceImage = try resolveFullImage()
         let generated = try await fullImagePipeline(sourceImage: sourceImage)
-        return FullRunImageArtifacts(mainVideoImage: generated.eightK, shortVideoImage: vertical)
+        return FullRunImageArtifacts(mainVideoImage: generated.eightK, shortVideoImage: vertical ?? generated.nft8K)
     }
 
     func shouldPreferM4AIntermediateForMP3Short() -> Bool {
@@ -218,9 +239,9 @@ extension ConverterTool {
         logger.info("Full step: PNG variants")
         let variants = try await withImagePermit { try self.aipixFile(sourcePNG) }
 
-        async let nftTask: Void = withImagePermit {
+        async let nftTask: NFTOutputs = withImagePermit {
             self.logger.info("Full step: NFT assets")
-            _ = try self.nftFrom8K(variants.eightK)
+            return try self.nftFrom8K(variants.eightK)
         }
 
         async let twoKTask: URL = withImagePermit {
@@ -244,12 +265,12 @@ extension ConverterTool {
             _ = try self.jpegExtentFromPNG(variants.eightK, requiredWidth: self.config.image8KWidth, requiredHeight: self.config.image8KHeight, suffix: "20MB", targetBytes: self.config.image8KJPG20MBTargetBytes)
         }
 
-        _ = try await nftTask
+        let nft = try await nftTask
         let twoK = try await twoKTask
         let threeK = try await threeKTask
         _ = try await eightKJPGTask
 
-        return ImageArtifacts(sourcePNG: sourcePNG, eightK: variants.eightK, fourK: variants.fourK, threeK: threeK, twoK: twoK)
+        return ImageArtifacts(sourcePNG: sourcePNG, eightK: variants.eightK, fourK: variants.fourK, threeK: threeK, twoK: twoK, nft8K: nft.nft8K)
     }
 
     func fullAudioPreparation(sourceAudio: URL) async throws -> AudioArtifacts {
@@ -338,7 +359,7 @@ extension ConverterTool {
             )
         }
         if let shortImage = imageArtifacts.shortVideoImage {
-            logger.info("Full step: Vertical PNG -> Short")
+            logger.info("Full step: PNG -> Short: \(shortImage.basename)")
             _ = try await withVideoPermit {
                 try self.renderM4AToShortMP4(
                     imageFile: shortImage,
@@ -522,19 +543,10 @@ extension ConverterTool {
         guard let imageDimensions = try imageDimensions(image) else {
             throw AppError("Unable to read dimensions: \(image.path)")
         }
-        if imageDimensions.0 == config.shortMP4ScaleW && imageDimensions.1 == config.shortMP4ScaleH {
-            logger.info("MP3 -> Short using portrait 8K image path")
-            _ = try renderM4AToShortMP4(imageFile: image, audioFile: workingM4A, audioQCPolicy: nil)
-            return
+        guard imageDimensions.0 > 0 && imageDimensions.1 > 0 else {
+            throw AppError("Short image dimensions must be positive. Got '\(imageDimensions.0)x\(imageDimensions.1)' for '\(image.path)'.")
         }
-        if imageDimensions.0 == config.videoMP4Width && imageDimensions.1 == config.videoMP4Height {
-            let mainVideo = try renderM4AToMP4(imageFile: image, audioFile: workingM4A, audioQCPolicy: nil)
-            _ = try shortenMP4(mainVideo, audioQCPolicy: nil)
-            return
-        }
-        throw AppError(
-            "Short image must be either \(config.videoMP4Width)x\(config.videoMP4Height) or \(config.shortMP4ScaleW)x\(config.shortMP4ScaleH). Got '\(imageDimensions.0)x\(imageDimensions.1)' for '\(image.path)'."
-        )
+        _ = try renderM4AToShortMP4(imageFile: image, audioFile: workingM4A, audioQCPolicy: nil)
     }
 
     func stepM4AToWAV() throws {

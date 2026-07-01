@@ -78,7 +78,7 @@ If Homebrew itself is missing and a required formula must be installed, converte
 ```
 
 Short outputs are hard-capped at 58 seconds.
-For `-mp3toshort`, a portrait `*_8K.png` is rendered directly to the short output; a landscape `*_8K.png` still follows the main-video-plus-short path.
+For `-mp3toshort`, the short render uses `Vertical_8K.png` when present. Otherwise it uses or creates `*_NFT8K.png`, centers that square image in the portrait frame, and fills the remaining top and bottom space with black.
 Conversions preserve source loudness by default instead of remastering it down during normal pipeline work, including `-mp3toshort`.
 
 Running `./converter` without parameters prints help and does not start media processing. Use `./converter -full` or `./converter -run` for the full production pipeline.
@@ -158,7 +158,7 @@ Then run:
 ./converter -full
 ```
 
-When both `Horizontal_8K.png` and `Vertical_8K.png` are present, full run renders the main MP4 first from `Horizontal_8K.png`, then renders the short MP4 directly from `Vertical_8K.png`. Direct 8K PNG inputs are used as-is and skip source-image derivative generation.
+When both `Horizontal_8K.png` and `Vertical_8K.png` are present, full run renders the main MP4 first from `Horizontal_8K.png`, then renders the short MP4 directly from `Vertical_8K.png`. When `Vertical_8K.png` is absent, the short MP4 uses or creates `*_NFT8K.png`, centers it in the portrait frame, and pads the top and bottom with black.
 
 Full run produces:
 - image deliverables: 8K/4K PNG, NFT PNGs, 3K/2K PNG, JPG exports

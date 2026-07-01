@@ -56,7 +56,7 @@ Evidence:
 | Album production | `Actions.swift`, audio helpers | Builds a normalized RF64 album WAV, then reuses full production flow. |
 | Image-only actions | `ImagePipeline.swift`, `Actions.swift` | PNG/JPG conversions and size-specific image deliverables. |
 | Audio-only actions | `AudioPipeline.swift`, `Actions.swift` | Format conversion, hash rename, loudness, bass, fade, silence, noise. |
-| Video actions | `VideoPipeline.swift`, `Actions.swift` | M4A+PNG to MP4 and MP4/portrait PNG to short MP4. |
+| Video actions | `VideoPipeline.swift`, `Actions.swift` | M4A+PNG to MP4, NFT/portrait PNG to short MP4, and MP4 to short MP4. |
 | Validation | `ValidationPipeline.swift`, `PipelineCore.swift` | Uses `ffprobe`, `ffmpeg`, and `magick identify`; caches per-file probes. |
 
 ## Internal dependencies

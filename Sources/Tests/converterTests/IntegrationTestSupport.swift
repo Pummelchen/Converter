@@ -383,6 +383,31 @@ final class IntegrationWorkspace {
         return target
     }
 
+    func extractFirstVideoFrame(from video: URL, name: String) throws -> URL {
+        let frame = output.appendingPathComponent(name).appendingPathExtension("png")
+        _ = try runner().run("ffmpeg", [
+            "-hide_banner", "-nostdin", "-v", "error", "-y",
+            "-i", video.path,
+            "-frames:v", "1",
+            frame.path
+        ])
+        return frame
+    }
+
+    func meanGrayValue(image: URL, crop: String) throws -> Double {
+        let result = try runner().run("magick", [
+            image.path,
+            "-crop", crop,
+            "-colorspace", "Gray",
+            "-format", "%[fx:mean]",
+            "info:"
+        ])
+        guard let value = Double(result.stdout.trimmed) else {
+            throw AppError("Unable to parse mean gray value for \(image.path): \(result.stdout)")
+        }
+        return value
+    }
+
     func writeGarbageFile(name: String, ext: String) throws -> URL {
         let target = output.appendingPathComponent(name).appendingPathExtension(ext)
         let payload = Data((0 ..< 4096).map { UInt8(($0 * 37) & 0xFF) })

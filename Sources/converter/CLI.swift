@@ -464,10 +464,12 @@ struct CLIOptions {
               Horizontal_8K.png for the main MP4 and optional Vertical_8K.png for the short MP4.
             - If both Horizontal_8K.png and Vertical_8K.png are present, full run renders the main MP4 first,
               then renders the short directly from Vertical_8K.png.
+            - If Vertical_8K.png is absent, full run uses or creates *_NFT8K.png for the short MP4,
+              centering it in the portrait frame with black top/bottom padding.
             - Exactly 1 source audio file: .flac or .wav or .mp3
           Full-run result:
             - Image deliverables: 8K/4K PNG, NFT PNGs, 3K/2K PNG, JPG exports
-              Direct Horizontal_8K.png/Vertical_8K.png inputs are used as-is and skip source-image derivation.
+              Direct Horizontal_8K.png/Vertical_8K.png inputs are used as-is; Horizontal_8K.png may still derive *_NFT8K.png for the short.
             - Audio/video deliverables: WAV, M4A, MP3, main MP4, short MP4
             - External audio deliverables: *_RF64.flac, *_RF64.wav, *_BW64.flac, *_BW64.wav
               These archival companions are delivery-only and are not reused as full-run source inputs.
@@ -536,7 +538,7 @@ struct CLIOptions {
               Output: .m4a files
             -mp3toshort
               Input: exactly 1 .mp3 file plus exactly 1 source image (.png/.jpg/.jpeg) or exactly 1 *_8K.png in SRC_DIR
-              Output: short-ready MP3 normalization when needed, ALAC M4A intermediate, and ALAC-audio _Short.mp4 capped at 58 seconds; preserves source MP3 loudness; landscape 8K inputs also create a main MP4, portrait 8K inputs render the short directly
+              Output: short-ready MP3 normalization when needed, ALAC M4A intermediate, and ALAC-audio _Short.mp4 capped at 58 seconds; preserves source MP3 loudness; uses Vertical_8K.png when present, otherwise uses or creates *_NFT8K.png with black top/bottom padding
             -mp3clean
               Input: one or more .mp3 files in SRC_DIR
               Output: same .mp3 files rewritten as audio-only MP3 with artwork, junk streams, and metadata removed

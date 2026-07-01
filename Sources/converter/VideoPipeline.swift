@@ -253,8 +253,8 @@ extension ConverterTool {
         guard let dimensions = try imageDimensions(imageFile) else {
             throw AppError("Unable to read dimensions: \(imageFile.path)")
         }
-        if dimensions.0 != config.shortMP4ScaleW || dimensions.1 != config.shortMP4ScaleH {
-            throw AppError("Short image must be \(config.shortMP4ScaleW)x\(config.shortMP4ScaleH). Got '\(dimensions.0)x\(dimensions.1)' for '\(imageFile.path)'.")
+        if dimensions.0 <= 0 || dimensions.1 <= 0 {
+            throw AppError("Short image dimensions must be positive. Got '\(dimensions.0)x\(dimensions.1)' for '\(imageFile.path)'.")
         }
         guard let audioDuration = try mediaDuration(audioFile) else {
             throw AppError("Unable to read numeric audio duration from: \(audioFile.path)")
@@ -286,7 +286,8 @@ extension ConverterTool {
         let sourceWAV = try makeInternalWAV(from: audioFile, in: cli.outDir, stem: "\(audioFile.stem).portraitshort.source", duration: shortDuration)
         defer { discardTempFile(sourceWAV) }
         let shortFilter =
-            "scale=\(config.shortMP4ScaleW):\(config.shortMP4ScaleH)," +
+            "scale=w=\(config.shortMP4ScaleW):h=\(config.shortMP4ScaleH):force_original_aspect_ratio=decrease," +
+            "pad=\(config.shortMP4ScaleW):\(config.shortMP4ScaleH):(ow-iw)/2:(oh-ih)/2:color=black," +
             "fps=\(config.shortMP4FPS)," +
             "format=\(config.shortMP4PixelFormat)," +
             "setparams=color_primaries=\(config.videoColorPrimaries):color_trc=\(config.videoColorTransfer):colorspace=\(config.videoColorSpace):range=\(ffmpegFilterRangeValue(config.videoColorRange))"

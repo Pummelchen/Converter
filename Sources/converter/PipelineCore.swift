@@ -219,6 +219,7 @@ struct ImageArtifacts {
     let fourK: URL
     let threeK: URL
     let twoK: URL
+    let nft8K: URL
 }
 
 struct FullRunImageArtifacts {
