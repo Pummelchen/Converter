@@ -96,7 +96,7 @@ Evidence:
 3. Image flow accepts direct `Horizontal_8K.png` and optional `Vertical_8K.png`, or derives image assets from one source image.
 4. Audio flow normalizes/prepares internal WAV and delivery M4A/MP3, and generates external RF64/BW64 archival deliverables.
 5. Main MP4 is rendered from M4A plus the main image.
-6. Short MP4 is rendered directly from `Vertical_8K.png` when present, otherwise from `*_NFT8K.png` centered in the portrait frame with black top/bottom padding.
+6. Short MP4 is rendered from the project-standard WAV plus `Vertical_8K.png` when present, otherwise from the WAV plus `*_NFT8K.png` centered in the portrait frame with black top/bottom padding.
 7. Transients are cleaned.
 
 Evidence:

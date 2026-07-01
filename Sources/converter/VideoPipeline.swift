@@ -246,9 +246,16 @@ extension ConverterTool {
         throw AppError("All short video encoders failed for \(output.basename): \(lastError?.localizedDescription ?? "unknown error")")
     }
 
-    func renderM4AToShortMP4(imageFile: URL, audioFile: URL, audioQCPolicy: AudioQCPolicy?) throws -> URL {
+    private func renderStillImageToShortMP4(imageFile: URL, audioFile: URL, audioQCPolicy: AudioQCPolicy?) throws -> URL {
         try preflightPNGInput(imageFile)
-        try preflightM4AInput(audioFile)
+        switch audioFile.pathExtension.lowercasedASCII {
+        case "m4a":
+            try preflightM4AInput(audioFile)
+        case "wav":
+            try preflightWAVStandardInput(audioFile)
+        default:
+            throw AppError("Still-image short MP4 render requires .m4a or project-standard .wav audio: \(audioFile.path)")
+        }
 
         guard let dimensions = try imageDimensions(imageFile) else {
             throw AppError("Unable to read dimensions: \(imageFile.path)")
@@ -283,8 +290,20 @@ extension ConverterTool {
         }
 
         let encoders = try requireAvailableEncoderLadder(config.shortVideoEncoderLadder, label: "Short video")
-        let sourceWAV = try makeInternalWAV(from: audioFile, in: cli.outDir, stem: "\(audioFile.stem).portraitshort.source", duration: shortDuration)
-        defer { discardTempFile(sourceWAV) }
+        let sourceWAV: URL
+        let shouldDiscardSourceWAV: Bool
+        if audioFile.pathExtension.lowercasedASCII == "wav" {
+            sourceWAV = audioFile
+            shouldDiscardSourceWAV = false
+        } else {
+            sourceWAV = try makeInternalWAV(from: audioFile, in: cli.outDir, stem: "\(audioFile.stem).portraitshort.source", duration: shortDuration)
+            shouldDiscardSourceWAV = true
+        }
+        defer {
+            if shouldDiscardSourceWAV {
+                discardTempFile(sourceWAV)
+            }
+        }
         let shortFilter =
             "scale=w=\(config.shortMP4ScaleW):h=\(config.shortMP4ScaleH):force_original_aspect_ratio=decrease," +
             "pad=\(config.shortMP4ScaleW):\(config.shortMP4ScaleH):(ow-iw)/2:(oh-ih)/2:color=black," +
@@ -357,6 +376,14 @@ extension ConverterTool {
             }
         }
         throw AppError("All portrait short video encoders failed for \(output.basename): \(lastError?.localizedDescription ?? "unknown error")")
+    }
+
+    func renderM4AToShortMP4(imageFile: URL, audioFile: URL, audioQCPolicy: AudioQCPolicy?) throws -> URL {
+        try renderStillImageToShortMP4(imageFile: imageFile, audioFile: audioFile, audioQCPolicy: audioQCPolicy)
+    }
+
+    func renderWAVToShortMP4(imageFile: URL, audioFile: URL, audioQCPolicy: AudioQCPolicy?) throws -> URL {
+        try renderStillImageToShortMP4(imageFile: imageFile, audioFile: audioFile, audioQCPolicy: audioQCPolicy)
     }
 
 }

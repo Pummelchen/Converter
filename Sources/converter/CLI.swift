@@ -466,6 +466,7 @@ struct CLIOptions {
               then renders the short directly from Vertical_8K.png.
             - If Vertical_8K.png is absent, full run uses or creates *_NFT8K.png for the short MP4,
               centering it in the portrait frame with black top/bottom padding.
+            - Full-run short MP4 audio is rendered from the project-standard WAV artifact.
             - Exactly 1 source audio file: .flac or .wav or .mp3
           Full-run result:
             - Image deliverables: 8K/4K PNG, NFT PNGs, 3K/2K PNG, JPG exports

@@ -361,9 +361,9 @@ extension ConverterTool {
         if let shortImage = imageArtifacts.shortVideoImage {
             logger.info("Full step: PNG -> Short: \(shortImage.basename)")
             _ = try await withVideoPermit {
-                try self.renderM4AToShortMP4(
+                try self.renderWAVToShortMP4(
                     imageFile: shortImage,
-                    audioFile: audioArtifacts.m4a,
+                    audioFile: audioArtifacts.wav,
                     audioQCPolicy: nil
                 )
             }
