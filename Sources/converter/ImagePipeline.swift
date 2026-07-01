@@ -175,6 +175,52 @@ extension ConverterTool {
         }
     }
 
+    func fourKPNGFrom8K(_ source: URL) throws -> URL {
+        try preflightPNGInput(source)
+        guard let dimensions = try imageDimensions(source) else {
+            throw AppError("Unable to read dimensions: \(source.path)")
+        }
+        if dimensions.0 != config.image8KWidth || dimensions.1 != config.image8KHeight {
+            throw AppError("Skipping \(source.basename): expected \(config.image8KWidth)x\(config.image8KHeight), got \(dimensions.0)x\(dimensions.1)")
+        }
+
+        let outputName = replacingTrailingSuffix(in: source.stem, suffix: "_8K", replacement: "_4K")
+        let output = cli.outDir.appendingPathComponent(outputName).appendingPathExtension("png")
+        if canReuseOutput(output, verifier: { try verifyImageOutput(output, width: config.image4KWidth, height: config.image4KHeight, format: "PNG") }) {
+            logger.info("Skip existing 4K PNG: \(output.basename)")
+            return output
+        }
+
+        let temp = try makeTemp(in: cli.outDir, stem: outputName, ext: ".png")
+        do {
+            let args = [
+                source.path,
+                "-auto-orient",
+                "-colorspace", config.imageOutputColorSpace,
+                "-filter", config.imageAIPixFilter,
+                "-resize", "x\(config.image4KHeight)",
+                "-gravity", "center",
+                "-background", "black",
+                "-extent", "\(config.image4KWidth)x\(config.image4KHeight)"
+            ]
+            let sharpSigma = max(0.0, (config.imageAIPixSharpness - 1.0) * 2.0)
+            var finalArgs = args
+            if sharpSigma > 0 {
+                finalArgs += ["-sharpen", String(format: "0x%.3f", sharpSigma)]
+            }
+            finalArgs += ["-define", "png:compression-level=\(config.imageAIPixPNGCompressionLevel)", "-strip", temp.path]
+            _ = try runner.run("magick", finalArgs)
+            try verifyImageOutput(temp, width: config.image4KWidth, height: config.image4KHeight, format: "PNG")
+            try publishTemp(temp, to: output)
+            logger.info("Created 4K PNG: \(output.basename)")
+            return output
+        } catch {
+            try? fileManager.removeItem(at: temp)
+            state.unregister(tempFile: temp)
+            throw error
+        }
+    }
+
     func jpegExtentFromPNG(_ source: URL, requiredWidth: Int, requiredHeight: Int, suffix: String, targetBytes: Int) throws -> URL {
         try preflightPNGInput(source)
         guard let dimensions = try imageDimensions(source) else {

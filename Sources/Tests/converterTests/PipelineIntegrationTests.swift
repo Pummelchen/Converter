@@ -124,6 +124,7 @@ final class PipelineIntegrationTests: XCTestCase {
         XCTAssertEqual(try String(contentsOf: destination, encoding: .utf8), "new-final")
         XCTAssertFalse(FileManager.default.fileExists(atPath: temp.path))
         tool.cleanupTemps()
+        XCTAssertEqual(try String(contentsOf: destination, encoding: .utf8), "new-final")
         XCTAssertFalse(FileManager.default.fileExists(atPath: temp.path))
     }
 
@@ -1535,13 +1536,32 @@ final class PipelineIntegrationTests: XCTestCase {
 
         XCTAssertTrue(FileManager.default.fileExists(atPath: mainOutput.path))
         XCTAssertTrue(FileManager.default.fileExists(atPath: shortOutput.path))
+        let expectedImageFiles = [
+            "Horizontal_4K.png",
+            "Horizontal_3K.png",
+            "Horizontal_2K.png",
+            "Horizontal_NFT8K.png",
+            "Horizontal_NFT3K.png",
+            "Horizontal_NFT2K.png",
+            "Horizontal_8K_1MB.jpg",
+            "Horizontal_8K_2MB.jpg",
+            "Horizontal_8K_20MB.jpg",
+            "Horizontal_3K_1MB.jpg",
+            "Horizontal_3K_5MB.jpg"
+        ]
+        for name in expectedImageFiles {
+            XCTAssertTrue(
+                FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent(name).path),
+                "Missing direct-8K image deliverable \(name)"
+            )
+        }
         XCTAssertFalse(
             FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("Horizontal_8K_8K.png").path),
             "Direct Horizontal_8K.png input should not be reprocessed as a generic source image."
         )
         XCTAssertFalse(
             FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("Horizontal_8K_NFT8K.png").path),
-            "Existing Vertical_8K.png should be used directly for the short instead of deriving an NFT8K image from Horizontal_8K.png."
+            "Direct Horizontal_8K.png input should use stripped derivative naming for NFT images."
         )
         try tool.verifyVideoOutput(
             mainOutput,
@@ -1578,6 +1598,10 @@ final class PipelineIntegrationTests: XCTestCase {
             0.05,
             "Existing Vertical_8K.png should fill the bottom of the short frame without black NFT padding."
         )
+
+        tool.cleanupTemps()
+        XCTAssertTrue(FileManager.default.fileExists(atPath: mainOutput.path), "Main MP4 should remain after temp cleanup.")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: shortOutput.path), "Short MP4 should remain after temp cleanup.")
     }
 
     func testAlbumPipelineSortsMixedAudioNormalizesAndContinuesFullRun() async throws {

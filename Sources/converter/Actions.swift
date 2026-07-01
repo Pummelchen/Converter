@@ -194,7 +194,8 @@ extension ConverterTool {
             } else {
                 logger.info("Full step: create NFT8K PNG for short MP4")
             }
-            let shortImage = try vertical ?? nftFrom8K(horizontal).nft8K
+            let generated = try await fullImagePipelineFromDirect8K(horizontal)
+            let shortImage = vertical ?? generated.nft8K
             return FullRunImageArtifacts(mainVideoImage: horizontal, shortVideoImage: shortImage)
         }
 
@@ -271,6 +272,49 @@ extension ConverterTool {
         _ = try await eightKJPGTask
 
         return ImageArtifacts(sourcePNG: sourcePNG, eightK: variants.eightK, fourK: variants.fourK, threeK: threeK, twoK: twoK, nft8K: nft.nft8K)
+    }
+
+    func fullImagePipelineFromDirect8K(_ sourcePNG: URL) async throws -> ImageArtifacts {
+        logger.info("Full step: image deliverables from \(sourcePNG.basename)")
+
+        async let fourKTask: URL = withImagePermit {
+            self.logger.info("Full step: 4K PNG")
+            return try self.fourKPNGFrom8K(sourcePNG)
+        }
+
+        async let nftTask: NFTOutputs = withImagePermit {
+            self.logger.info("Full step: NFT assets")
+            return try self.nftFrom8K(sourcePNG)
+        }
+
+        async let twoKTask: URL = withImagePermit {
+            self.logger.info("Full step: 2K PNG")
+            return try self.squarePNGFrom8K(sourcePNG, size: self.config.image2KSize, label: "2K")
+        }
+
+        async let threeKTask: URL = withImagePermit {
+            self.logger.info("Full step: 3K PNG")
+            let threeK = try self.squarePNGFrom8K(sourcePNG, size: self.config.image3KSize, label: "3K")
+            self.logger.info("Full step: 3K JPG deliverables")
+            _ = try self.jpegExtentFromPNG(threeK, requiredWidth: self.config.image3KSize, requiredHeight: self.config.image3KSize, suffix: "1MB", targetBytes: self.config.image3KJPG1MBTargetBytes)
+            _ = try self.jpegExtentFromPNG(threeK, requiredWidth: self.config.image3KSize, requiredHeight: self.config.image3KSize, suffix: "5MB", targetBytes: self.config.image3KJPG5MBTargetBytes)
+            return threeK
+        }
+
+        async let eightKJPGTask: Void = withImagePermit {
+            self.logger.info("Full step: 8K JPG deliverables")
+            _ = try self.jpegExtentFromPNG(sourcePNG, requiredWidth: self.config.image8KWidth, requiredHeight: self.config.image8KHeight, suffix: "1MB", targetBytes: self.config.image8KJPG1MBTargetBytes)
+            _ = try self.jpegExtentFromPNG(sourcePNG, requiredWidth: self.config.image8KWidth, requiredHeight: self.config.image8KHeight, suffix: "2MB", targetBytes: self.config.image8KJPG2MBTargetBytes)
+            _ = try self.jpegExtentFromPNG(sourcePNG, requiredWidth: self.config.image8KWidth, requiredHeight: self.config.image8KHeight, suffix: "20MB", targetBytes: self.config.image8KJPG20MBTargetBytes)
+        }
+
+        let fourK = try await fourKTask
+        let nft = try await nftTask
+        let twoK = try await twoKTask
+        let threeK = try await threeKTask
+        _ = try await eightKJPGTask
+
+        return ImageArtifacts(sourcePNG: sourcePNG, eightK: sourcePNG, fourK: fourK, threeK: threeK, twoK: twoK, nft8K: nft.nft8K)
     }
 
     func fullAudioPreparation(sourceAudio: URL) async throws -> AudioArtifacts {

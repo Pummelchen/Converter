@@ -519,15 +519,29 @@ final class ConverterTool: @unchecked Sendable {
 
     func publishTemp(_ temp: URL, to destination: URL) throws {
         try ensureWritableDirectory(destination.deletingLastPathComponent())
-        if fileManager.fileExists(atPath: destination.path) {
-            _ = try fileManager.replaceItemAt(
-                destination,
-                withItemAt: temp,
-                backupItemName: nil,
-                options: []
-            )
-        } else {
+        guard fileManager.fileExists(atPath: destination.path) else {
             try fileManager.moveItem(at: temp, to: destination)
+            state.unregister(tempFile: temp)
+            return
+        }
+
+        let backupExtension = destination.pathExtension.isEmpty ? "" : ".\(destination.pathExtension)"
+        let backup = try makeTemp(in: destination.deletingLastPathComponent(), stem: "\(destination.stem).publish-backup", ext: backupExtension)
+        try fileManager.removeItem(at: backup)
+        do {
+            try fileManager.moveItem(at: destination, to: backup)
+            try fileManager.moveItem(at: temp, to: destination)
+            try? fileManager.removeItem(at: backup)
+            state.unregister(tempFile: backup)
+        } catch {
+            if !fileManager.fileExists(atPath: destination.path), fileManager.fileExists(atPath: backup.path) {
+                try? fileManager.moveItem(at: backup, to: destination)
+            }
+            if fileManager.fileExists(atPath: backup.path) {
+                try? fileManager.removeItem(at: backup)
+            }
+            state.unregister(tempFile: backup)
+            throw error
         }
         state.unregister(tempFile: temp)
     }
