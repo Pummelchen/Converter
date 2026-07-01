@@ -89,6 +89,39 @@ final class PipelineIntegrationTests: XCTestCase {
         XCTAssertTrue(pipelineResult.producer.stderr.contains("producer-11999"))
     }
 
+    func testCleanupTempsRemovesRunScopedHiddenTempFiles() throws {
+        let workspace = try IntegrationWorkspace()
+        let tool = try workspace.makeTool(arguments: ["-full"])
+        let runScopedTemp = workspace.output.appendingPathComponent(".converter-tmp.\(tool.runToken).mainmp4.hevc_videotoolbox.1234.mp4")
+        let orphanedTemp = workspace.output.appendingPathComponent(".converter-tmp.999999.mainmp4.hevc_videotoolbox.1234.mp4")
+        let foreignTemp = workspace.output.appendingPathComponent(".converter-tmp.foreign.mainmp4.hevc_videotoolbox.1234.mp4")
+        try Data("current-run-temp".utf8).write(to: runScopedTemp)
+        try Data("orphaned-temp".utf8).write(to: orphanedTemp)
+        try Data("foreign-temp".utf8).write(to: foreignTemp)
+
+        tool.cleanupOrphanedConverterTempFiles()
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: runScopedTemp.path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: orphanedTemp.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: foreignTemp.path))
+
+        tool.cleanupTemps()
+
+        XCTAssertFalse(FileManager.default.fileExists(atPath: runScopedTemp.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: foreignTemp.path))
+    }
+
+    func testShortMP4OutputStemsDoNotRepeatShortSuffixes() throws {
+        let workspace = try IntegrationWorkspace()
+        let tool = try workspace.makeTool(arguments: ["-mp4toshort"])
+
+        XCTAssertEqual(tool.shortMP4Stem(forInputStem: "song_8K"), "song_8K_Short")
+        XCTAssertEqual(tool.shortMP4Stem(forInputStem: "song_8K_Short"), "song_8K_Short")
+        XCTAssertEqual(tool.portraitShortMP4Stem(forAudioStem: "song"), "song_8K_Short")
+        XCTAssertEqual(tool.portraitShortMP4Stem(forAudioStem: "song_8K"), "song_8K_Short")
+        XCTAssertEqual(tool.portraitShortMP4Stem(forAudioStem: "song_8K_Short"), "song_8K_Short")
+    }
+
     func testAudioConversionMatrixProducesVerifiedOutputs() throws {
         let workspace = try IntegrationWorkspace()
         try workspace.requireCommands(["ffmpeg", "ffprobe"])
@@ -1385,8 +1418,8 @@ final class PipelineIntegrationTests: XCTestCase {
         try tool.initializeForExecution()
         try await tool.stepFull()
 
-        let visibleOutputs = try FileManager.default.contentsOfDirectory(at: workspace.output, includingPropertiesForKeys: [.isRegularFileKey], options: [])
-        XCTAssertFalse(visibleOutputs.contains { $0.lastPathComponent.contains(tool.runToken) }, "Run-scoped temp files leaked into Output.")
+        let allOutputs = try FileManager.default.contentsOfDirectory(at: workspace.output, includingPropertiesForKeys: [.isRegularFileKey], options: [])
+        XCTAssertFalse(allOutputs.contains { $0.lastPathComponent.contains(tool.runToken) }, "Run-scoped temp files leaked into Output.")
 
         let prefix = "art"
         let base = "track"

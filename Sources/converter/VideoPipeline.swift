@@ -3,6 +3,23 @@ import Foundation
 extension ConverterTool {
     private var shortMP4AbsoluteMaximumSeconds: Double { 58.0 }
 
+    func shortMP4Stem(forInputStem stem: String) -> String {
+        stem.hasSuffix("_Short") ? stem : "\(stem)_Short"
+    }
+
+    func portraitShortMP4Stem(forAudioStem stem: String) -> String {
+        if stem.hasSuffix("_8K_Short") {
+            return stem
+        }
+        if stem.hasSuffix("_Short") {
+            return stem
+        }
+        if stem.hasSuffix("_8K") {
+            return "\(stem)_Short"
+        }
+        return "\(stem)_8K_Short"
+    }
+
     func configuredShortClipSeconds() throws -> Double {
         try parseFlexibleTimecode(config.shortMP4ClipSeconds, label: "SHORT_MP4_CLIP_SECONDS")
     }
@@ -130,7 +147,7 @@ extension ConverterTool {
 
         var lastError: Error?
         for encoder in encoders {
-            let temp = try makeTemp(in: output.deletingLastPathComponent(), stem: "\(output.stem).\(encoder)", ext: ".mp4")
+            let temp = try makeTemp(in: output.deletingLastPathComponent(), stem: "mainmp4.\(encoder)", ext: ".mp4")
             do {
                 _ = try runner.run("ffmpeg", buildArguments(encoder: encoder) + [temp.path])
                 try verifyRenderedFile(temp)
@@ -151,7 +168,7 @@ extension ConverterTool {
         try preflightMP4Input(input, requireAudio: true, requireAudibleAudio: true)
         try requireFFmpegEncoder("alac")
         let shortDuration = try effectiveShortClipSeconds(for: input)
-        let output = cli.outDir.appendingPathComponent("\(input.stem)_Short").appendingPathExtension("mp4")
+        let output = cli.outDir.appendingPathComponent(shortMP4Stem(forInputStem: input.stem)).appendingPathExtension("mp4")
         if canReuseOutput(output, verifier: {
             try verifyVideoOutput(
                 output,
@@ -229,7 +246,7 @@ extension ConverterTool {
 
         var lastError: Error?
         for encoder in encoders {
-            let temp = try makeTemp(in: cli.outDir, stem: "\(output.stem).\(encoder)", ext: ".mp4")
+            let temp = try makeTemp(in: cli.outDir, stem: "shortmp4.\(encoder)", ext: ".mp4")
             do {
                 _ = try runner.run("ffmpeg", buildArguments(encoder: encoder) + [temp.path])
                 try verifyShortFile(temp)
@@ -261,7 +278,7 @@ extension ConverterTool {
         }
         try requireFFmpegEncoder("alac")
         let shortDuration = try effectiveShortClipSeconds(forDuration: audioDuration)
-        let output = cli.outDir.appendingPathComponent("\(audioFile.stem)_8K_Short").appendingPathExtension("mp4")
+        let output = cli.outDir.appendingPathComponent(portraitShortMP4Stem(forAudioStem: audioFile.stem)).appendingPathExtension("mp4")
         if canReuseOutput(output, verifier: {
             try verifyVideoOutput(
                 output,
@@ -342,7 +359,7 @@ extension ConverterTool {
 
         var lastError: Error?
         for encoder in encoders {
-            let temp = try makeTemp(in: cli.outDir, stem: "\(output.stem).\(encoder)", ext: ".mp4")
+            let temp = try makeTemp(in: cli.outDir, stem: "portraitshort.\(encoder)", ext: ".mp4")
             do {
                 _ = try runner.run("ffmpeg", buildArguments(encoder: encoder) + [temp.path])
                 try verifyPortraitShortFile(temp)

@@ -1,4 +1,5 @@
 import Foundation
+import Darwin
 import BW64Bridge
 
 final class RuntimeState: @unchecked Sendable {
@@ -335,6 +336,64 @@ final class ConverterTool: @unchecked Sendable {
 
     func cleanupTemps() {
         state.cleanup(fileManager: fileManager, logger: logger)
+        cleanupRunScopedTempFiles()
+    }
+
+    func cleanupRunScopedTempFiles() {
+        let directories = Set([cli.srcDir.standardizedFileURL, cli.outDir.standardizedFileURL])
+        for directory in directories {
+            guard let files = try? fileManager.contentsOfDirectory(
+                at: directory,
+                includingPropertiesForKeys: [.isRegularFileKey],
+                options: []
+            ) else {
+                continue
+            }
+            for file in files where file.lastPathComponent.hasPrefix(".converter-tmp.\(runToken).") {
+                try? fileManager.removeItem(at: file)
+                logger.debug("Removed run-scoped temp file: \(file.path)")
+            }
+        }
+    }
+
+    func cleanupOrphanedConverterTempFiles() {
+        let directories = Set([cli.srcDir.standardizedFileURL, cli.outDir.standardizedFileURL])
+        for directory in directories {
+            guard let files = try? fileManager.contentsOfDirectory(
+                at: directory,
+                includingPropertiesForKeys: [.isRegularFileKey],
+                options: []
+            ) else {
+                continue
+            }
+            for file in files where isOrphanedConverterTempFile(file) {
+                try? fileManager.removeItem(at: file)
+                logger.debug("Removed orphaned converter temp file: \(file.path)")
+            }
+        }
+    }
+
+    func isOrphanedConverterTempFile(_ file: URL) -> Bool {
+        let prefix = ".converter-tmp."
+        let basename = file.lastPathComponent
+        guard basename.hasPrefix(prefix) else {
+            return false
+        }
+        let remainder = basename.dropFirst(prefix.count)
+        guard let rawPID = remainder.split(separator: ".", maxSplits: 1).first,
+              let pid = Int32(rawPID),
+              pid != getpid()
+        else {
+            return false
+        }
+        return !processExists(pid)
+    }
+
+    func processExists(_ pid: Int32) -> Bool {
+        if kill(pid, 0) == 0 {
+            return true
+        }
+        return errno == EPERM
     }
 
     func ensureExecutableDependencies() throws {
@@ -384,6 +443,7 @@ final class ConverterTool: @unchecked Sendable {
         }
         try ensureDirectory(cli.srcDir)
         try ensureWritableDirectory(cli.outDir)
+        cleanupOrphanedConverterTempFiles()
         try ensureExecutableDependencies()
     }
 
