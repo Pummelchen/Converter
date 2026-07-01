@@ -158,7 +158,7 @@ Then run:
 ./converter -full
 ```
 
-When both `Horizontal_8K.png` and `Vertical_8K.png` are present, full run renders the main MP4 first from `Horizontal_8K.png`, then renders the short MP4 directly from `Vertical_8K.png`. When `Vertical_8K.png` is absent, the short MP4 uses or creates `*_NFT8K.png`, centers it in the portrait frame, and pads the top and bottom with black. Full-run short MP4 audio is rendered from the project-standard WAV artifact.
+When both `Horizontal_8K.png` and `Vertical_8K.png` are present, full run renders the main MP4 first from `Horizontal_8K.png`, then renders the short MP4 directly from `Vertical_8K.png`. When `Vertical_8K.png` is absent, the short MP4 uses or creates `*_NFT8K.png`, centers it in the portrait frame, and pads the top and bottom with black.
 
 Full run produces:
 - image deliverables: 8K/4K PNG, NFT PNGs, 3K/2K PNG, JPG exports

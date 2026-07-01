@@ -1427,7 +1427,6 @@ final class PipelineIntegrationTests: XCTestCase {
         try tool.verifySourceLoudnessPreserved(source: sourceMP3Reference, output: mp3Output)
         try tool.verifySourceLoudnessPreserved(source: sourceMP3Reference, output: mp4Output)
         try tool.verifySourceLoudnessPreserved(source: sourceMP3Reference, output: shortOutput)
-        try tool.verifySourceLoudnessPreserved(source: wavOutput, output: shortOutput)
         try tool.verifyCanonicalPCMSampleEquivalence(
             source: workspace.output.appendingPathComponent("\(base).wav"),
             output: workspace.output.appendingPathComponent("\(base)_RF64.flac"),
