@@ -1490,6 +1490,10 @@ final class PipelineIntegrationTests: XCTestCase {
             FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("Horizontal_8K_8K.png").path),
             "Direct Horizontal_8K.png input should not be reprocessed as a generic source image."
         )
+        XCTAssertFalse(
+            FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("Horizontal_8K_NFT8K.png").path),
+            "Existing Vertical_8K.png should be used directly for the short instead of deriving an NFT8K image from Horizontal_8K.png."
+        )
         try tool.verifyVideoOutput(
             mainOutput,
             width: tool.config.videoMP4Width,
@@ -1514,6 +1518,17 @@ final class PipelineIntegrationTests: XCTestCase {
         )
         try tool.verifySourceLoudnessPreserved(source: sourceFLAC, output: mainOutput)
         try tool.verifySourceLoudnessPreserved(source: sourceFLAC, output: shortOutput)
+        let shortFrame = try workspace.extractFirstVideoFrame(from: shortOutput, name: "full_vertical_short_frame")
+        XCTAssertGreaterThan(
+            try workspace.meanGrayValue(image: shortFrame, crop: "90x10+0+0"),
+            0.05,
+            "Existing Vertical_8K.png should fill the top of the short frame without black NFT padding."
+        )
+        XCTAssertGreaterThan(
+            try workspace.meanGrayValue(image: shortFrame, crop: "90x10+0+150"),
+            0.05,
+            "Existing Vertical_8K.png should fill the bottom of the short frame without black NFT padding."
+        )
     }
 
     func testAlbumPipelineSortsMixedAudioNormalizesAndContinuesFullRun() async throws {
