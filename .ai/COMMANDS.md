@@ -84,7 +84,7 @@ Evidence:
 | Truncated fadeout | `./converter -fadeout 1:30 10` |
 | Noise padding | `./converter -noise` or `./converter -noise 45` |
 | Silence padding | `./converter -silence` or `./converter -silence 45` |
-| MP3 to short | `./converter -mp3toshort` |
+| NFT-image short | `./converter -nfttoshort` |
 | M4A to MP4 | `./converter -m4atomp4` |
 
 Evidence:

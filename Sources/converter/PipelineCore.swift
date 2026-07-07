@@ -402,7 +402,7 @@ final class ConverterTool: @unchecked Sendable {
         }
         switch cli.action {
         case .album, .aipix, .jpgtopng, .pngtojpg, .pngtonft, .pngto2k, .pngto3k, .pngto3k1mb, .pngto3k5mb,
-             .pngtojpg1mb, .pngtojpg2mb, .pngtojpg20mb, .runPix, .visualsubs, .full, .m4atomp4, .mp3toshort, .short:
+             .pngtojpg1mb, .pngtojpg2mb, .pngtojpg20mb, .runPix, .visualsubs, .full, .m4atomp4, .nfttoshort, .short:
             try runner.requireExecutable("magick")
         default:
             break

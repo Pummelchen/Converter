@@ -28,7 +28,7 @@ Human edits are allowed. Future refreshes should preserve valid human edits.
 |---|---|
 | Responsibility | Parse user arguments, select `Action`, validate action-specific arguments, generate help/list/matrix text. |
 | Key file | `Sources/converter/CLI.swift` |
-| Public interface | Flags such as `-full`, `-run`, `-album`, `-doctor`, `-matrix`, `-loudness`, `-noise`, `-silence`, `-mp3toshort`. |
+| Public interface | Flags such as `-full`, `-run`, `-album`, `-doctor`, `-matrix`, `-loudness`, `-noise`, `-silence`, `-nfttoshort`. |
 | Invariants | No arguments mean help; removed flags throw explicit errors; `--recursive` is rejected. |
 | Tests | `converterTests.swift` includes no-arg help and help-text assertions. |
 | Risks | CLI contract is documented in README and tests; update all three together. |

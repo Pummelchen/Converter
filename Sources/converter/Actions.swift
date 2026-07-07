@@ -281,24 +281,6 @@ extension ConverterTool {
         return FullRunImageArtifacts(mainVideoImage: generated.eightK, shortVideoImage: vertical ?? generated.nft8K)
     }
 
-    func shouldPreferM4AIntermediateForMP3Short() -> Bool {
-        if config.m4aBitrate.lowercasedASCII == "lossless" {
-            return true
-        }
-        let mp3Bitrate = parseBitrateBps(config.mp3Bitrate) ?? 0
-        let m4aBitrate = parseBitrateBps(config.m4aBitrate) ?? 0
-        if m4aBitrate != mp3Bitrate {
-            return m4aBitrate > mp3Bitrate
-        }
-        if config.m4aSampleRate != config.mp3SampleRate {
-            return config.m4aSampleRate > config.mp3SampleRate
-        }
-        if config.m4aChannels != config.mp3Channels {
-            return config.m4aChannels > config.mp3Channels
-        }
-        return false
-    }
-
     func fullImagePipeline(sourceImage: URL) async throws -> ImageArtifacts {
         let sourcePNG: URL
         let ext = sourceImage.pathExtension.lowercasedASCII
@@ -634,35 +616,25 @@ extension ConverterTool {
         }
     }
 
-    func stepMP3ToShort() throws {
+    func stepNFTToShort() throws {
         let images = try files(in: cli.srcDir, matchingExtensions: ["png", "jpg", "jpeg"])
         let existing8K = try files(in: cli.srcDir) { $0.pathExtension.lowercasedASCII == "png" && $0.stem.hasSuffix("_8K") }
         if existing8K.count + images.count == 0 {
             throw AppError("Expected exactly one source image (.png/.jpg/.jpeg) or one *_8K.png in '\(cli.srcDir.path)'.")
         }
-        let mp3Files = try files(in: cli.srcDir, matchingExtensions: ["mp3"])
-        guard mp3Files.count == 1, let sourceMP3 = mp3Files.first else {
-            throw AppError("Expected exactly one .mp3 file in '\(cli.srcDir.path)' for -mp3toshort.")
-        }
 
         let image = try resolveShortRenderImage()
-        logger.info("MP3 -> Short source audio: \(sourceMP3.basename)")
-        logger.info("MP3 -> Short source image: \(image.basename)")
+        let audio = try resolveShortAudio()
+        logger.info("NFT -> Short source audio: \(audio.basename)")
+        logger.info("NFT -> Short source image: \(image.basename)")
 
-        let workingMP3 = try ensureShortReadyMP3(sourceMP3)
-        if shouldPreferM4AIntermediateForMP3Short() {
-            logger.info("MP3 -> Short prefers high-quality M4A intermediate")
-        } else {
-            logger.info("MP3 -> Short uses project-standard M4A intermediate")
-        }
-        let workingM4A = try convertMP3ToShortReadyM4A(workingMP3)
         guard let imageDimensions = try imageDimensions(image) else {
             throw AppError("Unable to read dimensions: \(image.path)")
         }
         guard imageDimensions.0 > 0 && imageDimensions.1 > 0 else {
             throw AppError("Short image dimensions must be positive. Got '\(imageDimensions.0)x\(imageDimensions.1)' for '\(image.path)'.")
         }
-        _ = try renderM4AToShortMP4(imageFile: image, audioFile: workingM4A, audioQCPolicy: nil)
+        _ = try renderAudioToShortMP4(imageFile: image, audioFile: audio, audioQCPolicy: nil)
     }
 
     func stepShort() throws {
@@ -1043,8 +1015,8 @@ extension ConverterTool {
             try stepMP3Hash()
         case .mp3tom4a:
             try stepMP3ToM4A()
-        case .mp3toshort:
-            try stepMP3ToShort()
+        case .nfttoshort:
+            try stepNFTToShort()
         case .mp3towav:
             try stepMP3ToWAV()
         case .mp4toshort:

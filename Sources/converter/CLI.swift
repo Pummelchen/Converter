@@ -34,9 +34,9 @@ enum Action: String {
     case mp3toflac
     case mp3tohash
     case mp3tom4a
-    case mp3toshort
     case mp3towav
     case mp4toshort
+    case nfttoshort
     case pngto2k
     case pngto3k
     case pngto3k1mb
@@ -166,9 +166,11 @@ struct CLIOptions {
             case "-mp3toflac": options.action = .mp3toflac
             case "-mp3tohash": options.action = .mp3tohash
             case "-mp3tom4a": options.action = .mp3tom4a
-            case "-mp3toshort": options.action = .mp3toshort
+            case "-mp3toshort":
+                throw AppError("-mp3toshort was renamed. Use -nfttoshort; it accepts any single audio-only file supported by ffmpeg.")
             case "-mp3towav": options.action = .mp3towav
             case "-mp4toshort": options.action = .mp4toshort
+            case "-nfttoshort": options.action = .nfttoshort
             case "-pngto2k": options.action = .pngto2k
             case "-pngto3k": options.action = .pngto3k
             case "-pngto3k1mb": options.action = .pngto3k1mb
@@ -391,7 +393,7 @@ struct CLIOptions {
             "  -flactoalbum", "  -flactohash", "  -flactom4a", "  -flactomp3", "  -flactowav",
             "  -jpgtopng", "  -m4atoflac", "  -m4atomp3", "  -m4atomp4", "  -m4atowav",
             "  -loudscan", "  -loudness", "  -matrix", "  -mp3clean", "  -mp3toalbum", "  -mp3toflac", "  -mp3tohash",
-            "  -mp3tom4a", "  -mp3toshort", "  -mp3towav", "  -mp4toshort", "  -pngto2k", "  -pngto3k",
+            "  -mp3tom4a", "  -mp3towav", "  -mp4toshort", "  -nfttoshort", "  -pngto2k", "  -pngto3k",
             "  -pngto3k1mb", "  -pngto3k5mb", "  -pngtojpg", "  -pngtonft", "  -pngtojpg1mb",
             "  -pngtojpg2mb", "  -pngtojpg20mb", "  -noise", "  -silence", "  -visualsubs", "  -wavtoalbum",
             "  -wavtoflac", "  -wavtohash", "  -wavtom4a", "  -wavtomp3"
@@ -544,9 +546,9 @@ struct CLIOptions {
             -mp3tom4a
               Input: one or more .mp3 files in SRC_DIR
               Output: .m4a files
-            -mp3toshort
-              Input: exactly 1 .mp3 file plus exactly 1 source image (.png/.jpg/.jpeg) or exactly 1 *_8K.png in SRC_DIR
-              Output: short-ready MP3 normalization when needed, ALAC M4A intermediate, and ALAC-audio _Short.mp4 capped at 58 seconds; preserves source MP3 loudness; uses Vertical_8K.png when present, otherwise uses or creates *_NFT8K.png with black top/bottom padding
+            -nfttoshort
+              Input: exactly 1 audio-only file supported by ffmpeg plus exactly 1 source image (.png/.jpg/.jpeg) or exactly 1 *_8K.png in SRC_DIR
+              Output: one ALAC-audio _Short.mp4 capped at 58 seconds; preserves source audio loudness; uses Vertical_8K.png when present, otherwise uses or creates *_NFT8K.png with black top/bottom padding
             -mp3clean
               Input: one or more .mp3 files in SRC_DIR
               Output: same .mp3 files rewritten as audio-only MP3 with artwork, junk streams, and metadata removed

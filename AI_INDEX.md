@@ -99,7 +99,7 @@ Evidence:
 | Entrypoint | Type | Purpose |
 |---|---|---|
 | `Sources/converter/Main.swift` | Swift `@main` | CLI startup and top-level error handling. |
-| `CLIOptions.parse(...)` in `Sources/converter/CLI.swift` | CLI parser | Maps flags such as `-full`, `-album`, `-loudness`, `-mp3toshort`, `-matrix`, `-doctor` to actions. |
+| `CLIOptions.parse(...)` in `Sources/converter/CLI.swift` | CLI parser | Maps flags such as `-full`, `-album`, `-loudness`, `-nfttoshort`, `-matrix`, `-doctor` to actions. |
 | `ConverterTool.initializeForExecution()` in `Sources/converter/PipelineCore.swift` | Runtime initialization | Ensures source/output dirs and executable dependencies for operational actions. |
 | `stepFull()` / `stepAlbum()` in `Sources/converter/Actions.swift` | Pipeline workflows | Full production and album production orchestration. |
 | `ProcessRunner` in `Sources/converter/ProcessRunner.swift` | External process boundary | Runs commands and pipelines, captures stdout/stderr, enforces allowed exit codes. |

@@ -56,6 +56,26 @@ final class converterTests: XCTestCase {
         XCTAssertFalse(options.action.requiresRuntimeDependencyBootstrap)
     }
 
+    func testNFTToShortFlagParsesAndOldMP3ToShortFlagIsRejected() throws {
+        let root = URL(fileURLWithPath: "/tmp/converter-test")
+        let options = try CLIOptions.parse(
+            arguments: ["-nfttoshort"],
+            environment: [:],
+            scriptDirectory: root,
+            scriptName: "converter"
+        )
+        XCTAssertEqual(options.action, .nfttoshort)
+
+        XCTAssertThrowsError(try CLIOptions.parse(
+            arguments: ["-mp3toshort"],
+            environment: [:],
+            scriptDirectory: root,
+            scriptName: "converter"
+        )) { error in
+            XCTAssertTrue(error.localizedDescription.contains("Use -nfttoshort"))
+        }
+    }
+
     func testHelpTextMentionsFullRunContract() throws {
         let root = URL(fileURLWithPath: "/tmp/converter-test")
         let options = try CLIOptions.parse(
@@ -84,7 +104,7 @@ final class converterTests: XCTestCase {
         XCTAssertTrue(help.contains("Use: -full / -run"))
         XCTAssertFalse(help.contains("Default action with no parameter"))
         XCTAssertTrue(help.contains("-mp3toflac"))
-        XCTAssertTrue(help.contains("-mp3toshort"))
+        XCTAssertTrue(help.contains("-nfttoshort"))
         XCTAssertTrue(help.contains("-fade [SECONDS]"))
         XCTAssertTrue(help.contains("-fadecut CUT_SECONDS FADE_SECONDS"))
         XCTAssertTrue(help.contains("-fadeout START DURATION"))

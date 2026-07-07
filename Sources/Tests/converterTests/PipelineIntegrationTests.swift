@@ -874,40 +874,29 @@ final class PipelineIntegrationTests: XCTestCase {
         }
     }
 
-    func testMP3ToShortPreparesHighQualityIntermediatesAndBuildsShort() throws {
+    func testNFTToShortBuildsShortFromGenericAudioAndNFTImage() throws {
         let workspace = try IntegrationWorkspace()
         try workspace.requireCommands(["ffmpeg", "ffprobe", "magick"])
-        try workspace.overwriteConfig(
-            IntegrationWorkspace.defaultConfig +
-                "\nMP3_BITRATE=320k\n" +
-                "MP3_MIN_BITRATE_BPS=300000\n" +
-                "M4A_BITRATE=lossless\n"
-        )
 
         _ = try workspace.createImage(name: "poster", ext: "png", width: 320, height: 180)
-        let sourceMP3 = try workspace.createMP3WithArtwork(name: "song", duration: 2.4)
-        try? FileManager.default.removeItem(at: workspace.output.appendingPathComponent("song_cover.png"))
-        let tool = try workspace.makeTool(arguments: ["-mp3toshort"])
+        let sourceAAC = try workspace.createAudio(name: "song", ext: "aac", duration: 2.4)
+        let tool = try workspace.makeTool(arguments: ["-nfttoshort"])
 
-        try tool.stepMP3ToShort()
+        try tool.stepNFTToShort()
 
-        let preparedMP3 = workspace.output.appendingPathComponent("song.mp3")
-        let preparedM4A = workspace.output.appendingPathComponent("song.m4a")
         let eightK = workspace.output.appendingPathComponent("poster_8K.png")
         let nft8K = workspace.output.appendingPathComponent("poster_NFT8K.png")
         let mainVideo = workspace.output.appendingPathComponent("song_8K.mp4")
         let shortVideo = workspace.output.appendingPathComponent("song_8K_Short.mp4")
 
-        XCTAssertTrue(FileManager.default.fileExists(atPath: preparedMP3.path))
-        XCTAssertTrue(FileManager.default.fileExists(atPath: preparedM4A.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: sourceAAC.path))
         XCTAssertTrue(FileManager.default.fileExists(atPath: eightK.path))
         XCTAssertTrue(FileManager.default.fileExists(atPath: nft8K.path))
         XCTAssertFalse(FileManager.default.fileExists(atPath: mainVideo.path))
         XCTAssertTrue(FileManager.default.fileExists(atPath: shortVideo.path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("song.m4a").path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("song.mp3").path))
 
-        XCTAssertGreaterThanOrEqual(try tool.audioBitrateBps(preparedMP3), 300_000)
-        try tool.verifyMP3Standard(preparedMP3, qcPolicy: nil)
-        try tool.verifyM4AFile(preparedM4A, sampleRate: tool.config.m4aSampleRate, channels: tool.config.m4aChannels, qcPolicy: nil)
         try tool.verifyVideoOutput(
             shortVideo,
             width: tool.config.shortMP4ScaleW,
@@ -919,15 +908,15 @@ final class PipelineIntegrationTests: XCTestCase {
             colorSpace: tool.config.videoColorSpace,
             colorRange: tool.config.videoColorRange
         )
-        XCTAssertThrowsError(try tool.requireVideoStream(preparedMP3))
-        XCTAssertThrowsError(try tool.requireVideoStream(preparedM4A))
+        try tool.verifyALACAudioOutput(shortVideo, sampleRate: tool.config.shortMP4AudioSampleRate, channels: 2, qcPolicy: nil)
+        try tool.verifySourceLoudnessPreserved(source: sourceAAC, output: shortVideo, toleranceDB: 1.0)
+        XCTAssertThrowsError(try tool.requireVideoStream(sourceAAC))
         XCTAssertNoThrow(try tool.requireVideoStream(shortVideo))
         try tool.verifyDuration(shortVideo, expectedSeconds: 1.0, label: "short mp4")
         let frame = try workspace.extractFirstVideoFrame(from: shortVideo, name: "song_short_frame")
         XCTAssertLessThan(try workspace.meanGrayValue(image: frame, crop: "90x10+0+0"), 0.05)
         XCTAssertLessThan(try workspace.meanGrayValue(image: frame, crop: "90x10+0+150"), 0.05)
         XCTAssertGreaterThan(try workspace.meanGrayValue(image: frame, crop: "30x30+30+65"), 0.05)
-        XCTAssertEqual(sourceMP3.lastPathComponent, "song.mp3")
     }
 
     func testShortBuildsOnlyPortraitMP4FromDirectImageAndAudio() throws {
@@ -998,15 +987,9 @@ final class PipelineIntegrationTests: XCTestCase {
         try tool.verifySourceLoudnessPreserved(source: sourceAAC, output: shortVideo, toleranceDB: 1.0)
     }
 
-    func testMP3ToShortAcceptsPortrait8KPNGWithoutLandscapeMainRender() throws {
+    func testNFTToShortAcceptsPortrait8KPNGWithoutLandscapeMainRender() throws {
         let workspace = try IntegrationWorkspace()
         try workspace.requireCommands(["ffmpeg", "ffprobe", "magick"])
-        try workspace.overwriteConfig(
-            IntegrationWorkspace.defaultConfig +
-                "\nMP3_BITRATE=320k\n" +
-                "MP3_MIN_BITRATE_BPS=300000\n" +
-                "M4A_BITRATE=lossless\n"
-        )
 
         _ = try workspace.createImage(
             name: "Vertical_8K",
@@ -1014,27 +997,22 @@ final class PipelineIntegrationTests: XCTestCase {
             width: 90,
             height: 160
         )
-        let sourceMP3 = try workspace.createMP3WithArtwork(name: "song", duration: 2.4)
-        try? FileManager.default.removeItem(at: workspace.output.appendingPathComponent("song_cover.png"))
-        let tool = try workspace.makeTool(arguments: ["-mp3toshort"])
+        let sourceFLAC = try workspace.createAudio(name: "song", ext: "flac", duration: 2.4)
+        let tool = try workspace.makeTool(arguments: ["-nfttoshort"])
 
-        try tool.stepMP3ToShort()
+        try tool.stepNFTToShort()
 
-        let preparedMP3 = workspace.output.appendingPathComponent("song.mp3")
-        let preparedM4A = workspace.output.appendingPathComponent("song.m4a")
         let portraitImage = workspace.output.appendingPathComponent("Vertical_8K.png")
         let mainVideo = workspace.output.appendingPathComponent("song_8K.mp4")
         let shortVideo = workspace.output.appendingPathComponent("song_8K_Short.mp4")
 
-        XCTAssertTrue(FileManager.default.fileExists(atPath: preparedMP3.path))
-        XCTAssertTrue(FileManager.default.fileExists(atPath: preparedM4A.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: sourceFLAC.path))
         XCTAssertTrue(FileManager.default.fileExists(atPath: portraitImage.path))
         XCTAssertFalse(FileManager.default.fileExists(atPath: mainVideo.path))
         XCTAssertTrue(FileManager.default.fileExists(atPath: shortVideo.path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("song.m4a").path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("song.mp3").path))
 
-        XCTAssertGreaterThanOrEqual(try tool.audioBitrateBps(preparedMP3), 300_000)
-        try tool.verifyMP3Standard(preparedMP3, qcPolicy: nil)
-        try tool.verifyM4AFile(preparedM4A, sampleRate: tool.config.m4aSampleRate, channels: tool.config.m4aChannels, qcPolicy: nil)
         try tool.verifyVideoOutput(
             shortVideo,
             width: tool.config.shortMP4ScaleW,
@@ -1046,63 +1024,44 @@ final class PipelineIntegrationTests: XCTestCase {
             colorSpace: tool.config.videoColorSpace,
             colorRange: tool.config.videoColorRange
         )
-        XCTAssertThrowsError(try tool.requireVideoStream(preparedMP3))
-        XCTAssertThrowsError(try tool.requireVideoStream(preparedM4A))
+        try tool.verifyALACAudioOutput(shortVideo, sampleRate: tool.config.shortMP4AudioSampleRate, channels: 2, qcPolicy: nil)
+        try tool.verifySourceLoudnessPreserved(source: sourceFLAC, output: shortVideo, toleranceDB: 1.0)
         XCTAssertNoThrow(try tool.requireVideoStream(shortVideo))
         try tool.verifyDuration(shortVideo, expectedSeconds: 1.0, label: "portrait short mp4")
-        XCTAssertEqual(sourceMP3.lastPathComponent, "song.mp3")
     }
 
-    func testMP3ToShortPreservesSourceLoudnessOnLandscapePath() throws {
+    func testNFTToShortPreservesSourceLoudnessOnLandscapePath() throws {
         let workspace = try IntegrationWorkspace()
         try workspace.requireCommands(["ffmpeg", "ffprobe", "magick"])
-        try workspace.overwriteConfig(
-            IntegrationWorkspace.defaultConfig +
-                "\nMP3_BITRATE=320k\n" +
-                "MP3_MIN_BITRATE_BPS=300000\n" +
-                "M4A_BITRATE=lossless\n"
-        )
 
         _ = try workspace.createImage(name: "poster", ext: "png", width: 320, height: 180)
-        let sourceMP3 = try workspace.createMP3WithArtwork(name: "loud_song", duration: 6.0)
-        try? FileManager.default.removeItem(at: workspace.output.appendingPathComponent("loud_song_cover.png"))
-        let tool = try workspace.makeTool(arguments: ["-mp3toshort"])
+        let sourceFLAC = try workspace.createAudio(name: "loud_song", ext: "flac", duration: 6.0)
+        let tool = try workspace.makeTool(arguments: ["-nfttoshort"])
 
-        try tool.stepMP3ToShort()
+        try tool.stepNFTToShort()
 
         let shortVideo = workspace.output.appendingPathComponent("loud_song_8K_Short.mp4")
         XCTAssertTrue(FileManager.default.fileExists(atPath: shortVideo.path))
-        try tool.verifySourceLoudnessPreserved(source: sourceMP3, output: shortVideo, toleranceDB: 1.0)
+        try tool.verifySourceLoudnessPreserved(source: sourceFLAC, output: shortVideo, toleranceDB: 1.0)
     }
 
-    func testMP3ToShortPreservesSourceLoudnessOnPortraitPath() throws {
+    func testNFTToShortPreservesSourceLoudnessOnPortraitPath() throws {
         let workspace = try IntegrationWorkspace()
         try workspace.requireCommands(["ffmpeg", "ffprobe", "magick"])
         try workspace.overwriteConfig(
             IntegrationWorkspace.defaultConfig +
-                "\nAUDIO_QC_MAX_TRUE_PEAK_DBTP=-1\n" +
-                "MP3_BITRATE=320k\n" +
-                "MP3_MIN_BITRATE_BPS=300000\n" +
-                "M4A_BITRATE=lossless\n"
+                "\nAUDIO_QC_MAX_TRUE_PEAK_DBTP=-1\n"
         )
 
         _ = try workspace.createImage(name: "Vertical_8K", ext: "png", width: 90, height: 160)
-        let sourceMP3 = try workspace.createHotMP3WithArtwork(name: "hot_song", duration: 6.0, gainDB: 24)
-        try? FileManager.default.removeItem(at: workspace.output.appendingPathComponent("hot_song_cover.png"))
-        let tool = try workspace.makeTool(arguments: ["-mp3toshort"])
+        let sourceMP3 = try workspace.createAudio(name: "hot_song", ext: "mp3", duration: 6.0)
+        let tool = try workspace.makeTool(arguments: ["-nfttoshort"])
 
-        XCTAssertNoThrow(try tool.stepMP3ToShort())
+        XCTAssertNoThrow(try tool.stepNFTToShort())
 
-        let preparedM4A = workspace.output.appendingPathComponent("hot_song.m4a")
         let shortVideo = workspace.output.appendingPathComponent("hot_song_8K_Short.mp4")
-        XCTAssertTrue(FileManager.default.fileExists(atPath: preparedM4A.path))
         XCTAssertTrue(FileManager.default.fileExists(atPath: shortVideo.path))
-        try tool.verifyM4AFile(
-            preparedM4A,
-            sampleRate: tool.config.m4aSampleRate,
-            channels: tool.config.m4aChannels,
-            qcPolicy: nil
-        )
+        XCTAssertFalse(FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("hot_song.m4a").path))
         try tool.verifyVideoOutput(
             shortVideo,
             width: tool.config.shortMP4ScaleW,
@@ -1117,15 +1076,12 @@ final class PipelineIntegrationTests: XCTestCase {
         try tool.verifySourceLoudnessPreserved(source: sourceMP3, output: shortVideo, toleranceDB: 2.0)
     }
 
-    func testMP3ToShortComparesAgainstTrimmedSourceSegmentLoudness() throws {
+    func testNFTToShortComparesAgainstTrimmedSourceSegmentLoudness() throws {
         let workspace = try IntegrationWorkspace()
         try workspace.requireCommands(["ffmpeg", "ffprobe", "magick"])
         try workspace.overwriteConfig(
             IntegrationWorkspace.defaultConfig +
-                "\nSHORT_MP4_CLIP_SECONDS=1\n" +
-                "MP3_BITRATE=320k\n" +
-                "MP3_MIN_BITRATE_BPS=300000\n" +
-                "M4A_BITRATE=lossless\n"
+                "\nSHORT_MP4_CLIP_SECONDS=1\n"
         )
 
         _ = try workspace.createImage(name: "poster", ext: "png", width: 320, height: 180)
@@ -1142,8 +1098,8 @@ final class PipelineIntegrationTests: XCTestCase {
             sourceMP3.path
         ])
 
-        let tool = try workspace.makeTool(arguments: ["-mp3toshort"])
-        try tool.stepMP3ToShort()
+        let tool = try workspace.makeTool(arguments: ["-nfttoshort"])
+        try tool.stepNFTToShort()
 
         let shortVideo = workspace.output.appendingPathComponent("dynamic_loudness_8K_Short.mp4")
         XCTAssertTrue(FileManager.default.fileExists(atPath: shortVideo.path))

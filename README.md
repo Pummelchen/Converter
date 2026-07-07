@@ -72,14 +72,14 @@ If Homebrew itself is missing and a required formula must be installed, converte
 ./converter -noise 45
 ./converter -silence
 ./converter -silence 45
-./converter -mp3toshort
+./converter -nfttoshort
 ./converter -mp3clean
 ./converter -m4atomp4
 ```
 
 Short outputs are hard-capped at 58 seconds.
-For `-mp3toshort`, the short render uses `Vertical_8K.png` when present. Otherwise it uses or creates `*_NFT8K.png`, centers that square image in the portrait frame, and fills the remaining top and bottom space with black.
-Conversions preserve source loudness by default instead of remastering it down during normal pipeline work, including `-mp3toshort`.
+For `-nfttoshort`, the short render accepts any single audio-only file supported by ffmpeg and uses `Vertical_8K.png` when present. Otherwise it uses or creates `*_NFT8K.png`, centers that square image in the portrait frame, and fills the remaining top and bottom space with black.
+Conversions preserve source loudness by default instead of remastering it down during normal pipeline work, including `-nfttoshort`.
 
 Running `./converter` without parameters prints help and does not start media processing. Use `./converter -full` or `./converter -run` for the full production pipeline.
 
