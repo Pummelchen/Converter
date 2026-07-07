@@ -189,9 +189,27 @@ extension ConverterTool {
         return image
     }
 
+    func isShortAudioCandidate(_ file: URL) -> Bool {
+        if isExternalArchivalAudioVariant(file) {
+            return false
+        }
+        switch file.pathExtension.lowercasedASCII {
+        case "png", "jpg", "jpeg":
+            return false
+        default:
+            break
+        }
+        do {
+            _ = try requireAudioStream(file)
+            try requireNoVideoStream(file)
+            return true
+        } catch {
+            return false
+        }
+    }
+
     func rankedShortAudioCandidates() throws -> [URL] {
-        let candidates = try files(in: cli.srcDir, matchingExtensions: ["flac", "wav", "mp3", "m4a"])
-            .filter { !isExternalArchivalAudioVariant($0) }
+        let candidates = try files(in: cli.srcDir) { isShortAudioCandidate($0) }
         guard candidates.count > 1 else {
             return candidates
         }
@@ -230,7 +248,7 @@ extension ConverterTool {
     func resolveShortAudio() throws -> URL {
         let candidates = try rankedShortAudioCandidates()
         guard candidates.count == 1, let audio = candidates.first else {
-            throw AppError("Short render expects exactly one audio file (.flac/.wav/.mp3/.m4a) in '\(cli.srcDir.path)'.")
+            throw AppError("Short render expects exactly one audio-only file supported by ffmpeg in '\(cli.srcDir.path)'.")
         }
         return audio
     }

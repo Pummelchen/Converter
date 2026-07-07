@@ -264,18 +264,7 @@ extension ConverterTool {
     }
 
     func preflightShortAudioInput(_ file: URL) throws {
-        switch file.pathExtension.lowercasedASCII {
-        case "flac":
-            try preflightFLACInput(file, requireNoVideo: true)
-        case "wav":
-            try preflightWAVInput(file, requireNoVideo: true)
-        case "mp3":
-            try preflightMP3Input(file, requireNoVideo: true)
-        case "m4a":
-            try preflightM4AInput(file)
-        default:
-            throw AppError("Expected .flac, .wav, .mp3, or .m4a audio input for short rendering: \(file.path)")
-        }
+        try preflightAudioInput(file, requireNoVideo: true)
     }
 
     func renderM4AToShortMP4(imageFile: URL, audioFile: URL, audioQCPolicy: AudioQCPolicy?) throws -> URL {

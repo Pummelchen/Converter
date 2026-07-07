@@ -507,7 +507,7 @@ struct CLIOptions {
               Input: one or more .wav, .flac, or .mp4 files in SRC_DIR
               Output: same-format files ending in _silence_SECONDSs with SECONDS of silence before and after the original media; default is 30 seconds
             -short
-              Input: exactly 1 image (.png/.jpg/.jpeg) plus exactly 1 audio file (.flac/.wav/.mp3/.m4a) in SRC_DIR
+              Input: exactly 1 image (.png/.jpg/.jpeg) plus exactly 1 audio-only file supported by ffmpeg in SRC_DIR
               Output: one ALAC-audio _8K_Short.mp4 capped at 58 seconds; fits the image into the portrait frame as large as possible with black padding
             -flactowav
               Input: one or more .flac files in SRC_DIR

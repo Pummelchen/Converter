@@ -79,6 +79,7 @@ final class converterTests: XCTestCase {
         XCTAssertTrue(help.contains("-noise [SECONDS]"))
         XCTAssertTrue(help.contains("-silence [SECONDS]"))
         XCTAssertTrue(help.contains("-short"))
+        XCTAssertTrue(help.contains("audio-only file supported by ffmpeg"))
         XCTAssertTrue(help.contains("fits the image into the portrait frame as large as possible with black padding"))
         XCTAssertTrue(help.contains("Use: -full / -run"))
         XCTAssertFalse(help.contains("Default action with no parameter"))

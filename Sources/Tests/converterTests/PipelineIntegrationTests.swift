@@ -969,6 +969,35 @@ final class PipelineIntegrationTests: XCTestCase {
         XCTAssertGreaterThan(try workspace.meanGrayValue(image: frame, crop: "30x30+30+65"), 0.05)
     }
 
+    func testShortAcceptsGenericAudioOnlyInputFormat() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe", "magick"])
+
+        _ = try workspace.createImage(name: "poster", ext: "png", width: 320, height: 180)
+        let sourceAAC = try workspace.createAudio(name: "song", ext: "aac", duration: 2.4)
+        let tool = try workspace.makeTool(arguments: ["-short"])
+
+        try tool.stepShort()
+
+        let shortVideo = workspace.output.appendingPathComponent("song_8K_Short.mp4")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: shortVideo.path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("song.m4a").path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("song_8K.mp4").path))
+        try tool.verifyVideoOutput(
+            shortVideo,
+            width: tool.config.shortMP4ScaleW,
+            height: tool.config.shortMP4ScaleH,
+            codec: tool.config.shortMP4VerifyCodec,
+            pixelFormat: tool.config.shortMP4PixelFormat,
+            colorPrimaries: tool.config.videoColorPrimaries,
+            colorTransfer: tool.config.videoColorTransfer,
+            colorSpace: tool.config.videoColorSpace,
+            colorRange: tool.config.videoColorRange
+        )
+        try tool.verifyALACAudioOutput(shortVideo, sampleRate: tool.config.shortMP4AudioSampleRate, channels: 2, qcPolicy: nil)
+        try tool.verifySourceLoudnessPreserved(source: sourceAAC, output: shortVideo, toleranceDB: 1.0)
+    }
+
     func testMP3ToShortAcceptsPortrait8KPNGWithoutLandscapeMainRender() throws {
         let workspace = try IntegrationWorkspace()
         try workspace.requireCommands(["ffmpeg", "ffprobe", "magick"])

@@ -185,6 +185,8 @@ final class IntegrationWorkspace {
             args += ["-c:a", "libmp3lame", "-b:a", "192k", "-ar", "48000", target.path]
         case "m4a":
             args += ["-c:a", "aac", "-b:a", "192k", "-ar", "48000", target.path]
+        case "aac":
+            args += ["-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-f", "adts", target.path]
         default:
             throw AppError("Unsupported test audio extension: \(ext)")
         }
