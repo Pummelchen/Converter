@@ -1,4 +1,4 @@
-// swift-tools-version: 6.0
+// swift-tools-version: 6.3.3
 import PackageDescription
 
 let package = Package(
@@ -32,5 +32,6 @@ let package = Package(
             path: "Tests/converterTests"
         )
     ],
+    swiftLanguageModes: [.v6],
     cxxLanguageStandard: .cxx17
 )

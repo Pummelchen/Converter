@@ -24,6 +24,8 @@ Swift-based media converter and YouTube studio production pipeline for macOS App
 - `converter` prebuilt macOS Apple Silicon release binary
 
 ## Build
+Requires Swift tools 6.3.3 or newer compatible Xcode command line tools. The package declares Swift language mode 6 and macOS 14+.
+
 ```bash
 swift build --package-path Sources -c release
 cp Sources/.build/arm64-apple-macosx/release/converter ./converter

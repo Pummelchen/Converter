@@ -82,7 +82,7 @@ ConverterTool
 
 | Dependency | How used | Source evidence |
 |---|---|---|
-| Swift 6.0 tools | Build/test package | `Sources/Package.swift` |
+| Swift 6.3.3 tools, Swift language mode 6 | Build/test package | `Sources/Package.swift` |
 | macOS 14+ | Package platform | `Sources/Package.swift` |
 | `ffmpeg` | Audio/video transforms and audio analysis | `README.md`, `DependencyBootstrap.swift`, pipeline files |
 | `ffprobe` | Media metadata probing | `README.md`, `DependencyBootstrap.swift`, `PipelineCore.swift` |

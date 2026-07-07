@@ -84,7 +84,7 @@ Evidence:
 | Path | Responsibility | Notes |
 |---|---|---|
 | `README.md` | Human-facing usage, build, runtime dependency, and media contract docs | Updated with AI onboarding entry block. |
-| `Sources/Package.swift` | Swift Package manifest | Swift tools 6.0, macOS 14, executable product `converter`, test target. |
+| `Sources/Package.swift` | Swift Package manifest | Swift tools 6.3.3, Swift language mode 6, macOS 14, executable product `converter`, test target. |
 | `Sources/converter/` | Main Swift executable target | CLI parsing, config, runtime support, media pipelines, action dispatch. |
 | `Sources/BW64Bridge/` | C++ bridge target declared by the package | Used by Swift code via `import BW64Bridge`. |
 | `Sources/ThirdParty/libbw64/` | Bundled third-party BW64 code referenced by package header search path | Treat as vendored/low-edit unless specifically changing BW64 support. |

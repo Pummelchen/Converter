@@ -16,7 +16,7 @@ Run commands from the repository root unless noted.
 
 | Purpose | Command | Notes |
 |---|---|---|
-| Ensure Swift toolchain | `swift --version` | Repository requires Swift tools 6.0 and macOS 14+ per `Sources/Package.swift`. |
+| Ensure Swift toolchain | `swift --version` | Repository requires Swift tools 6.3.3, Swift language mode 6, and macOS 14+ per `Sources/Package.swift`. |
 | Install runtime tools manually | `brew install ffmpeg imagemagick` | `ffmpeg` provides `ffmpeg`/`ffprobe`; ImageMagick provides `magick`. |
 | Disable runtime auto-install | `CONVERTER_AUTO_INSTALL_DEPS=0 ./converter -doctor` | Fails fast if Homebrew formulae are missing. |
 | Check runtime dependencies | `./converter -doctor` | Operational action; may trigger dependency bootstrap unless disabled. |

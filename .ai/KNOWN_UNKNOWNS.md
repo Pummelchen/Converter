@@ -16,7 +16,7 @@ Human edits are allowed. Future refreshes should preserve valid human edits.
 |---|---|---|---|
 | `unknown` | Complete file inventory | Direct `git clone` was unavailable in the execution container; repository understanding used GitHub source fetches for known paths and current commit metadata. | On a local machine, run `git ls-files` and compare against `.ai/MANIFEST.json` source file list. |
 | `unknown` | CI/CD | Common Swift/CI workflow paths were not found, but full tree enumeration was unavailable. | Check `.github/workflows/` with `git ls-files .github/workflows`. |
-| `unknown` | Local tool versions | Repository documents required tools but does not pin Swift, FFmpeg, ImageMagick, or Homebrew formula versions beyond Swift tools 6.0/macOS 14 in `Sources/Package.swift`. | Record known-good local versions after a successful build/test run. |
+| `unknown` | Local tool versions | Repository documents required tools but does not pin FFmpeg, ImageMagick, or Homebrew formula versions beyond Swift tools 6.3.3, Swift language mode 6, and macOS 14 in `Sources/Package.swift`. | Record known-good local versions after a successful build/test run. |
 | `unknown` | Full BW64 bridge internals | Package declares `Sources/BW64Bridge` and `Sources/ThirdParty/libbw64`, but detailed bridge source was not inspected. | Inspect bridge files before changing BW64/RF64/BW64 behavior. |
 | `unknown` | Runtime performance envelope | Large media processing cost depends on input size, codecs, and hardware. | Benchmark on representative media before performance-sensitive changes. |
 
