@@ -12,6 +12,7 @@ enum Action: String {
     case loudscan
     case noise
     case silence
+    case short
     case full
     case runPix = "run_pix"
     case aipix
@@ -138,6 +139,8 @@ struct CLIOptions {
                 options.action = .noise
             case "-silence":
                 options.action = .silence
+            case "-short":
+                options.action = .short
             case "-full", "-run":
                 options.action = .full
             case "-run_pix":
@@ -384,7 +387,7 @@ struct CLIOptions {
     func printActionList() {
         let lines = [
             "Available actions:",
-            "  --hash", "  -album", "  -bass", "  -doctor", "  -fade", "  -fadecut", "  -fadeout", "  -full", "  -run", "  -run_pix", "  -aipix", "  -clean", "  -fadewav",
+            "  --hash", "  -album", "  -bass", "  -doctor", "  -fade", "  -fadecut", "  -fadeout", "  -full", "  -run", "  -short", "  -run_pix", "  -aipix", "  -clean", "  -fadewav",
             "  -flactoalbum", "  -flactohash", "  -flactom4a", "  -flactomp3", "  -flactowav",
             "  -jpgtopng", "  -m4atoflac", "  -m4atomp3", "  -m4atomp4", "  -m4atowav",
             "  -loudscan", "  -loudness", "  -matrix", "  -mp3clean", "  -mp3toalbum", "  -mp3toflac", "  -mp3tohash",
@@ -421,6 +424,7 @@ struct CLIOptions {
           Base-format matrix is complete because mp4 is the only current video container in the project.
           Existing video transforms:
             - m4a + *_8K.png -> mp4
+            - audio + image -> short mp4
             - mp4 -> short mp4
         """
     }
@@ -445,6 +449,7 @@ struct CLIOptions {
           \(scriptName) -noise 45
           \(scriptName) -silence
           \(scriptName) -silence 45
+          \(scriptName) -short
           \(scriptName) -full
           \(scriptName) -flactomp3
           \(scriptName) -m4atomp4
@@ -501,6 +506,9 @@ struct CLIOptions {
             -silence [SECONDS]
               Input: one or more .wav, .flac, or .mp4 files in SRC_DIR
               Output: same-format files ending in _silence_SECONDSs with SECONDS of silence before and after the original media; default is 30 seconds
+            -short
+              Input: exactly 1 image (.png/.jpg/.jpeg) plus exactly 1 audio file (.flac/.wav/.mp3/.m4a) in SRC_DIR
+              Output: one ALAC-audio _8K_Short.mp4 capped at 58 seconds; fits the image into the portrait frame as large as possible with black padding
             -flactowav
               Input: one or more .flac files in SRC_DIR
               Output: project-standard RF64 WAV files

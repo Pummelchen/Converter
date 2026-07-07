@@ -181,6 +181,60 @@ extension ConverterTool {
         return try nftFrom8K(eightK).nft8K
     }
 
+    func resolveDirectShortImage() throws -> URL {
+        let images = try files(in: cli.srcDir, matchingExtensions: ["png", "jpg", "jpeg"])
+        guard images.count == 1, let image = images.first else {
+            throw AppError("Short render expects exactly one image (.png/.jpg/.jpeg) in '\(cli.srcDir.path)'.")
+        }
+        return image
+    }
+
+    func rankedShortAudioCandidates() throws -> [URL] {
+        let candidates = try files(in: cli.srcDir, matchingExtensions: ["flac", "wav", "mp3", "m4a"])
+            .filter { !isExternalArchivalAudioVariant($0) }
+        guard candidates.count > 1 else {
+            return candidates
+        }
+
+        let grouped = Dictionary(grouping: candidates) { $0.stem }
+        guard grouped.count == 1, let family = grouped.values.first else {
+            return candidates
+        }
+
+        let ranked = family.sorted { lhs, rhs in
+            func rank(_ ext: String) -> Int {
+                switch ext {
+                case "m4a": return 0
+                case "flac": return 1
+                case "wav": return 2
+                case "mp3": return 3
+                default: return 9
+                }
+            }
+
+            let lhsRank = rank(lhs.pathExtension.lowercasedASCII)
+            let rhsRank = rank(rhs.pathExtension.lowercasedASCII)
+            if lhsRank != rhsRank {
+                return lhsRank < rhsRank
+            }
+            return lhs.lastPathComponent.localizedStandardCompare(rhs.lastPathComponent) == .orderedAscending
+        }
+
+        if let preferred = ranked.first {
+            logger.warn("Short render found multiple same-stem audio files; auto-selecting \(preferred.basename) and ignoring derived companions.")
+            return [preferred]
+        }
+        return candidates
+    }
+
+    func resolveShortAudio() throws -> URL {
+        let candidates = try rankedShortAudioCandidates()
+        guard candidates.count == 1, let audio = candidates.first else {
+            throw AppError("Short render expects exactly one audio file (.flac/.wav/.mp3/.m4a) in '\(cli.srcDir.path)'.")
+        }
+        return audio
+    }
+
     func fullRunImageArtifacts() async throws -> FullRunImageArtifacts {
         let horizontal = try namedFullRunImage("Horizontal_8K.png")
         let vertical = try namedFullRunImage("Vertical_8K.png")
@@ -593,6 +647,14 @@ extension ConverterTool {
         _ = try renderM4AToShortMP4(imageFile: image, audioFile: workingM4A, audioQCPolicy: nil)
     }
 
+    func stepShort() throws {
+        let image = try resolveDirectShortImage()
+        let audio = try resolveShortAudio()
+        logger.info("Short source audio: \(audio.basename)")
+        logger.info("Short source image: \(image.basename)")
+        _ = try renderAudioToShortMP4(imageFile: image, audioFile: audio, audioQCPolicy: nil)
+    }
+
     func stepM4AToWAV() throws {
         let files = try files(in: cli.srcDir, matchingExtensions: ["m4a"])
         _ = try processBatch(files: files, emptyMessage: "No .m4a files found in '\(cli.srcDir.path)'.", failWhenEmpty: true) { file in
@@ -907,6 +969,8 @@ extension ConverterTool {
             try stepNoise()
         case .silence:
             try stepSilence()
+        case .short:
+            try stepShort()
         case .doctor:
             try stepDoctor()
         case .fade:

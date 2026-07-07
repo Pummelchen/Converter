@@ -263,9 +263,29 @@ extension ConverterTool {
         throw AppError("All short video encoders failed for \(output.basename): \(lastError?.localizedDescription ?? "unknown error")")
     }
 
+    func preflightShortAudioInput(_ file: URL) throws {
+        switch file.pathExtension.lowercasedASCII {
+        case "flac":
+            try preflightFLACInput(file, requireNoVideo: true)
+        case "wav":
+            try preflightWAVInput(file, requireNoVideo: true)
+        case "mp3":
+            try preflightMP3Input(file, requireNoVideo: true)
+        case "m4a":
+            try preflightM4AInput(file)
+        default:
+            throw AppError("Expected .flac, .wav, .mp3, or .m4a audio input for short rendering: \(file.path)")
+        }
+    }
+
     func renderM4AToShortMP4(imageFile: URL, audioFile: URL, audioQCPolicy: AudioQCPolicy?) throws -> URL {
-        try preflightPNGInput(imageFile)
         try preflightM4AInput(audioFile)
+        return try renderAudioToShortMP4(imageFile: imageFile, audioFile: audioFile, audioQCPolicy: audioQCPolicy)
+    }
+
+    func renderAudioToShortMP4(imageFile: URL, audioFile: URL, audioQCPolicy: AudioQCPolicy?) throws -> URL {
+        try preflightImageInput(imageFile)
+        try preflightShortAudioInput(audioFile)
 
         guard let dimensions = try imageDimensions(imageFile) else {
             throw AppError("Unable to read dimensions: \(imageFile.path)")
