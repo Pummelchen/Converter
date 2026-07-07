@@ -56,6 +56,112 @@ final class converterTests: XCTestCase {
         XCTAssertFalse(options.action.requiresRuntimeDependencyBootstrap)
     }
 
+    func testStringAndURLHelpersNormalizeNamesWithoutFileSystemAccess() throws {
+        XCTAssertEqual("  Mixed Case  \n".trimmed, "Mixed Case")
+        XCTAssertEqual("ÄUDIO.PNG".lowercasedASCII, "äudio.png")
+        XCTAssertEqual("\n\nfirst\n\nsecond  \n".lastNonEmptyLine, "second  ")
+        XCTAssertNil("\n  \n".lastNonEmptyLine)
+
+        let file = URL(fileURLWithPath: "/tmp/Album.Track.Final.wav")
+        XCTAssertEqual(file.basename, "Album.Track.Final.wav")
+        XCTAssertEqual(file.stem, "Album.Track.Final")
+        XCTAssertFalse(file.isHiddenBasename)
+        XCTAssertEqual(file.appendingStemSuffix("_RF64").lastPathComponent, "Album.Track.Final_RF64.wav")
+        XCTAssertTrue(URL(fileURLWithPath: "/tmp/.converter-tmp.file").isHiddenBasename)
+    }
+
+    func testFlexibleTimecodeParsingAcceptsSupportedFormsAndRejectsInvalidBounds() throws {
+        XCTAssertEqual(try parseFlexibleTimecode("90.25", label: "TIME"), 90.25, accuracy: 0.0001)
+        XCTAssertEqual(try parseFlexibleTimecode("1:30.5", label: "TIME"), 90.5, accuracy: 0.0001)
+        XCTAssertEqual(try parseFlexibleTimecode("2:03:04.25", label: "TIME"), 7_384.25, accuracy: 0.0001)
+        XCTAssertEqual(try parseFlexibleTimecode("  0:05  ", label: "TIME"), 5, accuracy: 0.0001)
+
+        XCTAssertThrowsError(try parseFlexibleTimecode("", label: "TIME")) { error in
+            XCTAssertTrue(error.localizedDescription.contains("empty"))
+        }
+        XCTAssertThrowsError(try parseFlexibleTimecode("1:60", label: "TIME")) { error in
+            XCTAssertTrue(error.localizedDescription.contains("Seconds must be below 60"))
+        }
+        XCTAssertThrowsError(try parseFlexibleTimecode("1:60:00", label: "TIME")) { error in
+            XCTAssertTrue(error.localizedDescription.contains("Minutes and seconds must be below 60"))
+        }
+        XCTAssertThrowsError(try parseFlexibleTimecode("1:2:3:4", label: "TIME")) { error in
+            XCTAssertTrue(error.localizedDescription.contains("Use seconds, MM:SS, or HH:MM:SS"))
+        }
+    }
+
+    func testNumericFormattingAndBitrateParsingUseStableFFmpegForms() throws {
+        XCTAssertEqual(ffmpegNumber(5), "5")
+        XCTAssertEqual(ffmpegNumber(-12.5), "-12.5")
+        XCTAssertEqual(ffmpegNumber(0.125), "0.125")
+
+        XCTAssertEqual(parseBitrateBps("320k"), 320_000)
+        XCTAssertEqual(parseBitrateBps("1.5m"), 1_500_000)
+        XCTAssertEqual(parseBitrateBps("48000"), 48_000)
+        XCTAssertNil(parseBitrateBps(""))
+        XCTAssertNil(parseBitrateBps("0k"))
+        XCTAssertNil(parseBitrateBps("not-a-bitrate"))
+    }
+
+    func testSchedulerProfileKeepsExpectedConcurrencyCaps() throws {
+        XCTAssertEqual(SchedulerProfile.recommended(for: 1).summary, "total=2 image=2 audio=2 video=1")
+        XCTAssertEqual(SchedulerProfile.recommended(for: 4).summary, "total=2 image=2 audio=2 video=1")
+        XCTAssertEqual(SchedulerProfile.recommended(for: 5).summary, "total=3 image=2 audio=2 video=1")
+        XCTAssertEqual(SchedulerProfile.recommended(for: 8).summary, "total=3 image=2 audio=2 video=1")
+        XCTAssertEqual(SchedulerProfile.recommended(for: 12).summary, "total=4 image=2 audio=2 video=1")
+        XCTAssertEqual(SchedulerProfile.recommended(for: 0).summary, "total=2 image=2 audio=2 video=1")
+    }
+
+    func testShortDurationHelpersClampToInputDurationConfigAndHardLimit() throws {
+        let tempDirectory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("converter-test-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: tempDirectory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: tempDirectory) }
+
+        let defaultTool = try makeTool(tempDirectory: tempDirectory, arguments: ["-short"])
+        XCTAssertEqual(try defaultTool.configuredShortClipSeconds(), 58, accuracy: 0.0001)
+        XCTAssertEqual(try defaultTool.effectiveShortClipSeconds(forDuration: 12.25), 12.25, accuracy: 0.0001)
+        XCTAssertEqual(try defaultTool.effectiveShortClipSeconds(forDuration: 90), 58, accuracy: 0.0001)
+
+        var previewConfig = ProjectConfig()
+        previewConfig.shortMP4ClipSeconds = "0:30"
+        let logger = Logger(scriptName: "converterTests", debugEnabled: false)
+        let runner = ProcessRunner(logger: logger, environment: [:], debugEnabled: false)
+        let previewTool = ConverterTool(
+            cli: defaultTool.cli,
+            config: previewConfig,
+            logger: logger,
+            runner: runner,
+            environment: [:]
+        )
+        XCTAssertEqual(try previewTool.configuredShortClipSeconds(), 30, accuracy: 0.0001)
+        XCTAssertEqual(try previewTool.effectiveShortClipSeconds(forDuration: 90), 30, accuracy: 0.0001)
+    }
+
+    func testOutputNamingAndSuffixHelpersAreStable() throws {
+        let tempDirectory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("converter-test-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: tempDirectory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: tempDirectory) }
+
+        let tool = try makeTool(tempDirectory: tempDirectory, arguments: ["-short"])
+
+        XCTAssertEqual(tool.shortMP4Stem(forInputStem: "song_8K"), "song_8K_Short")
+        XCTAssertEqual(tool.shortMP4Stem(forInputStem: "song_8K_Short"), "song_8K_Short")
+        XCTAssertEqual(tool.portraitShortMP4Stem(forAudioStem: "song"), "song_8K_Short")
+        XCTAssertEqual(tool.portraitShortMP4Stem(forAudioStem: "song_8K"), "song_8K_Short")
+        XCTAssertEqual(tool.portraitShortMP4Stem(forAudioStem: "song_8K_Short"), "song_8K_Short")
+
+        XCTAssertEqual(tool.bassOutputSuffix(for: BassBoostSpec(frequencyHz: 80, gainDB: 5)), "_bass")
+        XCTAssertEqual(tool.bassOutputSuffix(for: BassBoostSpec(frequencyHz: 60, gainDB: 7.5)), "_bass_60Hz_7_5dB")
+        XCTAssertEqual(tool.loudnessOutputSuffix(for: LoudnessSpec(targetLUFS: -12)), "_loudness_m12LUFS")
+        XCTAssertEqual(tool.loudnessOutputSuffix(for: LoudnessSpec(targetLUFS: -13.5)), "_loudness_m13_5LUFS")
+        XCTAssertEqual(tool.silenceOutputSuffix(for: SilenceSpec(seconds: 30)), "_silence_30s")
+        XCTAssertEqual(tool.silenceOutputSuffix(for: SilenceSpec(seconds: 0.5)), "_silence_0_5s")
+        XCTAssertEqual(tool.noiseOutputSuffix(for: NoiseSpec(seconds: 45)), "_noise_45s")
+        XCTAssertEqual(tool.noiseOutputSuffix(for: NoiseSpec(seconds: 0.75)), "_noise_0_75s")
+    }
+
     func testNFTToShortFlagParsesAndOldMP3ToShortFlagIsRejected() throws {
         let root = URL(fileURLWithPath: "/tmp/converter-test")
         let options = try CLIOptions.parse(
