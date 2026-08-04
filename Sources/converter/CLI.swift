@@ -215,7 +215,7 @@ struct CLIOptions {
                 throw AppError("\(argument) is no longer supported. Converter auto-discovers required audio inputs from SRC_DIR/Output.")
             case "--album-file":
                 _ = try requireValue(argument)
-                throw AppError("\(argument) is no longer supported. Album actions always read album.txt from the project root.")
+                throw AppError("\(argument) is no longer supported. -wavtoalbum and -mp3toalbum read album.txt from the project root; -album and -flactoalbum scan SRC_DIR directly.")
             case "--output-file":
                 options.outputFile = try requireValue(argument)
             case "--overwrite":
@@ -554,7 +554,7 @@ struct CLIOptions {
               Output: same .mp3 files rewritten as audio-only MP3 with artwork, junk streams, and metadata removed
             -mp3toalbum
               Input: album.txt order file plus referenced .mp3 files
-              Output: one RF64 album WAV
+              Output: one RF64 album WAV joined in listed order without loudness normalization; use -album for a normalized directory build
             -mp3tohash
               Input: one or more .mp3 files in SRC_DIR
               Output: same files renamed to CRC32-based .mp3 names
@@ -586,7 +586,7 @@ struct CLIOptions {
               Output: faded RF64 WAV files
             -wavtoalbum
               Input: album.txt order file plus referenced .wav files
-              Output: one RF64 album WAV
+              Output: one RF64 album WAV joined in listed order without loudness normalization; use -album for a normalized directory build
             -wavtohash
               Input: one or more .wav files in SRC_DIR
               Output: same files renamed to CRC32-based .wav names

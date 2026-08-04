@@ -11,6 +11,21 @@
 
 Swift-based media converter and YouTube studio production pipeline for macOS Apple Silicon.
 
+## Quick start
+
+```bash
+git clone https://github.com/Pummelchen/Converter.git
+cd Converter
+brew install ffmpeg imagemagick            # runtime media tools
+swift build --package-path Sources         # build
+swift test --package-path Sources          # full test suite (122 tests, ~6 min)
+
+CONVERTER_AUTO_INSTALL_DEPS=0 ./converter -doctor   # dependency check without install side effects
+./converter -help                                    # command reference
+```
+
+First media run: place exactly 1 source audio (`.flac`/`.wav`/`.mp3`) and 1 source image in `Output/`, then run `./converter -full`. `Output/` is both the default input and output directory — discovery is non-recursive, files in subfolders are ignored, and the directory is meant to be cleaned manually between runs. See [CONTRIBUTING.md](./CONTRIBUTING.md) for contribution guidance and [docs/](./docs/) for format reference, known-good toolchain versions, and the release checklist.
+
 ## Layout
 - `Sources/` Swift package, tests, bundled third-party code, and the in-process BW64 bridge
 - `Sources/converter/PipelineCore.swift` base runtime, temp/publish, probes, caching, scheduling
@@ -23,7 +38,7 @@ Swift-based media converter and YouTube studio production pipeline for macOS App
 - `Sources/converter/VideoPipeline.swift` MP4 render and short-video render with encoder fallback
 - `Output/` working directory for source inputs and generated outputs
 - `config.txt` centralized quality, profile, mastering, and render policy settings
-- `album.txt` album ordering input for album build actions
+- `album.txt` album ordering input read by `-wavtoalbum` and `-mp3toalbum`
 - `converter` prebuilt macOS Apple Silicon release binary
 
 ## Build
@@ -91,6 +106,8 @@ Conversions preserve source loudness by default instead of remastering it down d
 Running `./converter` without parameters prints help and does not start media processing. Use `./converter -full` or `./converter -run` for the full production pipeline.
 
 `./converter -album` is the album version of the full production run. It scans `Output/` for `.mp3`, `.wav`, and `.flac` tracks, sorts them in natural numeric filename order, loudness-normalizes each track to `-12 LUFS`, builds one RF64 `album.wav`, then continues through the same full-run image, MP4, and short-render pipeline.
+
+Album commands differ in input discovery: `-album` and `-flactoalbum` scan `Output/` directly (natural numeric order), while `-wavtoalbum` and `-mp3toalbum` read the track list from `album.txt` in the project root (entries resolve directly inside `Output/`; `#` comments and missing tracks are skipped with a warning). Only `-album` loudness-normalizes tracks before joining; the `album.txt`-based commands concatenate in listed order without normalization. See [docs/FORMATS.md](./docs/FORMATS.md) for the full command-to-format reference.
 
 ## Audio Standards
 All converter audio paths stage through an internal WAV before delivery encoding. The internal working WAV standard is fixed at 32-bit float, 192 kHz, stereo (`pcm_f32le`, RF64 WAV).

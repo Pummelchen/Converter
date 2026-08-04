@@ -902,4 +902,35 @@ final class converterTests: XCTestCase {
             XCTAssertTrue(error.localizedDescription.contains("requires two positional values"))
         }
     }
+
+    func testAlbumFileFlagRejectionNamesAlbumTxtAndDirectoryCommands() throws {
+        let root = URL(fileURLWithPath: "/tmp/converter-test")
+        XCTAssertThrowsError(
+            try CLIOptions.parse(
+                arguments: ["-wavtoalbum", "--album-file", "order.txt"],
+                environment: [:],
+                scriptDirectory: root,
+                scriptName: "converter"
+            )
+        ) { error in
+            let message = error.localizedDescription
+            XCTAssertTrue(message.contains("--album-file is no longer supported"))
+            XCTAssertTrue(message.contains("-wavtoalbum and -mp3toalbum read album.txt"))
+            XCTAssertTrue(message.contains("-album and -flactoalbum scan SRC_DIR directly"))
+        }
+    }
+
+    func testHelpTextDistinguishesAlbumTxtAndDirectoryAlbumBuilds() throws {
+        let root = URL(fileURLWithPath: "/tmp/converter-test")
+        let options = try CLIOptions.parse(
+            arguments: [],
+            environment: [:],
+            scriptDirectory: root,
+            scriptName: "converter"
+        )
+        let help = options.helpText()
+        XCTAssertTrue(help.contains("album.txt order file plus referenced .wav files"))
+        XCTAssertTrue(help.contains("album.txt order file plus referenced .mp3 files"))
+        XCTAssertTrue(help.contains("without loudness normalization; use -album for a normalized directory build"))
+    }
 }

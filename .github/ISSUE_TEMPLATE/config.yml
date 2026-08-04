@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Converter documentation
+    url: https://github.com/Pummelchen/Converter/wiki
+    about: Usage, commands, and configuration are documented in the README and wiki.

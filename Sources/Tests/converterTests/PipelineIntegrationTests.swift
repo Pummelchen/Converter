@@ -1879,4 +1879,43 @@ final class PipelineIntegrationTests: XCTestCase {
         )
         try tool.verifyDuration(short, expectedSeconds: 58.0, label: "short mp4", tolerance: 0.25)
     }
+
+    func testRejectsEmptyAudioInputWithoutPublishingOutputs() throws {
+        let workspace = try IntegrationWorkspace()
+        let empty = try workspace.writeEmptyFile(name: "empty_song", ext: "wav")
+        let tool = try workspace.makeTool(arguments: ["-wavtomp3"])
+        XCTAssertThrowsError(try tool.convertWAVToMP3(empty)) { error in
+            let message = error.localizedDescription
+            XCTAssertTrue(message.contains("Audio input empty") || message.contains("WAV header too short"), "Unexpected error: \(message)")
+        }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("empty_song.mp3").path))
+    }
+
+    func testRejectsEmptyImageInputWithoutPublishingOutputs() throws {
+        let workspace = try IntegrationWorkspace()
+        let empty = try workspace.writeEmptyFile(name: "empty_graphic", ext: "png")
+        let tool = try workspace.makeTool(arguments: ["-pngtojpg"])
+        XCTAssertThrowsError(try tool.convertPNGToJPEG(empty, outputExtension: "jpg")) { error in
+            XCTAssertTrue(error.localizedDescription.contains("Image input empty"))
+        }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("empty_graphic.jpg").path))
+    }
+
+    func testAlbumFileSkipsMissingTracksAndKeepsListedOrder() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe"])
+
+        _ = try workspace.createAudio(name: "track01", ext: "wav")
+        _ = try workspace.createAudio(name: "track02", ext: "wav", frequency: 554)
+        try workspace.writeAlbum(["track01", "missing_track", "track02"])
+
+        let tool = try workspace.makeTool(arguments: ["-wavtoalbum"])
+        let album = try tool.buildAlbumFromAlbumFile(extension: "wav", defaultOutputName: "album.rf64.wav")
+        try tool.verifyWAVStandard(album)
+
+        let track01 = workspace.output.appendingPathComponent("track01.wav")
+        let track02 = workspace.output.appendingPathComponent("track02.wav")
+        let expectedSeconds = (try tool.mediaDuration(track01) ?? 0) + (try tool.mediaDuration(track02) ?? 0) + Double(tool.config.albumSilenceSecs)
+        try tool.verifyDuration(album, expectedSeconds: expectedSeconds, label: "album wav", tolerance: 0.5)
+    }
 }

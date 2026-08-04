@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# The Swift package lives at Sources/, so all SwiftPM commands use --package-path Sources.
+# Integration tests require ffmpeg/ffprobe (Homebrew formula `ffmpeg`) and ImageMagick
+# (`magick`, Homebrew formula `imagemagick`). Both are installed below. No build artifacts
+# or runtime media are uploaded; Output/ and Sources/.build/ stay untracked.
+
+jobs:
+  build-and-test:
+    name: Swift build and tests (macOS)
+    runs-on: macos-15
+    env:
+      CONVERTER_AUTO_INSTALL_DEPS: "0"
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Select latest Xcode
+        run: |
+          LATEST_XCODE=$(ls /Applications | grep -E '^Xcode_[0-9.]+\.app$' | sort -V | tail -1)
+          if [ -n "$LATEST_XCODE" ]; then
+            sudo xcode-select -s "/Applications/$LATEST_XCODE/Contents/Developer"
+          fi
+          xcodebuild -version
+          swift --version
+
+      - name: Install media toolchain (ffmpeg, imagemagick)
+        run: |
+          brew update >/dev/null
+          brew install ffmpeg imagemagick
+          ffmpeg -version | head -1
+          ffprobe -version | head -1
+          magick -version | head -1
+
+      - name: Build
+        run: swift build --package-path Sources
+
+      - name: Test
+        run: swift test --package-path Sources

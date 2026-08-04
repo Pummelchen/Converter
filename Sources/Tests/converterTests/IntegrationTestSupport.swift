@@ -416,6 +416,12 @@ final class IntegrationWorkspace {
         try payload.write(to: target)
         return target
     }
+
+    func writeEmptyFile(name: String, ext: String) throws -> URL {
+        let target = output.appendingPathComponent(name).appendingPathExtension(ext)
+        try Data().write(to: target)
+        return target
+    }
 }
 
 final class ResultBox<Value>: @unchecked Sendable {
