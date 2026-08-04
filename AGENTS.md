@@ -1,8 +1,8 @@
 <!--
 AI onboarding file.
-Mode: bootstrap
-Indexed commit: 0ec7e71f0decd52d208c001ec16c4d7382d73fa7
-Last generated: 2026-06-25T10:26:41Z
+Mode: refresh
+Indexed commit: c75929f41d4c17970b367c43051de3f6cb09af90
+Last generated: 2026-08-04T15:07:37Z
 Generator: generic high-end AI coding agent
 Purpose: Help future AI sessions understand this repository quickly.
 Audience: Any high-capability AI coding agent, regardless of vendor or model family.
@@ -57,6 +57,7 @@ Use this task map:
 | Image behavior | `Sources/converter/ImagePipeline.swift`, `Config.swift`, `config.txt` |
 | Audio behavior/QC | `Sources/converter/AudioPipeline.swift`, `ValidationPipeline.swift`, `Config.swift`, `config.txt` |
 | Video render/shorts | `Sources/converter/VideoPipeline.swift`, `Config.swift`, `config.txt` |
+| Short-video actions | `Sources/converter/Actions.swift` (`stepShort`, `stepNFTToShort`, `resolveShortAudio`, `resolveShortRenderImage`), `VideoPipeline.swift` |
 | Config schema | `Sources/converter/Config.swift`, `config.txt`, README |
 | Runtime dependencies | `Sources/converter/DependencyBootstrap.swift`, `ProcessRunner.swift`, README |
 | Tests | `Sources/Tests/converterTests/` |

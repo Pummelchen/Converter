@@ -1,10 +1,10 @@
 {
   "repo_url": "https://github.com/Pummelchen/Converter",
-  "indexed_commit": "0ec7e71f0decd52d208c001ec16c4d7382d73fa7",
-  "previous_indexed_commit": "",
-  "generated_at": "2026-06-25T10:26:41Z",
+  "indexed_commit": "c75929f41d4c17970b367c43051de3f6cb09af90",
+  "previous_indexed_commit": "0ec7e71f0decd52d208c001ec16c4d7382d73fa7",
+  "generated_at": "2026-08-04T15:07:37Z",
   "generator": "generic high-end AI coding agent",
-  "operation_mode": "bootstrap",
+  "operation_mode": "refresh",
   "primary_languages": ["Swift", "C++"],
   "frameworks": ["Swift Package Manager", "XCTest"],
   "package_managers": ["Swift Package Manager", "Homebrew"],
@@ -40,7 +40,7 @@
   ],
   "important_commands": {
     "install": ["brew install ffmpeg imagemagick"],
-    "dev": ["./converter -help", "./converter -doctor", "./converter -full"],
+    "dev": ["./converter -help", "./converter -doctor", "./converter -full", "./converter -short", "./converter -nfttoshort"],
     "build": ["swift build --package-path Sources -c release", "cp Sources/.build/arm64-apple-macosx/release/converter ./converter", "chmod +x ./converter"],
     "test": ["swift test --package-path Sources"],
     "lint": [],
@@ -50,6 +50,7 @@
     "README.md",
     "Sources/Package.swift",
     "config.txt",
+    "album.txt",
     ".gitignore",
     "Sources/converter/Main.swift",
     "Sources/converter/CLI.swift",
@@ -62,24 +63,44 @@
     "Sources/converter/ValidationPipeline.swift",
     "Sources/converter/ImagePipeline.swift",
     "Sources/converter/AudioPipeline.swift",
+    "Sources/converter/LosslessAudioPipeline.swift",
+    "Sources/converter/QualityReporting.swift",
+    "Sources/converter/Diagnostics.swift",
+    "Sources/converter/VideoPipeline.swift",
+    "Sources/BW64Bridge/bw64_bridge.cpp",
+    "Sources/BW64Bridge/include/bw64_bridge.h",
+    "Sources/Tests/converterTests/converterTests.swift",
+    "Sources/Tests/converterTests/PipelineIntegrationTests.swift",
+    "Sources/Tests/converterTests/IntegrationTestSupport.swift"
+  ],
+  "changed_files_since_previous_index": [
+    "README.md",
+    "Sources/Package.swift",
+    "Sources/converter/Actions.swift",
+    "Sources/converter/AudioPipeline.swift",
+    "Sources/converter/CLI.swift",
+    "Sources/converter/ImagePipeline.swift",
+    "Sources/converter/PipelineCore.swift",
     "Sources/converter/VideoPipeline.swift",
     "Sources/Tests/converterTests/converterTests.swift",
-    "Sources/Tests/converterTests/PipelineIntegrationTests.swift"
+    "Sources/Tests/converterTests/PipelineIntegrationTests.swift",
+    "Sources/Tests/converterTests/IntegrationTestSupport.swift",
+    "converter"
   ],
-  "changed_files_since_previous_index": [],
-  "refresh_reason": ["initial bootstrap: no prior generic AI onboarding file set found"],
+  "refresh_reason": [
+    "onboarding was indexed at 0ec7e71 and missed 13 later source commits",
+    "new -short action and -mp3toshort -> -nfttoshort rename were undocumented",
+    "Diagnostics.swift, LosslessAudioPipeline.swift, QualityReporting.swift, IntegrationTestSupport.swift were missing from the file map",
+    "backup-based publishing, orphaned temp cleanup, and stable short naming were undocumented",
+    "CI absence and full file inventory verified via direct clone"
+  ],
   "migrated_model_specific_files": [],
   "deprecated_model_specific_files": [],
   "preserved_model_specific_files_requiring_human_review": [],
-  "warnings": [
-    "Direct git clone was unavailable in the execution container; repository source was inspected through GitHub source APIs and known-path checks.",
-    "Complete repository file inventory should be rechecked during a future refresh."
-  ],
+  "warnings": [],
   "unknowns": [
-    "Complete file inventory",
-    "CI/CD configuration outside checked common workflow paths",
     "Pinned local versions for FFmpeg/ImageMagick/Homebrew formulae",
-    "Full BW64 bridge internals"
+    "Runtime performance envelope for large media"
   ],
   "conflicts": [],
   "refresh_policy": {
@@ -92,29 +113,14 @@
     "force_regeneration_after_meaningful_commits": 20,
     "relevant_change_paths": [
       "README.md",
-      "package.json",
-      "pyproject.toml",
-      "go.mod",
-      "Cargo.toml",
-      "pom.xml",
-      "build.gradle",
-      "Dockerfile",
-      "docker-compose.yml",
+      "Sources/Package.swift",
+      "Sources/converter/**",
+      "Sources/BW64Bridge/**",
+      "Sources/ThirdParty/**",
+      "Sources/Tests/**",
       ".github/workflows/**",
-      "src/**",
-      "app/**",
-      "apps/**",
-      "packages/**",
-      "services/**",
-      "migrations/**",
-      "db/**",
-      "prisma/**",
-      "tests/**",
-      "docs/architecture*",
-      "docs/deployment*",
-      "docs/security*",
-      "Sources/**",
-      "config.txt"
+      "config.txt",
+      "album.txt"
     ]
   }
 }

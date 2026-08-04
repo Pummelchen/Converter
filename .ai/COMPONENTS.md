@@ -1,8 +1,8 @@
 <!--
 AI onboarding file.
-Mode: bootstrap
-Indexed commit: 0ec7e71f0decd52d208c001ec16c4d7382d73fa7
-Last generated: 2026-06-25T10:26:41Z
+Mode: refresh
+Indexed commit: c75929f41d4c17970b367c43051de3f6cb09af90
+Last generated: 2026-08-04T15:07:37Z
 Generator: generic high-end AI coding agent
 Purpose: Help future AI sessions understand this repository quickly.
 Audience: Any high-capability AI coding agent, regardless of vendor or model family.
@@ -28,8 +28,8 @@ Human edits are allowed. Future refreshes should preserve valid human edits.
 |---|---|
 | Responsibility | Parse user arguments, select `Action`, validate action-specific arguments, generate help/list/matrix text. |
 | Key file | `Sources/converter/CLI.swift` |
-| Public interface | Flags such as `-full`, `-run`, `-album`, `-doctor`, `-matrix`, `-loudness`, `-noise`, `-silence`, `-nfttoshort`. |
-| Invariants | No arguments mean help; removed flags throw explicit errors; `--recursive` is rejected. |
+| Public interface | Flags such as `-full`, `-run`, `-album`, `-doctor`, `-matrix`, `-loudness`, `-noise`, `-silence`, `-short`, `-nfttoshort`. |
+| Invariants | No arguments mean help; removed flags (`-mp3toshort`, `-jpegtopng`, `-pngtojpeg`, `--recursive`) throw explicit, actionable errors. |
 | Tests | `converterTests.swift` includes no-arg help and help-text assertions. |
 | Risks | CLI contract is documented in README and tests; update all three together. |
 
@@ -71,7 +71,7 @@ Human edits are allowed. Future refreshes should preserve valid human edits.
 |---|---|
 | Responsibility | Shared runtime state, temp files, path containment, probe caches, scheduler semaphores, media probe helpers. |
 | Key file | `Sources/converter/PipelineCore.swift` |
-| Invariants | Hidden temp files use run-scoped names; explicit paths must be direct children of configured directories; discovery is non-recursive. |
+| Invariants | Hidden temp files use run-scoped names; explicit paths must be direct children of configured directories; discovery is non-recursive; publishing backs up an existing destination instead of deleting it; orphaned `.converter-tmp.*` files from dead processes are removed at startup. |
 | Risks | Weakening temp/path behavior can overwrite or process unintended files. |
 
 ## Image pipeline
@@ -89,7 +89,7 @@ Human edits are allowed. Future refreshes should preserve valid human edits.
 | Field | Details |
 |---|---|
 | Responsibility | Audio format conversion, internal WAV staging, loudness, bass, fade, silence/noise, archives, hashing. |
-| Key file | `Sources/converter/AudioPipeline.swift` |
+| Key files | `Sources/converter/AudioPipeline.swift`, `Sources/converter/LosslessAudioPipeline.swift` (internal RF64 WAV staging and lossless/archive argument construction) |
 | External dependencies | `ffmpeg`, `ffprobe`; BW64 bridge for BW64-related support. |
 | Invariants | Preserve source loudness for normal conversions where documented; use project-standard internal WAV. |
 | Risks | Loudness/QC mistakes can damage deliverables; avoid hidden remastering unless intended. |
@@ -98,10 +98,10 @@ Human edits are allowed. Future refreshes should preserve valid human edits.
 
 | Field | Details |
 |---|---|
-| Responsibility | Main MP4 and short MP4 rendering with encoder fallback and validation. |
+| Responsibility | Main MP4 and short MP4 rendering with encoder fallback and validation; short renders accept any audio-only ffmpeg-supported input and fit/pad any image into the portrait frame. |
 | Key file | `Sources/converter/VideoPipeline.swift` |
 | External dependencies | `ffmpeg`, `ffprobe`, configured encoders. |
-| Invariants | Shorts are hard-capped at 58 seconds; verify codec, dimensions, color metadata, ALAC audio, duration, and loudness preservation. |
+| Invariants | Shorts are hard-capped at 58 seconds; output stems never repeat `_Short`/`_8K_Short` suffixes; verify codec, dimensions, color metadata, ALAC audio, duration, and loudness preservation. |
 | Risks | Encoder availability differs by machine; fallback ladders matter. |
 
 ## Validation pipeline
@@ -114,13 +114,23 @@ Human edits are allowed. Future refreshes should preserve valid human edits.
 | Invariants | Validate before reuse/publish. |
 | Risks | Removing validation can produce invalid or misleading media deliverables. |
 
+## Quality reporting and diagnostics
+
+| Field | Details |
+|---|---|
+| Responsibility | `AudioQCPolicy`/`AudioQCMetrics`/`AudioQCResult` types for loudness/QC decisions (`QualityReporting.swift`); ffmpeg encoder/filter capability probing and encoder-ladder availability checks (`Diagnostics.swift`). |
+| Key files | `Sources/converter/QualityReporting.swift`, `Sources/converter/Diagnostics.swift` |
+| External dependencies | `ffmpeg`, `ffprobe`. |
+| Invariants | QC thresholds come from `config.txt` keys; encoder ladders must contain at least one available encoder. |
+| Risks | Changing QC types or probing affects validation and `-doctor` behavior across pipelines. |
+
 ## Tests
 
 | Field | Details |
 |---|---|
 | Responsibility | XCTest validation for CLI, dependency manifest, and media pipeline behavior. |
-| Key paths | `Sources/Tests/converterTests/converterTests.swift`, `PipelineIntegrationTests.swift` |
-| Run command | `swift test --package-path Sources` |
+| Key paths | `Sources/Tests/converterTests/converterTests.swift` (45 unit tests), `PipelineIntegrationTests.swift` (77 integration tests), `IntegrationTestSupport.swift` (isolated workspace helpers) |
+| Run command | `swift test --package-path Sources` (122 tests verified passing at `c75929f` on macOS Apple Silicon) |
 | Risks | Integration tests may require local media tooling and macOS-compatible environment. |
 
 ## BW64 bridge and vendored code

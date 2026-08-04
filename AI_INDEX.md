@@ -1,8 +1,8 @@
 <!--
 AI onboarding file.
-Mode: bootstrap
-Indexed commit: 0ec7e71f0decd52d208c001ec16c4d7382d73fa7
-Last generated: 2026-06-25T10:26:41Z
+Mode: refresh
+Indexed commit: c75929f41d4c17970b367c43051de3f6cb09af90
+Last generated: 2026-08-04T15:07:37Z
 Generator: generic high-end AI coding agent
 Purpose: Help future AI sessions understand this repository quickly.
 Audience: Any high-capability AI coding agent, regardless of vendor or model family.
@@ -16,9 +16,9 @@ Human edits are allowed. Future refreshes should preserve valid human edits.
 |---|---|
 | Repository | `Pummelchen/Converter` |
 | Purpose | Swift-based media converter and YouTube studio production pipeline for macOS Apple Silicon. |
-| Indexed commit | `0ec7e71f0decd52d208c001ec16c4d7382d73fa7` |
-| Last generated | `2026-06-25T10:26:41Z` |
-| Operation mode | `bootstrap` |
+| Indexed commit | `c75929f41d4c17970b367c43051de3f6cb09af90` |
+| Last generated | `2026-08-04T15:07:37Z` |
+| Operation mode | `refresh` |
 | Primary language | Swift 6 package, with a C++17 bridge target for BW64 support |
 | Runtime target | macOS 14+ |
 
@@ -38,6 +38,9 @@ Evidence:
 - Operational commands may auto-install missing Homebrew formulae unless `CONVERTER_AUTO_INSTALL_DEPS=0` is set.
 - `Output/` is the default working directory for source inputs and generated outputs; discovery is non-recursive and skips hidden files.
 - The prebuilt root `converter` binary is a checked-in release artifact; do not edit it for documentation-only work.
+- Short-video actions: `-short` renders a portrait short MP4 from exactly 1 image plus exactly 1 audio-only file; `-nfttoshort` (renamed from `-mp3toshort`, which is now rejected with an actionable error) accepts any single audio-only file supported by ffmpeg and prefers `Vertical_8K.png`, then an existing `*_NFT8K.png`, then derives NFT artwork from a landscape `*_8K.png` or source image.
+- Publishing replaces existing outputs via a temporary backup instead of deleting the destination first, and startup removes orphaned `.converter-tmp.*` files whose owning process no longer exists.
+- The test suite has 122 XCTest tests (45 unit, 77 integration) and passes on macOS Apple Silicon with Swift 6.3.3 and installed `ffmpeg`/`ffprobe`/`magick`.
 
 Evidence:
 - `README.md`
@@ -50,12 +53,12 @@ Evidence:
 ## Inferences
 
 - This repository is optimized for a single-user/local macOS production workflow rather than a server, web API, or distributed service.
-- There is no database, migration layer, HTTP API, background worker system, Docker setup, or GitHub Actions workflow visible from inspected files.
+- There is no database, migration layer, HTTP API, background worker system, Docker setup, or GitHub Actions workflow. Verified by full clone: no `.github/` directory exists.
 
 Evidence:
 - `README.md`
 - `Sources/Package.swift`
-- `.github/workflows/ci.yml` was not present when checked
+- verified via `git ls-files` and `ls .github` in a full clone: no `.github/` directory exists
 
 ## Architecture summary
 
@@ -65,7 +68,7 @@ Evidence:
 2. `DependencyBootstrapper` ensures required external tools exist, optionally using Homebrew for `ffmpeg` and `imagemagick`.
 3. `ProjectConfig` loads `config.txt`, overlays environment variables and CLI profile choices, then validates settings.
 4. `ConverterTool` coordinates source discovery, temporary files, process execution, probe/QC caching, and bounded concurrency.
-5. Action-specific methods in `Actions.swift` dispatch image, audio, video, album, hashing, loudness, fade, silence, and noise workflows.
+5. Action-specific methods in `Actions.swift` dispatch image, audio, video, album, short, hashing, loudness, fade, silence, and noise workflows.
 6. Specialized pipeline files perform validation, media transforms, delivery rendering, and output verification.
 
 Evidence:
@@ -84,11 +87,14 @@ Evidence:
 | Path | Responsibility | Notes |
 |---|---|---|
 | `README.md` | Human-facing usage, build, runtime dependency, and media contract docs | Updated with AI onboarding entry block. |
-| `Sources/Package.swift` | Swift Package manifest | Swift tools 6.3.3, Swift language mode 6, macOS 14, executable product `converter`, test target. |
+| `Sources/Package.swift` | Swift Package manifest | Swift tools 6.3.3, Swift language mode 6, macOS 14, executable product `converter`, test target, release-only `-cross-module-optimization`. |
 | `Sources/converter/` | Main Swift executable target | CLI parsing, config, runtime support, media pipelines, action dispatch. |
+| `Sources/converter/Diagnostics.swift` | ffmpeg encoder/filter capability probing | Encoder-ladder availability checks used by `-doctor` and video rendering. |
+| `Sources/converter/LosslessAudioPipeline.swift` | Internal WAV staging and lossless/archive encodes | RF64 internal WAV argument construction, archival FLAC/WAV variants. |
+| `Sources/converter/QualityReporting.swift` | Audio QC policy and metrics types | `AudioQCPolicy`, `AudioQCMetrics`, `AudioQCResult` used by validation. |
 | `Sources/BW64Bridge/` | C++ bridge target declared by the package | Used by Swift code via `import BW64Bridge`. |
 | `Sources/ThirdParty/libbw64/` | Bundled third-party BW64 code referenced by package header search path | Treat as vendored/low-edit unless specifically changing BW64 support. |
-| `Sources/Tests/converterTests/` | XCTest unit and integration tests | Includes CLI/config/tooling tests and media pipeline integration coverage. |
+| `Sources/Tests/converterTests/` | XCTest unit and integration tests | 122 tests: CLI/config/tooling unit tests, media pipeline integration coverage, `IntegrationTestSupport.swift` workspace helpers. |
 | `Output/` | Runtime input/output working directory | Contents ignored except `.gitkeep`; clean manually between runs. |
 | `config.txt` | Runtime quality/profile/pipeline policy | Can be overridden by environment and selected profile. |
 | `album.txt` | Album ordering input | Referenced by README for album actions; exact parser details should be checked before editing album behavior. |
@@ -99,7 +105,7 @@ Evidence:
 | Entrypoint | Type | Purpose |
 |---|---|---|
 | `Sources/converter/Main.swift` | Swift `@main` | CLI startup and top-level error handling. |
-| `CLIOptions.parse(...)` in `Sources/converter/CLI.swift` | CLI parser | Maps flags such as `-full`, `-album`, `-loudness`, `-nfttoshort`, `-matrix`, `-doctor` to actions. |
+| `CLIOptions.parse(...)` in `Sources/converter/CLI.swift` | CLI parser | Maps flags such as `-full`, `-album`, `-loudness`, `-short`, `-nfttoshort`, `-matrix`, `-doctor` to actions; removed flags (e.g. `-mp3toshort`, `-jpegtopng`) throw actionable errors. |
 | `ConverterTool.initializeForExecution()` in `Sources/converter/PipelineCore.swift` | Runtime initialization | Ensures source/output dirs and executable dependencies for operational actions. |
 | `stepFull()` / `stepAlbum()` in `Sources/converter/Actions.swift` | Pipeline workflows | Full production and album production orchestration. |
 | `ProcessRunner` in `Sources/converter/ProcessRunner.swift` | External process boundary | Runs commands and pipelines, captures stdout/stderr, enforces allowed exit codes. |
@@ -116,6 +122,8 @@ Evidence:
 | Dependency check | `./converter -doctor` | verified from README/CLI parser |
 | List actions | `./converter -list` | verified from CLI parser |
 | Conversion matrix | `./converter -matrix` | verified from README/CLI parser |
+| Portrait short from image+audio | `./converter -short` | verified from CLI parser/help text |
+| NFT short render | `./converter -nfttoshort` | verified from CLI parser/help text |
 | Disable auto-install | `CONVERTER_AUTO_INSTALL_DEPS=0 ./converter -doctor` | verified from dependency bootstrap behavior |
 
 See [`.ai/COMMANDS.md`](./.ai/COMMANDS.md) for command details and validation notes.
@@ -163,6 +171,7 @@ Evidence:
 | Change image conversion outputs | `Sources/converter/ImagePipeline.swift` | `Config.swift`, `config.txt`, tests |
 | Change audio standards/QC | `Sources/converter/AudioPipeline.swift` and `ValidationPipeline.swift` | `Config.swift`, `config.txt`, README audio standards, tests |
 | Change video rendering | `Sources/converter/VideoPipeline.swift` | `Config.swift`, `config.txt`, README short/full video behavior, tests |
+| Change short-video behavior | `Sources/converter/Actions.swift` (`resolveShortAudio`, `resolveShortRenderImage`, `stepShort`, `stepNFTToShort`) | `VideoPipeline.swift`, `ImagePipeline.swift`, tests |
 | Change config schema | `Sources/converter/Config.swift` | `config.txt`, README profiles/standards, tests |
 | Change dependency behavior | `Sources/converter/DependencyBootstrap.swift` | `ProcessRunner.swift`, README runtime dependencies, tests |
 | Change process execution | `Sources/converter/ProcessRunner.swift` | all pipeline command construction sites, security notes |
@@ -201,9 +210,10 @@ Evidence:
 
 ## Unknowns and conflicts
 
-- Unknown: CI/CD configuration was not found at checked common workflow paths; absence should be rechecked with a full clone/tree listing before assuming there is no workflow.
-- Unknown: exact full file inventory was inferred from fetched known paths and package/docs because direct Git clone was not available in this execution environment.
+- Resolved: CI/CD absence verified by full clone — no `.github/` directory exists.
+- Resolved: full file inventory is now known from a direct clone (`git ls-files`).
+- Resolved: the bootstrap-era docs missed `Sources/converter/Diagnostics.swift`, `LosslessAudioPipeline.swift`, `QualityReporting.swift`, and `Sources/Tests/converterTests/IntegrationTestSupport.swift`, which already existed at the previous indexed commit; they are now documented.
 - Unknown: local macOS/Homebrew/FFmpeg/ImageMagick versions are not pinned in the repository.
-- No current docs/code conflict was identified in inspected files.
+- No current docs/code conflict remains after this refresh.
 
 See [`.ai/KNOWN_UNKNOWNS.md`](./.ai/KNOWN_UNKNOWNS.md).

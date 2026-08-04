@@ -1,8 +1,8 @@
 <!--
 AI onboarding file.
-Mode: bootstrap
-Indexed commit: 0ec7e71f0decd52d208c001ec16c4d7382d73fa7
-Last generated: 2026-06-25T10:26:41Z
+Mode: refresh
+Indexed commit: c75929f41d4c17970b367c43051de3f6cb09af90
+Last generated: 2026-08-04T15:07:37Z
 Generator: generic high-end AI coding agent
 Purpose: Help future AI sessions understand this repository quickly.
 Audience: Any high-capability AI coding agent, regardless of vendor or model family.
@@ -23,14 +23,17 @@ Human edits are allowed. Future refreshes should preserve valid human edits.
 | `Sources/converter/ProcessRunner.swift` | Swift source | External process execution and pipeline capture | `Sources/converter/ProcessRunner.swift` |
 | `Sources/converter/Support.swift` | Swift source | App error, logging, semaphores, scheduler, utilities, parsing specs | `Sources/converter/Support.swift` |
 | `Sources/converter/PipelineCore.swift` | Swift source | Runtime state, temp files, probe/QC cache, path checks, ffprobe/magick probes | `Sources/converter/PipelineCore.swift` |
-| `Sources/converter/Actions.swift` | Swift source | Action workflows: full, album, image batches, dispatch helpers | `Sources/converter/Actions.swift` |
+| `Sources/converter/Actions.swift` | Swift source | Action workflows: full, album, short, NFT short, image batches, dispatch helpers | `Sources/converter/Actions.swift` |
 | `Sources/converter/ValidationPipeline.swift` | Swift source | Media identity, preflight, output validation, loudness/QC checks | `Sources/converter/ValidationPipeline.swift` |
-| `Sources/converter/ImagePipeline.swift` | Swift source | JPG/PNG conversion, AIPix images, NFT assets, sized JPEG outputs | `Sources/converter/ImagePipeline.swift` |
+| `Sources/converter/ImagePipeline.swift` | Swift source | JPG/PNG conversion, AIPix images, NFT assets, sized JPEG outputs, 4K-from-8K derivation | `Sources/converter/ImagePipeline.swift` |
 | `Sources/converter/AudioPipeline.swift` | Swift source | Audio conversions, loudness, fade, bass, noise/silence, archival variants | `Sources/converter/AudioPipeline.swift` |
-| `Sources/converter/VideoPipeline.swift` | Swift source | Main MP4 rendering, short MP4 rendering, encoder fallback ladders | `Sources/converter/VideoPipeline.swift` |
+| `Sources/converter/LosslessAudioPipeline.swift` | Swift source | Internal RF64 WAV staging and lossless/archive encode argument construction | `Sources/converter/LosslessAudioPipeline.swift` |
+| `Sources/converter/QualityReporting.swift` | Swift source | `AudioQCPolicy`, `AudioQCMetrics`, `AudioQCResult` types and QC formatting | `Sources/converter/QualityReporting.swift` |
+| `Sources/converter/Diagnostics.swift` | Swift source | ffmpeg encoder/filter capability probing and encoder-ladder availability checks | `Sources/converter/Diagnostics.swift` |
+| `Sources/converter/VideoPipeline.swift` | Swift source | Main MP4 rendering, short MP4 rendering from generic audio inputs, encoder fallback ladders | `Sources/converter/VideoPipeline.swift` |
 | `Sources/BW64Bridge/` | C++ target path | Package target imported by Swift for BW64 writing | `Sources/Package.swift`, `PipelineCore.swift`, `ValidationPipeline.swift` |
 | `Sources/ThirdParty/libbw64/` | vendored dependency path | Header search path for BW64 bridge target | `Sources/Package.swift` |
-| `Sources/Tests/converterTests/` | XCTest target | Unit/integration tests for CLI, dependencies, config, pipelines | `Sources/Package.swift`, `Sources/Tests/converterTests/converterTests.swift` |
+| `Sources/Tests/converterTests/` | XCTest target | 122 unit/integration tests for CLI, dependencies, config, pipelines; `IntegrationTestSupport.swift` provides isolated workspace helpers | `Sources/Package.swift`, `Sources/Tests/converterTests/` |
 | `config.txt` | Runtime config | Project-wide audio/video/image/album defaults | `config.txt`, `Config.swift` |
 | `Output/` | Runtime data dir | Default source/output directory; ignored except `.gitkeep` | `README.md`, `.gitignore` |
 | `converter` | Binary artifact | Prebuilt macOS Apple Silicon executable | `README.md` |
@@ -52,11 +55,12 @@ Evidence:
 |---|---|---|
 | Process startup | `Main.swift` | Builds runtime environment, parses CLI, bootstraps deps, loads config, invokes `ConverterTool.execute()`. |
 | CLI parsing | `CLI.swift` | Default action is help. `-full`/`-run` trigger full production. Removed flags throw explicit errors. |
-| Full production | `Actions.swift` | Resolves exactly one source audio and image/direct PNG inputs, runs image/audio work, renders main video, renders or shortens short video. |
+| Full production | `Actions.swift` | Resolves exactly one source audio and image/direct PNG inputs, runs image/audio work, renders main video, renders or shortens short video. Direct `Horizontal_8K.png` input still derives companion deliverables (4K/NFT/2K/3K/JPG) via `fullImagePipelineFromDirect8K`. |
 | Album production | `Actions.swift`, audio helpers | Builds a normalized RF64 album WAV, then reuses full production flow. |
+| Short actions | `Actions.swift`, `VideoPipeline.swift` | `-short`: exactly 1 image + exactly 1 audio-only file -> portrait short MP4. `-nfttoshort`: generic audio-only input + `Vertical_8K.png`/existing or derived `*_NFT8K.png` -> short MP4 with source loudness preserved. |
 | Image-only actions | `ImagePipeline.swift`, `Actions.swift` | PNG/JPG conversions and size-specific image deliverables. |
 | Audio-only actions | `AudioPipeline.swift`, `Actions.swift` | Format conversion, hash rename, loudness, bass, fade, silence, noise. |
-| Video actions | `VideoPipeline.swift`, `Actions.swift` | M4A+PNG to MP4, NFT/portrait PNG to short MP4, and MP4 to short MP4. |
+| Video actions | `VideoPipeline.swift`, `Actions.swift` | M4A+PNG to MP4, image + audio-only file to short MP4, and MP4 to short MP4. |
 | Validation | `ValidationPipeline.swift`, `PipelineCore.swift` | Uses `ffprobe`, `ffmpeg`, and `magick identify`; caches per-file probes. |
 
 ## Internal dependencies
@@ -104,13 +108,12 @@ ConverterTool
 | Path | Result |
 |---|---|
 | `README.md` | present |
-| `CONTRIBUTING.md` | not found at checked path |
-| `.github/workflows/ci.yml` | not found at checked path |
-| `.github/workflows/swift.yml` | not found at checked path |
-| `docs/architecture.md` | not found at checked path |
-| `AI_INDEX.md`, `AGENTS.md`, `.ai/MANIFEST.json` | not found before bootstrap |
-| Common model-specific AI instruction paths | not found at checked paths |
+| `CONTRIBUTING.md` | not present (verified by full clone file inventory) |
+| `.github/` | not present (verified by full clone; no CI workflows) |
+| `docs/` | not present (verified by full clone file inventory) |
+| `AI_INDEX.md`, `AGENTS.md`, `.ai/MANIFEST.json` | present; refreshed at `c75929f` |
+| Common model-specific AI instruction paths | not present |
 
 ## Monorepo status
 
-`inferred`: This does not appear to be a monorepo. The repository contains one Swift Package under `Sources/` with one executable target, one bridge target, and one test target.
+`verified`: This is not a monorepo. The full clone contains one Swift Package under `Sources/` with one executable target, one bridge target, and one test target.

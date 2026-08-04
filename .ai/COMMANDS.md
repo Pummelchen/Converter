@@ -1,8 +1,8 @@
 <!--
 AI onboarding file.
-Mode: bootstrap
-Indexed commit: 0ec7e71f0decd52d208c001ec16c4d7382d73fa7
-Last generated: 2026-06-25T10:26:41Z
+Mode: refresh
+Indexed commit: c75929f41d4c17970b367c43051de3f6cb09af90
+Last generated: 2026-08-04T15:07:37Z
 Generator: generic high-end AI coding agent
 Purpose: Help future AI sessions understand this repository quickly.
 Audience: Any high-capability AI coding agent, regardless of vendor or model family.
@@ -84,6 +84,7 @@ Evidence:
 | Truncated fadeout | `./converter -fadeout 1:30 10` |
 | Noise padding | `./converter -noise` or `./converter -noise 45` |
 | Silence padding | `./converter -silence` or `./converter -silence 45` |
+| Portrait short from image+audio | `./converter -short` |
 | NFT-image short | `./converter -nfttoshort` |
 | M4A to MP4 | `./converter -m4atomp4` |
 

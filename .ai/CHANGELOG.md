@@ -1,14 +1,28 @@
 <!--
 AI onboarding file.
-Mode: bootstrap
-Indexed commit: 0ec7e71f0decd52d208c001ec16c4d7382d73fa7
-Last generated: 2026-06-25T10:26:41Z
+Mode: refresh
+Indexed commit: c75929f41d4c17970b367c43051de3f6cb09af90
+Last generated: 2026-08-04T15:07:37Z
 Generator: generic high-end AI coding agent
 Purpose: Help future AI sessions understand this repository quickly.
 Audience: Any high-capability AI coding agent, regardless of vendor or model family.
 Human edits are allowed. Future refreshes should preserve valid human edits.
 -->
 # AI Onboarding Changelog
+
+## 2026-08-04T15:07:37Z — refresh at `c75929f41d4c17970b367c43051de3f6cb09af90`
+
+### Changed
+
+- Re-indexed all onboarding files from `0ec7e71` to `c75929f` after verifying the full clone, build, and all 122 tests.
+- Documented previously missed files: `Sources/converter/Diagnostics.swift`, `Sources/converter/LosslessAudioPipeline.swift`, `Sources/converter/QualityReporting.swift`, `Sources/Tests/converterTests/IntegrationTestSupport.swift`.
+- Documented the new `-short` action and the `-mp3toshort` -> `-nfttoshort` rename, generic audio-only short inputs, NFT-artwork short image resolution, and same-stem audio auto-ranking.
+- Documented full-run changes: direct `Horizontal_8K.png` inputs now still derive companion deliverables via `fullImagePipelineFromDirect8K` and `fourKPNGFrom8K`; shorts fall back to `*_NFT8K.png` when `Vertical_8K.png` is absent.
+- Documented runtime behavior changes: backup-based `publishTemp`, run-scoped temp cleanup, orphaned `.converter-tmp.*` cleanup at startup, and stable short MP4 stem naming.
+- Updated `Package.swift` facts: swift-tools 6.3.3, `swiftLanguageModes: [.v6]`, release-only `-cross-module-optimization`.
+- Marked CI absence and full file inventory as verified; resolved BW64 bridge unknown.
+- Updated `README.md` with `-short` and the missing pipeline files.
+- Populated the GitHub wiki with pages matching current repository state.
 
 ## 2026-06-25T10:26:41Z — bootstrap at `0ec7e71f0decd52d208c001ec16c4d7382d73fa7`
 

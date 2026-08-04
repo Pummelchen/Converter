@@ -1,8 +1,8 @@
 <!--
 AI onboarding file.
-Mode: bootstrap
-Indexed commit: 0ec7e71f0decd52d208c001ec16c4d7382d73fa7
-Last generated: 2026-06-25T10:26:41Z
+Mode: refresh
+Indexed commit: c75929f41d4c17970b367c43051de3f6cb09af90
+Last generated: 2026-08-04T15:07:37Z
 Generator: generic high-end AI coding agent
 Purpose: Help future AI sessions understand this repository quickly.
 Audience: Any high-capability AI coding agent, regardless of vendor or model family.
@@ -65,6 +65,11 @@ Evidence:
 
 The scheduler is conservative because `ffmpeg` and `magick` use their own internal threading.
 
+Temp-file hygiene:
+- publishing moves an existing destination to a run-scoped backup first and restores it on failure, instead of deleting it;
+- `cleanupTemps()` removes run-scoped `.converter-tmp.<pid>.<token>.*` files in source/output dirs;
+- `initializeForExecution()` removes orphaned `.converter-tmp.<pid>.*` files whose owning PID no longer exists.
+
 Evidence:
 - `Sources/converter/PipelineCore.swift`
 - `Sources/converter/Support.swift`
@@ -93,10 +98,10 @@ Evidence:
 
 1. `stepFull()` resolves exactly one source audio file from `.flac`, `.wav`, or `.mp3`, excluding external archival companions.
 2. Image and audio preparations run concurrently.
-3. Image flow accepts direct `Horizontal_8K.png` and optional `Vertical_8K.png`, or derives image assets from one source image.
+3. Image flow accepts direct `Horizontal_8K.png` and optional `Vertical_8K.png`, or derives image assets from one source image. Direct `Horizontal_8K.png` inputs are used as-is for the main MP4 but still derive companion deliverables (4K PNG via `fourKPNGFrom8K`, NFT PNGs, 2K/3K PNGs, JPG exports) through `fullImagePipelineFromDirect8K`.
 4. Audio flow normalizes/prepares internal WAV and delivery M4A/MP3, and generates external RF64/BW64 archival deliverables.
 5. Main MP4 is rendered from M4A plus the main image.
-6. Short MP4 is rendered from M4A plus `Vertical_8K.png` when present, otherwise from M4A plus `*_NFT8K.png` centered in the portrait frame with black top/bottom padding.
+6. Short MP4 is rendered from M4A plus `Vertical_8K.png` when present, otherwise from M4A plus `*_NFT8K.png` (existing or derived) fitted/centered in the portrait frame with black padding.
 7. Transients are cleaned.
 
 Evidence:
@@ -105,6 +110,18 @@ Evidence:
 - `Sources/converter/AudioPipeline.swift`
 - `Sources/converter/VideoPipeline.swift`
 - `README.md`
+
+### Short action flows
+
+- `-short` (`stepShort`): requires exactly one image (`.png`/`.jpg`/`.jpeg`) plus exactly one audio-only file supported by ffmpeg in SRC_DIR; renders one ALAC `_8K_Short.mp4` capped at 58 seconds, fitting the image into the portrait frame as large as possible with black padding.
+- `-nfttoshort` (`stepNFTToShort`, renamed from `-mp3toshort`; the old flag throws an actionable error): accepts any single audio-only file supported by ffmpeg. Image resolution prefers `Vertical_8K.png`, then an existing `*_NFT8K.png`, then derives NFT artwork from a landscape `*_8K.png` or source image; renders via fit/pad portrait path and preserves source loudness.
+- Shared audio resolution (`resolveShortAudio`): excludes archival companions, requires an audio stream and no video stream; when multiple same-stem candidates exist it auto-selects by quality rank (M4A > FLAC > WAV > MP3) and warns.
+- Output stems never repeat `_Short`/`_8K_Short` suffixes (`shortMP4Stem`, `portraitShortMP4Stem`).
+
+Evidence:
+- `Sources/converter/Actions.swift`
+- `Sources/converter/VideoPipeline.swift`
+- `Sources/converter/CLI.swift` help text
 
 ### Album flow
 
@@ -157,8 +174,9 @@ Evidence:
 Video functions render:
 
 - main MP4 from image + M4A, using configured main encoder ladder;
-- short MP4, capped to 58 seconds, using configured short encoder ladder and fit/pad still-image rendering for `*_NFT8K.png` inputs;
-- portrait-image short renders when a vertical 8K PNG is available.
+- short MP4, capped to 58 seconds, using configured short encoder ladder; portrait still-image rendering fits any image into the portrait frame (`scale ... force_original_aspect_ratio=decrease` + centered black pad), including `*_NFT8K.png` and direct `-short` inputs;
+- portrait-image short renders when a vertical 8K PNG is available;
+- short audio may be any audio-only file supported by ffmpeg; it is staged through the internal RF64 WAV before ALAC delivery encoding.
 
 Video validation checks dimensions, codecs, pixel format, color metadata, ALAC audio, duration, and source loudness preservation.
 
@@ -181,13 +199,15 @@ Evidence:
 
 - Keep direct-child path restrictions for explicit input/output paths.
 - Keep hidden run-scoped temp files and verify-before-publish behavior.
+- Keep backup-based publishing (`publishTemp`) and orphaned temp-file cleanup.
 - Preserve array-based process arguments unless a shell is strictly required.
 - Keep full-run image/audio work separable and concurrency bounded.
 - Keep config schema changes synchronized between `Config.swift`, `config.txt`, README/docs, and tests.
 - Keep no-argument behavior as help unless intentionally changing CLI contract and tests.
+- Keep short output stem helpers from duplicating `_Short`/`_8K_Short` suffixes.
 
 ## Unknowns
 
-- CI/CD architecture was not found at checked common workflow paths.
-- Exact local tool versions are not pinned.
-- Complete file inventory was not available through direct clone in this environment; the map is based on repository files fetched through GitHub source APIs and checked known paths.
+- Local tool versions (FFmpeg, ImageMagick, Homebrew formulae) are not pinned in the repository.
+- CI/CD: verified absent — no `.github/` directory exists in the full clone.
+- Full file inventory: verified via `git ls-files` in a full clone.

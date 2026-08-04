@@ -1,8 +1,8 @@
 <!--
 AI onboarding file.
-Mode: bootstrap
-Indexed commit: 0ec7e71f0decd52d208c001ec16c4d7382d73fa7
-Last generated: 2026-06-25T10:26:41Z
+Mode: refresh
+Indexed commit: c75929f41d4c17970b367c43051de3f6cb09af90
+Last generated: 2026-08-04T15:07:37Z
 Generator: generic high-end AI coding agent
 Purpose: Help future AI sessions understand this repository quickly.
 Audience: Any high-capability AI coding agent, regardless of vendor or model family.
@@ -20,7 +20,7 @@ This repository does not appear to implement authentication, authorization, paym
 | Runtime dependency bootstrap | `Sources/converter/DependencyBootstrap.swift` | Can run Homebrew install and `brew install` non-interactively. | Do not add new network/install behavior without explicit human review. |
 | Homebrew installer path | `DependencyBootstrap.ensureHomebrew` | Uses a downloaded Homebrew installer executed by the system shell. | Prefer documenting and gating behavior; keep `CONVERTER_AUTO_INSTALL_DEPS=0` escape hatch. |
 | Path containment | `Sources/converter/PipelineCore.swift` | Prevents explicit paths from escaping configured source/output directories. | Do not weaken `requireDirectChild`, `resolveOutputPath`, or explicit input path checks. |
-| Temp files and publishing | `PipelineCore.swift` | Avoids source discovery collisions and partial outputs. | Keep hidden run-scoped temp names and verify-before-publish flow. |
+| Temp files and publishing | `PipelineCore.swift` | Avoids source discovery collisions, partial outputs, and destructive overwrites. | Keep hidden run-scoped temp names, backup-based `publishTemp` (existing destinations are backed up and restored on failure, not deleted up front), orphaned temp cleanup, and verify-before-publish flow. |
 | Media inputs/outputs | `Output/`, README full-run contract | Media may be private, large, copyrighted, or expensive to process. | Do not upload, expose, or commit media files. |
 | Vendored/native code | `Sources/BW64Bridge/`, `Sources/ThirdParty/libbw64/` | Native bridge correctness and memory safety. | Review carefully and run build/tests before changes. |
 

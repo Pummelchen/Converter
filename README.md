@@ -17,6 +17,9 @@ Swift-based media converter and YouTube studio production pipeline for macOS App
 - `Sources/converter/ValidationPipeline.swift` media identity, QC, preflight, verification
 - `Sources/converter/ImagePipeline.swift` image conversions and derivative generation
 - `Sources/converter/AudioPipeline.swift` audio conversions, mastering, archives, hashing, album builds
+- `Sources/converter/LosslessAudioPipeline.swift` internal RF64 WAV staging and lossless/archive encodes
+- `Sources/converter/QualityReporting.swift` audio QC policy, metrics, and result types
+- `Sources/converter/Diagnostics.swift` ffmpeg encoder/filter capability checks
 - `Sources/converter/VideoPipeline.swift` MP4 render and short-video render with encoder fallback
 - `Output/` working directory for source inputs and generated outputs
 - `config.txt` centralized quality, profile, mastering, and render policy settings
@@ -74,14 +77,16 @@ If Homebrew itself is missing and a required formula must be installed, converte
 ./converter -noise 45
 ./converter -silence
 ./converter -silence 45
+./converter -short
 ./converter -nfttoshort
 ./converter -mp3clean
 ./converter -m4atomp4
 ```
 
 Short outputs are hard-capped at 58 seconds.
+Use `-short` to render one portrait short MP4 from exactly 1 image (`.png`/`.jpg`/`.jpeg`) plus exactly 1 audio-only file supported by ffmpeg in `Output/`; the image is fitted into the portrait frame as large as possible with black padding.
 For `-nfttoshort`, the short render accepts any single audio-only file supported by ffmpeg and uses `Vertical_8K.png` when present. Otherwise it uses or creates `*_NFT8K.png`, centers that square image in the portrait frame, and fills the remaining top and bottom space with black.
-Conversions preserve source loudness by default instead of remastering it down during normal pipeline work, including `-nfttoshort`.
+Conversions preserve source loudness by default instead of remastering it down during normal pipeline work, including `-short` and `-nfttoshort`.
 
 Running `./converter` without parameters prints help and does not start media processing. Use `./converter -full` or `./converter -run` for the full production pipeline.
 

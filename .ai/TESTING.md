@@ -1,8 +1,8 @@
 <!--
 AI onboarding file.
-Mode: bootstrap
-Indexed commit: 0ec7e71f0decd52d208c001ec16c4d7382d73fa7
-Last generated: 2026-06-25T10:26:41Z
+Mode: refresh
+Indexed commit: c75929f41d4c17970b367c43051de3f6cb09af90
+Last generated: 2026-08-04T15:07:37Z
 Generator: generic high-end AI coding agent
 Purpose: Help future AI sessions understand this repository quickly.
 Audience: Any high-capability AI coding agent, regardless of vendor or model family.
@@ -22,8 +22,9 @@ Evidence:
 
 | Path | Purpose |
 |---|---|
-| `Sources/Tests/converterTests/converterTests.swift` | Unit-style coverage for dependency manifest, PATH enrichment, CLI parsing/help, action arguments, config-oriented behavior. |
-| `Sources/Tests/converterTests/PipelineIntegrationTests.swift` | Integration-style media pipeline tests referenced by current HEAD diff and repository inspection. |
+| `Sources/Tests/converterTests/converterTests.swift` | Unit-style coverage (45 tests) for dependency manifest, PATH enrichment, CLI parsing/help, action arguments, config-oriented behavior, helper behavior. |
+| `Sources/Tests/converterTests/PipelineIntegrationTests.swift` | Integration-style media pipeline tests (77 tests): real ffmpeg/ffprobe/magick runs in isolated workspaces. |
+| `Sources/Tests/converterTests/IntegrationTestSupport.swift` | `IntegrationWorkspace` helper that builds an isolated project root mirroring the converter layout (Output/, config.txt, album.txt). |
 
 Evidence:
 - `Sources/Package.swift`
@@ -61,7 +62,7 @@ Evidence:
 
 ## Slow or environment-sensitive tests
 
-`inferred`: Integration tests that exercise actual media processing may require `ffmpeg`, `ffprobe`, and `magick`, and may be slower than pure CLI/config unit tests. Confirm by inspecting `Sources/Tests/converterTests/PipelineIntegrationTests.swift` before running only a subset.
+`verified`: Integration tests exercise actual media processing and require `ffmpeg`, `ffprobe`, and `magick`. The full suite (122 tests) passes on macOS Apple Silicon with Swift 6.3.3 and takes roughly 6 minutes; pure CLI/config unit tests run in milliseconds. Use `--filter` to iterate on a subset.
 
 ## Minimum validation before a PR
 

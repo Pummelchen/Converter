@@ -1,8 +1,8 @@
 <!--
 AI onboarding file.
-Mode: bootstrap
-Indexed commit: 0ec7e71f0decd52d208c001ec16c4d7382d73fa7
-Last generated: 2026-06-25T10:26:41Z
+Mode: refresh
+Indexed commit: c75929f41d4c17970b367c43051de3f6cb09af90
+Last generated: 2026-08-04T15:07:37Z
 Generator: generic high-end AI coding agent
 Purpose: Help future AI sessions understand this repository quickly.
 Audience: Any high-capability AI coding agent, regardless of vendor or model family.
@@ -44,6 +44,7 @@ Human edits are allowed. Future refreshes should preserve valid human edits.
    - `resolveFullAudio()`;
    - `fullRunImageArtifacts()`;
    - `fullImagePipeline(...)`;
+   - `fullImagePipelineFromDirect8K(...)`;
    - `fullAudioPreparation(...)`;
    - `runFullProductionPipeline(...)`;
    - `stepFull()`.
@@ -52,6 +53,20 @@ Human edits are allowed. Future refreshes should preserve valid human edits.
 5. Update integration tests in `PipelineIntegrationTests.swift`.
 6. Update README if inputs/outputs change.
 7. Run tests; consider manual media validation only with approved sample files.
+
+## Change short-video action behavior
+
+1. Inspect `Sources/converter/Actions.swift` helpers:
+   - `stepShort()` and `stepNFTToShort()`;
+   - `resolveShortAudio()` / `rankedShortAudioCandidates()`;
+   - `resolveShortRenderImage()` / `resolveDirectShortImage()` / `existingNFT8KImage()`.
+2. Inspect `Sources/converter/VideoPipeline.swift`:
+   - `renderAudioToShortMP4(...)` (fit/pad portrait render from generic audio-only inputs);
+   - `shortMP4Stem(forInputStem:)` / `portraitShortMP4Stem(forAudioStem:)` output naming;
+   - encoder fallback ladders and 58-second hard cap.
+3. Preserve source-loudness preservation and ALAC delivery audio semantics.
+4. Update CLI help text in `CLI.swift` and README if the user-facing contract changes.
+5. Run tests (`testNFTToShort*`, `testShort*` integration tests cover these paths).
 
 ## Change image output behavior
 

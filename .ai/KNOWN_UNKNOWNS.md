@@ -1,8 +1,8 @@
 <!--
 AI onboarding file.
-Mode: bootstrap
-Indexed commit: 0ec7e71f0decd52d208c001ec16c4d7382d73fa7
-Last generated: 2026-06-25T10:26:41Z
+Mode: refresh
+Indexed commit: c75929f41d4c17970b367c43051de3f6cb09af90
+Last generated: 2026-08-04T15:07:37Z
 Generator: generic high-end AI coding agent
 Purpose: Help future AI sessions understand this repository quickly.
 Audience: Any high-capability AI coding agent, regardless of vendor or model family.
@@ -14,15 +14,17 @@ Human edits are allowed. Future refreshes should preserve valid human edits.
 
 | Status | Item | Why it matters | Suggested follow-up |
 |---|---|---|---|
-| `unknown` | Complete file inventory | Direct `git clone` was unavailable in the execution container; repository understanding used GitHub source fetches for known paths and current commit metadata. | On a local machine, run `git ls-files` and compare against `.ai/MANIFEST.json` source file list. |
-| `unknown` | CI/CD | Common Swift/CI workflow paths were not found, but full tree enumeration was unavailable. | Check `.github/workflows/` with `git ls-files .github/workflows`. |
+| `verified` | Complete file inventory | Known from a direct clone via `git ls-files`; the bootstrap-era warning about partial inventory no longer applies. | None. |
+| `verified` | CI/CD absence | No `.github/` directory exists in the clone; there are no workflows. | None unless CI is added. |
+| `resolved` | BW64 bridge scope | `Sources/BW64Bridge/bw64_bridge.cpp` (192 lines) wraps vendored `libbw64` read/write for archival WAV/FLAC companions; internals are small and inspectable. | Re-inspect when changing BW64/RF64 behavior. |
 | `unknown` | Local tool versions | Repository documents required tools but does not pin FFmpeg, ImageMagick, or Homebrew formula versions beyond Swift tools 6.3.3, Swift language mode 6, and macOS 14 in `Sources/Package.swift`. | Record known-good local versions after a successful build/test run. |
-| `unknown` | Full BW64 bridge internals | Package declares `Sources/BW64Bridge` and `Sources/ThirdParty/libbw64`, but detailed bridge source was not inspected. | Inspect bridge files before changing BW64/RF64/BW64 behavior. |
 | `unknown` | Runtime performance envelope | Large media processing cost depends on input size, codecs, and hardware. | Benchmark on representative media before performance-sensitive changes. |
 
 ## Conflicts identified
 
-No active docs/code conflicts were identified in inspected files.
+No active docs/code conflicts remain after the `c75929f` refresh.
+
+Historical note: the bootstrap-era docs (indexed at `0ec7e71`) missed four files that already existed then (`Sources/converter/Diagnostics.swift`, `Sources/converter/LosslessAudioPipeline.swift`, `Sources/converter/QualityReporting.swift`, `Sources/Tests/converterTests/IntegrationTestSupport.swift`) and predated the `-short` action, the `-mp3toshort` -> `-nfttoshort` rename, generic-audio short renders, backup-based publishing, and orphaned temp cleanup. All fixed in this refresh.
 
 ## Areas requiring human review before risky edits
 
@@ -39,4 +41,5 @@ Common model-specific/generated instruction paths were checked and none were fou
 
 ## Stale facts removed
 
-None. This was the initial bootstrap generation.
+- Removed bootstrap-era warnings about unavailable `git clone`, partial file inventory, and unverified CI absence; all three were resolved by a direct clone at `c75929f`.
+- Removed `inferred` qualifiers from integration-test environment requirements, now verified by running the full suite.
