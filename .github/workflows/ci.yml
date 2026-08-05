@@ -8,6 +8,8 @@ on:
   workflow_dispatch:
 
 # The Swift package lives at Sources/, so all SwiftPM commands use --package-path Sources.
+# The package requires Swift tools 6.3.3; the macos-26 (Tahoe) runner ships Xcode 26.6,
+# which provides Swift 6.3.3 (macos-15 tops out at Xcode 26.3 / Swift 6.2.4).
 # Integration tests require ffmpeg/ffprobe (Homebrew formula `ffmpeg`) and ImageMagick
 # (`magick`, Homebrew formula `imagemagick`). Both are installed below. No build artifacts
 # or runtime media are uploaded; Output/ and Sources/.build/ stay untracked.
@@ -15,7 +17,7 @@ on:
 jobs:
   build-and-test:
     name: Swift build and tests (macOS)
-    runs-on: macos-15
+    runs-on: macos-26
     env:
       CONVERTER_AUTO_INSTALL_DEPS: "0"
     steps:
@@ -28,6 +30,7 @@ jobs:
           if [ -n "$LATEST_XCODE" ]; then
             sudo xcode-select -s "/Applications/$LATEST_XCODE/Contents/Developer"
           fi
+          sw_vers
           xcodebuild -version
           swift --version
 
