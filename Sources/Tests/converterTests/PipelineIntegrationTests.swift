@@ -958,6 +958,62 @@ final class PipelineIntegrationTests: XCTestCase {
         XCTAssertGreaterThan(try workspace.meanGrayValue(image: frame, crop: "30x30+30+65"), 0.05)
     }
 
+    func testShortBuildsLongSongFullSongVariant() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe", "magick"])
+
+        let image = try workspace.createImage(name: "poster", ext: "png", width: 320, height: 180)
+        try workspace.overwriteConfig(
+            IntegrationWorkspace.defaultConfig +
+                "\nSHORT_MP4_CLIP_SECONDS=58\n"
+        )
+        let sourceAudio = try workspace.createAudio(name: "song", ext: "mp3", duration: 90.0)
+        let tool = try workspace.makeTool(arguments: ["-short"])
+
+        try tool.stepShort()
+
+        let shortVideo = workspace.output.appendingPathComponent("song_8K_Short.mp4")
+        let fullSongShort = workspace.output.appendingPathComponent("song_8K_Short_FullSong.mp4")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: shortVideo.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: fullSongShort.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: image.path))
+
+        let shortClipSeconds = try tool.configuredShortClipSeconds()
+        try tool.verifyDuration(shortVideo, expectedSeconds: shortClipSeconds, label: "portrait short mp4", tolerance: 0.3)
+        let shortDuration = try XCTUnwrap(tool.mediaDuration(shortVideo))
+        let fullDuration = try XCTUnwrap(tool.mediaDuration(fullSongShort))
+        XCTAssertEqual(shortDuration, shortClipSeconds, accuracy: 0.3)
+        XCTAssertGreaterThan(fullDuration, shortDuration)
+        XCTAssertGreaterThan(fullDuration, shortDuration + 20)
+
+        try tool.verifyVideoOutput(
+            shortVideo,
+            width: tool.config.shortMP4ScaleW,
+            height: tool.config.shortMP4ScaleH,
+            codec: tool.config.shortMP4VerifyCodec,
+            pixelFormat: tool.config.shortMP4PixelFormat,
+            colorPrimaries: tool.config.videoColorPrimaries,
+            colorTransfer: tool.config.videoColorTransfer,
+            colorSpace: tool.config.videoColorSpace,
+            colorRange: tool.config.videoColorRange
+        )
+        try tool.verifyVideoOutput(
+            fullSongShort,
+            width: tool.config.shortMP4ScaleW,
+            height: tool.config.shortMP4ScaleH,
+            codec: tool.config.shortMP4VerifyCodec,
+            pixelFormat: tool.config.shortMP4PixelFormat,
+            colorPrimaries: tool.config.videoColorPrimaries,
+            colorTransfer: tool.config.videoColorTransfer,
+            colorSpace: tool.config.videoColorSpace,
+            colorRange: tool.config.videoColorRange
+        )
+        try tool.verifyALACAudioOutput(shortVideo, sampleRate: tool.config.shortMP4AudioSampleRate, channels: 2, qcPolicy: nil)
+        try tool.verifyALACAudioOutput(fullSongShort, sampleRate: tool.config.shortMP4AudioSampleRate, channels: 2, qcPolicy: nil)
+        try tool.verifySourceLoudnessPreserved(source: sourceAudio, output: shortVideo)
+        try tool.verifySourceLoudnessPreserved(source: sourceAudio, output: fullSongShort)
+    }
+
     func testShortAcceptsGenericAudioOnlyInputFormat() throws {
         let workspace = try IntegrationWorkspace()
         try workspace.requireCommands(["ffmpeg", "ffprobe", "magick"])
@@ -1539,6 +1595,38 @@ final class PipelineIntegrationTests: XCTestCase {
         )
         XCTAssertLessThan(try workspace.meanGrayValue(image: shortFrame, crop: "90x10+0+0"), 0.05)
         XCTAssertLessThan(try workspace.meanGrayValue(image: shortFrame, crop: "90x10+0+150"), 0.05)
+    }
+
+    func testFullPipelineProducesFullSongShortForLongSourceAudio() async throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe", "magick"])
+
+        _ = try workspace.createImage(name: "art", ext: "png")
+        try workspace.overwriteConfig(
+            IntegrationWorkspace.defaultConfig +
+                "\nSHORT_MP4_CLIP_SECONDS=58\n"
+        )
+        let sourceMP3 = try workspace.createAudio(name: "track", ext: "mp3", duration: 90.0)
+        let tool = try workspace.makeTool(arguments: ["-full"])
+        defer { tool.cleanupTemps() }
+        try tool.initializeForExecution()
+        try await tool.stepFull()
+
+        let shortOutput = workspace.output.appendingPathComponent("track_8K_Short.mp4")
+        let fullSongShortOutput = workspace.output.appendingPathComponent("track_8K_Short_FullSong.mp4")
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: shortOutput.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: fullSongShortOutput.path))
+        let shortClipSeconds = try tool.configuredShortClipSeconds()
+        try tool.verifyDuration(shortOutput, expectedSeconds: shortClipSeconds, label: "short short", tolerance: 0.3)
+
+        let shortDuration = try XCTUnwrap(tool.mediaDuration(shortOutput))
+        let fullSongDuration = try XCTUnwrap(tool.mediaDuration(fullSongShortOutput))
+        XCTAssertEqual(shortDuration, shortClipSeconds, accuracy: 0.3)
+        XCTAssertGreaterThan(fullSongDuration, shortDuration + 20)
+
+        try tool.verifySourceLoudnessPreserved(source: sourceMP3, output: fullSongShortOutput)
+        try tool.verifySourceLoudnessPreserved(source: sourceMP3, output: shortOutput)
     }
 
     func testFullPipelineUsesNamedHorizontalAndVertical8KPNGs() async throws {

@@ -459,7 +459,7 @@ extension ConverterTool {
         if let shortImage = imageArtifacts.shortVideoImage {
             logger.info("Full step: PNG -> Short: \(shortImage.basename)")
             _ = try await withVideoPermit {
-                try self.renderM4AToShortMP4(
+                try self.renderPortraitShortMP4Variants(
                     imageFile: shortImage,
                     audioFile: audioArtifacts.m4a,
                     audioQCPolicy: nil
@@ -634,7 +634,7 @@ extension ConverterTool {
         guard imageDimensions.0 > 0 && imageDimensions.1 > 0 else {
             throw AppError("Short image dimensions must be positive. Got '\(imageDimensions.0)x\(imageDimensions.1)' for '\(image.path)'.")
         }
-        _ = try renderAudioToShortMP4(imageFile: image, audioFile: audio, audioQCPolicy: nil)
+        try renderPortraitShortMP4Variants(imageFile: image, audioFile: audio, audioQCPolicy: nil)
     }
 
     func stepShort() throws {
@@ -642,7 +642,25 @@ extension ConverterTool {
         let audio = try resolveShortAudio()
         logger.info("Short source audio: \(audio.basename)")
         logger.info("Short source image: \(image.basename)")
-        _ = try renderAudioToShortMP4(imageFile: image, audioFile: audio, audioQCPolicy: nil)
+        try renderPortraitShortMP4Variants(imageFile: image, audioFile: audio, audioQCPolicy: nil)
+    }
+
+    private func renderPortraitShortMP4Variants(imageFile: URL, audioFile: URL, audioQCPolicy: AudioQCPolicy?) throws {
+        _ = try renderAudioToShortMP4(imageFile: imageFile, audioFile: audioFile, audioQCPolicy: audioQCPolicy)
+
+        guard let audioDuration = try mediaDuration(audioFile) else {
+            throw AppError("Unable to read numeric audio duration from: \(audioFile.path)")
+        }
+        let shortDuration = try effectiveShortClipSeconds(forDuration: audioDuration)
+        guard audioDuration > shortDuration + 0.01 else { return }
+
+        _ = try renderAudioToShortMP4(
+            imageFile: imageFile,
+            audioFile: audioFile,
+            audioQCPolicy: audioQCPolicy,
+            outputStem: fullSongShortMP4Stem(forAudioStem: audioFile.stem),
+            skipLengthCap: true
+        )
     }
 
     func stepM4AToWAV() throws {

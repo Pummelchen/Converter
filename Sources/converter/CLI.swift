@@ -477,7 +477,7 @@ struct CLIOptions {
           Full-run result:
             - Image deliverables: 8K/4K PNG, NFT PNGs, 3K/2K PNG, JPG exports
               Direct Horizontal_8K.png/Vertical_8K.png inputs are used as-is for videos; Horizontal_8K.png still derives companion image deliverables.
-            - Audio/video deliverables: WAV, M4A, MP3, main MP4, short MP4
+            - Audio/video deliverables: WAV, M4A, MP3, main MP4, short MP4, full-song short MP4 (same portrait graphics as short MP4)
             - External audio deliverables: *_RF64.flac, *_RF64.wav, *_BW64.flac, *_BW64.wav
               These archival companions are delivery-only and are not reused as full-run source inputs.
 
@@ -510,7 +510,7 @@ struct CLIOptions {
               Output: same-format files ending in _silence_SECONDSs with SECONDS of silence before and after the original media; default is 30 seconds
             -short
               Input: exactly 1 image (.png/.jpg/.jpeg) plus exactly 1 audio-only file supported by ffmpeg in SRC_DIR
-              Output: one ALAC-audio _8K_Short.mp4 capped at 58 seconds; fits the image into the portrait frame as large as possible with black padding
+              Output: one ALAC-audio _8K_Short.mp4 capped at 58 seconds plus one ALAC-audio _8K_Short_FullSong.mp4 with the same portrait graphics when input audio is longer than 58 seconds
             -flactowav
               Input: one or more .flac files in SRC_DIR
               Output: project-standard RF64 WAV files
@@ -548,7 +548,7 @@ struct CLIOptions {
               Output: .m4a files
             -nfttoshort
               Input: exactly 1 audio-only file supported by ffmpeg plus exactly 1 source image (.png/.jpg/.jpeg) or exactly 1 *_8K.png in SRC_DIR
-              Output: one ALAC-audio _Short.mp4 capped at 58 seconds; preserves source audio loudness; uses Vertical_8K.png when present, otherwise uses or creates *_NFT8K.png with black top/bottom padding
+              Output: one ALAC-audio _Short.mp4 capped at 58 seconds and one _Short_FullSong.mp4 full-length output with the same portrait graphics, preserving source audio loudness; uses Vertical_8K.png when present, otherwise uses or creates *_NFT8K.png with black top/bottom padding
             -mp3clean
               Input: one or more .mp3 files in SRC_DIR
               Output: same .mp3 files rewritten as audio-only MP3 with artwork, junk streams, and metadata removed

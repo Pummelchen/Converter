@@ -20,6 +20,10 @@ extension ConverterTool {
         return "\(stem)_8K_Short"
     }
 
+    func fullSongShortMP4Stem(forAudioStem stem: String) -> String {
+        return "\(portraitShortMP4Stem(forAudioStem: stem))_FullSong"
+    }
+
     func configuredShortClipSeconds() throws -> Double {
         try parseFlexibleTimecode(config.shortMP4ClipSeconds, label: "SHORT_MP4_CLIP_SECONDS")
     }
@@ -272,7 +276,13 @@ extension ConverterTool {
         return try renderAudioToShortMP4(imageFile: imageFile, audioFile: audioFile, audioQCPolicy: audioQCPolicy)
     }
 
-    func renderAudioToShortMP4(imageFile: URL, audioFile: URL, audioQCPolicy: AudioQCPolicy?) throws -> URL {
+    func renderAudioToShortMP4(
+        imageFile: URL,
+        audioFile: URL,
+        audioQCPolicy: AudioQCPolicy?,
+        outputStem: String? = nil,
+        skipLengthCap: Bool = false
+    ) throws -> URL {
         try preflightImageInput(imageFile)
         try preflightShortAudioInput(audioFile)
 
@@ -286,8 +296,10 @@ extension ConverterTool {
             throw AppError("Unable to read numeric audio duration from: \(audioFile.path)")
         }
         try requireFFmpegEncoder("alac")
-        let shortDuration = try effectiveShortClipSeconds(forDuration: audioDuration)
-        let output = cli.outDir.appendingPathComponent(portraitShortMP4Stem(forAudioStem: audioFile.stem)).appendingPathExtension("mp4")
+        let shortDuration = skipLengthCap ? audioDuration : try effectiveShortClipSeconds(forDuration: audioDuration)
+        let output = cli.outDir
+            .appendingPathComponent(outputStem ?? portraitShortMP4Stem(forAudioStem: audioFile.stem))
+            .appendingPathExtension("mp4")
         if canReuseOutput(output, verifier: {
             try verifyVideoOutput(
                 output,
@@ -301,7 +313,12 @@ extension ConverterTool {
                 colorRange: config.videoColorRange
             )
             try verifyALACAudioOutput(output, sampleRate: config.shortMP4AudioSampleRate, channels: 2, qcPolicy: audioQCPolicy)
-            try verifyDuration(output, expectedSeconds: shortDuration, label: "portrait short MP4 output", tolerance: 0.5)
+            try verifyDuration(
+                output,
+                expectedSeconds: shortDuration,
+                label: skipLengthCap ? "full-song portrait short MP4 output" : "portrait short MP4 output",
+                tolerance: 0.5
+            )
             try verifySourceLoudnessPreserved(source: audioFile, output: output, toleranceDB: 1.0)
         }) {
             logger.info("Skip existing portrait short MP4: \(output.basename)")
@@ -350,6 +367,7 @@ extension ConverterTool {
         }
 
         func verifyPortraitShortFile(_ temp: URL) throws {
+            let verificationLabel = skipLengthCap ? "full-song portrait short MP4 output" : "portrait short MP4 output"
             try verifyVideoOutput(
                 temp,
                 width: config.shortMP4ScaleW,
@@ -362,7 +380,7 @@ extension ConverterTool {
                 colorRange: config.videoColorRange
             )
             try verifyALACAudioOutput(temp, sampleRate: config.shortMP4AudioSampleRate, channels: 2, qcPolicy: audioQCPolicy)
-            try verifyDuration(temp, expectedSeconds: shortDuration, label: "portrait short MP4 output", tolerance: 0.5)
+            try verifyDuration(temp, expectedSeconds: shortDuration, label: verificationLabel, tolerance: 0.5)
             try verifySourceLoudnessPreserved(source: audioFile, output: temp, toleranceDB: 1.0)
         }
 

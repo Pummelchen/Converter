@@ -151,6 +151,8 @@ final class converterTests: XCTestCase {
         XCTAssertEqual(tool.portraitShortMP4Stem(forAudioStem: "song"), "song_8K_Short")
         XCTAssertEqual(tool.portraitShortMP4Stem(forAudioStem: "song_8K"), "song_8K_Short")
         XCTAssertEqual(tool.portraitShortMP4Stem(forAudioStem: "song_8K_Short"), "song_8K_Short")
+        XCTAssertEqual(tool.fullSongShortMP4Stem(forAudioStem: "song"), "song_8K_Short_FullSong")
+        XCTAssertEqual(tool.fullSongShortMP4Stem(forAudioStem: "song_8K_Short"), "song_8K_Short_FullSong")
 
         XCTAssertEqual(tool.bassOutputSuffix(for: BassBoostSpec(frequencyHz: 80, gainDB: 5)), "_bass")
         XCTAssertEqual(tool.bassOutputSuffix(for: BassBoostSpec(frequencyHz: 60, gainDB: 7.5)), "_bass_60Hz_7_5dB")
