@@ -60,7 +60,7 @@ Keep these consistent with any behavior change:
 - `README.md` (user-facing contracts)
 - `config.txt` + `Sources/converter/Config.swift` (config schema — both together)
 - CLI help text in `Sources/converter/CLI.swift`
-- Wiki pages and `.ai/` onboarding docs where relevant
+- Wiki pages where relevant
 
 ## Release binary updates
 
@@ -78,4 +78,3 @@ State in the PR that the binary was regenerated and why.
 
 - One focused change per PR; describe commands run and results (do not claim tests passed without running them).
 - New behavior requires tests; bug fixes require a regression test where practical.
-- AI agents: read `AI_INDEX.md` and `AGENTS.md` first; they describe repository conventions and guardrails in detail.

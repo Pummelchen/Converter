@@ -21,7 +21,6 @@ Checklist for declaring the converter stable as Release v1.0. Track blockers as 
 - [ ] `docs/FORMATS.md` matches CLI help text and implementation
 - [ ] `config.txt` keys synchronized with `Sources/converter/Config.swift` (supported keys, defaults, validation)
 - [ ] `CONTRIBUTING.md`, issue templates, and wiki current
-- [ ] `.ai/` onboarding docs indexed at the release commit
 
 ## Release binary handling
 
