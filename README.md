@@ -9,7 +9,7 @@ git clone https://github.com/Pummelchen/Converter.git
 cd Converter
 brew install ffmpeg imagemagick            # runtime media tools
 swift build --package-path Sources         # build
-swift test --package-path Sources          # full test suite (122 tests, ~6 min)
+swift test --package-path Sources          # full test suite (129 tests, ~9 min)
 
 CONVERTER_AUTO_INSTALL_DEPS=0 ./converter -doctor   # dependency check without install side effects
 ./converter -help                                    # command reference
@@ -45,6 +45,9 @@ chmod +x ./converter
 ```bash
 swift test --package-path Sources
 ```
+
+## Continuous Integration
+Pushes and pull requests to `main` run the Swift build and the full test suite on GitHub Actions (`macos-26` with Swift 6.3.3, installing `ffmpeg` and `imagemagick` first). See [`.github/workflows/ci.yml`](./.github/workflows/ci.yml).
 
 ## Runtime Dependencies
 On startup, operational commands auto-check the required external tools and silently install missing Homebrew formulae before media processing starts.
@@ -87,11 +90,19 @@ If Homebrew itself is missing and a required formula must be installed, converte
 ./converter -nfttoshort
 ./converter -mp3clean
 ./converter -m4atomp4
+./converter -mp4toshort
+./converter -run_pix
+./converter -visualsubs 9 --output-file dots.png
+./converter -clean
+./converter -list
 ```
+
+Format-conversion commands (`-flactowav`, `-flactomp3`, `-flactom4a`, `-flactoalbum`, `-flactohash`, `-m4atowav`, `-m4atomp3`, `-m4atoflac`, `-mp3toflac`, `-mp3towav`, `-mp3tom4a`, `-mp3toalbum`, `-wavtoflac`, `-wavtomp3`, `-wavtom4a`) and the image-action matrix are listed in [docs/FORMATS.md](./docs/FORMATS.md).
 
 Short outputs are hard-capped at 58 seconds.
 Use `-short` to render one portrait short MP4 from exactly 1 image (`.png`/`.jpg`/`.jpeg`) plus exactly 1 audio-only file supported by ffmpeg in `Output/`; the image is fitted into the portrait frame as large as possible with black padding.
 For `-nfttoshort`, the short render accepts any single audio-only file supported by ffmpeg and uses `Vertical_8K.png` when present. Otherwise it uses or creates `*_NFT8K.png`, centers that square image in the portrait frame, and fills the remaining top and bottom space with black.
+When the source audio is longer than the 58-second cap, `-short` and `-nfttoshort` additionally render a full-length companion with the same portrait graphics — `<stem>_8K_Short_FullSong.mp4` — so long-form uploads keep the entire song.
 Conversions preserve source loudness by default instead of remastering it down during normal pipeline work, including `-short` and `-nfttoshort`.
 
 Running `./converter` without parameters prints help and does not start media processing. Use `./converter -full` or `./converter -run` for the full production pipeline.
@@ -179,7 +190,7 @@ Full run produces:
 - image deliverables: 8K/4K PNG, NFT PNGs, 3K/2K PNG, JPG exports
 - audio deliverables: WAV, M4A, MP3
 - archival deliverables: `*_RF64.flac`, `*_RF64.wav`, `*_BW64.flac`, `*_BW64.wav`
-- video deliverables: main MP4 and short MP4
+- video deliverables: main MP4, short MP4, and full-song short MP4 (same portrait graphics as the short MP4; rendered only when the source audio is longer than the short clip cap)
 
 ## Reliability Features
 - deep media identity checks for PNG/JPG/JPEG/WAV/FLAC/MP3/M4A/MP4
