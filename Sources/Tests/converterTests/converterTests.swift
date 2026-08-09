@@ -901,8 +901,61 @@ final class converterTests: XCTestCase {
         )
 
         XCTAssertThrowsError(try options.fadeOutSpec()) { error in
-            XCTAssertTrue(error.localizedDescription.contains("requires two positional values"))
+            XCTAssertTrue(error.localizedDescription.contains("requires exactly two positional values"))
         }
+    }
+
+    func testFadeOutRejectsTooManyArguments() throws {
+        let root = URL(fileURLWithPath: "/tmp/converter-test")
+        let options = try CLIOptions.parse(
+            arguments: ["-fadeout", "1:30", "10", "5"],
+            environment: [:],
+            scriptDirectory: root,
+            scriptName: "converter"
+        )
+
+        XCTAssertThrowsError(try options.fadeOutSpec()) { error in
+            XCTAssertTrue(error.localizedDescription.contains("requires exactly two positional values"))
+        }
+    }
+
+    func testNonFiniteConfigDoubleIsRejectedDuringLoad() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.overwriteConfig(
+            IntegrationWorkspace.defaultConfig + "\nAUDIO_QC_MINIMUM_ANALYSIS_SECONDS=nan\n"
+        )
+        XCTAssertThrowsError(try workspace.makeTool(arguments: ["-help"])) { error in
+            XCTAssertTrue(error.localizedDescription.contains("AUDIO_QC_MINIMUM_ANALYSIS_SECONDS"))
+            XCTAssertTrue(error.localizedDescription.contains("finite"))
+        }
+    }
+
+    func testCLIRejectsNonFiniteSharpnessValue() throws {
+        let root = URL(fileURLWithPath: "/tmp/converter-test")
+        XCTAssertThrowsError(
+            try CLIOptions.parse(
+                arguments: ["-aipix", "--sharpness", "nan"],
+                environment: [:],
+                scriptDirectory: root,
+                scriptName: "converter"
+            )
+        ) { error in
+            XCTAssertTrue(error.localizedDescription.contains("--sharpness"))
+        }
+    }
+
+    func testVerifyCodecMapsEncoderFamilies() throws {
+        let tempDirectory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("converter-test-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: tempDirectory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: tempDirectory) }
+
+        let tool = try makeTool(tempDirectory: tempDirectory, arguments: ["-short"])
+        XCTAssertEqual(tool.verifyCodec(forEncoder: "libx264"), "h264")
+        XCTAssertEqual(tool.verifyCodec(forEncoder: "h264_videotoolbox"), "h264")
+        XCTAssertEqual(tool.verifyCodec(forEncoder: "libx265"), "hevc")
+        XCTAssertEqual(tool.verifyCodec(forEncoder: "hevc_videotoolbox"), "hevc")
+        XCTAssertNil(tool.verifyCodec(forEncoder: "unknown_encoder"))
     }
 
     func testAlbumFileFlagRejectionNamesAlbumTxtAndDirectoryCommands() throws {

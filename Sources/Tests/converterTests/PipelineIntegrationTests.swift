@@ -1968,6 +1968,33 @@ final class PipelineIntegrationTests: XCTestCase {
         try tool.verifyDuration(short, expectedSeconds: 58.0, label: "short mp4", tolerance: 0.25)
     }
 
+    func testShortRendersNarrowPortraitMP4Inputs() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe"])
+        try workspace.overwriteConfig(
+            IntegrationWorkspace.defaultConfig +
+                "\nSHORT_MP4_CLIP_SECONDS=58\n"
+        )
+
+        // 9:24 portrait is narrower than 9:16; the crop width must clamp to the input width.
+        let source = try workspace.createVideoMP4(name: "tall_source", duration: 3.0, width: 240, height: 640)
+        let tool = try workspace.makeTool(arguments: ["-mp4toshort"])
+
+        let short = try tool.shortenMP4(source, audioQCPolicy: nil)
+        try tool.verifyVideoOutput(
+            short,
+            width: tool.config.shortMP4ScaleW,
+            height: tool.config.shortMP4ScaleH,
+            codec: tool.config.shortMP4VerifyCodec,
+            pixelFormat: tool.config.shortMP4PixelFormat,
+            colorPrimaries: tool.config.videoColorPrimaries,
+            colorTransfer: tool.config.videoColorTransfer,
+            colorSpace: tool.config.videoColorSpace,
+            colorRange: tool.config.videoColorRange
+        )
+        try tool.verifyDuration(short, expectedSeconds: 3.0, label: "narrow portrait short mp4", tolerance: 0.25)
+    }
+
     func testRejectsEmptyAudioInputWithoutPublishingOutputs() throws {
         let workspace = try IntegrationWorkspace()
         let empty = try workspace.writeEmptyFile(name: "empty_song", ext: "wav")

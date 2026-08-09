@@ -1,6 +1,6 @@
 import Foundation
 
-struct AudioQCPolicy: Sendable {
+struct AudioQCPolicy: Hashable, Sendable {
     let name: String
     let targetLUFS: Double
     let lufsTolerance: Double

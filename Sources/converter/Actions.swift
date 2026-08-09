@@ -11,6 +11,25 @@ extension ConverterTool {
     func rankedFullRunAudioCandidates() throws -> [URL] {
         let candidates = try files(in: cli.srcDir, matchingExtensions: ["flac", "wav", "mp3"])
             .filter { !isExternalArchivalAudioVariant($0) }
+        return rankedFamily(
+            candidates,
+            rankExtension: { ext in
+                switch ext {
+                case "flac": return 0
+                case "wav": return 1
+                case "mp3": return 2
+                default: return 9
+                }
+            },
+            warnMessage: "Full pipeline found multiple same-stem audio files; auto-selecting "
+        )
+    }
+
+    private func rankedFamily(
+        _ candidates: [URL],
+        rankExtension: (String) -> Int,
+        warnMessage: String
+    ) -> [URL] {
         guard candidates.count > 1 else {
             return candidates
         }
@@ -21,17 +40,8 @@ extension ConverterTool {
         }
 
         let ranked = family.sorted { lhs, rhs in
-            func rank(_ ext: String) -> Int {
-                switch ext {
-                case "flac": return 0
-                case "wav": return 1
-                case "mp3": return 2
-                default: return 9
-                }
-            }
-
-            let lhsRank = rank(lhs.pathExtension.lowercasedASCII)
-            let rhsRank = rank(rhs.pathExtension.lowercasedASCII)
+            let lhsRank = rankExtension(lhs.pathExtension.lowercasedASCII)
+            let rhsRank = rankExtension(rhs.pathExtension.lowercasedASCII)
             if lhsRank != rhsRank {
                 return lhsRank < rhsRank
             }
@@ -39,7 +49,7 @@ extension ConverterTool {
         }
 
         if let preferred = ranked.first {
-            logger.warn("Full pipeline found multiple same-stem audio files; auto-selecting \(preferred.basename) and ignoring derived companions.")
+            logger.warn("\(warnMessage)\(preferred.basename) and ignoring derived companions.")
             return [preferred]
         }
         return candidates
@@ -75,6 +85,20 @@ extension ConverterTool {
             throw AppError("\(failures.count) operation(s) failed.")
         }
         return results
+    }
+
+    private struct ImageBatchSpec {
+        let stemSuffix: String
+        let logPrefix: String
+        let operation: (URL) throws -> URL
+    }
+
+    private func runImageBatch(spec: ImageBatchSpec) throws {
+        let files = try files(in: cli.srcDir) { $0.pathExtension.lowercasedASCII == "png" && $0.stem.hasSuffix(spec.stemSuffix) }
+        _ = try processBatch(files: files, emptyMessage: "No *\(spec.stemSuffix).png files found in '\(cli.srcDir.path)'.", failWhenEmpty: false) { file in
+            self.logger.info("\(spec.logPrefix): \(file.basename)")
+            return try spec.operation(file)
+        }
     }
 
     func resolveFullAudio() throws -> URL {
@@ -210,17 +234,9 @@ extension ConverterTool {
 
     func rankedShortAudioCandidates() throws -> [URL] {
         let candidates = try files(in: cli.srcDir) { isShortAudioCandidate($0) }
-        guard candidates.count > 1 else {
-            return candidates
-        }
-
-        let grouped = Dictionary(grouping: candidates) { $0.stem }
-        guard grouped.count == 1, let family = grouped.values.first else {
-            return candidates
-        }
-
-        let ranked = family.sorted { lhs, rhs in
-            func rank(_ ext: String) -> Int {
+        return rankedFamily(
+            candidates,
+            rankExtension: { ext in
                 switch ext {
                 case "m4a": return 0
                 case "flac": return 1
@@ -228,21 +244,9 @@ extension ConverterTool {
                 case "mp3": return 3
                 default: return 9
                 }
-            }
-
-            let lhsRank = rank(lhs.pathExtension.lowercasedASCII)
-            let rhsRank = rank(rhs.pathExtension.lowercasedASCII)
-            if lhsRank != rhsRank {
-                return lhsRank < rhsRank
-            }
-            return lhs.lastPathComponent.localizedStandardCompare(rhs.lastPathComponent) == .orderedAscending
-        }
-
-        if let preferred = ranked.first {
-            logger.warn("Short render found multiple same-stem audio files; auto-selecting \(preferred.basename) and ignoring derived companions.")
-            return [preferred]
-        }
-        return candidates
+            },
+            warnMessage: "Short render found multiple same-stem audio files; auto-selecting "
+        )
     }
 
     func resolveShortAudio() throws -> URL {
@@ -418,7 +422,11 @@ extension ConverterTool {
             }
             defer {
                 if archivalSource != sourceAudio {
-                    try? fileManager.removeItem(at: archivalSource)
+                    do {
+                        try fileManager.removeItem(at: archivalSource)
+                    } catch {
+                        logger.warn("Failed to remove archival temp \(archivalSource.basename): \(error.localizedDescription)")
+                    }
                     state.unregister(tempFile: archivalSource)
                 }
             }
@@ -545,59 +553,45 @@ extension ConverterTool {
     }
 
     func stepPNGTo3K() throws {
-        let files = try files(in: cli.srcDir) { $0.pathExtension.lowercasedASCII == "png" && $0.stem.hasSuffix("_8K") }
-        _ = try processBatch(files: files, emptyMessage: "No *_8K.png files found in '\(cli.srcDir.path)'.", failWhenEmpty: false) { file in
-            self.logger.info("8K -> 3K PNG: \(file.basename)")
-            return try self.squarePNGFrom8K(file, size: self.config.image3KSize, label: "3K")
-        }
+        try runImageBatch(spec: ImageBatchSpec(stemSuffix: "_8K", logPrefix: "8K -> 3K PNG") { file in
+            try self.squarePNGFrom8K(file, size: self.config.image3KSize, label: "3K")
+        })
     }
 
     func stepPNGTo2K() throws {
-        let files = try files(in: cli.srcDir) { $0.pathExtension.lowercasedASCII == "png" && $0.stem.hasSuffix("_8K") }
-        _ = try processBatch(files: files, emptyMessage: "No *_8K.png files found in '\(cli.srcDir.path)'.", failWhenEmpty: false) { file in
-            self.logger.info("8K -> 2K PNG: \(file.basename)")
-            return try self.squarePNGFrom8K(file, size: self.config.image2KSize, label: "2K")
-        }
+        try runImageBatch(spec: ImageBatchSpec(stemSuffix: "_8K", logPrefix: "8K -> 2K PNG") { file in
+            try self.squarePNGFrom8K(file, size: self.config.image2KSize, label: "2K")
+        })
     }
 
     func stepPNGTo3K1MB() throws {
-        let files = try files(in: cli.srcDir) { $0.pathExtension.lowercasedASCII == "png" && $0.stem.hasSuffix("_3K") }
-        _ = try processBatch(files: files, emptyMessage: "No *_3K.png files found in '\(cli.srcDir.path)'.", failWhenEmpty: false) { file in
-            self.logger.info("3K PNG -> 1MB JPG: \(file.basename)")
-            return try self.jpegExtentFromPNG(file, requiredWidth: self.config.image3KSize, requiredHeight: self.config.image3KSize, suffix: "1MB", targetBytes: self.config.image3KJPG1MBTargetBytes)
-        }
+        try runImageBatch(spec: ImageBatchSpec(stemSuffix: "_3K", logPrefix: "3K PNG -> 1MB JPG") { file in
+            try self.jpegExtentFromPNG(file, requiredWidth: self.config.image3KSize, requiredHeight: self.config.image3KSize, suffix: "1MB", targetBytes: self.config.image3KJPG1MBTargetBytes)
+        })
     }
 
     func stepPNGTo3K5MB() throws {
-        let files = try files(in: cli.srcDir) { $0.pathExtension.lowercasedASCII == "png" && $0.stem.hasSuffix("_3K") }
-        _ = try processBatch(files: files, emptyMessage: "No *_3K.png files found in '\(cli.srcDir.path)'.", failWhenEmpty: false) { file in
-            self.logger.info("3K PNG -> 5MB JPG: \(file.basename)")
-            return try self.jpegExtentFromPNG(file, requiredWidth: self.config.image3KSize, requiredHeight: self.config.image3KSize, suffix: "5MB", targetBytes: self.config.image3KJPG5MBTargetBytes)
-        }
+        try runImageBatch(spec: ImageBatchSpec(stemSuffix: "_3K", logPrefix: "3K PNG -> 5MB JPG") { file in
+            try self.jpegExtentFromPNG(file, requiredWidth: self.config.image3KSize, requiredHeight: self.config.image3KSize, suffix: "5MB", targetBytes: self.config.image3KJPG5MBTargetBytes)
+        })
     }
 
     func stepPNGToJPG1MB() throws {
-        let files = try files(in: cli.srcDir) { $0.pathExtension.lowercasedASCII == "png" && $0.stem.hasSuffix("_8K") }
-        _ = try processBatch(files: files, emptyMessage: "No *_8K.png files found in '\(cli.srcDir.path)'.", failWhenEmpty: false) { file in
-            self.logger.info("8K PNG -> 1MB JPG: \(file.basename)")
-            return try self.jpegExtentFromPNG(file, requiredWidth: self.config.image8KWidth, requiredHeight: self.config.image8KHeight, suffix: "1MB", targetBytes: self.config.image8KJPG1MBTargetBytes)
-        }
+        try runImageBatch(spec: ImageBatchSpec(stemSuffix: "_8K", logPrefix: "8K PNG -> 1MB JPG") { file in
+            try self.jpegExtentFromPNG(file, requiredWidth: self.config.image8KWidth, requiredHeight: self.config.image8KHeight, suffix: "1MB", targetBytes: self.config.image8KJPG1MBTargetBytes)
+        })
     }
 
     func stepPNGToJPG2MB() throws {
-        let files = try files(in: cli.srcDir) { $0.pathExtension.lowercasedASCII == "png" && $0.stem.hasSuffix("_8K") }
-        _ = try processBatch(files: files, emptyMessage: "No *_8K.png files found in '\(cli.srcDir.path)'.", failWhenEmpty: false) { file in
-            self.logger.info("8K PNG -> 2MB JPG: \(file.basename)")
-            return try self.jpegExtentFromPNG(file, requiredWidth: self.config.image8KWidth, requiredHeight: self.config.image8KHeight, suffix: "2MB", targetBytes: self.config.image8KJPG2MBTargetBytes)
-        }
+        try runImageBatch(spec: ImageBatchSpec(stemSuffix: "_8K", logPrefix: "8K PNG -> 2MB JPG") { file in
+            try self.jpegExtentFromPNG(file, requiredWidth: self.config.image8KWidth, requiredHeight: self.config.image8KHeight, suffix: "2MB", targetBytes: self.config.image8KJPG2MBTargetBytes)
+        })
     }
 
     func stepPNGToJPG20MB() throws {
-        let files = try files(in: cli.srcDir) { $0.pathExtension.lowercasedASCII == "png" && $0.stem.hasSuffix("_8K") }
-        _ = try processBatch(files: files, emptyMessage: "No *_8K.png files found in '\(cli.srcDir.path)'.", failWhenEmpty: false) { file in
-            self.logger.info("8K PNG -> 20MB JPG: \(file.basename)")
-            return try self.jpegExtentFromPNG(file, requiredWidth: self.config.image8KWidth, requiredHeight: self.config.image8KHeight, suffix: "20MB", targetBytes: self.config.image8KJPG20MBTargetBytes)
-        }
+        try runImageBatch(spec: ImageBatchSpec(stemSuffix: "_8K", logPrefix: "8K PNG -> 20MB JPG") { file in
+            try self.jpegExtentFromPNG(file, requiredWidth: self.config.image8KWidth, requiredHeight: self.config.image8KHeight, suffix: "20MB", targetBytes: self.config.image8KJPG20MBTargetBytes)
+        })
     }
 
     func stepFLACToWAV() throws {
@@ -808,6 +802,9 @@ extension ConverterTool {
             } catch {
                 let message = "\(file.basename): \(error.localizedDescription)"
                 logger.error("Loudness normalize failed for \(message)")
+                if !cli.continueOnError {
+                    throw AppError("Loudness normalize failed for \(message)")
+                }
                 failures.append(message)
             }
         }

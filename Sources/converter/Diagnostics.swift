@@ -14,9 +14,9 @@ extension ConverterTool {
         let lines = result.stdout.split(whereSeparator: \.isNewline).map(String.init)
         return Set(lines.compactMap { line in
             let parts = line.split(whereSeparator: \.isWhitespace)
-            guard parts.count >= 2 else { return nil }
+            guard parts.count >= 2, String(parts[1]) != "=" else { return nil }
             let flags = String(parts[0])
-            let allowedFlags = CharacterSet(charactersIn: ".TSAVN|")
+            let allowedFlags = CharacterSet(charactersIn: ".TSAVNCD|")
             guard !flags.isEmpty, flags.unicodeScalars.allSatisfy(allowedFlags.contains) else { return nil }
             return String(parts[1])
         })
@@ -24,7 +24,7 @@ extension ConverterTool {
 
     @discardableResult
     func requireAvailableEncoderLadder(_ encoders: [String], label: String) throws -> [String] {
-        let available = try ffmpegEncoderSet()
+        let available = try cachedFFmpegEncoderSet()
         let usable = encoders.filter { available.contains($0) }
         if usable.isEmpty {
             throw AppError("\(label) encoder ladder has no available ffmpeg encoder: \(encoders.joined(separator: ", "))")
@@ -57,8 +57,8 @@ extension ConverterTool {
 
         _ = try requireAvailableEncoderLadder(config.videoEncoderLadder, label: "Doctor main video")
         _ = try requireAvailableEncoderLadder(config.shortVideoEncoderLadder, label: "Doctor short video")
-        try requireFFmpegEncoder("alac")
-        logger.info("Doctor encoder ok: alac")
+        try requireFFmpegEncoder(alacEncoderName)
+        logger.info("Doctor encoder ok: \(alacEncoderName)")
 
         let freeBytes = try availableBytes(at: cli.outDir)
         logger.info("Doctor free space: \(freeBytes) bytes")

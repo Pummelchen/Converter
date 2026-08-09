@@ -1,12 +1,24 @@
 import Foundation
 
-struct AppError: LocalizedError, CustomStringConvertible {
+struct AppError: LocalizedError, CustomStringConvertible, Sendable {
     let message: String
     let exitCode: Int32
+    let fileID: String
+    let line: Int
+    let underlyingDescription: String?
 
-    init(_ message: String, exitCode: Int32 = 1) {
+    init(
+        _ message: String,
+        exitCode: Int32 = 1,
+        underlying: (any Error)? = nil,
+        fileID: String = #fileID,
+        line: Int = #line
+    ) {
         self.message = message
         self.exitCode = exitCode
+        self.underlyingDescription = underlying.map { $0.localizedDescription }
+        self.fileID = fileID
+        self.line = line
     }
 
     var errorDescription: String? { message }
@@ -21,6 +33,13 @@ enum LogLevel: String {
 }
 
 final class Logger {
+    private static let timestampFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        return formatter
+    }()
+
     private let lock = NSLock()
     private let scriptName: String
     private let debugEnabled: Bool
@@ -31,10 +50,7 @@ final class Logger {
     }
 
     private func timestamp() -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        return formatter.string(from: Date())
+        Self.timestampFormatter.string(from: Date())
     }
 
     func log(_ level: LogLevel, _ message: String) {
@@ -55,22 +71,32 @@ final class Logger {
 actor AsyncSemaphore {
     private let limit: Int
     private var available: Int
-    private var waiters: [CheckedContinuation<Void, Never>] = []
+    private var waiters: [CheckedContinuation<Void, Error>] = []
 
     init(value: Int) {
         self.limit = max(1, value)
         self.available = max(1, value)
     }
 
-    func wait() async {
+    func wait() async throws {
         if available > 0 {
             available -= 1
             return
         }
 
-        await withCheckedContinuation { continuation in
-            waiters.append(continuation)
+        try await withTaskCancellationHandler {
+            try await withCheckedThrowingContinuation { continuation in
+                waiters.append(continuation)
+            }
+        } onCancel: {
+            Task { await self.cancelFirstWaiter() }
         }
+    }
+
+    private func cancelFirstWaiter() {
+        guard !waiters.isEmpty else { return }
+        let continuation = waiters.removeFirst()
+        continuation.resume(throwing: CancellationError())
     }
 
     func signal() {
@@ -83,7 +109,7 @@ actor AsyncSemaphore {
     }
 
     func withPermit<T: Sendable>(_ operation: @escaping @Sendable () async throws -> T) async throws -> T {
-        await wait()
+        try await wait()
         defer {
             signal()
         }
@@ -214,11 +240,21 @@ struct LoudnessScanProgress: Sendable {
     let isMeasuring: Bool
 }
 
+let alacEncoderName = "alac"
+
+private let posixLocale = Locale(identifier: "en_US_POSIX")
+
+/// Formats a value for ffmpeg/magick arguments with a fixed POSIX locale so a
+/// comma-decimal system locale cannot inject invalid tokens.
+func ffmpegArg(_ format: String, _ arguments: CVarArg...) -> String {
+    String(format: format, locale: posixLocale, arguments: arguments)
+}
+
 func ffmpegNumber(_ value: Double) -> String {
     if value.rounded(.towardZero) == value {
         return String(Int(value))
     }
-    return String(format: "%.6f", value)
+    return String(format: "%.6f", locale: posixLocale, value)
         .replacingOccurrences(of: #"0+$"#, with: "", options: .regularExpression)
         .replacingOccurrences(of: #"\.$"#, with: "", options: .regularExpression)
 }

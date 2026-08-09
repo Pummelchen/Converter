@@ -11,7 +11,7 @@ extension ConverterTool {
             "-hide_banner", "-nostdin", "-v", "error", "-y"
         ]
         if let duration {
-            args += ["-t", String(format: "%.6f", duration)]
+            args += ["-t", ffmpegArg("%.6f", duration)]
         }
         args += [
             "-i", input.path,
@@ -103,7 +103,7 @@ extension ConverterTool {
 
     func encodeInternalWAVToM4A(_ wav: URL, output: URL, qcPolicy: AudioQCPolicy? = nil) throws {
         try verifyWAVStandard(wav, qcPolicy: nil)
-        try requireFFmpegEncoder("alac")
+        try requireFFmpegEncoder(alacEncoderName)
         _ = try runner.run("ffmpeg", [
             "-hide_banner", "-nostdin", "-v", "error", "-y",
             "-i", wav.path,
@@ -167,7 +167,7 @@ extension ConverterTool {
 
     func encodeInternalWAVToMP4AudioWithVideo(sourceVideo: URL, wav: URL, output: URL, audioSampleRate: Int, qcPolicy: AudioQCPolicy? = nil) throws {
         try verifyWAVStandard(wav, qcPolicy: nil)
-        try requireFFmpegEncoder("alac")
+        try requireFFmpegEncoder(alacEncoderName)
         _ = try runner.run("ffmpeg", [
             "-hide_banner", "-nostdin", "-v", "error", "-y",
             "-i", sourceVideo.path,
@@ -184,7 +184,7 @@ extension ConverterTool {
             output.path
         ])
         try requireFormatNameContains(output, anyOf: ["mp4", "mov"], label: "MP4 container")
-        if (try? requireVideoStream(sourceVideo)) != nil {
+        if try hasVideoStream(sourceVideo) {
             try requireVideoStream(output)
         }
         try verifyALACAudioOutput(output, sampleRate: audioSampleRate, channels: 2, qcPolicy: qcPolicy)

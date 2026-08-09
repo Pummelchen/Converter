@@ -100,11 +100,11 @@ extension ConverterTool {
     }
 
     func fadeOutFilter(fadeStartSeconds: Double, fadeDurationSeconds: Double) -> String {
-        "afade=t=out:st=\(String(format: "%.6f", fadeStartSeconds)):d=\(String(format: "%.6f", fadeDurationSeconds))"
+        "afade=t=out:st=\(ffmpegArg("%.6f", fadeStartSeconds)):d=\(ffmpegArg("%.6f", fadeDurationSeconds))"
     }
 
     func silenceAudioFilter(for spec: SilenceSpec) -> String {
-        "adelay=\(spec.delayMilliseconds):all=1,apad=pad_dur=\(String(format: "%.6f", spec.seconds))"
+        "adelay=\(spec.delayMilliseconds):all=1,apad=pad_dur=\(ffmpegArg("%.6f", spec.seconds))"
     }
 
     func silenceOutputSuffix(for spec: SilenceSpec) -> String {
@@ -353,7 +353,7 @@ extension ConverterTool {
     }
 
     func staticLoudnessGainFilter(gainDB: Double) -> String {
-        "volume=\(String(format: "%.6f", gainDB))dB"
+        "volume=\(ffmpegArg("%.6f", gainDB))dB"
     }
 
     func staticLoudnessGainPlan(for file: URL, policy: AudioQCPolicy) throws -> LoudnessStaticGainPlan {
@@ -399,17 +399,19 @@ extension ConverterTool {
             throw AppError("No loudness entries to report.")
         }
         let average = entries.map(\.integratedLUFS).reduce(0, +) / Double(entries.count)
-        let quietest = entries.min { $0.integratedLUFS < $1.integratedLUFS }!
-        let loudest = entries.max { $0.integratedLUFS < $1.integratedLUFS }!
+        guard let quietest = entries.min(by: { $0.integratedLUFS < $1.integratedLUFS }),
+              let loudest = entries.max(by: { $0.integratedLUFS < $1.integratedLUFS }) else {
+            throw AppError("No loudness entries to report.")
+        }
         let top3 = entries
             .sorted { $0.integratedLUFS > $1.integratedLUFS }
             .prefix(3)
         let top3Average = top3.map(\.integratedLUFS).reduce(0, +) / Double(top3.count)
         return [
-            String(format: "Average loudness: %.2f LUFS across %d files", average, entries.count),
-            String(format: "Lowest loudness: %.2f LUFS (%@)", quietest.integratedLUFS, quietest.file.basename),
-            String(format: "Highest loudness: %.2f LUFS (%@)", loudest.integratedLUFS, loudest.file.basename),
-            String(format: "Top 3 loudest average: %.2f LUFS", top3Average)
+            "Average loudness: \(String(format: "%.2f", average)) LUFS across \(entries.count) files",
+            "Lowest loudness: \(String(format: "%.2f", quietest.integratedLUFS)) LUFS (\(quietest.file.basename))",
+            "Highest loudness: \(String(format: "%.2f", loudest.integratedLUFS)) LUFS (\(loudest.file.basename))",
+            "Top 3 loudest average: \(String(format: "%.2f", top3Average)) LUFS"
         ]
     }
 
@@ -485,7 +487,7 @@ extension ConverterTool {
             try verifyM4AFile(file, sampleRate: config.m4aSampleRate, channels: config.m4aChannels, qcPolicy: nil)
         case "mp4":
             try requireFormatNameContains(file, anyOf: ["mp4", "mov"], label: "MP4 container")
-            if (try? requireVideoStream(source)) != nil {
+            if try hasVideoStream(source) {
                 try verifyVideoOutput(file)
             }
             try verifyALACAudioOutput(file, sampleRate: config.videoMP4AudioSampleRate, channels: 2, qcPolicy: nil)
@@ -547,7 +549,7 @@ extension ConverterTool {
             try verifyM4AFile(file, sampleRate: config.m4aSampleRate, channels: config.m4aChannels, qcPolicy: nil)
         case "mp4":
             try requireFormatNameContains(file, anyOf: ["mp4", "mov"], label: "MP4 container")
-            if (try? requireVideoStream(source)) != nil {
+            if try hasVideoStream(source) {
                 try verifyVideoOutput(file)
             }
             try verifyALACAudioOutput(file, sampleRate: config.videoMP4AudioSampleRate, channels: 2, qcPolicy: nil)
@@ -632,8 +634,8 @@ extension ConverterTool {
     func audioSegmentMaxVolumeDBFS(file: URL, startSeconds: Double, durationSeconds: Double) throws -> Double {
         let result = try runner.run("ffmpeg", [
             "-hide_banner", "-nostdin", "-v", "info",
-            "-ss", String(format: "%.6f", max(0, startSeconds)),
-            "-t", String(format: "%.6f", durationSeconds),
+            "-ss", ffmpegArg("%.6f", max(0, startSeconds)),
+            "-t", ffmpegArg("%.6f", durationSeconds),
             "-i", file.path,
             "-map", "0:a:0",
             "-af", "volumedetect",
@@ -653,8 +655,8 @@ extension ConverterTool {
         let fallback = try runner.run("ffmpeg", [
             "-hide_banner", "-nostdin", "-v", "info",
             "-i", file.path,
-            "-ss", String(format: "%.6f", max(0, startSeconds)),
-            "-t", String(format: "%.6f", durationSeconds),
+            "-ss", ffmpegArg("%.6f", max(0, startSeconds)),
+            "-t", ffmpegArg("%.6f", durationSeconds),
             "-map", "0:a:0",
             "-af", "astats=metadata=0:reset=0:measure_overall=Peak_level",
             "-f", "null",
@@ -673,14 +675,14 @@ extension ConverterTool {
     }
 
     func audioSegmentIntegratedLUFS(file: URL, startSeconds: Double, durationSeconds: Double, targetLUFS: Double) throws -> Double {
-        let filter = "loudnorm=I=\(String(format: "%.2f", targetLUFS)):TP=\(String(format: "%.2f", config.audioQCMaxTruePeakDBTP)):LRA=50.00:print_format=json"
+        let filter = "loudnorm=I=\(ffmpegArg("%.2f", targetLUFS)):TP=\(ffmpegArg("%.2f", config.audioQCMaxTruePeakDBTP)):LRA=50.00:print_format=json"
         func runProbe(accurateSeek: Bool) throws -> ProcessResult {
             if accurateSeek {
                 return try runner.run("ffmpeg", [
                     "-hide_banner", "-nostdin", "-v", "info",
                     "-i", file.path,
-                    "-ss", String(format: "%.6f", max(0, startSeconds)),
-                    "-t", String(format: "%.6f", durationSeconds),
+                    "-ss", ffmpegArg("%.6f", max(0, startSeconds)),
+                    "-t", ffmpegArg("%.6f", durationSeconds),
                     "-map", "0:a:0",
                     "-af", filter,
                     "-f", "null",
@@ -689,8 +691,8 @@ extension ConverterTool {
             }
             return try runner.run("ffmpeg", [
                 "-hide_banner", "-nostdin", "-v", "info",
-                "-ss", String(format: "%.6f", max(0, startSeconds)),
-                "-t", String(format: "%.6f", durationSeconds),
+                "-ss", ffmpegArg("%.6f", max(0, startSeconds)),
+                "-t", ffmpegArg("%.6f", durationSeconds),
                 "-i", file.path,
                 "-map", "0:a:0",
                 "-af", filter,
@@ -701,12 +703,12 @@ extension ConverterTool {
 
         let result = try runProbe(accurateSeek: false)
         let loudnorm = try? parseLoudnormJSON(from: result.stderr)
-        if let integrated = parseAudioDB(loudnorm?["input_i"] as? String), integrated.isFinite {
+        if let integrated = parseAudioDB(loudnorm?.inputI), integrated.isFinite {
             return integrated
         }
         let accurateResult = try runProbe(accurateSeek: true)
         let accurateLoudnorm = try parseLoudnormJSON(from: accurateResult.stderr)
-        guard let integrated = parseAudioDB(accurateLoudnorm["input_i"] as? String), integrated.isFinite else {
+        guard let integrated = parseAudioDB(accurateLoudnorm.inputI), integrated.isFinite else {
             throw AppError("Unable to verify noise loudness segment in \(file.path)")
         }
         return integrated
@@ -739,7 +741,7 @@ extension ConverterTool {
             try verifyWAVStandard(file, qcPolicy: nil)
         case "mp4":
             try requireFormatNameContains(file, anyOf: ["mp4", "mov"], label: "MP4 container")
-            if (try? requireVideoStream(source)) != nil {
+            if try hasVideoStream(source) {
                 try verifyVideoOutput(file)
             }
             try verifyALACAudioOutput(file, sampleRate: config.videoMP4AudioSampleRate, channels: 2, qcPolicy: nil)
@@ -852,7 +854,7 @@ extension ConverterTool {
             try verifyM4AFile(file, sampleRate: config.m4aSampleRate, channels: config.m4aChannels, qcPolicy: nil)
         case "mp4":
             try requireFormatNameContains(file, anyOf: ["mp4", "mov"], label: "MP4 container")
-            if (try? requireVideoStream(source)) != nil {
+            if try hasVideoStream(source) {
                 try verifyVideoOutput(file)
             }
             try verifyALACAudioOutput(file, sampleRate: config.videoMP4AudioSampleRate, channels: 2, qcPolicy: nil)
@@ -874,7 +876,7 @@ extension ConverterTool {
                 "-i", sourceWAV.path,
                 "-map", "0:a:0",
                 "-af", silenceAudioFilter(for: spec),
-                "-t", String(format: "%.6f", expectedDuration),
+                "-t", ffmpegArg("%.6f", expectedDuration),
                 "-vn", "-sn", "-dn",
                 "-ac", String(config.wavChannels),
                 "-ar", String(config.wavSampleRate),
@@ -901,7 +903,7 @@ extension ConverterTool {
             _ = try runner.run("ffmpeg", [
                 "-hide_banner", "-nostdin", "-v", "error", "-y",
                 "-f", "lavfi",
-                "-i", "anoisesrc=c=white:r=\(noiseGenerationSampleRate()):a=0.5:d=\(String(format: "%.6f", spec.seconds)):s=\(seed)",
+                "-i", "anoisesrc=c=white:r=\(noiseGenerationSampleRate()):a=0.5:d=\(ffmpegArg("%.6f", spec.seconds)):s=\(seed)",
                 "-map", "0:a:0",
                 "-vn", "-sn", "-dn",
                 "-ac", String(config.wavChannels),
@@ -959,7 +961,7 @@ extension ConverterTool {
         defer { discardTempFile(trailingNoise) }
 
         let paddedWAV = try makeTemp(in: cli.outDir, stem: "\(source.stem).noise.padded", ext: ".wav")
-        let transitionSilence = "anullsrc=r=\(config.wavSampleRate):cl=stereo:d=\(String(format: "%.6f", NoiseSpec.transitionSilenceSeconds))"
+        let transitionSilence = "anullsrc=r=\(config.wavSampleRate):cl=stereo:d=\(ffmpegArg("%.6f", NoiseSpec.transitionSilenceSeconds))"
         do {
             _ = try runner.run("ffmpeg", [
                 "-hide_banner", "-nostdin", "-v", "error", "-y",
@@ -1001,8 +1003,8 @@ extension ConverterTool {
         label: String
     ) throws {
         try verifyWAVStandard(paddedWAV, qcPolicy: nil)
-        try requireFFmpegEncoder("alac")
-        let hasVideo = (try? requireVideoStream(source)) != nil
+        try requireFFmpegEncoder(alacEncoderName)
+        let hasVideo = try hasVideoStream(source)
 
         if !hasVideo {
             _ = try runner.run("ffmpeg", [
@@ -1022,7 +1024,7 @@ extension ConverterTool {
 
         let encoders = try requireAvailableEncoderLadder(config.videoEncoderLadder, label: "\(label) MP4 video")
         let videoFilter =
-            "tpad=start_duration=\(String(format: "%.6f", leadingSeconds)):stop_duration=\(String(format: "%.6f", trailingSeconds)):start_mode=clone:stop_mode=clone," +
+            "tpad=start_duration=\(ffmpegArg("%.6f", leadingSeconds)):stop_duration=\(ffmpegArg("%.6f", trailingSeconds)):start_mode=clone:stop_mode=clone," +
             "format=\(config.videoMP4PixelFormat)," +
             "setparams=color_primaries=\(config.videoColorPrimaries):color_trc=\(config.videoColorTransfer):colorspace=\(config.videoColorSpace):range=\(ffmpegFilterRangeValue(config.videoColorRange))"
 
@@ -1053,7 +1055,7 @@ extension ConverterTool {
             ]
             args += alacAudioArguments(sampleRate: config.videoMP4AudioSampleRate, channels: 2)
             args += [
-                "-t", String(format: "%.6f", expectedDuration),
+                "-t", ffmpegArg("%.6f", expectedDuration),
                 "-map_metadata", "0",
                 "-map_chapters", "0",
                 "-movflags", "+faststart"
@@ -1459,7 +1461,7 @@ extension ConverterTool {
 
     func convertWAVToM4A(_ source: URL) throws -> URL {
         try preflightWAVInput(source)
-        try requireFFmpegEncoder("alac")
+        try requireFFmpegEncoder(alacEncoderName)
         let output = cli.outDir.appendingPathComponent(source.stem).appendingPathExtension("m4a")
         if canReuseOutput(output, verifier: {
             try verifyM4AFile(output, sampleRate: config.m4aSampleRate, channels: config.m4aChannels, qcPolicy: nil)
@@ -1489,7 +1491,7 @@ extension ConverterTool {
 
     func convertAudioToM4A(_ source: URL) throws -> URL {
         try preflightAudioSourceForTranscode(source)
-        try requireFFmpegEncoder("alac")
+        try requireFFmpegEncoder(alacEncoderName)
         let output = cli.outDir.appendingPathComponent(source.stem).appendingPathExtension("m4a")
         if canReuseOutput(output, verifier: {
             try verifyM4AFile(output, sampleRate: config.m4aSampleRate, channels: config.m4aChannels, qcPolicy: nil)
@@ -1823,17 +1825,16 @@ extension ConverterTool {
         defer { try? handle.close() }
 
         var crc: UInt32 = 0
-        while autoreleasepool(invoking: {
-            let data = try? handle.read(upToCount: config.crcChunkBytes)
+        while true {
+            let data = try handle.read(upToCount: config.crcChunkBytes)
             guard let chunk = data, !chunk.isEmpty else {
-                return false
+                break
             }
             crc = chunk.reduce(crc) { current, byte in
                 let idx = Int((current ^ UInt32(byte)) & 0xFF)
                 return table[idx] ^ (current >> 8)
             }
-            return true
-        }) {}
+        }
 
         return String(format: "%08X", crc)
     }

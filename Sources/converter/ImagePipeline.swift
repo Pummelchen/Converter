@@ -1,6 +1,34 @@
 import Foundation
 
 extension ConverterTool {
+    private func aipixResizeArguments(
+        source: URL,
+        resizeHeight: Int,
+        width: Int,
+        height: Int,
+        sharpness: Double,
+        filter: String,
+        colorSpace: String,
+        compressionLevel: Int
+    ) -> [String] {
+        var args = [
+            source.path,
+            "-auto-orient",
+            "-colorspace", colorSpace,
+            "-filter", filter,
+            "-resize", "x\(resizeHeight)",
+            "-gravity", "center",
+            "-background", "black",
+            "-extent", "\(width)x\(height)"
+        ]
+        let sharpSigma = max(0.0, (sharpness - 1.0) * 2.0)
+        if sharpSigma > 0 {
+            args += ["-sharpen", ffmpegArg("0x%.3f", sharpSigma)]
+        }
+        args += ["-define", "png:compression-level=\(compressionLevel)", "-strip"]
+        return args
+    }
+
     func convertJPGToPNG(_ source: URL) throws -> URL {
         try preflightJPEGInput(source)
         guard let dimensions = try imageDimensions(source) else {
@@ -109,22 +137,16 @@ extension ConverterTool {
                         temp.path
                     ])
                 } else {
-                    let args = [
-                        source.path,
-                        "-auto-orient",
-                        "-colorspace", config.imageOutputColorSpace,
-                        "-filter", config.imageAIPixFilter,
-                        "-resize", "x\(target.height)",
-                        "-gravity", "center",
-                        "-background", "black",
-                        "-extent", "\(target.width)x\(target.height)"
-                    ]
-                    let sharpSigma = max(0.0, (config.imageAIPixSharpness - 1.0) * 2.0)
-                    var finalArgs = args
-                    if sharpSigma > 0 {
-                        finalArgs += ["-sharpen", String(format: "0x%.3f", sharpSigma)]
-                    }
-                    finalArgs += ["-define", "png:compression-level=\(config.imageAIPixPNGCompressionLevel)", "-strip", temp.path]
+                    let finalArgs = aipixResizeArguments(
+                        source: source,
+                        resizeHeight: target.height,
+                        width: target.width,
+                        height: target.height,
+                        sharpness: config.imageAIPixSharpness,
+                        filter: config.imageAIPixFilter,
+                        colorSpace: config.imageOutputColorSpace,
+                        compressionLevel: config.imageAIPixPNGCompressionLevel
+                    ) + [temp.path]
                     _ = try runner.run("magick", finalArgs)
                 }
                 try verifyImageOutput(temp, width: target.width, height: target.height, format: "PNG")
@@ -193,22 +215,16 @@ extension ConverterTool {
 
         let temp = try makeTemp(in: cli.outDir, stem: outputName, ext: ".png")
         do {
-            let args = [
-                source.path,
-                "-auto-orient",
-                "-colorspace", config.imageOutputColorSpace,
-                "-filter", config.imageAIPixFilter,
-                "-resize", "x\(config.image4KHeight)",
-                "-gravity", "center",
-                "-background", "black",
-                "-extent", "\(config.image4KWidth)x\(config.image4KHeight)"
-            ]
-            let sharpSigma = max(0.0, (config.imageAIPixSharpness - 1.0) * 2.0)
-            var finalArgs = args
-            if sharpSigma > 0 {
-                finalArgs += ["-sharpen", String(format: "0x%.3f", sharpSigma)]
-            }
-            finalArgs += ["-define", "png:compression-level=\(config.imageAIPixPNGCompressionLevel)", "-strip", temp.path]
+            let finalArgs = aipixResizeArguments(
+                source: source,
+                resizeHeight: config.image4KHeight,
+                width: config.image4KWidth,
+                height: config.image4KHeight,
+                sharpness: config.imageAIPixSharpness,
+                filter: config.imageAIPixFilter,
+                colorSpace: config.imageOutputColorSpace,
+                compressionLevel: config.imageAIPixPNGCompressionLevel
+            ) + [temp.path]
             _ = try runner.run("magick", finalArgs)
             try verifyImageOutput(temp, width: config.image4KWidth, height: config.image4KHeight, format: "PNG")
             try publishTemp(temp, to: output)

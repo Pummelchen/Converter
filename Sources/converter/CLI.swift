@@ -233,13 +233,13 @@ struct CLIOptions {
             case "--trailing-silence":
                 options.trailingSilence = true
             case "--sharpness":
-                guard let value = Double(try requireValue(argument)) else {
-                    throw AppError("--sharpness requires a numeric value")
+                guard let value = Double(try requireValue(argument)), value.isFinite else {
+                    throw AppError("--sharpness requires a finite numeric value")
                 }
                 options.sharpnessOverride = value
             case "--sleep-seconds":
-                guard let value = Double(try requireValue(argument)) else {
-                    throw AppError("--sleep-seconds requires a numeric value")
+                guard let value = Double(try requireValue(argument)), value.isFinite else {
+                    throw AppError("--sleep-seconds requires a finite numeric value")
                 }
                 options.sleepSeconds = value
             case "--num-dots":
@@ -283,8 +283,8 @@ struct CLIOptions {
     }
 
     func fadeOutSpec() throws -> FadeOutSpec {
-        guard actionArgs.count >= 2 else {
-            throw AppError("'-fadeout' requires two positional values: START DURATION. Example: converter -fadeout 1:30 10")
+        guard actionArgs.count == 2 else {
+            throw AppError("'-fadeout' requires exactly two positional values: START DURATION. Example: converter -fadeout 1:30 10")
         }
         let fadeStartSeconds = try parseFlexibleTimecode(actionArgs[0], label: "fade start")
         let fadeDurationSeconds = try parseFlexibleTimecode(actionArgs[1], label: "fade duration")

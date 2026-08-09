@@ -19,7 +19,7 @@ extension ConverterTool {
         do {
             _ = try runner.run("ffmpeg", [
                 "-hide_banner", "-nostdin", "-v", "error", "-y",
-                "-t", String(format: "%.6f", limitDuration),
+                "-t", ffmpegArg("%.6f", limitDuration),
                 "-i", file.path,
                 "-map", "0:a:0",
                 "-vn",
@@ -47,14 +47,14 @@ extension ConverterTool {
             )
             let text = result.stderr
             guard let line = text.split(whereSeparator: \.isNewline).map(String.init).first(where: { $0.contains("max_volume:") }) else {
-                return true
+                throw AppError("Audibility probe produced no max_volume line for \(file.path)")
             }
             let value = line.components(separatedBy: "max_volume:").last?.trimmed.replacingOccurrences(of: " dB", with: "") ?? "0"
             if value == "-inf" {
                 return false
             }
             guard let decibels = Double(value) else {
-                return true
+                throw AppError("Audibility probe returned unparsable volume for \(file.path): '\(value)'")
             }
             return decibels > -70
         }
@@ -63,7 +63,7 @@ extension ConverterTool {
     func audioQCResult(for file: URL, policy: AudioQCPolicy) throws -> AudioQCResult {
         let key = AudioQCCacheKey(
             fingerprint: try fileProbeFingerprint(file),
-            policy: AudioQCPolicyCacheKey(policy)
+            policy: policy
         )
         return try probeCache.cachedAudioQCResult(key: key) {
             let duration = (try mediaDuration(file)) ?? 0
@@ -73,7 +73,7 @@ extension ConverterTool {
                     "-hide_banner", "-nostdin", "-v", "info",
                     "-i", file.path,
                     "-map", "0:a:0",
-                    "-af", "loudnorm=I=\(String(format: "%.2f", policy.targetLUFS)):TP=\(String(format: "%.2f", policy.maxTruePeakDBTP)):LRA=\(String(format: "%.2f", policy.maxLoudnessRange)):print_format=json",
+                    "-af", "loudnorm=I=\(ffmpegArg("%.2f", policy.targetLUFS)):TP=\(ffmpegArg("%.2f", policy.maxTruePeakDBTP)):LRA=\(ffmpegArg("%.2f", policy.maxLoudnessRange)):print_format=json",
                     "-f", "null", "-"
                 ],
                 allowedExitCodes: [0]
@@ -102,7 +102,7 @@ extension ConverterTool {
                 "ffmpeg",
                 [
                     "-hide_banner", "-nostdin", "-v", "info",
-                    "-t", String(format: "%.3f", max(duration, 0.5)),
+                    "-t", ffmpegArg("%.3f", max(duration, 0.5)),
                     "-i", file.path,
                     "-map", "0:a:0",
                     "-af", "volumedetect",
@@ -122,9 +122,9 @@ extension ConverterTool {
             )
 
             let metrics = AudioQCMetrics(
-                integratedLUFS: parseAudioDB(loudnorm["input_i"] as? String),
-                truePeakDBTP: parseAudioDB(loudnorm["input_tp"] as? String),
-                loudnessRange: parseAudioDB(loudnorm["input_lra"] as? String),
+                integratedLUFS: parseAudioDB(loudnorm.inputI),
+                truePeakDBTP: parseAudioDB(loudnorm.inputTp),
+                loudnessRange: parseAudioDB(loudnorm.inputLra),
                 dcOffset: dcOffset,
                 stereoImbalanceDB: stereoImbalance,
                 peakLevelDBFS: peakLevelDBFS,
@@ -194,16 +194,22 @@ extension ConverterTool {
                 "-hide_banner", "-nostdin", "-v", "info",
                 "-i", file.path,
                 "-map", "0:a:0",
-                "-af", "loudnorm=I=\(String(format: "%.2f", policy.targetLUFS)):TP=\(String(format: "%.2f", policy.maxTruePeakDBTP)):LRA=\(String(format: "%.2f", policy.maxLoudnessRange)):print_format=json",
+                "-af", "loudnorm=I=\(ffmpegArg("%.2f", policy.targetLUFS)):TP=\(ffmpegArg("%.2f", policy.maxTruePeakDBTP)):LRA=\(ffmpegArg("%.2f", policy.maxLoudnessRange)):print_format=json",
                 "-f", "null", "-"
             ],
             allowedExitCodes: [0]
         )
         let payload = try parseLoudnormJSON(from: result.stderr)
-        let requiredKeys = ["input_i", "input_lra", "input_tp", "input_thresh", "target_offset"]
         var values: [String: String] = [:]
-        for key in requiredKeys {
-            guard let raw = payload[key] as? String else {
+        let measurementValues: [(String, String?)] = [
+            ("input_i", payload.inputI),
+            ("input_lra", payload.inputLra),
+            ("input_tp", payload.inputTp),
+            ("input_thresh", payload.inputThresh),
+            ("target_offset", payload.targetOffset)
+        ]
+        for (key, raw) in measurementValues {
+            guard let raw else {
                 throw AppError("Loudnorm measurement missing '\(key)' for \(file.path)")
             }
             let trimmed = raw.trimmed
@@ -238,14 +244,14 @@ extension ConverterTool {
         }
 
         return [
-            "loudnorm=I=\(String(format: "%.2f", policy.targetLUFS))",
-            "TP=\(String(format: "%.2f", policy.maxTruePeakDBTP))",
-            "LRA=\(String(format: "%.2f", policy.maxLoudnessRange))",
-            "measured_I=\(String(format: "%.2f", measuredI))",
-            "measured_LRA=\(String(format: "%.2f", measuredLRA))",
-            "measured_TP=\(String(format: "%.2f", measuredTP))",
-            "measured_thresh=\(String(format: "%.2f", measuredThresh))",
-            "offset=\(String(format: "%.2f", offset))",
+            "loudnorm=I=\(ffmpegArg("%.2f", policy.targetLUFS))",
+            "TP=\(ffmpegArg("%.2f", policy.maxTruePeakDBTP))",
+            "LRA=\(ffmpegArg("%.2f", policy.maxLoudnessRange))",
+            "measured_I=\(ffmpegArg("%.2f", measuredI))",
+            "measured_LRA=\(ffmpegArg("%.2f", measuredLRA))",
+            "measured_TP=\(ffmpegArg("%.2f", measuredTP))",
+            "measured_thresh=\(ffmpegArg("%.2f", measuredThresh))",
+            "offset=\(ffmpegArg("%.2f", offset))",
             "linear=true",
             "print_format=summary"
         ].joined(separator: ":")
@@ -253,9 +259,9 @@ extension ConverterTool {
 
     func loudnormSinglePassFilter(policy: AudioQCPolicy) -> String {
         [
-            "loudnorm=I=\(String(format: "%.2f", policy.targetLUFS))",
-            "TP=\(String(format: "%.2f", policy.maxTruePeakDBTP))",
-            "LRA=\(String(format: "%.2f", policy.maxLoudnessRange))",
+            "loudnorm=I=\(ffmpegArg("%.2f", policy.targetLUFS))",
+            "TP=\(ffmpegArg("%.2f", policy.maxTruePeakDBTP))",
+            "LRA=\(ffmpegArg("%.2f", policy.maxLoudnessRange))",
             "linear=false",
             "print_format=summary"
         ].joined(separator: ":")
@@ -1016,11 +1022,8 @@ extension ConverterTool {
     }
 
     func requireFFmpegEncoder(_ encoder: String) throws {
-        let result = try runner.run("ffmpeg", ["-hide_banner", "-encoders"])
-        let matched = result.stdout.split(whereSeparator: \.isNewline).contains { line in
-            line.split(whereSeparator: \.isWhitespace).contains { String($0) == encoder }
-        }
-        if !matched {
+        let available = try cachedFFmpegEncoderSet()
+        if !available.contains(encoder) {
             throw AppError("Required ffmpeg encoder is not available: \(encoder)")
         }
     }

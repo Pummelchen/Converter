@@ -33,7 +33,12 @@ struct ConverterMain {
             try await instance.execute()
         } catch let error as AppError {
             exitCode = error.exitCode
-            (logger ?? bootstrapLogger).error(error.message)
+            var detail = error.message
+            if let underlying = error.underlyingDescription {
+                detail += " (underlying: \(underlying))"
+            }
+            (logger ?? bootstrapLogger).error(detail)
+            (logger ?? bootstrapLogger).debug("\(error.fileID):\(error.line)")
         } catch {
             exitCode = 1
             (logger ?? bootstrapLogger).error(error.localizedDescription)

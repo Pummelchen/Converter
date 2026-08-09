@@ -2,6 +2,22 @@ import Foundation
 import Darwin
 import BW64Bridge
 
+struct LoudnormMeasurement: Decodable, Sendable {
+    let inputI: String?
+    let inputTp: String?
+    let inputLra: String?
+    let inputThresh: String?
+    let targetOffset: String?
+
+    enum CodingKeys: String, CodingKey {
+        case inputI = "input_i"
+        case inputTp = "input_tp"
+        case inputLra = "input_lra"
+        case inputThresh = "input_thresh"
+        case targetOffset = "target_offset"
+    }
+}
+
 final class RuntimeState: @unchecked Sendable {
     private let lock = NSLock()
     private var temporaryFiles: [URL] = []
@@ -45,33 +61,9 @@ struct FFprobeCacheKey: Hashable, Sendable {
     let entries: String
 }
 
-struct AudioQCPolicyCacheKey: Hashable, Sendable {
-    let name: String
-    let targetLUFS: Double
-    let lufsTolerance: Double
-    let maxTruePeakDBTP: Double
-    let maxLoudnessRange: Double
-    let maxDCOffset: Double
-    let maxStereoImbalanceDB: Double
-    let maxClippedSamples: Int
-    let minimumAnalysisSeconds: Double
-
-    init(_ policy: AudioQCPolicy) {
-        self.name = policy.name
-        self.targetLUFS = policy.targetLUFS
-        self.lufsTolerance = policy.lufsTolerance
-        self.maxTruePeakDBTP = policy.maxTruePeakDBTP
-        self.maxLoudnessRange = policy.maxLoudnessRange
-        self.maxDCOffset = policy.maxDCOffset
-        self.maxStereoImbalanceDB = policy.maxStereoImbalanceDB
-        self.maxClippedSamples = policy.maxClippedSamples
-        self.minimumAnalysisSeconds = policy.minimumAnalysisSeconds
-    }
-}
-
 struct AudioQCCacheKey: Hashable, Sendable {
     let fingerprint: FileProbeFingerprint
-    let policy: AudioQCPolicyCacheKey
+    let policy: AudioQCPolicy
 }
 
 enum CachedStringValue: Sendable {
@@ -214,7 +206,7 @@ final class ProbeCache: @unchecked Sendable {
     }
 }
 
-struct ImageArtifacts {
+struct ImageArtifacts: Sendable {
     let sourcePNG: URL
     let eightK: URL
     let fourK: URL
@@ -223,7 +215,7 @@ struct ImageArtifacts {
     let nft8K: URL
 }
 
-struct FullRunImageArtifacts {
+struct FullRunImageArtifacts: Sendable {
     let mainVideoImage: URL
     let shortVideoImage: URL?
 }
@@ -239,7 +231,7 @@ struct NFTOutputs: Sendable {
     let nft2K: URL
 }
 
-struct AudioArtifacts {
+struct AudioArtifacts: Sendable {
     let source: URL
     let wav: URL
     let m4a: URL
@@ -319,6 +311,8 @@ final class ConverterTool: @unchecked Sendable {
     let audioJobs: AsyncSemaphore
     let videoJobs: AsyncSemaphore
     let runToken: String
+    private let encoderSetLock = NSLock()
+    private var cachedEncoderSet: Set<String>?
 
     init(cli: CLIOptions, config: ProjectConfig, logger: Logger, runner: ProcessRunner, environment: [String: String]) {
         self.cli = cli
@@ -337,6 +331,21 @@ final class ConverterTool: @unchecked Sendable {
     func cleanupTemps() {
         state.cleanup(fileManager: fileManager, logger: logger)
         cleanupRunScopedTempFiles()
+    }
+
+    func cachedFFmpegEncoderSet() throws -> Set<String> {
+        encoderSetLock.lock()
+        if let cached = cachedEncoderSet {
+            encoderSetLock.unlock()
+            return cached
+        }
+        encoderSetLock.unlock()
+
+        let set = try ffmpegEncoderSet()
+        encoderSetLock.lock()
+        cachedEncoderSet = set
+        encoderSetLock.unlock()
+        return set
     }
 
     func cleanupRunScopedTempFiles() {
@@ -611,7 +620,12 @@ final class ConverterTool: @unchecked Sendable {
     }
 
     func ffprobeValue(selector: String? = nil, entries: String, file: URL) throws -> String? {
-        let normalizedSelector = selector?.isEmpty == false ? selector! : ""
+        let normalizedSelector: String
+        if let selector, !selector.isEmpty {
+            normalizedSelector = selector
+        } else {
+            normalizedSelector = ""
+        }
         let key = FFprobeCacheKey(
             fingerprint: try fileProbeFingerprint(file),
             selector: normalizedSelector,
@@ -694,7 +708,7 @@ final class ConverterTool: @unchecked Sendable {
         return Double(trimmed)
     }
 
-    func parseLoudnormJSON(from stderr: String) throws -> [String: Any] {
+    func parseLoudnormJSON(from stderr: String) throws -> LoudnormMeasurement {
         guard let start = stderr.firstIndex(of: "{"), let end = stderr.lastIndex(of: "}") else {
             throw AppError("Audio loudness probe did not return JSON output.")
         }
@@ -702,10 +716,11 @@ final class ConverterTool: @unchecked Sendable {
         guard let data = jsonText.data(using: .utf8) else {
             throw AppError("Audio loudness probe JSON encoding failed.")
         }
-        guard let object = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
-            throw AppError("Audio loudness probe JSON parsing failed.")
+        do {
+            return try JSONDecoder().decode(LoudnormMeasurement.self, from: data)
+        } catch {
+            throw AppError("Audio loudness probe JSON parsing failed.", underlying: error)
         }
-        return object
     }
 
     func parseAstatsReport(from stderr: String) -> (channelMetrics: [[String: String]], overallMetrics: [String: String]) {
@@ -806,6 +821,11 @@ final class ConverterTool: @unchecked Sendable {
         return gotCodec
     }
 
+    func hasVideoStream(_ file: URL) throws -> Bool {
+        let gotCodec = (try videoField(file, "codec_name") ?? "").trimmed
+        return !gotCodec.isEmpty
+    }
+
     func requireNoVideoStream(_ file: URL) throws {
         let gotCodec = (try videoField(file, "codec_name") ?? "").trimmed
         if !gotCodec.isEmpty {
@@ -814,18 +834,18 @@ final class ConverterTool: @unchecked Sendable {
     }
 
     func cleanTransients() throws {
-        let patterns = [".w64", ".log", ".tsv"]
-        let files = try fileManager.contentsOfDirectory(at: cli.outDir, includingPropertiesForKeys: [.isRegularFileKey], options: [.skipsHiddenFiles])
-        for file in files {
-            if patterns.contains(where: { file.lastPathComponent.hasSuffix($0) }) {
-                try fileManager.removeItem(at: file)
-                logger.info("Removed transient file: \(file.basename)")
-            }
-        }
+        // Only converter-owned naming patterns are cleaned. The legacy
+        // extension-only scan (.w64/.log/.tsv) was dropped: nothing in the
+        // pipeline creates those files, so removing them by suffix alone could
+        // delete user-owned files from OUT_DIR.
         let all = try fileManager.contentsOfDirectory(at: cli.outDir, includingPropertiesForKeys: [.isRegularFileKey], options: [])
         for file in all where file.lastPathComponent.hasPrefix(".") && file.lastPathComponent.contains(".normalized") {
-            try? fileManager.removeItem(at: file)
-            logger.info("Removed transient file: \(file.basename)")
+            do {
+                try fileManager.removeItem(at: file)
+                logger.info("Removed transient file: \(file.basename)")
+            } catch {
+                logger.warn("Failed to remove transient file \(file.basename): \(error.localizedDescription)")
+            }
         }
     }
 

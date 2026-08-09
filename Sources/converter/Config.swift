@@ -241,7 +241,6 @@ struct ProjectConfig {
 
     mutating func apply(key: String, value: String) throws {
         switch key {
-        case "PROFILE": profileName = value
         case "PREFLIGHT_SECONDS": preflightSeconds = try parseInt(key, value)
         case "DURATION_TOLERANCE_SEC": durationToleranceSec = try parseDouble(key, value)
         case "CRC_CHUNK_BYTES": crcChunkBytes = try parseInt(key, value)
@@ -466,8 +465,8 @@ private func parseInt(_ key: String, _ value: String) throws -> Int {
 }
 
 private func parseDouble(_ key: String, _ value: String) throws -> Double {
-    guard let parsed = Double(value) else {
-        throw AppError("\(key) must be numeric (got '\(value)')")
+    guard let parsed = Double(value), parsed.isFinite else {
+        throw AppError("\(key) must be a finite number (got '\(value)')")
     }
     return parsed
 }
