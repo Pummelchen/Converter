@@ -18,6 +18,13 @@ Validation performed at commit `c75929f41d4c17970b367c43051de3f6cb09af90`:
 - `swift build --package-path Sources` — success
 - `swift test --package-path Sources` — 122 tests, 0 failures (~6 min; integration tests perform real media processing)
 
+## Recorded environment (2026-08-09)
+
+Same machine/toolchain as the 2026-08-04 record. Validation after the production-hardening pass — internal WAV standard is now 24-bit `pcm_s24le` @ 96 kHz stereo, with the new `-master` command, settings-specific fade output stems, fail-closed publishing, and process timeouts:
+
+- `swift build --package-path Sources` — success, no warnings
+- `swift test --package-path Sources` — 138 tests, 0 failures (~8 min; integration tests perform real media processing)
+
 ## How to collect these versions locally
 
 ```bash
