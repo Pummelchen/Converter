@@ -416,7 +416,7 @@ final class PipelineIntegrationTests: XCTestCase {
 
         try tool.stepFadeOut()
 
-        let output = workspace.output.appendingPathComponent("fade_song_faded.mp3")
+        let output = workspace.output.appendingPathComponent("fade_song_fadeout_1.5s_0.75s.mp3")
         XCTAssertTrue(FileManager.default.fileExists(atPath: output.path))
         try tool.verifyMP3Standard(output, qcPolicy: tool.config.deliveryAudioQCPolicy)
         XCTAssertThrowsError(try tool.requireVideoStream(output))
@@ -449,7 +449,7 @@ final class PipelineIntegrationTests: XCTestCase {
 
         XCTAssertNoThrow(try tool.stepFadeOut())
 
-        let output = workspace.output.appendingPathComponent("hot_fade_song_faded.mp3")
+        let output = workspace.output.appendingPathComponent("hot_fade_song_fadeout_1.5s_0.75s.mp3")
         XCTAssertTrue(FileManager.default.fileExists(atPath: output.path))
         try tool.verifyMP3Standard(output, qcPolicy: nil)
         XCTAssertThrowsError(try tool.requireVideoStream(output))
@@ -675,9 +675,9 @@ final class PipelineIntegrationTests: XCTestCase {
 
         try tool.stepFade()
 
-        let mp3Out = workspace.output.appendingPathComponent("tail_mp3_faded.mp3")
-        let wavOut = workspace.output.appendingPathComponent("tail_wav_faded.wav")
-        let flacOut = workspace.output.appendingPathComponent("tail_flac_faded.flac")
+        let mp3Out = workspace.output.appendingPathComponent("tail_mp3_faded_0.5s.mp3")
+        let wavOut = workspace.output.appendingPathComponent("tail_wav_faded_0.5s.wav")
+        let flacOut = workspace.output.appendingPathComponent("tail_flac_faded_0.5s.flac")
         XCTAssertTrue(FileManager.default.fileExists(atPath: mp3Out.path))
         XCTAssertTrue(FileManager.default.fileExists(atPath: wavOut.path))
         XCTAssertTrue(FileManager.default.fileExists(atPath: flacOut.path))
@@ -848,9 +848,9 @@ final class PipelineIntegrationTests: XCTestCase {
 
         try tool.stepFadeCut()
 
-        let mp3Out = workspace.output.appendingPathComponent("cut_mp3_fadecut.mp3")
-        let wavOut = workspace.output.appendingPathComponent("cut_wav_fadecut.wav")
-        let flacOut = workspace.output.appendingPathComponent("cut_flac_fadecut.flac")
+        let mp3Out = workspace.output.appendingPathComponent("cut_mp3_fadecut_0.5s_0.75s.mp3")
+        let wavOut = workspace.output.appendingPathComponent("cut_wav_fadecut_0.5s_0.75s.wav")
+        let flacOut = workspace.output.appendingPathComponent("cut_flac_fadecut_0.5s_0.75s.flac")
         XCTAssertTrue(FileManager.default.fileExists(atPath: mp3Out.path))
         XCTAssertTrue(FileManager.default.fileExists(atPath: wavOut.path))
         XCTAssertTrue(FileManager.default.fileExists(atPath: flacOut.path))
@@ -1851,7 +1851,6 @@ final class PipelineIntegrationTests: XCTestCase {
         try workspace.requireCommands(["ffmpeg", "ffprobe"])
         try workspace.overwriteConfig(
             IntegrationWorkspace.defaultConfig +
-                "\nMASTERING_ENABLED=1\n" +
                 "\nMASTERING_TARGET_LUFS=-40\n"
         )
         let wav = try workspace.createAudio(name: "needs_master", ext: "wav", duration: 4.5)
@@ -1872,7 +1871,7 @@ final class PipelineIntegrationTests: XCTestCase {
         try workspace.requireCommands(["ffmpeg", "ffprobe"])
         try workspace.overwriteConfig(
             IntegrationWorkspace.defaultConfig +
-                "\nMASTERING_ENABLED=1\n"
+                "\nMASTERING_TARGET_LUFS=-12\n"
         )
         let wav = try workspace.createHotAudio(name: "too_hot", ext: "wav", duration: 3.0, gainDB: 24)
         let tool = try workspace.makeTool(arguments: ["-wavtom4a"])
@@ -1882,6 +1881,25 @@ final class PipelineIntegrationTests: XCTestCase {
 
         XCTAssertNoThrow(try tool.masterCanonicalWAVInPlaceIfNeeded(wav))
         XCTAssertNoThrow(try tool.verifyWAVStandard(wav, qcPolicy: tool.config.masteringAudioQCPolicy))
+    }
+
+    func testMasterCommandProducesMasteredOutputsWithinPolicy() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe"])
+        try workspace.overwriteConfig(
+            IntegrationWorkspace.defaultConfig +
+                "\nMASTERING_TARGET_LUFS=-40\n"
+        )
+        let wav = try workspace.createAudio(name: "needs_master", ext: "wav", duration: 4.5)
+        let tool = try workspace.makeTool(arguments: ["-master"])
+
+        try tool.stepMaster()
+
+        let output = workspace.output.appendingPathComponent("needs_master_mastered.wav")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: output.path))
+        try tool.verifyWAVStandard(output, qcPolicy: tool.config.masteringAudioQCPolicy)
+        let after = try tool.audioQCResult(for: output, policy: tool.config.masteringAudioQCPolicy)
+        XCTAssertTrue(after.passed, "Mastered output must pass the mastering policy: \(after.issues)")
     }
 
     func testMainVideoRenderFallsBackToSoftwareEncoder() throws {

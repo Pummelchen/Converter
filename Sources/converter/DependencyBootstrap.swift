@@ -62,7 +62,7 @@ enum DependencyBootstrapper {
 
         guard autoInstallEnabled(environment: environment) else {
             let names = missingFormulae.map(\.formula).joined(separator: ", ")
-            throw AppError("Missing required Homebrew package(s): \(names). Auto-install is disabled by CONVERTER_AUTO_INSTALL_DEPS=0.")
+            throw AppError("Missing required Homebrew package(s): \(names). Install them with 'brew install \(names)' or set CONVERTER_AUTO_INSTALL_DEPS=1 to auto-install.")
         }
 
         let formulaNames = missingFormulae.map(\.formula).joined(separator: ", ")
@@ -86,9 +86,9 @@ enum DependencyBootstrapper {
 
     private static func autoInstallEnabled(environment: [String: String]) -> Bool {
         guard let rawValue = environment["CONVERTER_AUTO_INSTALL_DEPS"]?.lowercased(with: Locale(identifier: "en_US_POSIX")) else {
-            return true
+            return false
         }
-        return !["0", "false", "no", "off"].contains(rawValue)
+        return ["1", "true", "yes", "on"].contains(rawValue)
     }
 
     private static func missingHomebrewFormulae(environment: [String: String]) -> [HomebrewFormulaDependency] {

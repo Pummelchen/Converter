@@ -294,10 +294,6 @@ extension ConverterTool {
     }
 
     func masterCanonicalWAVInPlaceIfNeeded(_ source: URL) throws {
-        guard config.masteringEnabled else {
-            logger.info("Mastering disabled: \(source.basename)")
-            return
-        }
         try preflightWAVInput(source)
         do {
             try preflightWAVStandardInput(source)
@@ -764,24 +760,6 @@ extension ConverterTool {
         }
 
         throw AppError("Unable to compare source/output loudness: \(source.path) -> \(output.path)")
-    }
-
-    func loudnessCompensationDB(source: URL, output: URL) throws -> Double {
-        let outputDuration = try mediaDuration(output)
-        let sourceMetrics = try audioQCResultForComparison(source, policy: config.deliveryAudioQCPolicy, limitDuration: outputDuration).metrics
-        let outputMetrics = try audioQCResult(for: output, policy: config.deliveryAudioQCPolicy).metrics
-
-        if let sourceLUFS = sourceMetrics.integratedLUFS, let outputLUFS = outputMetrics.integratedLUFS {
-            return sourceLUFS - outputLUFS
-        }
-
-        let sourcePeak = sourceMetrics.maxVolumeDBFS ?? sourceMetrics.peakLevelDBFS
-        let outputPeak = outputMetrics.maxVolumeDBFS ?? outputMetrics.peakLevelDBFS
-        if let sourcePeak, let outputPeak {
-            return sourcePeak - outputPeak
-        }
-
-        throw AppError("Unable to calculate loudness compensation: \(source.path) -> \(output.path)")
     }
 
     func requireAudioSampleRate(_ file: URL) throws -> Int {

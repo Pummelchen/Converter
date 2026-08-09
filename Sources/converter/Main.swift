@@ -16,12 +16,22 @@ struct ConverterMain {
         var exitCode: Int32 = 0
 
         do {
-            let cli = try CLIOptions.parse(
-                arguments: Array(CommandLine.arguments.dropFirst()),
-                environment: environment,
-                scriptDirectory: scriptDirectory,
-                scriptName: scriptName
-            )
+            let cli: CLIOptions
+            do {
+                cli = try CLIOptions.parse(
+                    arguments: Array(CommandLine.arguments.dropFirst()),
+                    environment: environment,
+                    scriptDirectory: scriptDirectory,
+                    scriptName: scriptName
+                )
+            } catch let error as AppError {
+                bootstrapLogger.error(error.message)
+                bootstrapLogger.debug("\(error.fileID):\(error.line)")
+                Foundation.exit(2)
+            } catch {
+                bootstrapLogger.error(error.localizedDescription)
+                Foundation.exit(2)
+            }
             let runLogger = Logger(scriptName: scriptName, debugEnabled: cli.debug)
             logger = runLogger
             try DependencyBootstrapper.ensureRuntimeDependencies(environment: &environment, logger: runLogger, action: cli.action)

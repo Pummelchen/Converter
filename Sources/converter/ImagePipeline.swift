@@ -300,6 +300,8 @@ extension ConverterTool {
         let temp3K = try makeTemp(in: cli.outDir, stem: "\(prefix)_NFT3K", ext: ".png")
         let temp2K = try makeTemp(in: cli.outDir, stem: "\(prefix)_NFT2K", ext: ".png")
         do {
+            // NFT squares letterbox the full artwork on black (no content loss), unlike
+            // squarePNGFrom8K which cover-crops to a filled square. Intentional per project policy.
             _ = try runner.run("magick", [
                 source.path,
                 "-auto-orient",

@@ -13,7 +13,7 @@ Formats: `flac`, `wav`, `mp3`, `m4a`
 | mp3 | `-mp3toflac` | `-mp3towav` | — | `-mp3tom4a` |
 | m4a | `-m4atoflac` | `-m4atowav` | `-m4atomp3` | — |
 
-- WAV outputs use the project standard: RF64 `pcm_f32le`, 192 kHz, stereo.
+- WAV outputs use the project standard: RF64 `pcm_s24le`, 96 kHz, stereo.
 - M4A outputs are ALAC (24-bit, 48 kHz, stereo); MP3 outputs are 320 kbps, 48 kHz, stereo.
 - Audio conversions reject silent inputs, mismatched container/codec payloads, and files with video streams (except where noted).
 
@@ -66,7 +66,7 @@ JPEG scanning accepts both `.jpg` and `.jpeg`; JPEG outputs are written with `.j
 | `-bass [FREQ GAIN]` | `.flac`, `.wav`, `.mp3`, `.m4a`, `.mp4` | `_bass` or settings-specific suffix (e.g. `_bass_80Hz_m5dB`) |
 | `-loudscan` | `.flac`, `.wav`, `.mp3`, `.m4a`, `.mp4` | terminal report only |
 | `-loudness [LUFS]` | `.flac`, `.wav`, `.mp3`, `.m4a`, `.mp4` | `_loudness_m12LUFS`-style suffix |
-| `-fade [S]`, `-fadecut C F`, `-fadeout START DUR` | `.flac`, `.wav`, `.mp3` (`.m4a` for `-fadeout`) | `_faded` / `_fadecut` |
+| `-fade [S]`, `-fadecut C F`, `-fadeout START DUR` | `.flac`, `.wav`, `.mp3` (`.m4a` for `-fadeout`) | settings-specific: `_faded_<S>s` / `_fadecut_<C>s_<F>s` / `_fadeout_<START>s_<DUR>s` |
 | `-fadewav` | `.wav` | faded RF64 WAV |
 | `-noise [S]` | `.flac`, `.wav`, `.mp3`, `.m4a`, `.mp4` | `_noise_<S>s` |
 | `-silence [S]` | `.wav`, `.flac`, `.mp4` | `_silence_<S>s` |

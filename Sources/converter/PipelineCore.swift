@@ -1,6 +1,5 @@
 import Foundation
 import Darwin
-import BW64Bridge
 
 struct LoudnormMeasurement: Decodable, Sendable {
     let inputI: String?
@@ -207,7 +206,6 @@ final class ProbeCache: @unchecked Sendable {
 }
 
 struct ImageArtifacts: Sendable {
-    let sourcePNG: URL
     let eightK: URL
     let fourK: URL
     let threeK: URL
@@ -236,13 +234,6 @@ struct AudioArtifacts: Sendable {
     let wav: URL
     let m4a: URL
     let mp3: URL?
-}
-
-struct ExternalArchivalVariants: Sendable {
-    let rf64FLAC: URL
-    let bw64FLAC: URL
-    let rf64WAV: URL
-    let bw64WAV: URL
 }
 
 enum CanonicalPCMFormat: Sendable {
@@ -452,6 +443,7 @@ final class ConverterTool: @unchecked Sendable {
         }
         try ensureDirectory(cli.srcDir)
         try ensureWritableDirectory(cli.outDir)
+        recoverPublishBackups()
         cleanupOrphanedConverterTempFiles()
         try ensureExecutableDependencies()
     }
@@ -534,25 +526,71 @@ final class ConverterTool: @unchecked Sendable {
             return
         }
 
-        let backupExtension = destination.pathExtension.isEmpty ? "" : ".\(destination.pathExtension)"
-        let backup = try makeTemp(in: destination.deletingLastPathComponent(), stem: "\(destination.stem).publish-backup", ext: backupExtension)
-        try fileManager.removeItem(at: backup)
+        // Predictable hidden backup name so a crash mid-publish leaves a recoverable copy.
+        let backup = destination.deletingLastPathComponent()
+            .appendingPathComponent(".\(destination.lastPathComponent).publish-backup")
+        if fileManager.fileExists(atPath: backup.path) {
+            try fileManager.removeItem(at: backup)
+        }
         do {
             try fileManager.moveItem(at: destination, to: backup)
             try fileManager.moveItem(at: temp, to: destination)
             try? fileManager.removeItem(at: backup)
-            state.unregister(tempFile: backup)
         } catch {
             if !fileManager.fileExists(atPath: destination.path), fileManager.fileExists(atPath: backup.path) {
-                try? fileManager.moveItem(at: backup, to: destination)
+                do {
+                    try fileManager.moveItem(at: backup, to: destination)
+                } catch let restoreError {
+                    state.unregister(tempFile: temp)
+                    throw AppError(
+                        "Publish failed for \(destination.path) and the previous version could not be restored. Previous version preserved at: \(backup.path) (original error: \(error.localizedDescription))",
+                        underlying: restoreError
+                    )
+                }
             }
             if fileManager.fileExists(atPath: backup.path) {
                 try? fileManager.removeItem(at: backup)
             }
-            state.unregister(tempFile: backup)
+            state.unregister(tempFile: temp)
             throw error
         }
         state.unregister(tempFile: temp)
+    }
+
+    // Restores or discards leftover .publish-backup files from a crashed run:
+    // if the destination is missing the previous version is moved back, otherwise the backup is stale.
+    func recoverPublishBackups() {
+        let directories = Set([cli.srcDir.standardizedFileURL, cli.outDir.standardizedFileURL])
+        for directory in directories {
+            guard let files = try? fileManager.contentsOfDirectory(
+                at: directory,
+                includingPropertiesForKeys: [.isRegularFileKey],
+                options: []
+            ) else {
+                continue
+            }
+            for file in files
+            where file.lastPathComponent.hasPrefix(".") && file.lastPathComponent.hasSuffix(".publish-backup") {
+                let baseName = file.lastPathComponent
+                let destinationName = String(baseName.dropFirst().dropLast(".publish-backup".count))
+                let destination = directory.appendingPathComponent(destinationName)
+                if !fileManager.fileExists(atPath: destination.path) {
+                    do {
+                        try fileManager.moveItem(at: file, to: destination)
+                        logger.warn("Recovered previous version from publish backup: \(destination.path)")
+                    } catch {
+                        logger.warn("Failed to recover publish backup \(file.path): \(error.localizedDescription)")
+                    }
+                } else {
+                    do {
+                        try fileManager.removeItem(at: file)
+                        logger.debug("Removed stale publish backup: \(file.path)")
+                    } catch {
+                        logger.warn("Failed to remove stale publish backup \(file.path): \(error.localizedDescription)")
+                    }
+                }
+            }
+        }
     }
 
     // Temp placeholders are pre-created for atomic publishing, so copy-based producers must replace them first.
@@ -564,8 +602,12 @@ final class ConverterTool: @unchecked Sendable {
     }
 
     func requireDirectChild(_ file: URL, of directory: URL, label: String) throws {
-        let parent = file.deletingLastPathComponent().standardizedFileURL.path
-        let base = directory.standardizedFileURL.path
+        if file.pathComponents.contains("..") {
+            throw AppError("\(label) must stay directly in '\(directory.path)': \(file.path)")
+        }
+        // Resolve symlinks so a link inside the directory cannot escape it via `link/..`.
+        let parent = file.deletingLastPathComponent().resolvingSymlinksInPath().standardizedFileURL.path
+        let base = directory.resolvingSymlinksInPath().standardizedFileURL.path
         if parent != base {
             throw AppError("\(label) must stay directly in '\(directory.path)': \(file.path)")
         }

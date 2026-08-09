@@ -23,9 +23,7 @@ extension ConverterTool {
 
     func isFadeDerivedAudio(_ file: URL) -> Bool {
         let stem = file.stem.lowercasedASCII
-        return stem.hasSuffix("_faded")
-            || stem.hasSuffix("_faded_rf64")
-            || stem.hasSuffix("_fadecut")
+        return stem.contains("_faded") || stem.contains("_fadecut") || stem.contains("_fadeout")
     }
 
     func isSilenceDerivedMedia(_ file: URL) -> Bool {
@@ -273,21 +271,6 @@ extension ConverterTool {
         )
     }
 
-    func loudnessRenderPolicy(targetLUFS: Double, truePeakHeadroomDB: Double) -> AudioQCPolicy {
-        let policy = loudnessPolicy(targetLUFS: targetLUFS)
-        return AudioQCPolicy(
-            name: policy.name,
-            targetLUFS: policy.targetLUFS,
-            lufsTolerance: policy.lufsTolerance,
-            maxTruePeakDBTP: policy.maxTruePeakDBTP - max(0, truePeakHeadroomDB),
-            maxLoudnessRange: policy.maxLoudnessRange,
-            maxDCOffset: policy.maxDCOffset,
-            maxStereoImbalanceDB: policy.maxStereoImbalanceDB,
-            maxClippedSamples: policy.maxClippedSamples,
-            minimumAnalysisSeconds: policy.minimumAnalysisSeconds
-        )
-    }
-
     func staticLoudnessAppliedGainDB(requestedGainDB: Double, maxSafeBoostDB: Double) -> Double {
         if requestedGainDB > 0 {
             return max(0, min(requestedGainDB, maxSafeBoostDB))
@@ -445,55 +428,39 @@ extension ConverterTool {
         return try loudScanReportLines(entries: entries)
     }
 
-    func verifyTailFadeOutput(_ file: URL, sourceExtension: String, expectedDuration: Double) throws {
+    func verifyTypedAudioOutput(_ file: URL, sourceExtension: String, source: URL?, qcPolicy: AudioQCPolicy?) throws {
         switch sourceExtension.lowercasedASCII {
         case "flac":
-            try verifyFLACFile(file, sampleRate: config.flacSampleRate, channels: config.flacChannels, qcPolicy: nil)
+            try verifyFLACFile(file, sampleRate: config.flacSampleRate, channels: config.flacChannels, qcPolicy: qcPolicy)
         case "wav":
-            try verifyWAVStandard(file, qcPolicy: nil)
+            try verifyWAVStandard(file, qcPolicy: qcPolicy)
         case "mp3":
-            try verifyMP3Standard(file, qcPolicy: nil)
+            try verifyMP3Standard(file, qcPolicy: qcPolicy)
+        case "m4a":
+            try verifyM4AFile(file, sampleRate: config.m4aSampleRate, channels: config.m4aChannels, qcPolicy: qcPolicy)
+        case "mp4":
+            try requireFormatNameContains(file, anyOf: ["mp4", "mov"], label: "MP4 container")
+            if let source, try hasVideoStream(source) {
+                try verifyVideoOutput(file)
+            }
+            try verifyALACAudioOutput(file, sampleRate: config.videoMP4AudioSampleRate, channels: 2, qcPolicy: qcPolicy)
         default:
-            throw AppError("Unsupported fade output type: \(file.path)")
+            throw AppError("Unsupported output type: \(file.path)")
         }
+    }
+
+    func verifyTailFadeOutput(_ file: URL, sourceExtension: String, expectedDuration: Double) throws {
+        try verifyTypedAudioOutput(file, sourceExtension: sourceExtension, source: nil, qcPolicy: nil)
         try verifyDuration(file, expectedSeconds: expectedDuration, label: "fade output")
     }
 
     func verifyFadeOutOutput(_ file: URL, sourceExtension: String, expectedDuration: Double) throws {
-        switch sourceExtension.lowercasedASCII {
-        case "flac":
-            try verifyFLACFile(file, sampleRate: config.flacSampleRate, channels: config.flacChannels, qcPolicy: nil)
-        case "wav":
-            try verifyWAVStandard(file, qcPolicy: nil)
-        case "mp3":
-            try verifyMP3Standard(file, qcPolicy: nil)
-        case "m4a":
-            try verifyM4AFile(file, sampleRate: config.m4aSampleRate, channels: config.m4aChannels, qcPolicy: nil)
-        default:
-            throw AppError("Unsupported fadeout output type: \(file.path)")
-        }
+        try verifyTypedAudioOutput(file, sourceExtension: sourceExtension, source: nil, qcPolicy: nil)
         try verifyDuration(file, expectedSeconds: expectedDuration, label: "fadeout output")
     }
 
     func verifyBassOutput(_ file: URL, source: URL) throws {
-        switch source.pathExtension.lowercasedASCII {
-        case "flac":
-            try verifyFLACFile(file, sampleRate: config.flacSampleRate, channels: config.flacChannels, qcPolicy: nil)
-        case "wav":
-            try verifyWAVStandard(file, qcPolicy: nil)
-        case "mp3":
-            try verifyMP3Standard(file, qcPolicy: nil)
-        case "m4a":
-            try verifyM4AFile(file, sampleRate: config.m4aSampleRate, channels: config.m4aChannels, qcPolicy: nil)
-        case "mp4":
-            try requireFormatNameContains(file, anyOf: ["mp4", "mov"], label: "MP4 container")
-            if try hasVideoStream(source) {
-                try verifyVideoOutput(file)
-            }
-            try verifyALACAudioOutput(file, sampleRate: config.videoMP4AudioSampleRate, channels: 2, qcPolicy: nil)
-        default:
-            throw AppError("Unsupported bass output type: \(file.path)")
-        }
+        try verifyTypedAudioOutput(file, sourceExtension: source.pathExtension, source: source, qcPolicy: nil)
         try verifyDurationMatch(source: source, output: file)
     }
 
@@ -538,24 +505,7 @@ extension ConverterTool {
     }
 
     func loudnessOutputQCResult(_ file: URL, source: URL, policy: AudioQCPolicy) throws -> AudioQCResult {
-        switch source.pathExtension.lowercasedASCII {
-        case "flac":
-            try verifyFLACFile(file, sampleRate: config.flacSampleRate, channels: config.flacChannels, qcPolicy: nil)
-        case "wav":
-            try verifyWAVStandard(file, qcPolicy: nil)
-        case "mp3":
-            try verifyMP3Standard(file, qcPolicy: nil)
-        case "m4a":
-            try verifyM4AFile(file, sampleRate: config.m4aSampleRate, channels: config.m4aChannels, qcPolicy: nil)
-        case "mp4":
-            try requireFormatNameContains(file, anyOf: ["mp4", "mov"], label: "MP4 container")
-            if try hasVideoStream(source) {
-                try verifyVideoOutput(file)
-            }
-            try verifyALACAudioOutput(file, sampleRate: config.videoMP4AudioSampleRate, channels: 2, qcPolicy: nil)
-        default:
-            throw AppError("Unsupported loudness output type: \(file.path)")
-        }
+        try verifyTypedAudioOutput(file, sourceExtension: source.pathExtension, source: source, qcPolicy: nil)
         try verifyDurationMatch(source: source, output: file)
         return try audioQCResult(for: file, policy: policy)
     }
@@ -628,6 +578,65 @@ extension ConverterTool {
             try? fileManager.removeItem(at: temp)
             state.unregister(tempFile: temp)
             throw error
+        }
+    }
+
+    func masterMedia(_ source: URL) throws -> URL {
+        try preflightAudioMediaSource(source)
+        let output = cli.outDir
+            .appendingPathComponent("\(source.stem)_mastered")
+            .appendingPathExtension(source.pathExtension.lowercasedASCII)
+        guard output.standardizedFileURL != source.standardizedFileURL else {
+            throw AppError("Refusing to master \(source.path): source and output resolve to the same path.")
+        }
+        if canReuseOutput(output, verifier: {
+            try self.verifyMasteredOutput(output, source: source)
+        }) {
+            logger.info("Skip existing mastered media: \(output.basename)")
+            return output
+        }
+
+        let sourceWAV = try makeInternalWAV(from: source, in: cli.outDir, stem: "\(source.stem).master.source")
+        defer { discardTempFile(sourceWAV) }
+        try masterCanonicalWAVInPlaceIfNeeded(sourceWAV)
+
+        let temp = try makeTemp(in: cli.outDir, stem: output.stem, ext: ".\(output.pathExtension)")
+        do {
+            try encodeProcessedWAV(sourceWAV, matching: source, to: temp, qcPolicy: config.masteringAudioQCPolicy)
+            try verifyMasteredOutput(temp, source: source)
+            try publishTemp(temp, to: output)
+            logger.info("Created mastered media: \(output.basename)")
+            return output
+        } catch {
+            try? fileManager.removeItem(at: temp)
+            state.unregister(tempFile: temp)
+            throw error
+        }
+    }
+
+    func verifyMasteredOutput(_ file: URL, source: URL) throws {
+        switch source.pathExtension.lowercasedASCII {
+        case "flac":
+            try verifyFLACFile(file, sampleRate: config.flacSampleRate, channels: config.flacChannels, qcPolicy: nil)
+        case "wav":
+            try verifyWAVStandard(file, qcPolicy: nil)
+        case "mp3":
+            try verifyMP3Standard(file, qcPolicy: nil)
+        case "m4a":
+            try verifyM4AFile(file, sampleRate: config.m4aSampleRate, channels: config.m4aChannels, qcPolicy: nil)
+        case "mp4":
+            try requireFormatNameContains(file, anyOf: ["mp4", "mov"], label: "MP4 container")
+            if try hasVideoStream(source) {
+                try verifyVideoOutput(file)
+            }
+            try verifyALACAudioOutput(file, sampleRate: config.videoMP4AudioSampleRate, channels: 2, qcPolicy: nil)
+        default:
+            throw AppError("Unsupported mastered output type: \(file.path)")
+        }
+        try verifyDurationMatch(source: source, output: file)
+        let result = try audioQCResult(for: file, policy: config.masteringAudioQCPolicy)
+        if !result.passed {
+            throw AppError("Mastered output failed QC for \(file.path): \(result.issues.joined(separator: "; "))")
         }
     }
 
@@ -734,20 +743,7 @@ extension ConverterTool {
     }
 
     func verifySilenceOutput(_ file: URL, source: URL, expectedDuration: Double, spec: SilenceSpec) throws {
-        switch source.pathExtension.lowercasedASCII {
-        case "flac":
-            try verifyFLACFile(file, sampleRate: config.flacSampleRate, channels: config.flacChannels, qcPolicy: nil)
-        case "wav":
-            try verifyWAVStandard(file, qcPolicy: nil)
-        case "mp4":
-            try requireFormatNameContains(file, anyOf: ["mp4", "mov"], label: "MP4 container")
-            if try hasVideoStream(source) {
-                try verifyVideoOutput(file)
-            }
-            try verifyALACAudioOutput(file, sampleRate: config.videoMP4AudioSampleRate, channels: 2, qcPolicy: nil)
-        default:
-            throw AppError("Unsupported silence output type: \(file.path)")
-        }
+        try verifyTypedAudioOutput(file, sourceExtension: source.pathExtension, source: source, qcPolicy: nil)
         try verifyDuration(file, expectedSeconds: expectedDuration, label: "silence output")
         try verifySilencePadding(file, expectedDuration: expectedDuration, spec: spec)
     }
@@ -843,24 +839,7 @@ extension ConverterTool {
     }
 
     func verifyNoiseOutput(_ file: URL, source: URL, expectedDuration: Double, spec: NoiseSpec) throws {
-        switch source.pathExtension.lowercasedASCII {
-        case "flac":
-            try verifyFLACFile(file, sampleRate: config.flacSampleRate, channels: config.flacChannels, qcPolicy: nil)
-        case "wav":
-            try verifyWAVStandard(file, qcPolicy: nil)
-        case "mp3":
-            try verifyMP3Standard(file, qcPolicy: nil)
-        case "m4a":
-            try verifyM4AFile(file, sampleRate: config.m4aSampleRate, channels: config.m4aChannels, qcPolicy: nil)
-        case "mp4":
-            try requireFormatNameContains(file, anyOf: ["mp4", "mov"], label: "MP4 container")
-            if try hasVideoStream(source) {
-                try verifyVideoOutput(file)
-            }
-            try verifyALACAudioOutput(file, sampleRate: config.videoMP4AudioSampleRate, channels: 2, qcPolicy: nil)
-        default:
-            throw AppError("Unsupported noise output type: \(file.path)")
-        }
+        try verifyTypedAudioOutput(file, sourceExtension: source.pathExtension, source: source, qcPolicy: nil)
         try verifyDuration(file, expectedSeconds: expectedDuration, label: "noise output")
         try verifyNoisePadding(file, expectedDuration: expectedDuration, spec: spec)
     }
@@ -1185,7 +1164,7 @@ extension ConverterTool {
 
         let fadeSeconds = min(spec.fadeDurationSeconds, targetDuration)
         let fadeStart = max(0, targetDuration - fadeSeconds)
-        let output = cli.outDir.appendingPathComponent("\(source.stem)_fadecut").appendingPathExtension(source.pathExtension.lowercasedASCII)
+        let output = cli.outDir.appendingPathComponent("\(source.stem)_fadecut_\(ffmpegNumber(spec.cutSeconds))s_\(ffmpegNumber(fadeSeconds))s").appendingPathExtension(source.pathExtension.lowercasedASCII)
         if canReuseOutput(output, verifier: {
             try self.verifyTailFadeOutput(output, sourceExtension: source.pathExtension, expectedDuration: targetDuration)
         }) {
@@ -1229,7 +1208,7 @@ extension ConverterTool {
 
         let fadeSeconds = min(requestedFadeSeconds, duration)
         let fadeStart = max(0, duration - fadeSeconds)
-        let output = cli.outDir.appendingPathComponent("\(source.stem)_faded").appendingPathExtension(source.pathExtension.lowercasedASCII)
+        let output = cli.outDir.appendingPathComponent("\(source.stem)_faded_\(ffmpegNumber(fadeSeconds))s").appendingPathExtension(source.pathExtension.lowercasedASCII)
         if canReuseOutput(output, verifier: {
             try self.verifyTailFadeOutput(output, sourceExtension: source.pathExtension, expectedDuration: duration)
         }) {
@@ -1275,7 +1254,7 @@ extension ConverterTool {
             throw AppError("Fade end \(targetDuration)s exceeds source duration \(sourceDuration)s for \(source.basename)")
         }
 
-        let output = cli.outDir.appendingPathComponent("\(source.stem)_faded").appendingPathExtension(source.pathExtension.lowercasedASCII)
+        let output = cli.outDir.appendingPathComponent("\(source.stem)_fadeout_\(ffmpegNumber(spec.fadeStartSeconds))s_\(ffmpegNumber(spec.fadeDurationSeconds))s").appendingPathExtension(source.pathExtension.lowercasedASCII)
         if canReuseOutput(output, verifier: {
             try self.verifyFadeOutOutput(output, sourceExtension: source.pathExtension, expectedDuration: targetDuration)
         }) {
@@ -1370,7 +1349,7 @@ extension ConverterTool {
 
     func estimateWAVBytes(duration: Double, channels: Int) -> UInt64 {
         if duration <= 0 || channels <= 0 { return 0 }
-        return UInt64((duration * Double(config.wavSampleRate * channels * 4)).rounded()) + 1_048_576
+        return UInt64((duration * Double(config.wavSampleRate * channels * 3)).rounded()) + 1_048_576
     }
 
     // Use the stricter WAV contract only for WAV sources; other audio inputs use generic media preflight.
@@ -1520,11 +1499,11 @@ extension ConverterTool {
     }
 
     // Convert any supported audio source into project-standard MP3.
-    func convertAudioToMP3(_ source: URL, forceRebuild: Bool = false) throws -> URL {
+    func convertAudioToMP3(_ source: URL) throws -> URL {
         try preflightAudioSourceForTranscode(source)
         try requireFFmpegEncoder("libmp3lame")
         let output = cli.outDir.appendingPathComponent(source.stem).appendingPathExtension("mp3")
-        if !forceRebuild, canReuseOutput(output, verifier: {
+        if canReuseOutput(output, verifier: {
             try verifyMP3Standard(output, qcPolicy: nil)
             try verifyDurationMatch(source: source, output: output)
             try verifySourceLoudnessPreserved(source: source, output: output)
@@ -1550,8 +1529,8 @@ extension ConverterTool {
         }
     }
 
-    func convertWAVToMP3(_ source: URL, forceRebuild: Bool = false) throws -> URL {
-        try convertAudioToMP3(source, forceRebuild: forceRebuild)
+    func convertWAVToMP3(_ source: URL) throws -> URL {
+        try convertAudioToMP3(source)
     }
 
     func convertFLACToMP3(_ source: URL) throws -> URL {
@@ -1791,23 +1770,16 @@ extension ConverterTool {
         }
     }
 
-    func generateExternalArchivalVariants(baseName: String, highQualitySource: URL) throws -> ExternalArchivalVariants {
+    func generateExternalArchivalVariants(baseName: String, highQualitySource: URL) throws {
         let rf64FLAC = cli.outDir.appendingPathComponent("\(baseName)_RF64").appendingPathExtension("flac")
         let bw64FLAC = cli.outDir.appendingPathComponent("\(baseName)_BW64").appendingPathExtension("flac")
         let rf64WAV = cli.outDir.appendingPathComponent("\(baseName)_RF64").appendingPathExtension("wav")
         let bw64WAV = cli.outDir.appendingPathComponent("\(baseName)_BW64").appendingPathExtension("wav")
 
-        let createdRF64FLAC = try createExternalFLACVariant(source: highQualitySource, output: rf64FLAC)
-        let createdBW64FLAC = try createExternalFLACVariant(source: highQualitySource, output: bw64FLAC)
-        let createdRF64WAV = try createExternalWAVVariant(source: highQualitySource, output: rf64WAV, writeBext: false)
-        let createdBW64WAV = try createExternalBW64WAVVariant(source: highQualitySource, output: bw64WAV)
-
-        return ExternalArchivalVariants(
-            rf64FLAC: createdRF64FLAC,
-            bw64FLAC: createdBW64FLAC,
-            rf64WAV: createdRF64WAV,
-            bw64WAV: createdBW64WAV
-        )
+        _ = try createExternalFLACVariant(source: highQualitySource, output: rf64FLAC)
+        _ = try createExternalFLACVariant(source: highQualitySource, output: bw64FLAC)
+        _ = try createExternalWAVVariant(source: highQualitySource, output: rf64WAV, writeBext: false)
+        _ = try createExternalBW64WAVVariant(source: highQualitySource, output: bw64WAV)
     }
 
     func crc32(for file: URL) throws -> String {

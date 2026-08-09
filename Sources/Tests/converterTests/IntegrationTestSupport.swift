@@ -37,8 +37,8 @@ final class IntegrationWorkspace {
         PREFLIGHT_SECONDS=1
         DURATION_TOLERANCE_SEC=1.5
         CRC_CHUNK_BYTES=262144
-        WAV_SAMPLE_RATE=192000
-        WAV_CODEC=pcm_f32le
+        WAV_SAMPLE_RATE=96000
+        WAV_CODEC=pcm_s24le
         WAV_CHANNELS=2
         WAV_WRITE_BEXT=1
         MP3_SAMPLE_RATE=48000
@@ -48,7 +48,6 @@ final class IntegrationWorkspace {
         FLAC_SAMPLE_RATE=48000
         FLAC_CHANNELS=2
         FLAC_COMPRESSION_LEVEL=8
-        M4A_BITRATE=lossless
         M4A_SAMPLE_RATE=48000
         M4A_CHANNELS=2
         AUDIO_QC_TARGET_LUFS=-12
@@ -62,7 +61,6 @@ final class IntegrationWorkspace {
         SHORT_AUDIO_QC_TARGET_LUFS=-12
         SHORT_AUDIO_QC_LUFS_TOLERANCE=12
         SHORT_AUDIO_QC_MAX_LOUDNESS_RANGE=30
-        MASTERING_ENABLED=0
         MASTERING_TARGET_LUFS=-12
         MASTERING_MAX_TRUE_PEAK_DBTP=-1
         MASTERING_MAX_LOUDNESS_RANGE=20
@@ -72,7 +70,6 @@ final class IntegrationWorkspace {
         VIDEO_MP4_SOFTWARE_PRESET=medium
         VIDEO_MP4_SOFTWARE_CRF=22
         VIDEO_MP4_INPUT_FPS=2
-        VIDEO_MP4_AUDIO_BITRATE=lossless
         VIDEO_MP4_AUDIO_SAMPLE_RATE=48000
         VIDEO_MP4_WIDTH=320
         VIDEO_MP4_HEIGHT=180
@@ -91,7 +88,6 @@ final class IntegrationWorkspace {
         SHORT_MP4_VIDEO_PRESET=fast
         SHORT_MP4_VIDEO_CRF=23
         SHORT_MP4_VT_QUALITY=55
-        SHORT_MP4_AUDIO_BITRATE=lossless
         SHORT_MP4_AUDIO_SAMPLE_RATE=48000
         SHORT_MP4_VIDEO_CODEC=libx264
         SHORT_MP4_VIDEO_FALLBACKS=h264_videotoolbox

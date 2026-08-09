@@ -79,6 +79,7 @@ If Homebrew itself is missing and a required formula must be installed, converte
 ./converter -loudscan
 ./converter -loudness
 ./converter -loudness -13
+./converter -master
 ./converter -fade 10
 ./converter -fadecut 5 10
 ./converter -fadeout 1:30 10
@@ -112,14 +113,14 @@ Running `./converter` without parameters prints help and does not start media pr
 Album commands differ in input discovery: `-album` and `-flactoalbum` scan `Output/` directly (natural numeric order), while `-wavtoalbum` and `-mp3toalbum` read the track list from `album.txt` in the project root (entries resolve directly inside `Output/`; `#` comments and missing tracks are skipped with a warning). Only `-album` loudness-normalizes tracks before joining; the `album.txt`-based commands concatenate in listed order without normalization. See [docs/FORMATS.md](./docs/FORMATS.md) for the full command-to-format reference.
 
 ## Audio Standards
-All converter audio paths stage through an internal WAV before delivery encoding. The internal working WAV standard is fixed at 32-bit float, 192 kHz, stereo (`pcm_f32le`, RF64 WAV).
+All converter audio paths stage through an internal WAV before delivery encoding. The internal working WAV standard is fixed at 24-bit, 96 kHz, stereo (`pcm_s24le`, RF64 WAV).
 
 Delivery audio standards:
 - MP4 audio: ALAC, 24-bit, 48 kHz, stereo
 - M4A audio: ALAC, 24-bit, 48 kHz, stereo
 - MP3 audio: 320 kbps, 48 kHz, stereo
 
-MP4/M4A delivery paths do not stream-copy AAC and do not use AAC bitrate settings. The legacy bitrate keys in `config.txt` are kept for compatibility but are set to `lossless` and ignored by ALAC encodes.
+MP4/M4A delivery paths do not stream-copy AAC and do not use AAC bitrate settings — audio is always ALAC.
 
 ## Hash Rename
 Use `./converter --hash` to rename `.wav`, `.flac`, `.mp3`, and `.mp4` files in `Output/` to CRC32-based filenames after media preflight.
@@ -136,6 +137,9 @@ Use `./converter -loudness` to create same-format loudness-normalized copies for
 
 Loudness normalization targets whole-track integrated LUFS, not constant moment-to-moment volume. Rendering uses one static gain value only: no EQ, no limiter, no dynamic loudnorm render, and no compression. If a source has high peaks and a low integrated average, the converter caps positive gain at available peak headroom and may warn that the output is peak-constrained instead of damaging the musical dynamics to force the exact target.
 
+## Mastering
+Use `./converter -master` to create same-format `_mastered` copies for `.flac`, `.wav`, `.mp3`, `.m4a`, and `.mp4` files in `Output/`. Each file stages through the internal WAV and is remediated to the mastering target (default `-12 LUFS`, configurable via `MASTERING_TARGET_LUFS`/`MASTERING_MAX_TRUE_PEAK_DBTP`/`MASTERING_MAX_LOUDNESS_RANGE`) using two-pass loudnorm with a one-pass fallback when the source is out of policy. Files already within policy are re-encoded losslessly. Mastering runs **only when explicitly requested** — it is never applied during normal pipeline work, which preserves source loudness.
+
 ## Noise Padding
 Use `./converter -noise [SECONDS]` to add random-noise lead-in and tail padding to `.flac`, `.wav`, `.mp3`, `.m4a`, and `.mp4` files in `Output/`. When `SECONDS` is omitted, the default is 30 seconds. The generated noise sections are normalized to `-12 LUFS`, with a fixed 2-second silence gap before and after the original media.
 
@@ -145,7 +149,7 @@ Example:
 ./converter -noise 45
 ```
 
-That writes same-format files such as `song_noise_30s.flac`, `song_noise_30s.wav`, `song_noise_30s.mp3`, `song_noise_30s.m4a`, or `video_noise_30s.mp4`. The audio layout is `noise -> 2s silence -> original media -> 2s silence -> noise`. WAV outputs remain RF64 `pcm_f32le`; compressed/lossless outputs are re-encoded to the project quality settings. MP4 outputs keep video present by extending first and last frames while the audio receives matching leading and trailing noise plus the silent transitions.
+That writes same-format files such as `song_noise_30s.flac`, `song_noise_30s.wav`, `song_noise_30s.mp3`, `song_noise_30s.m4a`, or `video_noise_30s.mp4`. The audio layout is `noise -> 2s silence -> original media -> 2s silence -> noise`. WAV outputs remain RF64 `pcm_s24le`; compressed/lossless outputs are re-encoded to the project quality settings. MP4 outputs keep video present by extending first and last frames while the audio receives matching leading and trailing noise plus the silent transitions.
 
 ## Silence Padding
 Use `./converter -silence [SECONDS]` to add silent lead-in and tail padding to `.wav`, `.flac`, and `.mp4` files in `Output/`. When `SECONDS` is omitted, the default is 30 seconds.
@@ -156,7 +160,7 @@ Example:
 ./converter -silence 45
 ```
 
-That writes same-format files such as `song_silence_30s.wav`, `song_silence_30s.flac`, or `video_silence_30s.mp4`. WAV outputs remain RF64 `pcm_f32le`; FLAC and MP4 outputs are re-encoded to the project quality settings. MP4 outputs keep video present by extending first and last frames while the audio receives matching leading and trailing silence.
+That writes same-format files such as `song_silence_30s.wav`, `song_silence_30s.flac`, or `video_silence_30s.mp4`. WAV outputs remain RF64 `pcm_s24le`; FLAC and MP4 outputs are re-encoded to the project quality settings. MP4 outputs keep video present by extending first and last frames while the audio receives matching leading and trailing silence.
 
 ## Profiles
 Built-in profiles:
@@ -210,10 +214,10 @@ Example:
 ./converter -fade 5
 ```
 
-That uses a normal fade over the final 5 seconds and writes new files with the `_faded` suffix:
-- `.flac -> *_faded.flac`
-- `.wav -> *_faded.wav`
-- `.mp3 -> *_faded.mp3`
+That uses a normal fade over the final 5 seconds and writes new files with a settings-specific suffix:
+- `.flac -> *_faded_5s.flac`
+- `.wav -> *_faded_5s.wav`
+- `.mp3 -> *_faded_5s.mp3`
 
 Use `-fadecut CUT_SECONDS FADE_SECONDS` to remove time from the end first, then apply a normal fade to the new tail.
 
@@ -223,9 +227,9 @@ Example:
 ```
 
 That removes the final 5 seconds, fades the final 10 seconds of the shortened file, and writes:
-- `.flac -> *_fadecut.flac`
-- `.wav -> *_fadecut.wav`
-- `.mp3 -> *_fadecut.mp3`
+- `.flac -> *_fadecut_5s_10s.flac`
+- `.wav -> *_fadecut_5s_10s.wav`
+- `.mp3 -> *_fadecut_5s_10s.mp3`
 
 Use `-fadeout START DURATION` to create truncated same-format fadeout files from supported audio sources in `Output/`.
 
@@ -234,11 +238,11 @@ Example:
 ./converter -fadeout 1:30 10
 ```
 
-That starts fading at `1:30`, reaches silence at `1:40`, truncates there, and writes new files with the `_faded` suffix:
-- `.flac -> *_faded.flac`
-- `.wav -> *_faded.wav`
-- `.mp3 -> *_faded.mp3`
-- `.m4a -> *_faded.m4a`
+That starts fading at `1:30`, reaches silence at `1:40`, truncates there, and writes new files with a settings-specific suffix:
+- `.flac -> *_fadeout_90s_10s.flac`
+- `.wav -> *_fadeout_90s_10s.wav`
+- `.mp3 -> *_fadeout_90s_10s.mp3`
+- `.m4a -> *_fadeout_90s_10s.m4a`
 
 ## Notes
 - media inputs are auto-discovered from `Output/` by default

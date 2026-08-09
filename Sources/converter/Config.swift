@@ -14,8 +14,8 @@ struct ProjectConfig {
     var durationToleranceSec = 2.0
     var crcChunkBytes = 8_388_608
 
-    var wavSampleRate = 192_000
-    var wavCodec = "pcm_f32le"
+    var wavSampleRate = 96_000
+    var wavCodec = "pcm_s24le"
     var wavChannels = 2
     var wavWriteBext = 1
     let alacSampleFormat = "s32p"
@@ -30,7 +30,6 @@ struct ProjectConfig {
     var flacChannels = 2
     var flacCompressionLevel = 12
 
-    var m4aBitrate = "lossless"
     var m4aSampleRate = 48_000
     var m4aChannels = 2
 
@@ -46,7 +45,6 @@ struct ProjectConfig {
     var shortAudioQCLUFSTolerance = 8.0
     var shortAudioQCMaxLoudnessRange = 20.0
 
-    var masteringEnabled = false
     var masteringTargetLUFS = LoudnessSpec.defaultTargetLUFS
     var masteringMaxTruePeakDBTP = -1.0
     var masteringMaxLoudnessRange = 20.0
@@ -57,7 +55,6 @@ struct ProjectConfig {
     var videoMP4SoftwarePreset = "slow"
     var videoMP4SoftwareCRF = "18"
     var videoMP4InputFPS = "2"
-    var videoMP4AudioBitrate = "lossless"
     var videoMP4AudioSampleRate = 48_000
     var videoMP4Width = 7680
     var videoMP4Height = 4320
@@ -77,7 +74,6 @@ struct ProjectConfig {
     var shortMP4VideoPreset = "fast"
     var shortMP4VideoCRF = "18"
     var shortMP4VTQuality = "60"
-    var shortMP4AudioBitrate = "lossless"
     var shortMP4AudioSampleRate = 48_000
     var shortMP4VideoCodec = "libx264"
     var shortMP4VideoFallbacks = "h264_videotoolbox"
@@ -112,19 +108,19 @@ struct ProjectConfig {
         "WAV_SAMPLE_RATE", "WAV_CODEC", "WAV_CHANNELS", "WAV_WRITE_BEXT",
         "MP3_SAMPLE_RATE", "MP3_BITRATE", "MP3_CHANNELS", "MP3_MIN_BITRATE_BPS",
         "FLAC_SAMPLE_RATE", "FLAC_CHANNELS", "FLAC_COMPRESSION_LEVEL",
-        "M4A_BITRATE", "M4A_SAMPLE_RATE", "M4A_CHANNELS",
+        "M4A_SAMPLE_RATE", "M4A_CHANNELS",
         "AUDIO_QC_TARGET_LUFS", "AUDIO_QC_LUFS_TOLERANCE", "AUDIO_QC_MAX_TRUE_PEAK_DBTP",
         "AUDIO_QC_MAX_LOUDNESS_RANGE", "AUDIO_QC_MAX_DC_OFFSET", "AUDIO_QC_MAX_STEREO_IMBALANCE_DB",
         "AUDIO_QC_MAX_CLIPPED_SAMPLES", "AUDIO_QC_MINIMUM_ANALYSIS_SECONDS",
         "SHORT_AUDIO_QC_TARGET_LUFS", "SHORT_AUDIO_QC_LUFS_TOLERANCE", "SHORT_AUDIO_QC_MAX_LOUDNESS_RANGE",
-        "MASTERING_ENABLED", "MASTERING_TARGET_LUFS", "MASTERING_MAX_TRUE_PEAK_DBTP", "MASTERING_MAX_LOUDNESS_RANGE",
+        "MASTERING_TARGET_LUFS", "MASTERING_MAX_TRUE_PEAK_DBTP", "MASTERING_MAX_LOUDNESS_RANGE",
         "VIDEO_MP4_ENCODER", "VIDEO_MP4_ENCODER_FALLBACKS", "VIDEO_MP4_VT_QUALITY", "VIDEO_MP4_SOFTWARE_PRESET",
-        "VIDEO_MP4_SOFTWARE_CRF", "VIDEO_MP4_INPUT_FPS", "VIDEO_MP4_AUDIO_BITRATE",
+        "VIDEO_MP4_SOFTWARE_CRF", "VIDEO_MP4_INPUT_FPS",
         "VIDEO_MP4_AUDIO_SAMPLE_RATE", "VIDEO_MP4_WIDTH", "VIDEO_MP4_HEIGHT", "VIDEO_MP4_SCALE_FILTER",
         "VIDEO_MP4_PIXEL_FORMAT", "VIDEO_MP4_TAG", "VIDEO_MP4_VERIFY_CODEC",
         "VIDEO_COLOR_PRIMARIES", "VIDEO_COLOR_TRANSFER", "VIDEO_COLOR_SPACE", "VIDEO_COLOR_RANGE",
         "SHORT_MP4_CLIP_SECONDS", "SHORT_MP4_FPS", "SHORT_MP4_SCALE_W", "SHORT_MP4_SCALE_H",
-        "SHORT_MP4_VIDEO_PRESET", "SHORT_MP4_VIDEO_CRF", "SHORT_MP4_VT_QUALITY", "SHORT_MP4_AUDIO_BITRATE",
+        "SHORT_MP4_VIDEO_PRESET", "SHORT_MP4_VIDEO_CRF", "SHORT_MP4_VT_QUALITY",
         "SHORT_MP4_AUDIO_SAMPLE_RATE", "SHORT_MP4_VIDEO_CODEC", "SHORT_MP4_VIDEO_FALLBACKS", "SHORT_MP4_PIXEL_FORMAT",
         "SHORT_MP4_VERIFY_CODEC",
         "IMAGE_8K_WIDTH", "IMAGE_8K_HEIGHT", "IMAGE_4K_WIDTH", "IMAGE_4K_HEIGHT", "IMAGE_3K_SIZE",
@@ -201,26 +197,20 @@ struct ProjectConfig {
             shortMP4VideoCodec = "h264_videotoolbox"
             shortMP4VideoFallbacks = "libx264"
             shortMP4VTQuality = "65"
-            shortMP4AudioBitrate = "lossless"
             shortAudioQCTargetLUFS = LoudnessSpec.defaultTargetLUFS
             shortAudioQCLUFSTolerance = 6.0
         case .archive:
             mp3Bitrate = "320k"
-            m4aBitrate = "lossless"
             flacCompressionLevel = 12
-            masteringEnabled = false
         case .fastPreview:
-            masteringEnabled = false
             videoMP4Encoder = "h264_videotoolbox"
             videoMP4EncoderFallbacks = "libx264"
             videoMP4VerifyCodec = "h264"
             videoMP4Tag = "avc1"
             videoMP4Width = 1920
             videoMP4Height = 1080
-            videoMP4AudioBitrate = "lossless"
             shortMP4VideoCodec = "h264_videotoolbox"
             shortMP4VideoFallbacks = "libx264"
-            shortMP4AudioBitrate = "lossless"
             image8KWidth = 1920
             image8KHeight = 1080
             image4KWidth = 1280
@@ -255,7 +245,6 @@ struct ProjectConfig {
         case "FLAC_SAMPLE_RATE": flacSampleRate = try parseInt(key, value)
         case "FLAC_CHANNELS": flacChannels = try parseInt(key, value)
         case "FLAC_COMPRESSION_LEVEL": flacCompressionLevel = try parseInt(key, value)
-        case "M4A_BITRATE": m4aBitrate = value
         case "M4A_SAMPLE_RATE": m4aSampleRate = try parseInt(key, value)
         case "M4A_CHANNELS": m4aChannels = try parseInt(key, value)
         case "AUDIO_QC_TARGET_LUFS": audioQCTargetLUFS = try parseDouble(key, value)
@@ -269,7 +258,6 @@ struct ProjectConfig {
         case "SHORT_AUDIO_QC_TARGET_LUFS": shortAudioQCTargetLUFS = try parseDouble(key, value)
         case "SHORT_AUDIO_QC_LUFS_TOLERANCE": shortAudioQCLUFSTolerance = try parseDouble(key, value)
         case "SHORT_AUDIO_QC_MAX_LOUDNESS_RANGE": shortAudioQCMaxLoudnessRange = try parseDouble(key, value)
-        case "MASTERING_ENABLED": masteringEnabled = try parseBool(key, value)
         case "MASTERING_TARGET_LUFS": masteringTargetLUFS = try parseDouble(key, value)
         case "MASTERING_MAX_TRUE_PEAK_DBTP": masteringMaxTruePeakDBTP = try parseDouble(key, value)
         case "MASTERING_MAX_LOUDNESS_RANGE": masteringMaxLoudnessRange = try parseDouble(key, value)
@@ -279,7 +267,6 @@ struct ProjectConfig {
         case "VIDEO_MP4_SOFTWARE_PRESET": videoMP4SoftwarePreset = value
         case "VIDEO_MP4_SOFTWARE_CRF": videoMP4SoftwareCRF = value
         case "VIDEO_MP4_INPUT_FPS": videoMP4InputFPS = value
-        case "VIDEO_MP4_AUDIO_BITRATE": videoMP4AudioBitrate = value
         case "VIDEO_MP4_AUDIO_SAMPLE_RATE": videoMP4AudioSampleRate = try parseInt(key, value)
         case "VIDEO_MP4_WIDTH": videoMP4Width = try parseInt(key, value)
         case "VIDEO_MP4_HEIGHT": videoMP4Height = try parseInt(key, value)
@@ -298,7 +285,6 @@ struct ProjectConfig {
         case "SHORT_MP4_VIDEO_PRESET": shortMP4VideoPreset = value
         case "SHORT_MP4_VIDEO_CRF": shortMP4VideoCRF = value
         case "SHORT_MP4_VT_QUALITY": shortMP4VTQuality = value
-        case "SHORT_MP4_AUDIO_BITRATE": shortMP4AudioBitrate = value
         case "SHORT_MP4_AUDIO_SAMPLE_RATE": shortMP4AudioSampleRate = try parseInt(key, value)
         case "SHORT_MP4_VIDEO_CODEC": shortMP4VideoCodec = value
         case "SHORT_MP4_VIDEO_FALLBACKS": shortMP4VideoFallbacks = value
@@ -340,8 +326,8 @@ struct ProjectConfig {
         try requirePositive(crcChunkBytes, "CRC_CHUNK_BYTES")
         try requirePositive(wavSampleRate, "WAV_SAMPLE_RATE")
         try requireChannels(wavChannels, "WAV_CHANNELS")
-        if wavSampleRate != 192_000 || wavCodec.lowercasedASCII != "pcm_f32le" || wavChannels != 2 {
-            throw AppError("Internal WAV processing must be 32-bit float, 192 kHz, stereo (WAV_SAMPLE_RATE=192000, WAV_CODEC=pcm_f32le, WAV_CHANNELS=2).")
+        if wavSampleRate != 96_000 || wavCodec.lowercasedASCII != "pcm_s24le" || wavChannels != 2 {
+            throw AppError("Internal WAV processing must be 24-bit, 96 kHz, stereo (WAV_SAMPLE_RATE=96000, WAV_CODEC=pcm_s24le, WAV_CHANNELS=2).")
         }
         try requirePositive(mp3SampleRate, "MP3_SAMPLE_RATE")
         try requireChannels(mp3Channels, "MP3_CHANNELS")
@@ -471,17 +457,6 @@ private func parseDouble(_ key: String, _ value: String) throws -> Double {
     return parsed
 }
 
-private func parseBool(_ key: String, _ value: String) throws -> Bool {
-    switch value.trimmed.lowercasedASCII {
-    case "1", "true", "yes", "on":
-        return true
-    case "0", "false", "no", "off":
-        return false
-    default:
-        throw AppError("\(key) must be a boolean-like value (got '\(value)')")
-    }
-}
-
 private func requirePositive(_ value: Int, _ name: String) throws {
     if value <= 0 {
         throw AppError("\(name) must be > 0 (got '\(value)')")
@@ -533,14 +508,6 @@ private func requirePositiveRateString(_ value: String, _ name: String) throws {
         return
     }
     throw AppError("\(name) must be a positive number or ratio (got '\(value)')")
-}
-
-private func requireBitrateString(_ value: String, _ name: String) throws {
-    try requireNonEmpty(value, name)
-    let pattern = #"^[0-9]+([kKmM])?$"#
-    if value.range(of: pattern, options: .regularExpression) == nil {
-        throw AppError("\(name) must look like an ffmpeg bitrate (got '\(value)')")
-    }
 }
 
 private func commaSeparatedList(_ value: String) -> [String] {

@@ -7,8 +7,8 @@
 PROFILE=youtube_master
 
 # WAV standard (used for WAV creation/normalization/validation)
-WAV_SAMPLE_RATE=192000
-WAV_CODEC=pcm_f32le
+WAV_SAMPLE_RATE=96000
+WAV_CODEC=pcm_s24le
 WAV_CHANNELS=2
 WAV_WRITE_BEXT=1
 
@@ -24,7 +24,6 @@ FLAC_CHANNELS=2
 FLAC_COMPRESSION_LEVEL=12
 
 # M4A encoding standard (ALAC lossless, 24-bit, 48 kHz, stereo)
-M4A_BITRATE=lossless
 M4A_SAMPLE_RATE=48000
 M4A_CHANNELS=2
 
@@ -41,20 +40,18 @@ SHORT_AUDIO_QC_TARGET_LUFS=-12
 SHORT_AUDIO_QC_LUFS_TOLERANCE=8
 SHORT_AUDIO_QC_MAX_LOUDNESS_RANGE=20
 
-# Canonical WAV mastering/remediation pass before delivery encodes in full runs
-MASTERING_ENABLED=0
+# Mastering parameters for the -master command
 MASTERING_TARGET_LUFS=-12
 MASTERING_MAX_TRUE_PEAK_DBTP=-1
 MASTERING_MAX_LOUDNESS_RANGE=20
 
-# Video MP4 render settings (used by m4atomp4.sh)
+# Video MP4 render settings (used by the m4atomp4 render)
 VIDEO_MP4_ENCODER=hevc_videotoolbox
 VIDEO_MP4_ENCODER_FALLBACKS=libx265
 VIDEO_MP4_VT_QUALITY=70
 VIDEO_MP4_SOFTWARE_PRESET=slow
 VIDEO_MP4_SOFTWARE_CRF=18
 VIDEO_MP4_INPUT_FPS=2
-VIDEO_MP4_AUDIO_BITRATE=lossless
 VIDEO_MP4_AUDIO_SAMPLE_RATE=48000
 VIDEO_MP4_WIDTH=7680
 VIDEO_MP4_HEIGHT=4320
@@ -67,7 +64,8 @@ VIDEO_COLOR_TRANSFER=bt709
 VIDEO_COLOR_SPACE=bt709
 VIDEO_COLOR_RANGE=tv
 
-# Short MP4 render settings. Output is always hard-capped to 58 seconds even if this value is set higher.
+# Short MP4 render settings. Standard short clips are hard-capped at 58 seconds; a full-length
+# _FullSong companion renders when the source audio is longer than the cap.
 SHORT_MP4_CLIP_SECONDS=58
 SHORT_MP4_FPS=2
 SHORT_MP4_SCALE_W=4320
@@ -75,7 +73,6 @@ SHORT_MP4_SCALE_H=7680
 SHORT_MP4_VIDEO_PRESET=fast
 SHORT_MP4_VIDEO_CRF=18
 SHORT_MP4_VT_QUALITY=60
-SHORT_MP4_AUDIO_BITRATE=lossless
 SHORT_MP4_AUDIO_SAMPLE_RATE=48000
 SHORT_MP4_VIDEO_CODEC=libx264
 SHORT_MP4_VIDEO_FALLBACKS=h264_videotoolbox

@@ -362,11 +362,6 @@ extension ConverterTool {
         try preflightAudioInput(file, requireNoVideo: true)
     }
 
-    func renderM4AToShortMP4(imageFile: URL, audioFile: URL, audioQCPolicy: AudioQCPolicy?) throws -> URL {
-        try preflightM4AInput(audioFile)
-        return try renderAudioToShortMP4(imageFile: imageFile, audioFile: audioFile, audioQCPolicy: audioQCPolicy)
-    }
-
     func renderAudioToShortMP4(
         imageFile: URL,
         audioFile: URL,

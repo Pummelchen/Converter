@@ -48,7 +48,27 @@ private func closeHandles(_ handles: [FileHandle]) {
     }
 }
 
+private final class TimeoutFlag: @unchecked Sendable {
+    private let lock = NSLock()
+    private var timedOut = false
+
+    func set() {
+        lock.lock()
+        timedOut = true
+        lock.unlock()
+    }
+
+    var isSet: Bool {
+        lock.lock()
+        defer { lock.unlock() }
+        return timedOut
+    }
+}
+
 final class ProcessRunner: @unchecked Sendable {
+    // Bounds every external command so a hung tool cannot stall a run forever.
+    static let defaultTimeoutSeconds: TimeInterval = 1800
+
     private let logger: Logger
     private let environment: [String: String]
     private let fileManager = FileManager.default
@@ -88,7 +108,8 @@ final class ProcessRunner: @unchecked Sendable {
         _ arguments: [String],
         currentDirectory: URL? = nil,
         extraEnvironment: [String: String] = [:],
-        allowedExitCodes: Set<Int32> = [0]
+        allowedExitCodes: Set<Int32> = [0],
+        timeoutSeconds: TimeInterval? = nil
     ) throws -> ProcessResult {
         let executableURL = try resolveExecutable(named: executable)
         if debugEnabled {
@@ -120,7 +141,23 @@ final class ProcessRunner: @unchecked Sendable {
 
         closeHandles([stdoutPipe.fileHandleForWriting, stderrPipe.fileHandleForWriting])
 
+        let timeout = timeoutSeconds ?? Self.defaultTimeoutSeconds
+        let timeoutFlag = TimeoutFlag()
+        let watchdog = DispatchWorkItem { [weak process, timeoutFlag] in
+            guard let process, process.isRunning else { return }
+            timeoutFlag.set()
+            process.terminate()
+        }
+        DispatchQueue.global(qos: .userInitiated).asyncAfter(deadline: .now() + timeout, execute: watchdog)
         process.waitUntilExit()
+        watchdog.cancel()
+
+        if timeoutFlag.isSet {
+            _ = stdoutCapture.waitString()
+            _ = stderrCapture.waitString()
+            throw AppError("Command timed out after \(Int(timeout)) seconds: \(formatCommand(executableURL.path, arguments))")
+        }
+
         let stdout = stdoutCapture.waitString()
         let stderr = stderrCapture.waitString()
         let result = ProcessResult(stdout: stdout, stderr: stderr, exitCode: process.terminationStatus)
@@ -142,7 +179,8 @@ final class ProcessRunner: @unchecked Sendable {
         currentDirectory: URL? = nil,
         extraEnvironment: [String: String] = [:],
         allowedProducerExitCodes: Set<Int32> = [0],
-        allowedConsumerExitCodes: Set<Int32> = [0]
+        allowedConsumerExitCodes: Set<Int32> = [0],
+        timeoutSeconds: TimeInterval? = nil
     ) throws -> PipelineProcessResult {
         let producerURL = try resolveExecutable(named: producerExecutable)
         let consumerURL = try resolveExecutable(named: consumerExecutable)
@@ -211,8 +249,31 @@ final class ProcessRunner: @unchecked Sendable {
             consumerErrorPipe.fileHandleForWriting
         ])
 
+        let timeout = timeoutSeconds ?? Self.defaultTimeoutSeconds
+        let timeoutFlag = TimeoutFlag()
+        let watchdog = DispatchWorkItem { [weak producer, weak consumer, timeoutFlag] in
+            guard let producer, let consumer, producer.isRunning || consumer.isRunning else { return }
+            timeoutFlag.set()
+            if producer.isRunning {
+                producer.terminate()
+            }
+            if consumer.isRunning {
+                consumer.terminate()
+            }
+        }
+        DispatchQueue.global(qos: .userInitiated).asyncAfter(deadline: .now() + timeout, execute: watchdog)
         producer.waitUntilExit()
         consumer.waitUntilExit()
+        watchdog.cancel()
+
+        if timeoutFlag.isSet {
+            _ = producerErrorCapture.waitString()
+            _ = consumerOutputCapture.waitString()
+            _ = consumerErrorCapture.waitString()
+            throw AppError(
+                "Pipeline timed out after \(Int(timeout)) seconds: \(formatCommand(producerURL.path, producerArguments)) | \(formatCommand(consumerURL.path, consumerArguments))"
+            )
+        }
 
         let producerResult = ProcessResult(
             stdout: "",

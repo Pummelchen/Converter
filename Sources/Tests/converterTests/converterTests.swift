@@ -780,7 +780,6 @@ final class converterTests: XCTestCase {
         )
 
         XCTAssertEqual(config.profileName, "fast_preview")
-        XCTAssertFalse(config.masteringEnabled)
         XCTAssertEqual(config.videoMP4Encoder, "h264_videotoolbox")
         XCTAssertEqual(config.videoMP4VerifyCodec, "h264")
         XCTAssertEqual(config.videoMP4Width, 1920)
@@ -956,6 +955,63 @@ final class converterTests: XCTestCase {
         XCTAssertEqual(tool.verifyCodec(forEncoder: "libx265"), "hevc")
         XCTAssertEqual(tool.verifyCodec(forEncoder: "hevc_videotoolbox"), "hevc")
         XCTAssertNil(tool.verifyCodec(forEncoder: "unknown_encoder"))
+    }
+
+    func testPublishBackupRecoveryRestoresMissingDestination() throws {
+        let tempDirectory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("converter-test-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: tempDirectory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: tempDirectory) }
+
+        let tool = try makeTool(tempDirectory: tempDirectory, arguments: ["-short"])
+        let destination = tool.cli.outDir.appendingPathComponent("song.mp3")
+        let backup = tool.cli.outDir.appendingPathComponent(".song.mp3.publish-backup")
+        try "old data".write(to: backup, atomically: true, encoding: .utf8)
+
+        tool.recoverPublishBackups()
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: destination.path))
+        XCTAssertEqual(try String(contentsOf: destination, encoding: .utf8), "old data")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: backup.path))
+    }
+
+    func testPublishBackupRecoveryRemovesStaleBackupWhenDestinationExists() throws {
+        let tempDirectory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("converter-test-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: tempDirectory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: tempDirectory) }
+
+        let tool = try makeTool(tempDirectory: tempDirectory, arguments: ["-short"])
+        let destination = tool.cli.outDir.appendingPathComponent("song.mp3")
+        let backup = tool.cli.outDir.appendingPathComponent(".song.mp3.publish-backup")
+        try "new data".write(to: destination, atomically: true, encoding: .utf8)
+        try "old data".write(to: backup, atomically: true, encoding: .utf8)
+
+        tool.recoverPublishBackups()
+
+        XCTAssertEqual(try String(contentsOf: destination, encoding: .utf8), "new data")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: backup.path))
+    }
+
+    func testPublishTempLeavesNoBackupBehind() throws {
+        let tempDirectory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("converter-test-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: tempDirectory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: tempDirectory) }
+
+        let tool = try makeTool(tempDirectory: tempDirectory, arguments: ["-short"])
+        let destination = tool.cli.outDir.appendingPathComponent("song.wav")
+        let firstTemp = try tool.makeTemp(in: tool.cli.outDir, stem: "publish1", ext: ".wav")
+        try "first".write(to: firstTemp, atomically: true, encoding: .utf8)
+        try tool.publishTemp(firstTemp, to: destination)
+        let secondTemp = try tool.makeTemp(in: tool.cli.outDir, stem: "publish2", ext: ".wav")
+        try "second".write(to: secondTemp, atomically: true, encoding: .utf8)
+        try tool.publishTemp(secondTemp, to: destination)
+
+        XCTAssertEqual(try String(contentsOf: destination, encoding: .utf8), "second")
+        let leftovers = try FileManager.default.contentsOfDirectory(atPath: tool.cli.outDir.path)
+            .filter { $0.contains("publish-backup") }
+        XCTAssertTrue(leftovers.isEmpty, "publishTemp must not leave backups behind")
     }
 
     func testAlbumFileFlagRejectionNamesAlbumTxtAndDirectoryCommands() throws {

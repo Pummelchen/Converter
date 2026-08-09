@@ -329,7 +329,7 @@ extension ConverterTool {
         let threeK = try await threeKTask
         _ = try await eightKJPGTask
 
-        return ImageArtifacts(sourcePNG: sourcePNG, eightK: variants.eightK, fourK: variants.fourK, threeK: threeK, twoK: twoK, nft8K: nft.nft8K)
+        return ImageArtifacts(eightK: variants.eightK, fourK: variants.fourK, threeK: threeK, twoK: twoK, nft8K: nft.nft8K)
     }
 
     func fullImagePipelineFromDirect8K(_ sourcePNG: URL) async throws -> ImageArtifacts {
@@ -372,7 +372,7 @@ extension ConverterTool {
         let threeK = try await threeKTask
         _ = try await eightKJPGTask
 
-        return ImageArtifacts(sourcePNG: sourcePNG, eightK: sourcePNG, fourK: fourK, threeK: threeK, twoK: twoK, nft8K: nft.nft8K)
+        return ImageArtifacts(eightK: sourcePNG, fourK: fourK, threeK: threeK, twoK: twoK, nft8K: nft.nft8K)
     }
 
     func fullAudioPreparation(sourceAudio: URL) async throws -> AudioArtifacts {
@@ -381,7 +381,7 @@ extension ConverterTool {
         case "flac":
             try preflightFLACInput(sourceAudio)
             logger.info("Full step: external RF64/BW64 audio deliverables")
-            async let archivalTask: ExternalArchivalVariants = withAudioPermit {
+            async let archivalTask: Void = withAudioPermit {
                 try self.generateExternalArchivalVariants(baseName: sourceAudio.stem, highQualitySource: sourceAudio)
             }
             let wav = try await withAudioPermit { try self.convertFLACToWAV(sourceAudio) }
@@ -394,7 +394,7 @@ extension ConverterTool {
             try preflightMP3Input(sourceAudio)
             let wav = try await withAudioPermit { try self.convertMP3ToWAV(sourceAudio) }
             logger.info("Full step: external RF64/BW64 audio deliverables")
-            async let archivalTask: ExternalArchivalVariants = withAudioPermit {
+            async let archivalTask: Void = withAudioPermit {
                 try self.generateExternalArchivalVariants(baseName: sourceAudio.stem, highQualitySource: wav)
             }
             _ = try await archivalTask
@@ -432,7 +432,7 @@ extension ConverterTool {
             }
             let archivalSourceURL = archivalSource
             logger.info("Full step: external RF64/BW64 audio deliverables")
-            async let archivalTask: ExternalArchivalVariants = withAudioPermit {
+            async let archivalTask: Void = withAudioPermit {
                 try self.generateExternalArchivalVariants(baseName: sourceAudio.stem, highQualitySource: archivalSourceURL)
             }
             if needsNormalization {
@@ -815,6 +815,38 @@ extension ConverterTool {
         logger.info("Loudness normalize complete: processed=\(processed) failed=0")
     }
 
+    func stepMaster() throws {
+        let files = try audioLoudnessCandidates()
+        guard !files.isEmpty else {
+            throw AppError("No supported audio media files (.flac, .wav, .mp3, .m4a, .mp4) found in '\(cli.srcDir.path)'.")
+        }
+
+        var processed = 0
+        var failures: [String] = []
+        for file in files {
+            try ensureDirectory(cli.srcDir)
+            try ensureWritableDirectory(cli.outDir)
+            do {
+                logger.info("Master \(file.basename): target=\(ffmpegNumber(config.masteringTargetLUFS)) LUFS")
+                _ = try masterMedia(file)
+                processed += 1
+                maybeSleep()
+            } catch {
+                let message = "\(file.basename): \(error.localizedDescription)"
+                logger.error("Master failed for \(message)")
+                if !cli.continueOnError {
+                    throw AppError("Master failed for \(message)")
+                }
+                failures.append(message)
+            }
+        }
+
+        guard failures.isEmpty else {
+            throw AppError("Master failed for \(failures.count)/\(files.count) file(s): \(failures.joined(separator: "; "))")
+        }
+        logger.info("Master complete: processed=\(processed) failed=0")
+    }
+
     func stepFadeWAV() throws {
         let files = try files(in: cli.srcDir, matchingExtensions: ["wav"])
         _ = try processBatch(files: files, emptyMessage: "No .wav files found in '\(cli.srcDir.path)'.", failWhenEmpty: true) { file in
@@ -970,6 +1002,8 @@ extension ConverterTool {
             try stepLoudScan()
         case .loudness:
             try stepLoudness()
+        case .master:
+            try stepMaster()
         case .noise:
             try stepNoise()
         case .silence:

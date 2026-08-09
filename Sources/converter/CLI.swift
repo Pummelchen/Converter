@@ -10,6 +10,7 @@ enum Action: String {
     case hash
     case loudness
     case loudscan
+    case master
     case noise
     case silence
     case short
@@ -59,9 +60,7 @@ enum Action: String {
 struct CLIOptions {
     var action: Action = .help
     var debug = false
-    var verbose = false
     var overwrite = false
-    var recursive = false
     var continueOnError = false
     var keepFullName = false
     var lowercasePrefix = false
@@ -81,8 +80,6 @@ struct CLIOptions {
     var configFile: URL
     var srcDir: URL
     var outDir: URL
-    var srcDirExplicit: Bool
-    var outDirExplicit: Bool
 
     let scriptDirectory: URL
     let scriptName: String
@@ -97,8 +94,6 @@ struct CLIOptions {
             configFile: URL(fileURLWithPath: environment["CONFIG_FILE"] ?? scriptDirectory.appendingPathComponent("config.txt").path),
             srcDir: URL(fileURLWithPath: envSrc ?? defaultIO.path),
             outDir: URL(fileURLWithPath: envOut ?? defaultIO.path),
-            srcDirExplicit: environment.keys.contains("SRC_DIR") || environment.keys.contains("OUTPUT_DIR"),
-            outDirExplicit: environment.keys.contains("OUT_DIR") || environment.keys.contains("OUTPUT_DIR"),
             scriptDirectory: scriptDirectory,
             scriptName: scriptName
         )
@@ -133,6 +128,8 @@ struct CLIOptions {
                 options.action = .hash
             case "-loudness":
                 options.action = .loudness
+            case "-master":
+                options.action = .master
             case "-loudscan", "-loundscan":
                 options.action = .loudscan
             case "-noise":
@@ -196,17 +193,13 @@ struct CLIOptions {
                 options.profileName = try requireValue(argument)
             case "--src-dir":
                 options.srcDir = URL(fileURLWithPath: try requireValue(argument))
-                options.srcDirExplicit = true
             case "--out-dir":
                 options.outDir = URL(fileURLWithPath: try requireValue(argument))
-                options.outDirExplicit = true
             case "--output-dir":
                 let path = try requireValue(argument)
                 let url = URL(fileURLWithPath: path)
                 options.srcDir = url
                 options.outDir = url
-                options.srcDirExplicit = true
-                options.outDirExplicit = true
             case "--image", "--image-file":
                 _ = try requireValue(argument)
                 throw AppError("\(argument) is no longer supported. Converter auto-discovers required image inputs from SRC_DIR/Output.")
@@ -227,7 +220,7 @@ struct CLIOptions {
             case "--recursive":
                 throw AppError("--recursive is no longer supported. Converter only scans the current SRC_DIR/Output folder.")
             case "--no-recursive":
-                options.recursive = false
+                break
             case "--continue-on-error":
                 options.continueOnError = true
             case "--trailing-silence":
@@ -266,7 +259,6 @@ struct CLIOptions {
                 options.openAfterCreate = true
             case "--debug", "--verbose":
                 options.debug = true
-                options.verbose = true
             case "--":
                 if index + 1 < arguments.count {
                     options.actionArgs.append(contentsOf: arguments[(index + 1)...])
@@ -392,7 +384,7 @@ struct CLIOptions {
             "  --hash", "  -album", "  -bass", "  -doctor", "  -fade", "  -fadecut", "  -fadeout", "  -full", "  -run", "  -short", "  -run_pix", "  -aipix", "  -clean", "  -fadewav",
             "  -flactoalbum", "  -flactohash", "  -flactom4a", "  -flactomp3", "  -flactowav",
             "  -jpgtopng", "  -m4atoflac", "  -m4atomp3", "  -m4atomp4", "  -m4atowav",
-            "  -loudscan", "  -loudness", "  -matrix", "  -mp3clean", "  -mp3toalbum", "  -mp3toflac", "  -mp3tohash",
+            "  -loudscan", "  -loudness", "  -master", "  -matrix", "  -mp3clean", "  -mp3toalbum", "  -mp3toflac", "  -mp3tohash",
             "  -mp3tom4a", "  -mp3towav", "  -mp4toshort", "  -nfttoshort", "  -pngto2k", "  -pngto3k",
             "  -pngto3k1mb", "  -pngto3k5mb", "  -pngtojpg", "  -pngtonft", "  -pngtojpg1mb",
             "  -pngtojpg2mb", "  -pngtojpg20mb", "  -noise", "  -silence", "  -visualsubs", "  -wavtoalbum",
@@ -502,6 +494,9 @@ struct CLIOptions {
             -loudness [TARGET_LUFS]
               Input: one or more .flac, .wav, .mp3, .m4a, or .mp4 files in SRC_DIR
               Output: same-format files normalized to TARGET_LUFS for livestream-consistent playback; default is -12 LUFS
+            -master
+              Input: one or more .flac, .wav, .mp3, .m4a, or .mp4 files in SRC_DIR
+              Output: same-format _mastered files; stages through the internal WAV and remediates loudness to the mastering target (-12 LUFS default) with two-pass loudnorm when the source is out of policy
             -noise [SECONDS]
               Input: one or more .flac, .wav, .mp3, .m4a, or .mp4 files in SRC_DIR
               Output: same-format files ending in _noise_SECONDSs: noise, 2s silence, source, 2s silence, noise; noise is -12 LUFS and default is 30 seconds
@@ -570,16 +565,16 @@ struct CLIOptions {
               Output: .flac files
             -fade [SECONDS]
               Input: one or more audio files (.flac, .wav, .mp3) in SRC_DIR
-              Output: full-length same-format files ending in _faded after fading the final SECONDS
+              Output: full-length same-format files ending in _faded_SECONDSs after fading the final SECONDS
               Default: 10 seconds when SECONDS is omitted
               Compatibility: -fadeflac is accepted as an alias for -fade
             -fadecut CUT_SECONDS FADE_SECONDS
               Input: one or more audio files (.flac, .wav, .mp3) in SRC_DIR
-              Output: same-format files ending in _fadecut after removing CUT_SECONDS from the end,
+              Output: same-format files ending in _fadecut_CUT_SECONDSs_FADE_SECONDSs after removing CUT_SECONDS from the end,
                 then applying a normal fade over the final FADE_SECONDS of the shortened file
             -fadeout START DURATION
               Input: one or more audio files (.flac, .wav, .mp3, .m4a) in SRC_DIR
-              Output: same-format files ending in _faded after fading from START for DURATION and truncating at START + DURATION
+              Output: same-format files ending in _fadeout_STARTs_DURATIONs after fading from START for DURATION and truncating at START + DURATION
               Time format: seconds, MM:SS, or HH:MM:SS
             -fadewav
               Input: one or more .wav files in SRC_DIR
