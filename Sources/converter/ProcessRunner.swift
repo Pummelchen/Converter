@@ -12,6 +12,9 @@ struct PipelineProcessResult {
 }
 
 private final class PipeCapture: @unchecked Sendable {
+    // Bounds retained output so a chatty child cannot exhaust memory; surplus is drained and discarded.
+    private static let maxCapturedBytes = 64 * 1024 * 1024
+
     private let group = DispatchGroup()
     private let lock = NSLock()
     private var data = Data()
@@ -23,7 +26,20 @@ private final class PipeCapture: @unchecked Sendable {
                 closeHandle(handle)
                 self.group.leave()
             }
-            let captured = (try? handle.readToEnd()) ?? Data()
+            var captured = Data()
+            var exceededCap = false
+            while let chunk = try? handle.read(upToCount: 65_536), !chunk.isEmpty {
+                if exceededCap {
+                    continue
+                }
+                let remaining = Self.maxCapturedBytes - captured.count
+                if chunk.count > remaining {
+                    captured.append(chunk.prefix(max(0, remaining)))
+                    exceededCap = true
+                } else {
+                    captured.append(chunk)
+                }
+            }
             self.lock.lock()
             self.data = captured
             self.lock.unlock()

@@ -304,10 +304,11 @@ extension ConverterTool {
         guard loudnessNonRecoverableIssues(result).isEmpty else {
             return false
         }
-        guard result.metrics.integratedLUFS?.isFinite == true else {
+        guard let integratedLUFS = result.metrics.integratedLUFS, integratedLUFS.isFinite else {
             return false
         }
-        return true
+        // Bounds the fallback so a far-off-target render cannot be published silently.
+        return abs(integratedLUFS - policy.targetLUFS) <= max(policy.lufsTolerance, 6.0)
     }
 
     func loudnessQCFailureMessage(file: URL, result: AudioQCResult) -> String {
@@ -1046,6 +1047,7 @@ extension ConverterTool {
         for encoder in encoders {
             do {
                 _ = try runner.run("ffmpeg", buildArguments(encoder: encoder) + [output.path])
+                try verifyDuration(output, expectedSeconds: expectedDuration, label: "\(label) MP4 output")
                 return
             } catch {
                 lastError = error
@@ -1445,7 +1447,7 @@ extension ConverterTool {
         if canReuseOutput(output, verifier: {
             try verifyM4AFile(output, sampleRate: config.m4aSampleRate, channels: config.m4aChannels, qcPolicy: nil)
             try verifyDurationMatch(source: source, output: output)
-            try verifySourceLoudnessPreserved(source: source, output: output, toleranceDB: 2.0)
+            try verifySourceLoudnessPreserved(source: source, output: output, toleranceDB: 1.0)
         }) {
             logger.info("Skip existing M4A: \(output.basename)")
             return output
@@ -1457,7 +1459,7 @@ extension ConverterTool {
             try encodeInternalWAVToM4A(sourceWAV, output: temp, qcPolicy: nil)
             try verifyM4AFile(temp, sampleRate: config.m4aSampleRate, channels: config.m4aChannels, qcPolicy: nil)
             try verifyDurationMatch(source: source, output: temp)
-            try verifySourceLoudnessPreserved(source: source, output: temp, toleranceDB: 2.0)
+            try verifySourceLoudnessPreserved(source: source, output: temp, toleranceDB: 1.0)
             try publishTemp(temp, to: output)
             logger.info("Created M4A: \(output.basename)")
             return output
@@ -1475,7 +1477,7 @@ extension ConverterTool {
         if canReuseOutput(output, verifier: {
             try verifyM4AFile(output, sampleRate: config.m4aSampleRate, channels: config.m4aChannels, qcPolicy: nil)
             try verifyDurationMatch(source: source, output: output)
-            try verifySourceLoudnessPreserved(source: source, output: output, toleranceDB: 2.0)
+            try verifySourceLoudnessPreserved(source: source, output: output, toleranceDB: 1.0)
         }) {
             logger.info("Skip existing M4A: \(output.basename)")
             return output
@@ -1487,7 +1489,7 @@ extension ConverterTool {
             try encodeInternalWAVToM4A(sourceWAV, output: temp, qcPolicy: nil)
             try verifyM4AFile(temp, sampleRate: config.m4aSampleRate, channels: config.m4aChannels, qcPolicy: nil)
             try verifyDurationMatch(source: source, output: temp)
-            try verifySourceLoudnessPreserved(source: source, output: temp, toleranceDB: 2.0)
+            try verifySourceLoudnessPreserved(source: source, output: temp, toleranceDB: 1.0)
             try publishTemp(temp, to: output)
             logger.info("Created M4A: \(output.basename)")
             return output
@@ -1822,35 +1824,39 @@ extension ConverterTool {
         }
         var processed = 0
         for file in files {
-            switch ext {
-            case "flac":
-                try preflightFLACInput(file)
-            case "mp3":
-                try preflightMP3Input(file, requireAudible: false, requireNoVideo: false)
-            case "wav":
-                try preflightWAVInput(file)
-            case "mp4":
-                try preflightMP4Input(file, requireAudio: false, requireAudibleAudio: false)
-            default:
-                break
+            do {
+                switch ext {
+                case "flac":
+                    try preflightFLACInput(file)
+                case "mp3":
+                    try preflightMP3Input(file, requireAudible: false, requireNoVideo: false)
+                case "wav":
+                    try preflightWAVInput(file)
+                case "mp4":
+                    try preflightMP4Input(file, requireAudio: false, requireAudibleAudio: false)
+                default:
+                    break
+                }
+                let hash = try crc32(for: file)
+                let destination = cli.outDir.appendingPathComponent(hash).appendingPathExtension(ext)
+                if file.standardizedFileURL == destination.standardizedFileURL {
+                    logger.info("Skip already-hashed \(ext): \(file.basename)")
+                    continue
+                }
+                if fileManager.fileExists(atPath: destination.path), !cli.overwrite {
+                    logger.warn("Destination exists, skipping: \(destination.basename)")
+                    continue
+                }
+                if fileManager.fileExists(atPath: destination.path) {
+                    try fileManager.removeItem(at: destination)
+                }
+                try ensureWritableDirectory(destination.deletingLastPathComponent())
+                try fileManager.moveItem(at: file, to: destination)
+                logger.info("Renamed \(ext): \(file.basename) -> \(destination.basename)")
+                processed += 1
+            } catch {
+                logger.warn("Skipping \(file.basename): \(error.localizedDescription)")
             }
-            let hash = try crc32(for: file)
-            let destination = cli.outDir.appendingPathComponent(hash).appendingPathExtension(ext)
-            if file.standardizedFileURL == destination.standardizedFileURL {
-                logger.info("Skip already-hashed \(ext): \(file.basename)")
-                continue
-            }
-            if fileManager.fileExists(atPath: destination.path), !cli.overwrite {
-                logger.warn("Destination exists, skipping: \(destination.basename)")
-                continue
-            }
-            if fileManager.fileExists(atPath: destination.path) {
-                try fileManager.removeItem(at: destination)
-            }
-            try ensureWritableDirectory(destination.deletingLastPathComponent())
-            try fileManager.moveItem(at: file, to: destination)
-            logger.info("Renamed \(ext): \(file.basename) -> \(destination.basename)")
-            processed += 1
         }
         return processed
     }
@@ -1915,6 +1921,7 @@ extension ConverterTool {
         return stem == "album"
             || stem == "album_from_mp3"
             || stem.hasPrefix("album.")
+            || stem.hasPrefix("album_from_mp3")
             || isExternalArchivalAudioVariant(file)
             || isLoudnessDerivedAudio(file)
             || isBassDerivedAudio(file)
@@ -1980,8 +1987,8 @@ extension ConverterTool {
 
     func buildNumberedAlbumFromDirectory(defaultOutputName: String = "album.wav") throws -> URL {
         let tracks = try albumAudioCandidates()
-        guard tracks.count >= 2 else {
-            throw AppError("Album pipeline expects at least two source audio files (.mp3/.wav/.flac) in '\(cli.srcDir.path)'.")
+        guard !tracks.isEmpty else {
+            throw AppError("Album pipeline expects at least one source audio file (.mp3/.wav/.flac) in '\(cli.srcDir.path)'.")
         }
 
         logger.info("Album track order: \(tracks.map(\.basename).joined(separator: ", "))")
@@ -2050,6 +2057,14 @@ extension ConverterTool {
         do {
             _ = try runner.run("ffmpeg", ffArgs)
             try verifyWAVStandard(temp, qcPolicy: nil)
+            let expectedDuration = try entries.reduce(0.0) { sum, entry in
+                guard let duration = try mediaDuration(entry) else {
+                    throw AppError("Unable to read duration for album track: \(entry.path)")
+                }
+                return sum + duration
+            } + Double(max(entries.count - 1, 0)) * Double(config.albumSilenceSecs)
+            + (cli.trailingSilence ? Double(config.albumSilenceSecs) : 0)
+            try verifyDuration(temp, expectedSeconds: expectedDuration, label: "album WAV")
             try publishTemp(temp, to: output)
             logger.info("Created album WAV: \(output.path)")
             return output
@@ -2073,7 +2088,13 @@ extension ConverterTool {
                 continue
             }
             let candidateName = line.lowercasedASCII.hasSuffix(".\(ext)") ? line : line + ".\(ext)"
-            let file = try resolveExplicitPath(candidateName, baseDirectory: cli.srcDir)
+            let file: URL
+            do {
+                file = try resolveExplicitPath(candidateName, baseDirectory: cli.srcDir)
+            } catch {
+                logger.warn("Skipping invalid album entry '\(candidateName)': \(error.localizedDescription)")
+                continue
+            }
             guard fileManager.fileExists(atPath: file.path) else {
                 logger.warn("Missing track, skipping: \(file.path)")
                 continue

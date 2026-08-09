@@ -19,10 +19,10 @@ extension ConverterTool {
         do {
             _ = try runner.run("ffmpeg", [
                 "-hide_banner", "-nostdin", "-v", "error", "-y",
-                "-t", ffmpegArg("%.6f", limitDuration),
                 "-i", file.path,
                 "-map", "0:a:0",
                 "-vn",
+                "-t", ffmpegArg("%.6f", limitDuration),
                 "-ac", String(config.wavChannels),
                 "-ar", String(config.wavSampleRate),
                 "-c:a", config.wavCodec,
@@ -716,7 +716,7 @@ extension ConverterTool {
         }
     }
 
-    func verifySourceLoudnessPreserved(source: URL, output: URL, toleranceDB: Double = 0.6) throws {
+    func verifySourceLoudnessPreserved(source: URL, output: URL, toleranceDB: Double = 1.0) throws {
         let outputDuration = try mediaDuration(output)
         let sourceMetrics = try audioQCResultForComparison(source, policy: config.deliveryAudioQCPolicy, limitDuration: outputDuration).metrics
         let outputMetrics = try audioQCResult(for: output, policy: config.deliveryAudioQCPolicy).metrics
