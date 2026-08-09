@@ -2,6 +2,12 @@ import Foundation
 import XCTest
 @testable import converter
 
+enum JobClass: String, Sendable {
+    case image
+    case audio
+    case video
+}
+
 // IntegrationWorkspace builds an isolated project root that mirrors the real converter layout.
 final class IntegrationWorkspace {
     let root: URL

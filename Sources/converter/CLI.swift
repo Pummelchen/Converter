@@ -58,6 +58,9 @@ enum Action: String {
 }
 
 struct CLIOptions {
+    // Padding below this cannot be verified by the silence/noise content probes.
+    static let minimumPaddingSeconds = 0.5
+
     var action: Action = .help
     var debug = false
     var overwrite = false
@@ -320,8 +323,8 @@ struct CLIOptions {
             return SilenceSpec(seconds: defaultSeconds)
         }
         let seconds = try parseFlexibleTimecode(rawValue, label: "silence duration")
-        guard seconds > 0 else {
-            throw AppError("Silence duration must be greater than zero.")
+        guard seconds >= Self.minimumPaddingSeconds else {
+            throw AppError("Silence duration must be at least \(Self.minimumPaddingSeconds) seconds so the padding is measurable.")
         }
         return SilenceSpec(seconds: seconds)
     }
@@ -334,8 +337,8 @@ struct CLIOptions {
             return NoiseSpec(seconds: defaultSeconds)
         }
         let seconds = try parseFlexibleTimecode(rawValue, label: "noise duration")
-        guard seconds > 0 else {
-            throw AppError("Noise duration must be greater than zero.")
+        guard seconds >= Self.minimumPaddingSeconds else {
+            throw AppError("Noise duration must be at least \(Self.minimumPaddingSeconds) seconds so the padding is measurable.")
         }
         return NoiseSpec(seconds: seconds)
     }
@@ -499,10 +502,10 @@ struct CLIOptions {
               Output: same-format _mastered files; stages through the internal WAV and remediates loudness to the mastering target (-12 LUFS default) with two-pass loudnorm when the source is out of policy
             -noise [SECONDS]
               Input: one or more .flac, .wav, .mp3, .m4a, or .mp4 files in SRC_DIR
-              Output: same-format files ending in _noise_SECONDSs: noise, 2s silence, source, 2s silence, noise; noise is -12 LUFS and default is 30 seconds
+              Output: same-format files ending in _noise_SECONDSs: noise, 2s silence, source, 2s silence, noise; noise is -12 LUFS and default is 30 seconds; SECONDS must be at least 0.5
             -silence [SECONDS]
               Input: one or more .wav, .flac, or .mp4 files in SRC_DIR
-              Output: same-format files ending in _silence_SECONDSs with SECONDS of silence before and after the original media; default is 30 seconds
+              Output: same-format files ending in _silence_SECONDSs with SECONDS of silence before and after the original media; default is 30 seconds; SECONDS must be at least 0.5
             -short
               Input: exactly 1 image (.png/.jpg/.jpeg) plus exactly 1 audio-only file supported by ffmpeg in SRC_DIR
               Output: one ALAC-audio _8K_Short.mp4 capped at 58 seconds plus one ALAC-audio _8K_Short_FullSong.mp4 with the same portrait graphics when input audio is longer than 58 seconds; fits the image into the portrait frame as large as possible with black padding

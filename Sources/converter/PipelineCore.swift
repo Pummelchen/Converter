@@ -1,5 +1,6 @@
 import Foundation
 import Darwin
+import Synchronization
 
 struct LoudnormMeasurement: Decodable, Sendable {
     let inputI: String?
@@ -17,27 +18,23 @@ struct LoudnormMeasurement: Decodable, Sendable {
     }
 }
 
-final class RuntimeState: @unchecked Sendable {
-    private let lock = NSLock()
-    private var temporaryFiles: [URL] = []
+final class RuntimeState: Sendable {
+    private let lock = Mutex<[URL]>([])
 
     func register(tempFile: URL) {
-        lock.lock()
-        temporaryFiles.append(tempFile.standardizedFileURL)
-        lock.unlock()
+        lock.withLock { $0.append(tempFile.standardizedFileURL) }
     }
 
     func unregister(tempFile: URL) {
-        lock.lock()
-        temporaryFiles.removeAll { $0.standardizedFileURL == tempFile.standardizedFileURL }
-        lock.unlock()
+        lock.withLock { $0.removeAll { $0.standardizedFileURL == tempFile.standardizedFileURL } }
     }
 
     func cleanup(fileManager: FileManager, logger: Logger) {
-        lock.lock()
-        let files = temporaryFiles
-        temporaryFiles.removeAll()
-        lock.unlock()
+        let files = lock.withLock { state in
+            let snapshot = state
+            state.removeAll()
+            return snapshot
+        }
 
         for url in files {
             if fileManager.fileExists(atPath: url.path) {
@@ -105,102 +102,75 @@ enum CachedDimensionsValue: Sendable {
     }
 }
 
-final class ProbeCache: @unchecked Sendable {
-    private let lock = NSLock()
-    private var ffprobeValues: [FFprobeCacheKey: CachedStringValue] = [:]
-    private var imageDimensions: [FileProbeFingerprint: CachedDimensionsValue] = [:]
-    private var imageFormats: [FileProbeFingerprint: CachedStringValue] = [:]
-    private var imageColorSpaces: [FileProbeFingerprint: CachedStringValue] = [:]
-    private var audibleAudio: [FileProbeFingerprint: Bool] = [:]
-    private var audioQCResults: [AudioQCCacheKey: AudioQCResult] = [:]
+private struct ProbeCacheState {
+    var ffprobeValues: [FFprobeCacheKey: CachedStringValue] = [:]
+    var imageDimensions: [FileProbeFingerprint: CachedDimensionsValue] = [:]
+    var imageFormats: [FileProbeFingerprint: CachedStringValue] = [:]
+    var imageColorSpaces: [FileProbeFingerprint: CachedStringValue] = [:]
+    var audibleAudio: [FileProbeFingerprint: Bool] = [:]
+    var audioQCResults: [AudioQCCacheKey: AudioQCResult] = [:]
+}
+
+final class ProbeCache: Sendable {
+    private let state = Mutex<ProbeCacheState>(ProbeCacheState())
 
     func cachedFFprobeValue(key: FFprobeCacheKey, compute: () throws -> String?) throws -> String? {
-        lock.lock()
-        if let cached = ffprobeValues[key] {
-            lock.unlock()
+        if let cached = state.withLock({ $0.ffprobeValues[key] }) {
             return cached.value
         }
-        lock.unlock()
 
         let value = try compute()
-        lock.lock()
-        ffprobeValues[key] = CachedStringValue(value)
-        lock.unlock()
+        state.withLock { $0.ffprobeValues[key] = CachedStringValue(value) }
         return value
     }
 
     func cachedImageDimensions(key: FileProbeFingerprint, compute: () throws -> (Int, Int)?) throws -> (Int, Int)? {
-        lock.lock()
-        if let cached = imageDimensions[key] {
-            lock.unlock()
+        if let cached = state.withLock({ $0.imageDimensions[key] }) {
             return cached.value
         }
-        lock.unlock()
 
         let value = try compute()
-        lock.lock()
-        imageDimensions[key] = CachedDimensionsValue(value)
-        lock.unlock()
+        state.withLock { $0.imageDimensions[key] = CachedDimensionsValue(value) }
         return value
     }
 
     func cachedImageFormat(key: FileProbeFingerprint, compute: () throws -> String?) throws -> String? {
-        lock.lock()
-        if let cached = imageFormats[key] {
-            lock.unlock()
+        if let cached = state.withLock({ $0.imageFormats[key] }) {
             return cached.value
         }
-        lock.unlock()
 
         let value = try compute()
-        lock.lock()
-        imageFormats[key] = CachedStringValue(value)
-        lock.unlock()
+        state.withLock { $0.imageFormats[key] = CachedStringValue(value) }
         return value
     }
 
     func cachedImageColorSpace(key: FileProbeFingerprint, compute: () throws -> String?) throws -> String? {
-        lock.lock()
-        if let cached = imageColorSpaces[key] {
-            lock.unlock()
+        if let cached = state.withLock({ $0.imageColorSpaces[key] }) {
             return cached.value
         }
-        lock.unlock()
 
         let value = try compute()
-        lock.lock()
-        imageColorSpaces[key] = CachedStringValue(value)
-        lock.unlock()
+        state.withLock { $0.imageColorSpaces[key] = CachedStringValue(value) }
         return value
     }
 
     func cachedAudibleResult(key: FileProbeFingerprint, compute: () throws -> Bool) throws -> Bool {
-        lock.lock()
-        if let cached = audibleAudio[key] {
-            lock.unlock()
+        if let cached = state.withLock({ $0.audibleAudio[key] }) {
             return cached
         }
-        lock.unlock()
 
         let value = try compute()
-        lock.lock()
-        audibleAudio[key] = value
-        lock.unlock()
+        state.withLock { $0.audibleAudio[key] = value }
         return value
     }
 
     func cachedAudioQCResult(key: AudioQCCacheKey, compute: () throws -> AudioQCResult) throws -> AudioQCResult {
-        lock.lock()
-        if let cached = audioQCResults[key] {
-            lock.unlock()
+        if let cached = state.withLock({ $0.audioQCResults[key] }) {
             return cached
         }
-        lock.unlock()
 
         let value = try compute()
-        lock.lock()
-        audioQCResults[key] = value
-        lock.unlock()
+        state.withLock { $0.audioQCResults[key] = value }
         return value
     }
 }
@@ -287,13 +257,13 @@ struct VisualSubsRandom {
     }
 }
 
-final class ConverterTool: @unchecked Sendable {
+final class ConverterTool: Sendable {
     let cli: CLIOptions
     let config: ProjectConfig
     let logger: Logger
     let runner: ProcessRunner
     let environment: [String: String]
-    let fileManager = FileManager.default
+    var fileManager: FileManager { FileManager.default }
     let state = RuntimeState()
     let probeCache = ProbeCache()
     let schedulerProfile: SchedulerProfile
@@ -302,8 +272,7 @@ final class ConverterTool: @unchecked Sendable {
     let audioJobs: AsyncSemaphore
     let videoJobs: AsyncSemaphore
     let runToken: String
-    private let encoderSetLock = NSLock()
-    private var cachedEncoderSet: Set<String>?
+    private let encoderSetLock = Mutex<Set<String>?>(nil)
 
     init(cli: CLIOptions, config: ProjectConfig, logger: Logger, runner: ProcessRunner, environment: [String: String]) {
         self.cli = cli
@@ -325,17 +294,12 @@ final class ConverterTool: @unchecked Sendable {
     }
 
     func cachedFFmpegEncoderSet() throws -> Set<String> {
-        encoderSetLock.lock()
-        if let cached = cachedEncoderSet {
-            encoderSetLock.unlock()
+        if let cached = encoderSetLock.withLock({ $0 }) {
             return cached
         }
-        encoderSetLock.unlock()
 
         let set = try ffmpegEncoderSet()
-        encoderSetLock.lock()
-        cachedEncoderSet = set
-        encoderSetLock.unlock()
+        encoderSetLock.withLock { $0 = set }
         return set
     }
 

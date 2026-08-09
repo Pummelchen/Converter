@@ -4,7 +4,7 @@ import PackageDescription
 let package = Package(
     name: "converter",
     platforms: [
-        .macOS(.v14)
+        .macOS(.v15)
     ],
     products: [
         .executable(name: "converter", targets: ["converter"])

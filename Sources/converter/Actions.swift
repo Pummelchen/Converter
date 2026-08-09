@@ -475,7 +475,7 @@ extension ConverterTool {
             }
         } else {
             logger.info("Full step: MP4 -> Short")
-            _ = try await withVideoPermit { try self.shortenMP4(mainVideo, audioQCPolicy: nil) }
+            _ = try await withVideoPermit { try self.shortenMP4(mainVideo, audioQCPolicy: self.config.shortFormAudioQCPolicy) }
         }
         try cleanTransients()
     }
@@ -640,7 +640,8 @@ extension ConverterTool {
     }
 
     private func renderPortraitShortMP4Variants(imageFile: URL, audioFile: URL, audioQCPolicy: AudioQCPolicy?) throws {
-        _ = try renderAudioToShortMP4(imageFile: imageFile, audioFile: audioFile, audioQCPolicy: audioQCPolicy)
+        let qcPolicy = audioQCPolicy ?? config.shortFormAudioQCPolicy
+        _ = try renderAudioToShortMP4(imageFile: imageFile, audioFile: audioFile, audioQCPolicy: qcPolicy)
 
         guard let audioDuration = try mediaDuration(audioFile) else {
             throw AppError("Unable to read numeric audio duration from: \(audioFile.path)")
@@ -651,7 +652,7 @@ extension ConverterTool {
         _ = try renderAudioToShortMP4(
             imageFile: imageFile,
             audioFile: audioFile,
-            audioQCPolicy: audioQCPolicy,
+            audioQCPolicy: qcPolicy,
             outputStem: fullSongShortMP4Stem(forAudioStem: audioFile.stem),
             skipLengthCap: true
         )
@@ -986,7 +987,7 @@ extension ConverterTool {
         let files = try files(in: cli.srcDir, matchingExtensions: ["mp4"]).filter { !$0.stem.hasSuffix("_Short") }
         _ = try processBatch(files: files, emptyMessage: "No .mp4 files found in '\(cli.srcDir.path)'.", failWhenEmpty: false) { file in
             self.logger.info("MP4 -> Short: \(file.basename)")
-            return try self.shortenMP4(file, audioQCPolicy: nil)
+            return try self.shortenMP4(file, audioQCPolicy: self.config.shortFormAudioQCPolicy)
         }
     }
 

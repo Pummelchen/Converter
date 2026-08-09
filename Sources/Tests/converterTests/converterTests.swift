@@ -24,7 +24,6 @@ final class converterTests: XCTestCase {
                 HomebrewFormulaDependency(formula: "imagemagick", executables: ["magick"])
             ]
         )
-        XCTAssertTrue(DependencyBootstrapper.pythonPackages.isEmpty)
     }
 
     func testDependencyBootstrapEnrichesPathWithHomebrewLocations() throws {
@@ -65,9 +64,12 @@ final class converterTests: XCTestCase {
         let file = URL(fileURLWithPath: "/tmp/Album.Track.Final.wav")
         XCTAssertEqual(file.basename, "Album.Track.Final.wav")
         XCTAssertEqual(file.stem, "Album.Track.Final")
-        XCTAssertFalse(file.isHiddenBasename)
-        XCTAssertEqual(file.appendingStemSuffix("_RF64").lastPathComponent, "Album.Track.Final_RF64.wav")
-        XCTAssertTrue(URL(fileURLWithPath: "/tmp/.converter-tmp.file").isHiddenBasename)
+        XCTAssertFalse(file.lastPathComponent.hasPrefix("."))
+        XCTAssertEqual(
+            file.deletingLastPathComponent().appendingPathComponent(file.stem + "_RF64").appendingPathExtension(file.pathExtension).lastPathComponent,
+            "Album.Track.Final_RF64.wav"
+        )
+        XCTAssertTrue(URL(fileURLWithPath: "/tmp/.converter-tmp.file").lastPathComponent.hasPrefix("."))
     }
 
     func testFlexibleTimecodeParsingAcceptsSupportedFormsAndRejectsInvalidBounds() throws {
@@ -330,7 +332,7 @@ final class converterTests: XCTestCase {
                 scriptName: "converter"
             ).silenceSpec()
         ) { error in
-            XCTAssertTrue(error.localizedDescription.contains("greater than zero"))
+            XCTAssertTrue(error.localizedDescription.contains("at least"))
         }
     }
 
@@ -375,7 +377,7 @@ final class converterTests: XCTestCase {
                 scriptName: "converter"
             ).noiseSpec()
         ) { error in
-            XCTAssertTrue(error.localizedDescription.contains("greater than zero"))
+            XCTAssertTrue(error.localizedDescription.contains("at least"))
         }
     }
 
@@ -1044,4 +1046,29 @@ final class converterTests: XCTestCase {
         XCTAssertTrue(help.contains("album.txt order file plus referenced .mp3 files"))
         XCTAssertTrue(help.contains("without loudness normalization; use -album for a normalized directory build"))
     }
+}
+
+// Moved from the converter module: bitrate parsing has no production consumer
+// (all delivery audio is ALAC/320k by design) but the behavior stays covered.
+func parseBitrateBps(_ rawValue: String) -> Int? {
+    let value = rawValue.trimmed.lowercasedASCII
+    guard !value.isEmpty else {
+        return nil
+    }
+    let multiplier: Double
+    let digits: String
+    if value.hasSuffix("k") {
+        multiplier = 1_000
+        digits = String(value.dropLast())
+    } else if value.hasSuffix("m") {
+        multiplier = 1_000_000
+        digits = String(value.dropLast())
+    } else {
+        multiplier = 1
+        digits = value
+    }
+    guard let parsed = Double(digits), parsed > 0 else {
+        return nil
+    }
+    return Int((parsed * multiplier).rounded())
 }

@@ -1798,7 +1798,7 @@ extension ConverterTool {
         let handle = try FileHandle(forReadingFrom: file)
         defer { try? handle.close() }
 
-        var crc: UInt32 = 0
+        var crc: UInt32 = 0xFFFFFFFF
         while true {
             let data = try handle.read(upToCount: config.crcChunkBytes)
             guard let chunk = data, !chunk.isEmpty else {
@@ -1809,7 +1809,7 @@ extension ConverterTool {
                 return table[idx] ^ (current >> 8)
             }
         }
-
+        crc ^= 0xFFFFFFFF
         return String(format: "%08X", crc)
     }
 

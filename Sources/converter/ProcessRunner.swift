@@ -1,4 +1,5 @@
 import Foundation
+import Synchronization
 
 struct ProcessResult {
     let stdout: String
@@ -11,13 +12,14 @@ struct PipelineProcessResult {
     let consumer: ProcessResult
 }
 
+// Data is Mutex-protected; @unchecked is required only because the captured
+// FileHandle/DispatchGroup thread-safety is not compiler-verifiable.
 private final class PipeCapture: @unchecked Sendable {
     // Bounds retained output so a chatty child cannot exhaust memory; surplus is drained and discarded.
     private static let maxCapturedBytes = 64 * 1024 * 1024
 
     private let group = DispatchGroup()
-    private let lock = NSLock()
-    private var data = Data()
+    private let data = Mutex<Data>(Data())
 
     init(handle: FileHandle, qos: DispatchQoS.QoSClass = .userInitiated) {
         group.enter()
@@ -40,17 +42,13 @@ private final class PipeCapture: @unchecked Sendable {
                     captured.append(chunk)
                 }
             }
-            self.lock.lock()
-            self.data = captured
-            self.lock.unlock()
+            self.data.withLock { $0 = captured }
         }
     }
 
     func waitString() -> String {
         group.wait()
-        lock.lock()
-        defer { lock.unlock() }
-        return String(data: data, encoding: .utf8) ?? ""
+        return String(data: data.withLock({ $0 }), encoding: .utf8) ?? ""
     }
 }
 
@@ -64,30 +62,25 @@ private func closeHandles(_ handles: [FileHandle]) {
     }
 }
 
-private final class TimeoutFlag: @unchecked Sendable {
-    private let lock = NSLock()
-    private var timedOut = false
+private final class TimeoutFlag {
+    private let flag = Mutex<Bool>(false)
 
     func set() {
-        lock.lock()
-        timedOut = true
-        lock.unlock()
+        flag.withLock { $0 = true }
     }
 
     var isSet: Bool {
-        lock.lock()
-        defer { lock.unlock() }
-        return timedOut
+        flag.withLock { $0 }
     }
 }
 
-final class ProcessRunner: @unchecked Sendable {
+final class ProcessRunner: Sendable {
     // Bounds every external command so a hung tool cannot stall a run forever.
     static let defaultTimeoutSeconds: TimeInterval = 1800
 
     private let logger: Logger
     private let environment: [String: String]
-    private let fileManager = FileManager.default
+    var fileManager: FileManager { FileManager.default }
     private let debugEnabled: Bool
 
     init(logger: Logger, environment: [String: String], debugEnabled: Bool) {
@@ -101,21 +94,10 @@ final class ProcessRunner: @unchecked Sendable {
     }
 
     func resolveExecutable(named name: String) throws -> URL {
-        if name.contains("/") {
-            let url = URL(fileURLWithPath: name)
-            if fileManager.isExecutableFile(atPath: url.path) {
-                return url
-            }
+        guard let url = DependencyBootstrapper.executableURL(named: name, environment: environment) else {
             throw AppError("Required command not found: \(name)")
         }
-
-        for entry in DependencyBootstrapper.executableSearchPathEntries(environment: environment) {
-            let candidate = URL(fileURLWithPath: entry).appendingPathComponent(name)
-            if fileManager.isExecutableFile(atPath: candidate.path) {
-                return candidate
-            }
-        }
-        throw AppError("Required command not found: \(name)")
+        return url
     }
 
     @discardableResult

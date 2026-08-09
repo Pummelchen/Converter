@@ -33,7 +33,7 @@ First media run: place exactly 1 source audio (`.flac`/`.wav`/`.mp3`) and 1 sour
 - `converter` prebuilt macOS Apple Silicon release binary
 
 ## Build
-Requires Swift tools 6.3.3 or newer compatible Xcode command line tools. The package declares Swift language mode 6 and macOS 14+.
+Requires Swift tools 6.3.3 or newer compatible Xcode command line tools. The package declares Swift language mode 6 and macOS 15+.
 
 ```bash
 swift build --package-path Sources -c release
@@ -141,7 +141,7 @@ Loudness normalization targets whole-track integrated LUFS, not constant moment-
 Use `./converter -master` to create same-format `_mastered` copies for `.flac`, `.wav`, `.mp3`, `.m4a`, and `.mp4` files in `Output/`. Each file stages through the internal WAV and is remediated to the mastering target (default `-12 LUFS`, configurable via `MASTERING_TARGET_LUFS`/`MASTERING_MAX_TRUE_PEAK_DBTP`/`MASTERING_MAX_LOUDNESS_RANGE`) using two-pass loudnorm with a one-pass fallback when the source is out of policy. Files already within policy are re-encoded losslessly. Mastering runs **only when explicitly requested** — it is never applied during normal pipeline work, which preserves source loudness.
 
 ## Noise Padding
-Use `./converter -noise [SECONDS]` to add random-noise lead-in and tail padding to `.flac`, `.wav`, `.mp3`, `.m4a`, and `.mp4` files in `Output/`. When `SECONDS` is omitted, the default is 30 seconds. The generated noise sections are normalized to `-12 LUFS`, with a fixed 2-second silence gap before and after the original media.
+Use `./converter -noise [SECONDS]` to add random-noise lead-in and tail padding to `.flac`, `.wav`, `.mp3`, `.m4a`, and `.mp4` files in `Output/`. When `SECONDS` is omitted, the default is 30 seconds. Padding must be at least 0.5 seconds so the generated segments stay measurable. The generated noise sections are normalized to `-12 LUFS`, with a fixed 2-second silence gap before and after the original media.
 
 Example:
 ```bash
@@ -152,7 +152,7 @@ Example:
 That writes same-format files such as `song_noise_30s.flac`, `song_noise_30s.wav`, `song_noise_30s.mp3`, `song_noise_30s.m4a`, or `video_noise_30s.mp4`. The audio layout is `noise -> 2s silence -> original media -> 2s silence -> noise`. WAV outputs remain RF64 `pcm_s24le`; compressed/lossless outputs are re-encoded to the project quality settings. MP4 outputs keep video present by extending first and last frames while the audio receives matching leading and trailing noise plus the silent transitions.
 
 ## Silence Padding
-Use `./converter -silence [SECONDS]` to add silent lead-in and tail padding to `.wav`, `.flac`, and `.mp4` files in `Output/`. When `SECONDS` is omitted, the default is 30 seconds.
+Use `./converter -silence [SECONDS]` to add silent lead-in and tail padding to `.wav`, `.flac`, and `.mp4` files in `Output/`. When `SECONDS` is omitted, the default is 30 seconds. Padding must be at least 0.5 seconds so the silent segments stay measurable.
 
 Example:
 ```bash

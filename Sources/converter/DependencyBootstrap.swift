@@ -11,7 +11,6 @@ enum DependencyBootstrapper {
         HomebrewFormulaDependency(formula: "ffmpeg", executables: ["ffmpeg", "ffprobe"]),
         HomebrewFormulaDependency(formula: "imagemagick", executables: ["magick"])
     ]
-    static let pythonPackages: [String] = []
 
     private static let commonExecutableDirectories = [
         "/opt/homebrew/bin",
@@ -56,7 +55,7 @@ enum DependencyBootstrapper {
 
         var missingFormulae = missingHomebrewFormulae(environment: environment)
         guard !missingFormulae.isEmpty else {
-            logger.debug("Dependency bootstrap: all Homebrew and Python dependencies are present.")
+            logger.debug("Dependency bootstrap: all Homebrew dependencies are present.")
             return
         }
 
@@ -93,8 +92,41 @@ enum DependencyBootstrapper {
 
     private static func missingHomebrewFormulae(environment: [String: String]) -> [HomebrewFormulaDependency] {
         homebrewFormulaDependencies.filter { dependency in
-            dependency.executables.contains { !isExecutableAvailable($0, environment: environment) }
+            dependency.executables.contains { !isUsableTool($0, environment: environment) }
         }
+    }
+
+    // Presence is not enough: a broken stub with the right name must not defeat
+    // detection or skip auto-install, so each Homebrew tool is probed functionally.
+    private static func isUsableTool(_ name: String, environment: [String: String]) -> Bool {
+        guard let url = executableURL(named: name, environment: environment) else {
+            return false
+        }
+        return isFunctionalTool(url)
+    }
+
+    private static func isFunctionalTool(_ url: URL) -> Bool {
+        let process = Process()
+        process.executableURL = url
+        process.arguments = ["-version"]
+        process.qualityOfService = .utility
+        let outputPipe = Pipe()
+        process.standardOutput = outputPipe
+        process.standardError = outputPipe
+
+        do {
+            try process.run()
+        } catch {
+            return false
+        }
+
+        let done = DispatchSemaphore(value: 0)
+        process.terminationHandler = { _ in done.signal() }
+        if done.wait(timeout: .now() + 10) == .timedOut {
+            process.terminate()
+            return false
+        }
+        return process.terminationStatus == 0
     }
 
     private static func ensureHomebrew(environment: inout [String: String], logger: Logger) throws -> URL {

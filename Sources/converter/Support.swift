@@ -1,4 +1,5 @@
 import Foundation
+import Synchronization
 
 struct AppError: LocalizedError, CustomStringConvertible, Sendable {
     let message: String
@@ -32,7 +33,7 @@ enum LogLevel: String {
     case debug = "DEBUG"
 }
 
-final class Logger {
+final class Logger: Sendable {
     private static let timestampFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
@@ -40,7 +41,7 @@ final class Logger {
         return formatter
     }()
 
-    private let lock = NSLock()
+    private let lock = Mutex(())
     private let scriptName: String
     private let debugEnabled: Bool
 
@@ -57,9 +58,9 @@ final class Logger {
         if level == .debug && !debugEnabled {
             return
         }
-        lock.lock()
-        defer { lock.unlock() }
-        FileHandle.standardError.write(Data("[\(timestamp())] [\(scriptName)] [\(level.rawValue)] \(message)\n".utf8))
+        lock.withLock { _ in
+            FileHandle.standardError.write(Data("[\(timestamp())] [\(scriptName)] [\(level.rawValue)] \(message)\n".utf8))
+        }
     }
 
     func info(_ message: String) { log(.info, message) }
@@ -117,12 +118,6 @@ actor AsyncSemaphore {
     }
 }
 
-enum JobClass: String, Sendable {
-    case image
-    case audio
-    case video
-}
-
 struct SchedulerProfile: Sendable {
     let total: Int
     let image: Int
@@ -171,11 +166,6 @@ extension String {
 extension URL {
     var basename: String { lastPathComponent }
     var stem: String { deletingPathExtension().lastPathComponent }
-    var isHiddenBasename: Bool { lastPathComponent.hasPrefix(".") }
-
-    func appendingStemSuffix(_ suffix: String) -> URL {
-        deletingLastPathComponent().appendingPathComponent(stem + suffix).appendingPathExtension(pathExtension)
-    }
 }
 
 struct FadeOutSpec: Equatable, Sendable {
@@ -314,29 +304,6 @@ func parseFlexibleTimecode(_ rawValue: String, label: String) throws -> Double {
         throw AppError("Invalid \(label) '\(rawValue)'.")
     }
     return seconds
-}
-
-func parseBitrateBps(_ rawValue: String) -> Int? {
-    let value = rawValue.trimmed.lowercasedASCII
-    guard !value.isEmpty else {
-        return nil
-    }
-    let multiplier: Double
-    let digits: String
-    if value.hasSuffix("k") {
-        multiplier = 1_000
-        digits = String(value.dropLast())
-    } else if value.hasSuffix("m") {
-        multiplier = 1_000_000
-        digits = String(value.dropLast())
-    } else {
-        multiplier = 1
-        digits = value
-    }
-    guard let parsed = Double(digits), parsed > 0 else {
-        return nil
-    }
-    return Int((parsed * multiplier).rounded())
 }
 
 func formatCommand(_ executable: String, _ arguments: [String]) -> String {
