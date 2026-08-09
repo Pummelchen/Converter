@@ -627,6 +627,8 @@ extension ConverterTool {
             sampleRate: config.wavSampleRate,
             channels: config.wavChannels,
             label: "BW64 WAV",
+            format: .s32le,
+            maxAllowedDelta: 256,
             maxAllowedDifferingSamples: UInt64.max
         )
     }
@@ -881,7 +883,7 @@ extension ConverterTool {
         sampleRate: Int? = nil,
         channels: Int? = nil,
         label: String,
-        format: CanonicalPCMFormat = .s32le,
+        format: CanonicalPCMFormat = .s24le,
         maxAllowedDelta: Int64? = nil,
         maxAllowedDifferingSamples: UInt64? = nil
     ) throws {
