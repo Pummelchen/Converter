@@ -190,6 +190,20 @@ struct AudioArtifacts: Sendable {
 }
 
 enum CanonicalPCMFormat: Sendable {
+    // Per-sample ceiling for comparisons that cross a resample. FLAC deliverables are
+    // written at the source rate but stage through the 96 kHz internal WAV, so a 48 kHz
+    // source makes a 48 -> 96 -> 48 round trip and picks up resampler error.
+    //
+    // Calibrated against a real 3.5-minute 48 kHz/24-bit master (19.96M samples):
+    // mean delta 38, 99.999th percentile 1718, worst 2473 (-70.6 dBFS), nothing above 4096.
+    // The previous 2048 sat inside that error floor and rejected legitimate output; it was
+    // never exercised because the comparison used to stop at the first differing sample.
+    //
+    // 8192 is ~0.098% of full scale (-60 dBFS) — far below audibility, and still ~60 dB
+    // tighter than the failures this check exists to catch (wrong rate, wrong channel map,
+    // truncation, silence), which all produce deltas in the millions.
+    static let resampledDeliveryDelta: Int64 = 8192
+
     case s24le
     case s32le
 

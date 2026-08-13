@@ -43,6 +43,30 @@ whole-file canonical PCM comparison, merged QC/image probes, and the shared vide
 
 Note: ffmpeg 9.0.1 is a major-version step up from the 8.1.2 recorded above and passes the full suite.
 
+### Real-media validation (2026-08-13)
+
+`-full` run on a production master — 48 kHz/24-bit FLAC, 3:28, −9.35 LUFS, −0.85 dBTP, with
+direct `Horizontal_8K.png` and `Vertical_8K.png` inputs. 20 deliverables, exit 0, no leftover
+temp files. Three thresholds were mis-calibrated against real material and are now fixed:
+
+- **Archival FLAC tolerance.** FLAC deliverables are written at the source rate but stage
+  through the 96 kHz internal WAV, so a 48 kHz source makes a 48 → 96 → 48 round trip.
+  Measured error across 19.96M samples: mean 38, 99.999th percentile 1718, worst 2473
+  (−70.6 dBFS), none above 4096. The old 2048 ceiling sat inside that error floor. It had
+  never been exercised because the comparison used to stop at the first differing sample.
+- **True peak on loudness-preserving renders.** The short-form policy capped true peak at
+  −1.00 dBTP, which a −0.85 dBTP master can only meet by having its audio altered — which
+  the project forbids outside `-master`/`-loudness`. The ceiling is now relative to the
+  source. Note the inconsistency this removed: the 58 s excerpt passed because it did not
+  contain the loudest peak, while the full-length render of the same source failed.
+- **Encoder ladder reporting.** `h264_videotoolbox` cannot open a compression session at
+  4320x7680, so at the default portrait size it always fails. Reporting only the last rung's
+  error hid the real (audio QC) cause behind VideoToolbox's message; all rungs are reported now.
+
+Fidelity confirmed across every audio deliverable — WAV, M4A, RF64 FLAC, RF64 WAV, BW64 WAV,
+main MP4 and the full-song vertical all measure −9.35 LUFS / −0.85 dBTP, identical to the
+source. MP3 reads −0.75 dBTP, the expected inter-sample rise from lossy encoding.
+
 ### Why the release build stays CPU-generic
 
 Measured on an Apple M3, CRC-32 over 256 MB, release settings (`-O -cross-module-optimization`):

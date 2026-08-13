@@ -66,6 +66,9 @@ VIDEO_COLOR_RANGE=tv
 
 # Short MP4 render settings. Standard short clips are hard-capped at 58 seconds; a full-length
 # _FullSong companion renders when the source audio is longer than the cap.
+# Note: h264_videotoolbox cannot open a compression session at 4320x7680, so at the default
+# portrait size it is only useful as a ladder entry for smaller profiles (e.g. fast_preview).
+# libx264 handles the full portrait resolution and is the primary encoder here.
 SHORT_MP4_CLIP_SECONDS=58
 SHORT_MP4_FPS=2
 SHORT_MP4_SCALE_W=4320

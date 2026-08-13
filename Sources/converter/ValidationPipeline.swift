@@ -158,6 +158,43 @@ extension ConverterTool {
         }
     }
 
+    // Renders that preserve source loudness cannot satisfy an absolute true-peak ceiling
+    // without altering the audio, and only -master and -loudness are permitted to do that.
+    // When the source already sits above the ceiling, the check becomes relative: the render
+    // must not introduce peaks the source did not already have. Everything else in the policy
+    // — DC offset, stereo imbalance, clipped samples, loudness range — still applies, and
+    // verifySourceLoudnessPreserved independently guarantees the levels match.
+    //
+    // Measured on real masters this stage is transparent (source, WAV, M4A and the 8K MP4 all
+    // report the same true peak to 0.01 dB), so the allowance only covers measurement rounding.
+    func loudnessPreservingQCPolicy(_ policy: AudioQCPolicy, source: URL) throws -> AudioQCPolicy {
+        let sourceTruePeak = try audioQCResult(for: source, policy: policy).metrics.truePeakDBTP
+        guard let sourceTruePeak, sourceTruePeak.isFinite, sourceTruePeak > policy.maxTruePeakDBTP else {
+            return policy
+        }
+
+        let relaxedCeiling = sourceTruePeak + 0.1
+        logger.info(
+            String(
+                format: "Source true peak %.2f dBTP is above the %.2f dBTP ceiling; verifying the render adds no peaks beyond the source (%.2f dBTP) rather than altering the audio.",
+                sourceTruePeak,
+                policy.maxTruePeakDBTP,
+                relaxedCeiling
+            )
+        )
+        return AudioQCPolicy(
+            name: "\(policy.name)-source-relative",
+            targetLUFS: policy.targetLUFS,
+            lufsTolerance: policy.lufsTolerance,
+            maxTruePeakDBTP: relaxedCeiling,
+            maxLoudnessRange: policy.maxLoudnessRange,
+            maxDCOffset: policy.maxDCOffset,
+            maxStereoImbalanceDB: policy.maxStereoImbalanceDB,
+            maxClippedSamples: policy.maxClippedSamples,
+            minimumAnalysisSeconds: policy.minimumAnalysisSeconds
+        )
+    }
+
     func verifyAudioQC(_ file: URL, policy: AudioQCPolicy) throws -> AudioQCResult {
         let result = try audioQCResult(for: file, policy: policy)
         if !result.passed {

@@ -129,7 +129,7 @@ extension ConverterTool {
     // next encoder on failure. All three render paths share this, so a fix here cannot
     // reach only two of them.
     private func renderVideoWithEncoderLadder(_ encode: VideoEncodeSpec, verifying spec: VideoOutputSpec) throws -> URL {
-        var lastError: (any Error)?
+        var failures: [String] = []
         for encoder in encode.encoderLadder {
             let temp = try makeTemp(
                 in: encode.output.deletingLastPathComponent(),
@@ -161,12 +161,16 @@ extension ConverterTool {
                 logger.info("Created \(encode.label): \(encode.output.basename) [encoder=\(encoder)]")
                 return encode.output
             } catch {
-                lastError = error
+                failures.append("\(encoder): \(error.localizedDescription)")
                 logger.warn("\(encode.label) encoder failed (\(encoder)): \(error.localizedDescription)")
                 discardTempFile(temp)
             }
         }
-        throw AppError("All \(encode.label) encoders failed for \(encode.output.basename): \(lastError?.localizedDescription ?? "unknown error")")
+        // Report every rung. Reporting only the last one hides the first failure, which is
+        // usually the real cause — a later rung may fail for an unrelated reason such as an
+        // encoder that cannot handle the output dimensions at all.
+        let detail = failures.isEmpty ? "unknown error" : failures.joined(separator: " | ")
+        throw AppError("All \(encode.label) encoders failed for \(encode.output.basename). \(detail)")
     }
 
     private func colorParameterFilter() -> String {
@@ -248,7 +252,7 @@ extension ConverterTool {
             pixelFormat: config.videoMP4PixelFormat,
             fallbackVerifyCodec: config.videoMP4VerifyCodec,
             audioSampleRate: config.videoMP4AudioSampleRate,
-            audioQCPolicy: audioQCPolicy,
+            audioQCPolicy: try audioQCPolicy.map { try loudnessPreservingQCPolicy($0, source: audioFile) },
             loudnessSource: audioFile,
             durationCheck: { try self.verifyDurationMatch(source: audioFile, output: $0) }
         )
@@ -302,7 +306,7 @@ extension ConverterTool {
             pixelFormat: config.shortMP4PixelFormat,
             fallbackVerifyCodec: config.shortMP4VerifyCodec,
             audioSampleRate: config.shortMP4AudioSampleRate,
-            audioQCPolicy: audioQCPolicy,
+            audioQCPolicy: try audioQCPolicy.map { try loudnessPreservingQCPolicy($0, source: input) },
             loudnessSource: input,
             durationCheck: { try self.verifyShortMP4Duration($0, source: input) }
         )
@@ -379,7 +383,7 @@ extension ConverterTool {
             pixelFormat: config.shortMP4PixelFormat,
             fallbackVerifyCodec: config.shortMP4VerifyCodec,
             audioSampleRate: config.shortMP4AudioSampleRate,
-            audioQCPolicy: audioQCPolicy,
+            audioQCPolicy: try audioQCPolicy.map { try loudnessPreservingQCPolicy($0, source: audioFile) },
             loudnessSource: audioFile,
             durationCheck: {
                 try self.verifyDuration($0, expectedSeconds: shortDuration, label: verificationLabel, tolerance: 0.5)

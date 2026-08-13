@@ -1527,7 +1527,7 @@ extension ConverterTool {
                 channels: config.flacChannels,
                 label: "FLAC output",
                 format: .s24le,
-                maxAllowedDelta: 2048
+                maxAllowedDelta: CanonicalPCMFormat.resampledDeliveryDelta
             )
         }) {
             logger.info("Skip existing FLAC: \(output.basename)")
@@ -1547,7 +1547,7 @@ extension ConverterTool {
                 channels: config.flacChannels,
                 label: "FLAC output",
                 format: .s24le,
-                maxAllowedDelta: 2048
+                maxAllowedDelta: CanonicalPCMFormat.resampledDeliveryDelta
             )
             try publishTemp(temp, to: output)
             logger.info("Created FLAC: \(output.basename)")
@@ -1624,7 +1624,7 @@ extension ConverterTool {
         if canReuseOutput(output, verifier: {
             try verifyFLACFile(output, qcPolicy: nil)
             try verifyDurationMatch(source: source, output: output)
-            try verifyCanonicalPCMSampleEquivalence(source: source, output: output, label: "External FLAC", format: .s24le, maxAllowedDelta: 2048)
+            try verifyCanonicalPCMSampleEquivalence(source: source, output: output, label: "External FLAC", format: .s24le, maxAllowedDelta: CanonicalPCMFormat.resampledDeliveryDelta)
         }) {
             logger.info("Skip existing external FLAC: \(output.basename)")
             return output
@@ -1643,7 +1643,7 @@ extension ConverterTool {
             )
             try verifyFLACFile(temp, qcPolicy: nil)
             try verifyDurationMatch(source: source, output: temp)
-            try verifyCanonicalPCMSampleEquivalence(source: source, output: temp, label: "External FLAC", format: .s24le, maxAllowedDelta: 2048)
+            try verifyCanonicalPCMSampleEquivalence(source: source, output: temp, label: "External FLAC", format: .s24le, maxAllowedDelta: CanonicalPCMFormat.resampledDeliveryDelta)
             try publishTemp(temp, to: output)
             logger.info("Created external FLAC: \(output.basename)")
             return output
