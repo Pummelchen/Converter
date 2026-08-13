@@ -105,6 +105,8 @@ enum DependencyBootstrapper {
         return isFunctionalTool(url)
     }
 
+    private static let toolProbeTimeoutSeconds: TimeInterval = 10
+
     private static func isFunctionalTool(_ url: URL) -> Bool {
         let process = Process()
         process.executableURL = url
@@ -120,13 +122,37 @@ enum DependencyBootstrapper {
             return false
         }
 
-        let done = DispatchSemaphore(value: 0)
-        process.terminationHandler = { _ in done.signal() }
-        if done.wait(timeout: .now() + 10) == .timedOut {
-            process.terminate()
-            return false
+        // Release the parent's write end so the drain below observes EOF.
+        try? outputPipe.fileHandleForWriting.close()
+
+        // Drain concurrently: a tool whose -version output exceeds the pipe buffer would
+        // otherwise block on write forever and be misreported as broken. Waiting on the
+        // process itself (rather than a terminationHandler installed after run()) also
+        // removes the race where a fast-exiting tool never fires the handler.
+        let drained = DispatchGroup()
+        drained.enter()
+        DispatchQueue.global(qos: .utility).async {
+            defer {
+                try? outputPipe.fileHandleForReading.close()
+                drained.leave()
+            }
+            while let chunk = try? outputPipe.fileHandleForReading.read(upToCount: 65_536), !chunk.isEmpty {
+                continue
+            }
         }
-        return process.terminationStatus == 0
+
+        let timedOut = TimeoutFlag()
+        let watchdog = DispatchWorkItem { [weak process, timedOut] in
+            guard let process, process.isRunning else { return }
+            timedOut.set()
+            process.terminate()
+        }
+        DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + toolProbeTimeoutSeconds, execute: watchdog)
+        process.waitUntilExit()
+        watchdog.cancel()
+        drained.wait()
+
+        return !timedOut.isSet && process.terminationStatus == 0
     }
 
     private static func ensureHomebrew(environment: inout [String: String], logger: Logger) throws -> URL {

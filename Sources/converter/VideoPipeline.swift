@@ -79,6 +79,100 @@ extension ConverterTool {
         try verifySourceLoudnessPreserved(source: source, output: url, toleranceDB: 1.0)
     }
 
+    // What a finished render must satisfy. Shared by the reuse check and the encoder
+    // ladder so a reused file and a freshly rendered one are held to the same contract.
+    private struct VideoOutputSpec {
+        let width: Int
+        let height: Int
+        let pixelFormat: String
+        let fallbackVerifyCodec: String
+        let audioSampleRate: Int
+        let audioQCPolicy: AudioQCPolicy?
+        let loudnessSource: URL
+        let durationCheck: (URL) throws -> Void
+    }
+
+    // How to produce it: the only things the three render paths genuinely differ in.
+    private struct VideoEncodeSpec {
+        let output: URL
+        let inputArguments: [String]
+        let videoFilter: String
+        let encoderLadder: [String]
+        let vtQuality: String
+        let softwarePreset: String
+        let softwareCRF: String
+        let tag: String?
+        let tempStem: String
+        let label: String
+    }
+
+    private func verifyRenderedVideo(_ url: URL, spec: VideoOutputSpec, codec: String? = nil) throws {
+        try verifyVideoRender(
+            url,
+            width: spec.width,
+            height: spec.height,
+            codec: codec ?? spec.fallbackVerifyCodec,
+            pixelFormat: spec.pixelFormat,
+            colorPrimaries: config.videoColorPrimaries,
+            colorTransfer: config.videoColorTransfer,
+            colorSpace: config.videoColorSpace,
+            colorRange: config.videoColorRange,
+            sampleRate: spec.audioSampleRate,
+            channels: 2,
+            qcPolicy: spec.audioQCPolicy,
+            source: spec.loudnessSource,
+            durationCheck: spec.durationCheck
+        )
+    }
+
+    // Walks the encoder ladder, verifying before publishing and falling through to the
+    // next encoder on failure. All three render paths share this, so a fix here cannot
+    // reach only two of them.
+    private func renderVideoWithEncoderLadder(_ encode: VideoEncodeSpec, verifying spec: VideoOutputSpec) throws -> URL {
+        var lastError: (any Error)?
+        for encoder in encode.encoderLadder {
+            let temp = try makeTemp(
+                in: encode.output.deletingLastPathComponent(),
+                stem: "\(encode.tempStem).\(encoder)",
+                ext: ".mp4"
+            )
+            do {
+                var arguments = encode.inputArguments
+                arguments += ["-map", "0:v:0", "-map", "1:a:0", "-vf", encode.videoFilter, "-c:v", encoder]
+                arguments += mp4EncoderQualityArguments(
+                    encoder: encoder,
+                    vtQuality: encode.vtQuality,
+                    preset: encode.softwarePreset,
+                    crf: encode.softwareCRF
+                )
+                arguments += mp4RenderTail(
+                    pixelFormat: spec.pixelFormat,
+                    colorPrimaries: config.videoColorPrimaries,
+                    colorTransfer: config.videoColorTransfer,
+                    colorSpace: config.videoColorSpace,
+                    colorRange: config.videoColorRange,
+                    tag: encode.tag,
+                    sampleRate: spec.audioSampleRate,
+                    channels: 2
+                )
+                _ = try runner.run("ffmpeg", arguments + [temp.path])
+                try verifyRenderedVideo(temp, spec: spec, codec: verifyCodec(forEncoder: encoder))
+                try publishTemp(temp, to: encode.output)
+                logger.info("Created \(encode.label): \(encode.output.basename) [encoder=\(encoder)]")
+                return encode.output
+            } catch {
+                lastError = error
+                logger.warn("\(encode.label) encoder failed (\(encoder)): \(error.localizedDescription)")
+                discardTempFile(temp)
+            }
+        }
+        throw AppError("All \(encode.label) encoders failed for \(encode.output.basename): \(lastError?.localizedDescription ?? "unknown error")")
+    }
+
+    private func colorParameterFilter() -> String {
+        "setparams=color_primaries=\(config.videoColorPrimaries):color_trc=\(config.videoColorTransfer):colorspace=\(config.videoColorSpace):range=\(ffmpegFilterRangeValue(config.videoColorRange))"
+    }
+
     func shortMP4Stem(forInputStem stem: String) -> String {
         stem.hasSuffix("_Short") ? stem : "\(stem)_Short"
     }
@@ -146,27 +240,20 @@ extension ConverterTool {
         guard let duration = try mediaDuration(audioFile) else {
             throw AppError("Unable to read numeric audio duration from: \(audioFile.path)")
         }
-        let defaultName = "\(audioFile.stem)_8K.mp4"
-        let output = try resolveOutputPath(cli.outputFile ?? defaultName)
-        if canReuseOutput(output, verifier: {
-            try verifyVideoRender(
-                output,
-                width: config.videoMP4Width,
-                height: config.videoMP4Height,
-                codec: config.videoMP4VerifyCodec,
-                pixelFormat: config.videoMP4PixelFormat,
-                colorPrimaries: config.videoColorPrimaries,
-                colorTransfer: config.videoColorTransfer,
-                colorSpace: config.videoColorSpace,
-                colorRange: config.videoColorRange,
-                sampleRate: config.videoMP4AudioSampleRate,
-                channels: 2,
-                qcPolicy: audioQCPolicy,
-                source: audioFile
-            ) {
-                try verifyDurationMatch(source: audioFile, output: $0)
-            }
-        }) {
+        let output = try resolveOutputPath(cli.outputFile ?? "\(audioFile.stem)_8K.mp4")
+
+        let spec = VideoOutputSpec(
+            width: config.videoMP4Width,
+            height: config.videoMP4Height,
+            pixelFormat: config.videoMP4PixelFormat,
+            fallbackVerifyCodec: config.videoMP4VerifyCodec,
+            audioSampleRate: config.videoMP4AudioSampleRate,
+            audioQCPolicy: audioQCPolicy,
+            loudnessSource: audioFile,
+            durationCheck: { try self.verifyDurationMatch(source: audioFile, output: $0) }
+        )
+
+        if canReuseOutput(output, verifier: { try self.verifyRenderedVideo(output, spec: spec) }) {
             logger.info("Skip existing MP4: \(output.basename)")
             return output
         }
@@ -175,80 +262,32 @@ extension ConverterTool {
         let encoders = try requireAvailableEncoderLadder(config.videoEncoderLadder, label: "Main video")
         let sourceWAV = try makeInternalWAV(from: audioFile, in: output.deletingLastPathComponent(), stem: "\(audioFile.stem).mainmp4.source")
         defer { discardTempFile(sourceWAV) }
-        let videoFilter =
-            "scale=\(config.videoMP4Width):\(config.videoMP4Height):flags=\(config.videoMP4ScaleFilter)," +
-            "format=\(config.videoMP4PixelFormat)," +
-            "setparams=color_primaries=\(config.videoColorPrimaries):color_trc=\(config.videoColorTransfer):colorspace=\(config.videoColorSpace):range=\(ffmpegFilterRangeValue(config.videoColorRange))"
 
-        func buildArguments(encoder: String) -> [String] {
-            var ffmpegArgs = [
-                "-hide_banner", "-nostdin", "-v", "error", "-y",
-                "-loop", "1",
-                "-framerate", config.videoMP4InputFPS,
-                "-i", imageFile.path,
-                "-i", sourceWAV.path,
-                "-t", ffmpegArg("%.6f", duration),
-                "-map", "0:v:0",
-                "-map", "1:a:0",
-                "-vf", videoFilter,
-                "-c:v", encoder
-            ]
-            ffmpegArgs += mp4EncoderQualityArguments(
-                encoder: encoder,
+        return try renderVideoWithEncoderLadder(
+            VideoEncodeSpec(
+                output: output,
+                inputArguments: [
+                    "-hide_banner", "-nostdin", "-v", "error", "-y",
+                    "-loop", "1",
+                    "-framerate", config.videoMP4InputFPS,
+                    "-i", imageFile.path,
+                    "-i", sourceWAV.path,
+                    "-t", ffmpegArg("%.6f", duration)
+                ],
+                videoFilter:
+                    "scale=\(config.videoMP4Width):\(config.videoMP4Height):flags=\(config.videoMP4ScaleFilter)," +
+                    "format=\(config.videoMP4PixelFormat)," +
+                    colorParameterFilter(),
+                encoderLadder: encoders,
                 vtQuality: config.videoMP4VTQuality,
-                preset: config.videoMP4SoftwarePreset,
-                crf: config.videoMP4SoftwareCRF
-            )
-            ffmpegArgs += mp4RenderTail(
-                pixelFormat: config.videoMP4PixelFormat,
-                colorPrimaries: config.videoColorPrimaries,
-                colorTransfer: config.videoColorTransfer,
-                colorSpace: config.videoColorSpace,
-                colorRange: config.videoColorRange,
+                softwarePreset: config.videoMP4SoftwarePreset,
+                softwareCRF: config.videoMP4SoftwareCRF,
                 tag: config.videoMP4Tag,
-                sampleRate: config.videoMP4AudioSampleRate,
-                channels: 2
-            )
-            return ffmpegArgs
-        }
-
-        func verifyRenderedFile(_ temp: URL, codec: String) throws {
-            try verifyVideoRender(
-                temp,
-                width: config.videoMP4Width,
-                height: config.videoMP4Height,
-                codec: codec,
-                pixelFormat: config.videoMP4PixelFormat,
-                colorPrimaries: config.videoColorPrimaries,
-                colorTransfer: config.videoColorTransfer,
-                colorSpace: config.videoColorSpace,
-                colorRange: config.videoColorRange,
-                sampleRate: config.videoMP4AudioSampleRate,
-                channels: 2,
-                qcPolicy: audioQCPolicy,
-                source: audioFile
-            ) {
-                try verifyDurationMatch(source: audioFile, output: $0)
-            }
-        }
-
-        var lastError: Error?
-        for encoder in encoders {
-            let temp = try makeTemp(in: output.deletingLastPathComponent(), stem: "mainmp4.\(encoder)", ext: ".mp4")
-            do {
-                _ = try runner.run("ffmpeg", buildArguments(encoder: encoder) + [temp.path])
-                try verifyRenderedFile(temp, codec: verifyCodec(forEncoder: encoder) ?? config.videoMP4VerifyCodec)
-                try publishTemp(temp, to: output)
-                logger.info("Created MP4: \(output.basename) [encoder=\(encoder)]")
-                return output
-            } catch {
-                lastError = error
-                logger.warn("Main video encoder failed (\(encoder)): \(error.localizedDescription)")
-                try? fileManager.removeItem(at: temp)
-                state.unregister(tempFile: temp)
-            }
-        }
-        throw AppError("All main video encoders failed for \(output.basename): \(lastError?.localizedDescription ?? "unknown error")")
+                tempStem: "mainmp4",
+                label: "MP4"
+            ),
+            verifying: spec
+        )
     }
 
     func shortenMP4(_ input: URL, audioQCPolicy: AudioQCPolicy?) throws -> URL {
@@ -256,106 +295,52 @@ extension ConverterTool {
         try requireFFmpegEncoder(alacEncoderName)
         let shortDuration = try effectiveShortClipSeconds(for: input)
         let output = cli.outDir.appendingPathComponent(shortMP4Stem(forInputStem: input.stem)).appendingPathExtension("mp4")
-        if canReuseOutput(output, verifier: {
-            try verifyVideoRender(
-                output,
-                width: config.shortMP4ScaleW,
-                height: config.shortMP4ScaleH,
-                codec: config.shortMP4VerifyCodec,
-                pixelFormat: config.shortMP4PixelFormat,
-                colorPrimaries: config.videoColorPrimaries,
-                colorTransfer: config.videoColorTransfer,
-                colorSpace: config.videoColorSpace,
-                colorRange: config.videoColorRange,
-                sampleRate: config.shortMP4AudioSampleRate,
-                channels: 2,
-                qcPolicy: audioQCPolicy,
-                source: input
-            ) {
-                try verifyShortMP4Duration($0, source: input)
-            }
-        }) {
+
+        let spec = VideoOutputSpec(
+            width: config.shortMP4ScaleW,
+            height: config.shortMP4ScaleH,
+            pixelFormat: config.shortMP4PixelFormat,
+            fallbackVerifyCodec: config.shortMP4VerifyCodec,
+            audioSampleRate: config.shortMP4AudioSampleRate,
+            audioQCPolicy: audioQCPolicy,
+            loudnessSource: input,
+            durationCheck: { try self.verifyShortMP4Duration($0, source: input) }
+        )
+
+        if canReuseOutput(output, verifier: { try self.verifyRenderedVideo(output, spec: spec) }) {
             logger.info("Skip existing short MP4: \(output.basename)")
             return output
         }
         let encoders = try requireAvailableEncoderLadder(config.shortVideoEncoderLadder, label: "Short video")
         let sourceWAV = try makeInternalWAV(from: input, in: cli.outDir, stem: "\(input.stem).shortmp4.source", duration: shortDuration)
         defer { discardTempFile(sourceWAV) }
-        let shortFilter =
-            "crop=min(iw\\,ih*9/16):ih," +
-            "fps=\(config.shortMP4FPS)," +
-            "scale=\(config.shortMP4ScaleW):\(config.shortMP4ScaleH)," +
-            "format=\(config.shortMP4PixelFormat)," +
-            "setparams=color_primaries=\(config.videoColorPrimaries):color_trc=\(config.videoColorTransfer):colorspace=\(config.videoColorSpace):range=\(ffmpegFilterRangeValue(config.videoColorRange))"
 
-        func buildArguments(encoder: String) -> [String] {
-            var ffmpegArgs = [
-                "-hide_banner", "-nostdin", "-v", "error", "-y",
-                "-ss", "0",
-                "-t", ffmpegArg("%.6f", shortDuration),
-                "-i", input.path,
-                "-i", sourceWAV.path,
-                "-map", "0:v:0",
-                "-map", "1:a:0",
-                "-vf", shortFilter,
-                "-c:v", encoder
-            ]
-            ffmpegArgs += mp4EncoderQualityArguments(
-                encoder: encoder,
+        return try renderVideoWithEncoderLadder(
+            VideoEncodeSpec(
+                output: output,
+                inputArguments: [
+                    "-hide_banner", "-nostdin", "-v", "error", "-y",
+                    "-ss", "0",
+                    "-t", ffmpegArg("%.6f", shortDuration),
+                    "-i", input.path,
+                    "-i", sourceWAV.path
+                ],
+                videoFilter:
+                    "crop=min(iw\\,ih*9/16):ih," +
+                    "fps=\(config.shortMP4FPS)," +
+                    "scale=\(config.shortMP4ScaleW):\(config.shortMP4ScaleH)," +
+                    "format=\(config.shortMP4PixelFormat)," +
+                    colorParameterFilter(),
+                encoderLadder: encoders,
                 vtQuality: config.shortMP4VTQuality,
-                preset: config.shortMP4VideoPreset,
-                crf: config.shortMP4VideoCRF
-            )
-            ffmpegArgs += mp4RenderTail(
-                pixelFormat: config.shortMP4PixelFormat,
-                colorPrimaries: config.videoColorPrimaries,
-                colorTransfer: config.videoColorTransfer,
-                colorSpace: config.videoColorSpace,
-                colorRange: config.videoColorRange,
+                softwarePreset: config.shortMP4VideoPreset,
+                softwareCRF: config.shortMP4VideoCRF,
                 tag: nil,
-                sampleRate: config.shortMP4AudioSampleRate,
-                channels: 2
-            )
-            return ffmpegArgs
-        }
-
-        func verifyShortFile(_ temp: URL, codec: String) throws {
-            try verifyVideoRender(
-                temp,
-                width: config.shortMP4ScaleW,
-                height: config.shortMP4ScaleH,
-                codec: codec,
-                pixelFormat: config.shortMP4PixelFormat,
-                colorPrimaries: config.videoColorPrimaries,
-                colorTransfer: config.videoColorTransfer,
-                colorSpace: config.videoColorSpace,
-                colorRange: config.videoColorRange,
-                sampleRate: config.shortMP4AudioSampleRate,
-                channels: 2,
-                qcPolicy: audioQCPolicy,
-                source: input
-            ) {
-                try verifyShortMP4Duration($0, source: input)
-            }
-        }
-
-        var lastError: Error?
-        for encoder in encoders {
-            let temp = try makeTemp(in: cli.outDir, stem: "shortmp4.\(encoder)", ext: ".mp4")
-            do {
-                _ = try runner.run("ffmpeg", buildArguments(encoder: encoder) + [temp.path])
-                try verifyShortFile(temp, codec: verifyCodec(forEncoder: encoder) ?? config.shortMP4VerifyCodec)
-                try publishTemp(temp, to: output)
-                logger.info("Created short MP4: \(output.basename) [encoder=\(encoder)]")
-                return output
-            } catch {
-                lastError = error
-                logger.warn("Short video encoder failed (\(encoder)): \(error.localizedDescription)")
-                try? fileManager.removeItem(at: temp)
-                state.unregister(tempFile: temp)
-            }
-        }
-        throw AppError("All short video encoders failed for \(output.basename): \(lastError?.localizedDescription ?? "unknown error")")
+                tempStem: "shortmp4",
+                label: "short MP4"
+            ),
+            verifying: spec
+        )
     }
 
     func preflightShortAudioInput(_ file: URL) throws {
@@ -387,25 +372,21 @@ extension ConverterTool {
         let output = cli.outDir
             .appendingPathComponent(outputStem ?? portraitShortMP4Stem(forAudioStem: audioFile.stem))
             .appendingPathExtension("mp4")
-        if canReuseOutput(output, verifier: {
-            try verifyVideoRender(
-                output,
-                width: config.shortMP4ScaleW,
-                height: config.shortMP4ScaleH,
-                codec: config.shortMP4VerifyCodec,
-                pixelFormat: config.shortMP4PixelFormat,
-                colorPrimaries: config.videoColorPrimaries,
-                colorTransfer: config.videoColorTransfer,
-                colorSpace: config.videoColorSpace,
-                colorRange: config.videoColorRange,
-                sampleRate: config.shortMP4AudioSampleRate,
-                channels: 2,
-                qcPolicy: audioQCPolicy,
-                source: audioFile
-            ) {
-                try verifyDuration($0, expectedSeconds: shortDuration, label: verificationLabel, tolerance: 0.5)
+
+        let spec = VideoOutputSpec(
+            width: config.shortMP4ScaleW,
+            height: config.shortMP4ScaleH,
+            pixelFormat: config.shortMP4PixelFormat,
+            fallbackVerifyCodec: config.shortMP4VerifyCodec,
+            audioSampleRate: config.shortMP4AudioSampleRate,
+            audioQCPolicy: audioQCPolicy,
+            loudnessSource: audioFile,
+            durationCheck: {
+                try self.verifyDuration($0, expectedSeconds: shortDuration, label: verificationLabel, tolerance: 0.5)
             }
-        }) {
+        )
+
+        if canReuseOutput(output, verifier: { try self.verifyRenderedVideo(output, spec: spec) }) {
             logger.info("Skip existing portrait short MP4: \(output.basename)")
             return output
         }
@@ -413,82 +394,33 @@ extension ConverterTool {
         let encoders = try requireAvailableEncoderLadder(config.shortVideoEncoderLadder, label: "Short video")
         let sourceWAV = try makeInternalWAV(from: audioFile, in: cli.outDir, stem: "\(audioFile.stem).portraitshort.source", duration: shortDuration)
         defer { discardTempFile(sourceWAV) }
-        let shortFilter =
-            "scale=w=\(config.shortMP4ScaleW):h=\(config.shortMP4ScaleH):force_original_aspect_ratio=decrease," +
-            "pad=\(config.shortMP4ScaleW):\(config.shortMP4ScaleH):(ow-iw)/2:(oh-ih)/2:color=black," +
-            "fps=\(config.shortMP4FPS)," +
-            "format=\(config.shortMP4PixelFormat)," +
-            "setparams=color_primaries=\(config.videoColorPrimaries):color_trc=\(config.videoColorTransfer):colorspace=\(config.videoColorSpace):range=\(ffmpegFilterRangeValue(config.videoColorRange))"
 
-        func buildArguments(encoder: String) -> [String] {
-            var ffmpegArgs = [
-                "-hide_banner", "-nostdin", "-v", "error", "-y",
-                "-loop", "1",
-                "-framerate", config.shortMP4FPS,
-                "-i", imageFile.path,
-                "-i", sourceWAV.path,
-                "-t", ffmpegArg("%.6f", shortDuration),
-                "-map", "0:v:0",
-                "-map", "1:a:0",
-                "-vf", shortFilter,
-                "-c:v", encoder
-            ]
-            ffmpegArgs += mp4EncoderQualityArguments(
-                encoder: encoder,
+        return try renderVideoWithEncoderLadder(
+            VideoEncodeSpec(
+                output: output,
+                inputArguments: [
+                    "-hide_banner", "-nostdin", "-v", "error", "-y",
+                    "-loop", "1",
+                    "-framerate", config.shortMP4FPS,
+                    "-i", imageFile.path,
+                    "-i", sourceWAV.path,
+                    "-t", ffmpegArg("%.6f", shortDuration)
+                ],
+                videoFilter:
+                    "scale=w=\(config.shortMP4ScaleW):h=\(config.shortMP4ScaleH):force_original_aspect_ratio=decrease," +
+                    "pad=\(config.shortMP4ScaleW):\(config.shortMP4ScaleH):(ow-iw)/2:(oh-ih)/2:color=black," +
+                    "fps=\(config.shortMP4FPS)," +
+                    "format=\(config.shortMP4PixelFormat)," +
+                    colorParameterFilter(),
+                encoderLadder: encoders,
                 vtQuality: config.shortMP4VTQuality,
-                preset: config.shortMP4VideoPreset,
-                crf: config.shortMP4VideoCRF
-            )
-            ffmpegArgs += mp4RenderTail(
-                pixelFormat: config.shortMP4PixelFormat,
-                colorPrimaries: config.videoColorPrimaries,
-                colorTransfer: config.videoColorTransfer,
-                colorSpace: config.videoColorSpace,
-                colorRange: config.videoColorRange,
+                softwarePreset: config.shortMP4VideoPreset,
+                softwareCRF: config.shortMP4VideoCRF,
                 tag: nil,
-                sampleRate: config.shortMP4AudioSampleRate,
-                channels: 2
-            )
-            return ffmpegArgs
-        }
-
-        func verifyPortraitShortFile(_ temp: URL, codec: String) throws {
-            try verifyVideoRender(
-                temp,
-                width: config.shortMP4ScaleW,
-                height: config.shortMP4ScaleH,
-                codec: codec,
-                pixelFormat: config.shortMP4PixelFormat,
-                colorPrimaries: config.videoColorPrimaries,
-                colorTransfer: config.videoColorTransfer,
-                colorSpace: config.videoColorSpace,
-                colorRange: config.videoColorRange,
-                sampleRate: config.shortMP4AudioSampleRate,
-                channels: 2,
-                qcPolicy: audioQCPolicy,
-                source: audioFile
-            ) {
-                try verifyDuration($0, expectedSeconds: shortDuration, label: verificationLabel, tolerance: 0.5)
-            }
-        }
-
-        var lastError: Error?
-        for encoder in encoders {
-            let temp = try makeTemp(in: cli.outDir, stem: "portraitshort.\(encoder)", ext: ".mp4")
-            do {
-                _ = try runner.run("ffmpeg", buildArguments(encoder: encoder) + [temp.path])
-                try verifyPortraitShortFile(temp, codec: verifyCodec(forEncoder: encoder) ?? config.shortMP4VerifyCodec)
-                try publishTemp(temp, to: output)
-                logger.info("Created portrait short MP4: \(output.basename) [encoder=\(encoder)]")
-                return output
-            } catch {
-                lastError = error
-                logger.warn("Portrait short video encoder failed (\(encoder)): \(error.localizedDescription)")
-                try? fileManager.removeItem(at: temp)
-                state.unregister(tempFile: temp)
-            }
-        }
-        throw AppError("All portrait short video encoders failed for \(output.basename): \(lastError?.localizedDescription ?? "unknown error")")
+                tempStem: "portraitshort",
+                label: "portrait short MP4"
+            ),
+            verifying: spec
+        )
     }
-
 }

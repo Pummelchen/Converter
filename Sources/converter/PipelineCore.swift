@@ -80,33 +80,36 @@ enum CachedStringValue: Sendable {
     }
 }
 
-enum CachedDimensionsValue: Sendable {
-    case none
-    case some(Int, Int)
+// Geometry, format, and colorspace all come from a single `magick identify`, so they are
+// cached together rather than as three independently-probed values.
+struct ImageProbe: Sendable {
+    let width: Int
+    let height: Int
+    let format: String
+    let colorSpace: String
+}
 
-    init(_ value: (Int, Int)?) {
-        if let value {
-            self = .some(value.0, value.1)
-        } else {
-            self = .none
-        }
+enum CachedImageProbe: Sendable {
+    case none
+    case some(ImageProbe)
+
+    init(_ value: ImageProbe?) {
+        self = value.map(Self.some) ?? .none
     }
 
-    var value: (Int, Int)? {
+    var value: ImageProbe? {
         switch self {
         case .none:
             return nil
-        case .some(let width, let height):
-            return (width, height)
+        case .some(let probe):
+            return probe
         }
     }
 }
 
 private struct ProbeCacheState {
     var ffprobeValues: [FFprobeCacheKey: CachedStringValue] = [:]
-    var imageDimensions: [FileProbeFingerprint: CachedDimensionsValue] = [:]
-    var imageFormats: [FileProbeFingerprint: CachedStringValue] = [:]
-    var imageColorSpaces: [FileProbeFingerprint: CachedStringValue] = [:]
+    var imageProbes: [FileProbeFingerprint: CachedImageProbe] = [:]
     var audibleAudio: [FileProbeFingerprint: Bool] = [:]
     var audioQCResults: [AudioQCCacheKey: AudioQCResult] = [:]
 }
@@ -124,33 +127,13 @@ final class ProbeCache: Sendable {
         return value
     }
 
-    func cachedImageDimensions(key: FileProbeFingerprint, compute: () throws -> (Int, Int)?) throws -> (Int, Int)? {
-        if let cached = state.withLock({ $0.imageDimensions[key] }) {
+    func cachedImageProbe(key: FileProbeFingerprint, compute: () throws -> ImageProbe?) throws -> ImageProbe? {
+        if let cached = state.withLock({ $0.imageProbes[key] }) {
             return cached.value
         }
 
         let value = try compute()
-        state.withLock { $0.imageDimensions[key] = CachedDimensionsValue(value) }
-        return value
-    }
-
-    func cachedImageFormat(key: FileProbeFingerprint, compute: () throws -> String?) throws -> String? {
-        if let cached = state.withLock({ $0.imageFormats[key] }) {
-            return cached.value
-        }
-
-        let value = try compute()
-        state.withLock { $0.imageFormats[key] = CachedStringValue(value) }
-        return value
-    }
-
-    func cachedImageColorSpace(key: FileProbeFingerprint, compute: () throws -> String?) throws -> String? {
-        if let cached = state.withLock({ $0.imageColorSpaces[key] }) {
-            return cached.value
-        }
-
-        let value = try compute()
-        state.withLock { $0.imageColorSpaces[key] = CachedStringValue(value) }
+        state.withLock { $0.imageProbes[key] = CachedImageProbe(value) }
         return value
     }
 
@@ -655,32 +638,42 @@ final class ConverterTool: Sendable {
         return Double(value)
     }
 
-    func imageDimensions(_ file: URL) throws -> (Int, Int)? {
+    // One `magick identify` answers geometry, format, and colorspace together. The
+    // trailing newline keeps multi-frame inputs parseable: only the first frame is read.
+    func imageProbe(_ file: URL) throws -> ImageProbe? {
         let fingerprint = try fileProbeFingerprint(file)
-        return try probeCache.cachedImageDimensions(key: fingerprint) {
-            let result = try runner.run("magick", ["identify", "-format", "%w %h", file.path])
-            let fields = result.stdout.trimmed.split(separator: " ")
-            guard fields.count == 2, let width = Int(fields[0]), let height = Int(fields[1]) else {
+        return try probeCache.cachedImageProbe(key: fingerprint) {
+            let result = try runner.run("magick", ["identify", "-format", "%w|%h|%m|%[colorspace]\n", file.path])
+            guard let firstFrame = result.stdout.split(whereSeparator: \.isNewline).first else {
                 return nil
             }
-            return (width, height)
+            let fields = firstFrame.split(separator: "|", omittingEmptySubsequences: false).map { String($0).trimmed }
+            guard fields.count >= 4, let width = Int(fields[0]), let height = Int(fields[1]) else {
+                return nil
+            }
+            return ImageProbe(width: width, height: height, format: fields[2], colorSpace: fields[3])
         }
+    }
+
+    func imageDimensions(_ file: URL) throws -> (Int, Int)? {
+        guard let probe = try imageProbe(file) else {
+            return nil
+        }
+        return (probe.width, probe.height)
     }
 
     func imageFormat(_ file: URL) throws -> String? {
-        let fingerprint = try fileProbeFingerprint(file)
-        return try probeCache.cachedImageFormat(key: fingerprint) {
-            let result = try runner.run("magick", ["identify", "-format", "%m", file.path])
-            return result.stdout.trimmed.isEmpty ? nil : result.stdout.trimmed
+        guard let probe = try imageProbe(file), !probe.format.isEmpty else {
+            return nil
         }
+        return probe.format
     }
 
     func imageColorSpace(_ file: URL) throws -> String? {
-        let fingerprint = try fileProbeFingerprint(file)
-        return try probeCache.cachedImageColorSpace(key: fingerprint) {
-            let result = try runner.run("magick", ["identify", "-format", "%[colorspace]", file.path])
-            return result.stdout.trimmed.isEmpty ? nil : result.stdout.trimmed
+        guard let probe = try imageProbe(file), !probe.colorSpace.isEmpty else {
+            return nil
         }
+        return probe.colorSpace
     }
 
     func mediaFormatName(_ file: URL) throws -> String? {
@@ -742,7 +735,14 @@ final class ConverterTool: Sendable {
 
         for rawLine in stderr.split(whereSeparator: \.isNewline) {
             let line = String(rawLine).trimmed
-            guard let payload = line.components(separatedBy: "] ").last?.trimmed, !payload.isEmpty else {
+            // astats shares this stderr with the other filters in its graph, so only its
+            // own tagged lines may be consumed; anything else would land in the metric
+            // dictionaries under a foreign key.
+            guard let tagEnd = line.range(of: "] "), line[..<tagEnd.lowerBound].contains("astats") else {
+                continue
+            }
+            let payload = String(line[tagEnd.upperBound...]).trimmed
+            guard !payload.isEmpty else {
                 continue
             }
             if payload == "Overall" {

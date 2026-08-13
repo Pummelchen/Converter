@@ -31,6 +31,25 @@ void writeLE(std::fstream& stream, T value) {
     stream.write(reinterpret_cast<const char*>(&value), sizeof(value));
 }
 
+std::uint32_t readLE32(std::fstream& stream, std::streamoff offset) {
+    std::uint32_t value = 0;
+    stream.seekg(offset);
+    stream.read(reinterpret_cast<char*>(&value), sizeof(value));
+    if (!stream) {
+        throw std::runtime_error("failed to read BW64 header field during finalization");
+    }
+    return value;
+}
+
+std::string fourCCText(std::uint32_t value) {
+    char text[4] = {0, 0, 0, 0};
+    std::memcpy(text, &value, sizeof(text));
+    return std::string(text, sizeof(text));
+}
+
+// Rewrites fixed byte ranges in the file libbw64 just produced. Because the offsets are
+// hard-coded, the existing layout is verified first: if an upstream libbw64 change ever
+// reorders chunks this must fail loudly rather than silently corrupt the output.
 void forceBW64Container(const std::string& path, std::uint64_t dataBytes) {
     std::fstream stream(path, std::ios::in | std::ios::out | std::ios::binary);
     if (!stream.is_open()) {
@@ -42,6 +61,29 @@ void forceBW64Container(const std::string& path, std::uint64_t dataBytes) {
         throw std::runtime_error("output too small to finalize as BW64: " + path);
     }
 
+    const auto containerID = readLE32(stream, 0);
+    if (containerID != fourCC("RIFF") && containerID != fourCC("BW64")) {
+        throw std::runtime_error(
+            "unexpected container id '" + fourCCText(containerID) +
+            "' at offset 0; refusing to finalize as BW64: " + path);
+    }
+    if (readLE32(stream, 8) != fourCC("WAVE")) {
+        throw std::runtime_error("missing WAVE form type; refusing to finalize as BW64: " + path);
+    }
+
+    const auto placeholderID = readLE32(stream, 12);
+    if (placeholderID != fourCC("JUNK") && placeholderID != fourCC("ds64")) {
+        throw std::runtime_error(
+            "expected a JUNK or ds64 placeholder at offset 12, found '" + fourCCText(placeholderID) +
+            "'; refusing to finalize as BW64: " + path);
+    }
+
+    // Preserve the reserved size so chunks after the placeholder keep their offsets.
+    const auto placeholderSize = readLE32(stream, 16);
+    if (placeholderSize < 28u) {
+        throw std::runtime_error("ds64 placeholder is too small to hold BW64 sizes: " + path);
+    }
+
     stream.seekp(0);
     writeLE(stream, fourCC("BW64"));
     writeLE(stream, static_cast<std::uint32_t>(0xFFFFFFFFu));
@@ -49,11 +91,16 @@ void forceBW64Container(const std::string& path, std::uint64_t dataBytes) {
 
     stream.seekp(12);
     writeLE(stream, fourCC("ds64"));
-    writeLE(stream, static_cast<std::uint32_t>(28u));
+    writeLE(stream, placeholderSize);
     writeLE(stream, static_cast<std::uint64_t>(fileSize >= 8 ? fileSize - 8 : 0));
     writeLE(stream, dataBytes);
     writeLE(stream, static_cast<std::uint64_t>(0));
     writeLE(stream, static_cast<std::uint32_t>(0));
+
+    stream.flush();
+    if (!stream) {
+        throw std::runtime_error("failed to write BW64 header: " + path);
+    }
 }
 
 void validateOutput(const Options& options, std::uint64_t framesWritten) {
@@ -122,9 +169,6 @@ void writeBW64FromFile(const Options& options) {
 
         if (bytesRead == 0) {
             break;
-        }
-        if (bytesRead < 0) {
-            throw std::runtime_error("PCM input read failed");
         }
         if (bytesRead % static_cast<std::streamsize>(sizeof(float) * options.channels) != 0) {
             throw std::runtime_error("PCM input byte count is not aligned to full audio frames");

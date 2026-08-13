@@ -9,6 +9,30 @@ struct LoudnessStaticGainPlan: Equatable {
     let peakConstrained: Bool
 }
 
+// Standard CRC-32 (IEEE, reflected), slice-by-8. Eight tables let the hot loop consume
+// eight bytes per iteration instead of one, which measures ~5x faster on the file sizes
+// --hash actually sees (WAV and MP4 masters in the hundreds of MB). Tables 1-7 are derived
+// from table 0, so all eight necessarily agree on the one polynomial. Built once per
+// process rather than per call.
+private let crc32Tables: [[UInt32]] = {
+    let polynomial: UInt32 = 0xEDB88320
+    var tables = [[UInt32]](repeating: [UInt32](repeating: 0, count: 256), count: 8)
+    for index in 0 ..< 256 {
+        var value = UInt32(index)
+        for _ in 0 ..< 8 {
+            value = (value & 1) == 1 ? polynomial ^ (value >> 1) : (value >> 1)
+        }
+        tables[0][index] = value
+    }
+    for slice in 1 ..< 8 {
+        for index in 0 ..< 256 {
+            let previous = tables[slice - 1][index]
+            tables[slice][index] = (previous >> 8) ^ tables[0][Int(previous & 0xFF)]
+        }
+    }
+    return tables
+}()
+
 extension ConverterTool {
     func verifyDuration(_ file: URL, expectedSeconds: Double, label: String, tolerance: Double? = nil) throws {
         guard let actualDuration = try mediaDuration(file) else {
@@ -1043,7 +1067,7 @@ extension ConverterTool {
             return args
         }
 
-        var lastError: Error?
+        var lastError: (any Error)?
         for encoder in encoders {
             do {
                 _ = try runner.run("ffmpeg", buildArguments(encoder: encoder) + [output.path])
@@ -1428,48 +1452,6 @@ extension ConverterTool {
         }
     }
 
-    func convertFLACToWAV(_ source: URL) throws -> URL {
-        try convertAudioToWAV(source)
-    }
-
-    func convertMP3ToWAV(_ source: URL) throws -> URL {
-        try convertAudioToWAV(source)
-    }
-
-    func convertM4AToWAV(_ source: URL) throws -> URL {
-        try convertAudioToWAV(source)
-    }
-
-    func convertWAVToM4A(_ source: URL) throws -> URL {
-        try preflightWAVInput(source)
-        try requireFFmpegEncoder(alacEncoderName)
-        let output = cli.outDir.appendingPathComponent(source.stem).appendingPathExtension("m4a")
-        if canReuseOutput(output, verifier: {
-            try verifyM4AFile(output, sampleRate: config.m4aSampleRate, channels: config.m4aChannels, qcPolicy: nil)
-            try verifyDurationMatch(source: source, output: output)
-            try verifySourceLoudnessPreserved(source: source, output: output, toleranceDB: 1.0)
-        }) {
-            logger.info("Skip existing M4A: \(output.basename)")
-            return output
-        }
-        let sourceWAV = try makeInternalWAV(from: source, in: cli.outDir, stem: "\(source.stem).m4a.source")
-        defer { discardTempFile(sourceWAV) }
-        let temp = try makeTemp(in: cli.outDir, stem: source.stem, ext: ".m4a")
-        do {
-            try encodeInternalWAVToM4A(sourceWAV, output: temp, qcPolicy: nil)
-            try verifyM4AFile(temp, sampleRate: config.m4aSampleRate, channels: config.m4aChannels, qcPolicy: nil)
-            try verifyDurationMatch(source: source, output: temp)
-            try verifySourceLoudnessPreserved(source: source, output: temp, toleranceDB: 1.0)
-            try publishTemp(temp, to: output)
-            logger.info("Created M4A: \(output.basename)")
-            return output
-        } catch {
-            try? fileManager.removeItem(at: temp)
-            state.unregister(tempFile: temp)
-            throw error
-        }
-    }
-
     func convertAudioToM4A(_ source: URL) throws -> URL {
         try preflightAudioSourceForTranscode(source)
         try requireFFmpegEncoder(alacEncoderName)
@@ -1531,18 +1513,6 @@ extension ConverterTool {
         }
     }
 
-    func convertWAVToMP3(_ source: URL) throws -> URL {
-        try convertAudioToMP3(source)
-    }
-
-    func convertFLACToMP3(_ source: URL) throws -> URL {
-        try convertAudioToMP3(source)
-    }
-
-    func convertM4AToMP3(_ source: URL) throws -> URL {
-        try convertAudioToMP3(source)
-    }
-
     // Convert any supported audio source into FLAC.
     func convertAudioToFLAC(_ source: URL) throws -> URL {
         try preflightAudioSourceForTranscode(source)
@@ -1587,18 +1557,6 @@ extension ConverterTool {
             state.unregister(tempFile: temp)
             throw error
         }
-    }
-
-    func convertWAVToFLAC(_ source: URL) throws -> URL {
-        try convertAudioToFLAC(source)
-    }
-
-    func convertMP3ToFLAC(_ source: URL) throws -> URL {
-        try convertAudioToFLAC(source)
-    }
-
-    func convertM4AToFLAC(_ source: URL) throws -> URL {
-        try convertAudioToFLAC(source)
     }
 
     func cleanMP3(_ source: URL) throws {
@@ -1772,31 +1730,25 @@ extension ConverterTool {
         }
     }
 
+    // BW64 is a RIFF/WAV container standard, so it has no FLAC counterpart: a
+    // "_BW64.flac" could only ever be a byte-identical copy of "_RF64.flac".
+    // The archival set is therefore three genuinely distinct deliverables.
     func generateExternalArchivalVariants(baseName: String, highQualitySource: URL) throws {
         let rf64FLAC = cli.outDir.appendingPathComponent("\(baseName)_RF64").appendingPathExtension("flac")
-        let bw64FLAC = cli.outDir.appendingPathComponent("\(baseName)_BW64").appendingPathExtension("flac")
         let rf64WAV = cli.outDir.appendingPathComponent("\(baseName)_RF64").appendingPathExtension("wav")
         let bw64WAV = cli.outDir.appendingPathComponent("\(baseName)_BW64").appendingPathExtension("wav")
 
         _ = try createExternalFLACVariant(source: highQualitySource, output: rf64FLAC)
-        _ = try createExternalFLACVariant(source: highQualitySource, output: bw64FLAC)
         _ = try createExternalWAVVariant(source: highQualitySource, output: rf64WAV, writeBext: false)
         _ = try createExternalBW64WAVVariant(source: highQualitySource, output: bw64WAV)
     }
 
     func crc32(for file: URL) throws -> String {
-        let polynomial: UInt32 = 0xEDB88320
-        var table = [UInt32](repeating: 0, count: 256)
-        for index in 0 ..< 256 {
-            var value = UInt32(index)
-            for _ in 0 ..< 8 {
-                value = (value & 1) == 1 ? polynomial ^ (value >> 1) : (value >> 1)
-            }
-            table[index] = value
-        }
-
         let handle = try FileHandle(forReadingFrom: file)
         defer { try? handle.close() }
+
+        let t0 = crc32Tables[0], t1 = crc32Tables[1], t2 = crc32Tables[2], t3 = crc32Tables[3]
+        let t4 = crc32Tables[4], t5 = crc32Tables[5], t6 = crc32Tables[6], t7 = crc32Tables[7]
 
         var crc: UInt32 = 0xFFFFFFFF
         while true {
@@ -1804,25 +1756,49 @@ extension ConverterTool {
             guard let chunk = data, !chunk.isEmpty else {
                 break
             }
-            crc = chunk.reduce(crc) { current, byte in
-                let idx = Int((current ^ UInt32(byte)) & 0xFF)
-                return table[idx] ^ (current >> 8)
+            // Raw-byte iteration avoids per-byte bounds-checked Data subscripting. The
+            // stream is processed sequentially, so chunk boundaries need no special
+            // handling: whatever does not fill a full 8-byte group falls to the tail loop.
+            chunk.withUnsafeBytes { rawBuffer in
+                var offset = 0
+                let count = rawBuffer.count
+                while offset + 8 <= count {
+                    let low = UInt32(littleEndian: rawBuffer.loadUnaligned(fromByteOffset: offset, as: UInt32.self))
+                    let high = UInt32(littleEndian: rawBuffer.loadUnaligned(fromByteOffset: offset + 4, as: UInt32.self))
+                    let mixed = crc ^ low
+                    crc = t7[Int(mixed & 0xFF)] ^ t6[Int((mixed >> 8) & 0xFF)]
+                        ^ t5[Int((mixed >> 16) & 0xFF)] ^ t4[Int(mixed >> 24)]
+                        ^ t3[Int(high & 0xFF)] ^ t2[Int((high >> 8) & 0xFF)]
+                        ^ t1[Int((high >> 16) & 0xFF)] ^ t0[Int(high >> 24)]
+                    offset += 8
+                }
+                while offset < count {
+                    crc = t0[Int((crc ^ UInt32(rawBuffer[offset])) & 0xFF)] ^ (crc >> 8)
+                    offset += 1
+                }
             }
         }
         crc ^= 0xFFFFFFFF
         return String(format: "%08X", crc)
     }
 
+    struct HashRenameOutcome {
+        let considered: Int
+        let renamed: Int
+        let failures: [String]
+    }
+
     @discardableResult
-    func hashRename(ext: String, warnWhenEmpty: Bool = true) throws -> Int {
+    func hashRename(ext: String, warnWhenEmpty: Bool = true) throws -> HashRenameOutcome {
         let files = try self.files(in: cli.srcDir, matchingExtensions: [ext])
         if files.isEmpty {
             if warnWhenEmpty {
                 logger.warn("No .\(ext) files found in '\(cli.srcDir.path)'.")
             }
-            return 0
+            return HashRenameOutcome(considered: 0, renamed: 0, failures: [])
         }
         var processed = 0
+        var failures: [String] = []
         for file in files {
             do {
                 switch ext {
@@ -1855,10 +1831,17 @@ extension ConverterTool {
                 logger.info("Renamed \(ext): \(file.basename) -> \(destination.basename)")
                 processed += 1
             } catch {
-                logger.warn("Skipping \(file.basename): \(error.localizedDescription)")
+                // Fail closed like every other batch action: a rejected or unmovable file
+                // is an error, not a silent skip, unless --continue-on-error is set.
+                let message = "\(file.basename): \(error.localizedDescription)"
+                logger.error("Hash rename failed for \(message)")
+                if !cli.continueOnError {
+                    throw AppError("Hash rename failed for \(message)")
+                }
+                failures.append(message)
             }
         }
-        return processed
+        return HashRenameOutcome(considered: files.count, renamed: processed, failures: failures)
     }
 
     func sortNatural(_ urls: [URL]) -> [URL] {
@@ -2029,18 +2012,23 @@ extension ConverterTool {
         for index in 0 ..< max(entries.count - 1, 0) {
             filter += "anullsrc=r=\(config.wavSampleRate):cl=\(channelLayout):d=\(config.albumSilenceSecs),aformat=sample_fmts=flt:channel_layouts=\(channelLayout)[s\(index)];"
         }
+        // Count segments as they are appended rather than recovering the number by
+        // parsing the generated filtergraph back out of its own string.
+        var segments = 0
         for index in entries.indices {
             concatInputs += "[a\(index)]"
+            segments += 1
             if index < entries.count - 1 {
                 concatInputs += "[s\(index)]"
+                segments += 1
             } else if cli.trailingSilence {
                 let silenceIndex = entries.count - 1
                 filter += "anullsrc=r=\(config.wavSampleRate):cl=\(channelLayout):d=\(config.albumSilenceSecs),aformat=sample_fmts=flt:channel_layouts=\(channelLayout)[s\(silenceIndex)];"
                 concatInputs += "[s\(silenceIndex)]"
+                segments += 1
             }
         }
 
-        let segments = concatInputs.filter { $0 == "[" }.count
         filter += "\(concatInputs)concat=n=\(segments):v=0:a=1[out]"
         ffArgs += [
             "-filter_complex", filter,
@@ -2099,19 +2087,14 @@ extension ConverterTool {
                 logger.warn("Missing track, skipping: \(file.path)")
                 continue
             }
-            if ext == "wav" {
+            // Only -wavtoalbum and -mp3toalbum read album.txt; a new caller must opt in explicitly.
+            switch ext {
+            case "wav":
                 try preflightWAVInput(file)
-            } else {
-                switch ext {
-                case "mp3":
-                    try preflightMP3Input(file)
-                case "flac":
-                    try preflightFLACInput(file)
-                case "m4a":
-                    try preflightM4AInput(file)
-                default:
-                    try preflightAudioInput(file)
-                }
+            case "mp3":
+                try preflightMP3Input(file)
+            default:
+                throw AppError("album.txt builds support .wav and .mp3 tracks only (got '\(ext)').")
             }
             entries.append(file)
         }
@@ -2133,5 +2116,4 @@ extension ConverterTool {
         let output = try resolveOutputPath(cli.outputFile ?? "album.wav")
         return try buildAlbum(from: flacs, output: output)
     }
-
 }

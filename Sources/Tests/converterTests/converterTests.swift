@@ -519,15 +519,7 @@ final class converterTests: XCTestCase {
             analysisLimited: false
         )
         let recoverableResult = AudioQCResult(
-            policy: policy.name,
-            targetLUFS: policy.targetLUFS,
-            lufsTolerance: policy.lufsTolerance,
-            maxTruePeakDBTP: policy.maxTruePeakDBTP,
-            maxLoudnessRange: policy.maxLoudnessRange,
-            maxDCOffset: policy.maxDCOffset,
-            maxStereoImbalanceDB: policy.maxStereoImbalanceDB,
-            maxClippedSamples: policy.maxClippedSamples,
-            minimumAnalysisSeconds: policy.minimumAnalysisSeconds,
+            policy: policy,
             metrics: metrics,
             passed: false,
             issues: [
@@ -536,15 +528,7 @@ final class converterTests: XCTestCase {
             ]
         )
         let brokenResult = AudioQCResult(
-            policy: policy.name,
-            targetLUFS: policy.targetLUFS,
-            lufsTolerance: policy.lufsTolerance,
-            maxTruePeakDBTP: policy.maxTruePeakDBTP,
-            maxLoudnessRange: policy.maxLoudnessRange,
-            maxDCOffset: policy.maxDCOffset,
-            maxStereoImbalanceDB: policy.maxStereoImbalanceDB,
-            maxClippedSamples: policy.maxClippedSamples,
-            minimumAnalysisSeconds: policy.minimumAnalysisSeconds,
+            policy: policy,
             metrics: metrics,
             passed: false,
             issues: ["Audio verification failed: output appears silent"]
@@ -1045,6 +1029,261 @@ final class converterTests: XCTestCase {
         XCTAssertTrue(help.contains("album.txt order file plus referenced .wav files"))
         XCTAssertTrue(help.contains("album.txt order file plus referenced .mp3 files"))
         XCTAssertTrue(help.contains("without loudness normalization; use -album for a normalized directory build"))
+    }
+
+    private func makeParserTool() throws -> ConverterTool {
+        let tempDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: tempDirectory, withIntermediateDirectories: true)
+        addTeardownBlock { try? FileManager.default.removeItem(at: tempDirectory) }
+        return try makeTool(tempDirectory: tempDirectory)
+    }
+
+    // The canonical PCM comparison is the backbone of the lossless guarantee. It must scan
+    // the whole file: an earlier implementation stopped at the first differing sample, so a
+    // later out-of-tolerance sample was never reached and the check reported a pass.
+    func testCanonicalPCMComparisonScansWholeFileAndEnforcesPerSampleTolerance() throws {
+        let tool = try makeParserTool()
+        let directory = tool.cli.outDir
+
+        func writeS24LE(_ samples: [Int32], as name: String) throws -> URL {
+            var data = Data(capacity: samples.count * 3)
+            for sample in samples {
+                let raw = UInt32(bitPattern: sample)
+                data.append(UInt8(raw & 0xFF))
+                data.append(UInt8((raw >> 8) & 0xFF))
+                data.append(UInt8((raw >> 16) & 0xFF))
+            }
+            let url = directory.appendingPathComponent(name)
+            try data.write(to: url)
+            return url
+        }
+
+        let count = 20_000
+        let base = (0 ..< count).map { Int32(($0 % 1000) * 100) }
+        let reference = try writeS24LE(base, as: "pcm_reference.raw")
+
+        let identical = try writeS24LE(base, as: "pcm_identical.raw")
+        let exact = try tool.compareCanonicalPCMFiles(reference, identical, format: .s24le, maxAllowedDelta: 0, maxAllowedFailures: 0)
+        XCTAssertEqual(exact.failingSamples, 0)
+        XCTAssertEqual(exact.maxDelta, 0)
+
+        // Uniform small drift, plus one sample near the very end that breaks tolerance.
+        var drifted = base.map { $0 + 10 }
+        drifted[count - 1] = base[count - 1] + 5_000
+        let candidate = try writeS24LE(drifted, as: "pcm_drifted.raw")
+
+        let generousTolerance = try tool.compareCanonicalPCMFiles(reference, candidate, format: .s24le, maxAllowedDelta: 20_000, maxAllowedFailures: 0)
+        XCTAssertEqual(generousTolerance.failingSamples, 0, "drift inside the tolerance must not be counted as a failure")
+
+        let strictTolerance = try tool.compareCanonicalPCMFiles(reference, candidate, format: .s24le, maxAllowedDelta: 256, maxAllowedFailures: 0)
+        XCTAssertGreaterThan(strictTolerance.failingSamples, 0, "an out-of-tolerance sample at the end of the file must be reached")
+        XCTAssertEqual(strictTolerance.maxDelta, 5_000)
+    }
+
+    // CRC-32 values become filenames, so they are pinned against the reference
+    // implementation (zlib.crc32 / IEEE 802.3) rather than against themselves.
+    func testCRC32MatchesReferenceImplementationAcrossChunkBoundaries() throws {
+        let tool = try makeParserTool()
+        let directory = tool.cli.outDir
+
+        let cases: [(name: String, contents: Data, expected: String)] = [
+            ("probe.bin", Data("converter-crc-probe".utf8), "8A32DD54"),
+            ("empty.bin", Data(), "00000000"),
+            ("repeated.bin", Data(repeating: UInt8(ascii: "a"), count: 100_000), "1BE2FA87")
+        ]
+
+        for testCase in cases {
+            let file = directory.appendingPathComponent(testCase.name)
+            try testCase.contents.write(to: file)
+            XCTAssertEqual(try tool.crc32(for: file), testCase.expected, "CRC-32 mismatch for \(testCase.name)")
+        }
+
+        // The slice-by-8 loop consumes eight bytes at a time and drops the remainder to a
+        // tail loop, so every length modulo 8 needs a reference value.
+        let lengthVectors: [(length: Int, expected: String)] = [
+            (1, "45D03605"), (7, "EF6F3B31"), (8, "648BAD8B"), (9, "17DC5F9E"),
+            (15, "53605EE3"), (16, "24E8A988"), (19, "3CA5F099"), (65_537, "B864FD3A")
+        ]
+        for vector in lengthVectors {
+            let contents = Data((0 ..< vector.length).map { UInt8(($0 &* 37 &+ 11) & 0xFF) })
+            let file = directory.appendingPathComponent("len_\(vector.length).bin")
+            try contents.write(to: file)
+            XCTAssertEqual(try tool.crc32(for: file), vector.expected, "CRC-32 mismatch at length \(vector.length)")
+        }
+    }
+
+    // Reading is chunked, and a chunk size that is not a multiple of eight puts the split
+    // in the middle of a slice-by-8 group. The stream result must be independent of it.
+    func testCRC32IsIndependentOfReadChunkBoundaries() throws {
+        let tool = try makeParserTool()
+        var awkwardConfig = ProjectConfig()
+        awkwardConfig.crcChunkBytes = 7
+        let chunked = ConverterTool(
+            cli: tool.cli,
+            config: awkwardConfig,
+            logger: Logger(scriptName: "converterTests", debugEnabled: false),
+            runner: tool.runner,
+            environment: tool.environment
+        )
+
+        let contents = Data((0 ..< 65_537).map { UInt8(($0 &* 37 &+ 11) & 0xFF) })
+        let file = tool.cli.outDir.appendingPathComponent("chunked.bin")
+        try contents.write(to: file)
+
+        XCTAssertEqual(try chunked.crc32(for: file), "B864FD3A")
+        XCTAssertEqual(try chunked.crc32(for: file), try tool.crc32(for: file))
+    }
+
+    // astats and volumedetect now share one ffmpeg pass, so they also share one stderr.
+    // The astats parser must consume only its own lines.
+    func testAstatsParserIgnoresOtherFiltersSharingTheSameStderr() throws {
+        let tool = try makeParserTool()
+        let stderr = """
+        [Parsed_astats_0 @ 0x1] Channel: 1
+        [Parsed_astats_0 @ 0x1] DC offset: -0.000001
+        [Parsed_astats_0 @ 0x1] Peak level dB: -21.074211
+        [Parsed_astats_0 @ 0x1] RMS level dB: -24.084343
+        [Parsed_astats_0 @ 0x1] Channel: 2
+        [Parsed_astats_0 @ 0x1] DC offset: 0.000002
+        [Parsed_astats_0 @ 0x1] Peak level dB: -21.074211
+        [Parsed_astats_0 @ 0x1] RMS level dB: -24.100000
+        [Parsed_astats_0 @ 0x1] Overall
+        [Parsed_astats_0 @ 0x1] DC offset: 0.000002
+        [Parsed_astats_0 @ 0x1] Peak level dB: -21.074211
+        [Parsed_astats_0 @ 0x1] Peak count: 1120
+        [Parsed_volumedetect_1 @ 0x2] n_samples: 192000
+        [Parsed_volumedetect_1 @ 0x2] mean_volume: -24.1 dB
+        [Parsed_volumedetect_1 @ 0x2] max_volume: -21.1 dB
+        [Parsed_volumedetect_1 @ 0x2] histogram_21db: 55360
+        """
+
+        let report = tool.parseAstatsReport(from: stderr)
+        XCTAssertEqual(report.channelMetrics.count, 2)
+        XCTAssertEqual(report.channelMetrics[0]["RMS level dB"], "-24.084343")
+        XCTAssertEqual(report.channelMetrics[1]["RMS level dB"], "-24.100000")
+        XCTAssertEqual(report.overallMetrics["Peak level dB"], "-21.074211")
+        XCTAssertEqual(report.overallMetrics["Peak count"], "1120")
+        XCTAssertNil(report.overallMetrics["max_volume"], "volumedetect output must not leak into astats metrics")
+        XCTAssertNil(report.overallMetrics["n_samples"], "volumedetect output must not leak into astats metrics")
+    }
+
+    func testLoudnormJSONParsingToleratesSurroundingFilterOutput() throws {
+        let tool = try makeParserTool()
+        let stderr = """
+        [Parsed_astats_0 @ 0x1] Peak level dB: -21.074211
+        [Parsed_loudnorm_0 @ 0x2]\u{0020}
+        {
+        \t"input_i" : "-23.05",
+        \t"input_tp" : "-3.02",
+        \t"input_lra" : "7.20",
+        \t"input_thresh" : "-33.10",
+        \t"output_i" : "-12.00",
+        \t"target_offset" : "0.11"
+        }
+        """
+
+        let measurement = try tool.parseLoudnormJSON(from: stderr)
+        XCTAssertEqual(measurement.inputI, "-23.05")
+        XCTAssertEqual(measurement.inputTp, "-3.02")
+        XCTAssertEqual(measurement.inputLra, "7.20")
+        XCTAssertEqual(measurement.inputThresh, "-33.10")
+        XCTAssertEqual(measurement.targetOffset, "0.11")
+    }
+
+    // Regression: cancelling one waiter used to resume waiters[0] positionally, which
+    // failed an unrelated task and left the cancelled one queued forever. Reachable
+    // whenever `async let` siblings are torn down after one of them throws.
+    func testAsyncSemaphoreCancellationResumesOnlyTheCancelledWaiter() async throws {
+        let semaphore = AsyncSemaphore(value: 1)
+        try await semaphore.wait()
+
+        let first = Task { try await semaphore.wait() }
+        try await Task.sleep(nanoseconds: 80_000_000)
+        let second = Task { try await semaphore.wait() }
+        try await Task.sleep(nanoseconds: 80_000_000)
+
+        second.cancel()
+        try await Task.sleep(nanoseconds: 80_000_000)
+
+        // Releasing the held permit must hand it to the first, uncancelled waiter.
+        await semaphore.signal()
+        try await first.value
+
+        var secondError: (any Error)?
+        do {
+            try await second.value
+        } catch {
+            secondError = error
+        }
+        XCTAssertTrue(secondError is CancellationError, "the cancelled waiter must be the one that fails")
+
+        await semaphore.signal()
+    }
+
+    func testAsyncSemaphoreCancellationBeforeSuspensionStillThrows() async throws {
+        let semaphore = AsyncSemaphore(value: 1)
+        try await semaphore.wait()
+
+        let queued = Task { try await semaphore.wait() }
+        queued.cancel()
+
+        var queuedError: (any Error)?
+        do {
+            try await queued.value
+        } catch {
+            queuedError = error
+        }
+        XCTAssertTrue(queuedError is CancellationError, "cancellation racing ahead of suspension must still be honored")
+
+        await semaphore.signal()
+    }
+
+    func testAsyncSemaphoreWithPermitCapsConcurrencyAndReleasesOnThrow() async throws {
+        let semaphore = AsyncSemaphore(value: 2)
+        let tracker = PermitPeakTracker()
+
+        await withTaskGroup(of: Void.self) { group in
+            for _ in 0 ..< 8 {
+                group.addTask {
+                    try? await semaphore.withPermit {
+                        await tracker.enter()
+                        try await Task.sleep(nanoseconds: 20_000_000)
+                        await tracker.leave()
+                    }
+                }
+            }
+        }
+        let peak = await tracker.peak
+        XCTAssertLessThanOrEqual(peak, 2, "withPermit must never exceed the configured limit")
+        XCTAssertGreaterThan(peak, 0)
+
+        // A throwing body must still return its permit.
+        struct Boom: Error {}
+        for _ in 0 ..< 4 {
+            do {
+                try await semaphore.withPermit { throw Boom() }
+            } catch is Boom {
+                continue
+            }
+        }
+        try await semaphore.wait()
+        try await semaphore.wait()
+        await semaphore.signal()
+        await semaphore.signal()
+    }
+}
+
+private actor PermitPeakTracker {
+    private var current = 0
+    private(set) var peak = 0
+
+    func enter() {
+        current += 1
+        peak = max(peak, current)
+    }
+
+    func leave() {
+        current -= 1
     }
 }
 

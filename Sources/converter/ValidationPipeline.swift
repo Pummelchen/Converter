@@ -12,29 +12,24 @@ extension ConverterTool {
             return try audioQCResult(for: file, policy: policy)
         }
 
-        let temp = fileManager.temporaryDirectory
-            .appendingPathComponent("converter-qc-clip.\(UUID().uuidString)")
-            .appendingPathExtension("wav")
-        defer { try? fileManager.removeItem(at: temp) }
-        do {
-            _ = try runner.run("ffmpeg", [
-                "-hide_banner", "-nostdin", "-v", "error", "-y",
-                "-i", file.path,
-                "-map", "0:a:0",
-                "-vn",
-                "-t", ffmpegArg("%.6f", limitDuration),
-                "-ac", String(config.wavChannels),
-                "-ar", String(config.wavSampleRate),
-                "-c:a", config.wavCodec,
-                "-f", "wav",
-                "-rf64", "always",
-                "-write_bext", String(config.wavWriteBext),
-                temp.path
-            ])
-            return try audioQCResult(for: temp, policy: policy)
-        } catch {
-            throw error
-        }
+        // Run-scoped temp so a crash mid-probe is still cleaned up by the normal recovery path.
+        let temp = try makeTemp(in: cli.outDir, stem: "\(file.stem).qc-clip", ext: ".wav")
+        defer { discardTempFile(temp) }
+        _ = try runner.run("ffmpeg", [
+            "-hide_banner", "-nostdin", "-v", "error", "-y",
+            "-i", file.path,
+            "-map", "0:a:0",
+            "-vn",
+            "-t", ffmpegArg("%.6f", limitDuration),
+            "-ac", String(config.wavChannels),
+            "-ar", String(config.wavSampleRate),
+            "-c:a", config.wavCodec,
+            "-f", "wav",
+            "-rf64", "always",
+            "-write_bext", String(config.wavWriteBext),
+            temp.path
+        ])
+        return try audioQCResult(for: temp, policy: policy)
     }
 
     func verifyAudibleAudioTrack(_ file: URL) throws -> Bool {
@@ -79,18 +74,22 @@ extension ConverterTool {
                 allowedExitCodes: [0]
             )
             let loudnorm = try parseLoudnormJSON(from: loudnormResult.stderr)
-            let astatsResult = try runner.run(
+            // astats and volumedetect are pure analyzers: neither alters the samples it
+            // forwards, so chaining them yields the same numbers as two separate decodes
+            // at half the I/O. loudnorm stays on its own pass because it *does* modify
+            // what it passes downstream, which would silently skew anything after it.
+            let analysisResult = try runner.run(
                 "ffmpeg",
                 [
                     "-hide_banner", "-nostdin", "-v", "info",
                     "-i", file.path,
                     "-map", "0:a:0",
-                    "-af", "astats=metadata=0:reset=0:measure_overall=all",
+                    "-af", "astats=metadata=0:reset=0:measure_overall=all,volumedetect",
                     "-f", "null", "-"
                 ],
                 allowedExitCodes: [0]
             )
-            let astats = parseAstatsReport(from: astatsResult.stderr)
+            let astats = parseAstatsReport(from: analysisResult.stderr)
             let channelRMS = astats.channelMetrics.compactMap { parseAudioDB($0["RMS level dB"]) }
             let channelDC = astats.channelMetrics.compactMap { Double($0["DC offset"] ?? "") }
             let peakLevelDBFS = parseAudioDB(astats.overallMetrics["Peak level dB"])
@@ -98,19 +97,7 @@ extension ConverterTool {
             let clippedSamples = (peakLevelDBFS ?? -Double.infinity) >= 0 ? peakCount : 0
             let stereoImbalance = channelRMS.count >= 2 ? abs(channelRMS[0] - channelRMS[1]) : 0
             let dcOffset = channelDC.map(abs).max() ?? abs(Double(astats.overallMetrics["DC offset"] ?? "") ?? 0)
-            let volumeDetect = try runner.run(
-                "ffmpeg",
-                [
-                    "-hide_banner", "-nostdin", "-v", "info",
-                    "-t", ffmpegArg("%.3f", max(duration, 0.5)),
-                    "-i", file.path,
-                    "-map", "0:a:0",
-                    "-af", "volumedetect",
-                    "-f", "null", "-"
-                ],
-                allowedExitCodes: [0]
-            )
-            let maxVolumeLine = volumeDetect.stderr
+            let maxVolumeLine = analysisResult.stderr
                 .split(whereSeparator: \.isNewline)
                 .map(String.init)
                 .first(where: { $0.contains("max_volume:") })
@@ -163,15 +150,7 @@ extension ConverterTool {
             }
 
             return AudioQCResult(
-                policy: policy.name,
-                targetLUFS: policy.targetLUFS,
-                lufsTolerance: policy.lufsTolerance,
-                maxTruePeakDBTP: policy.maxTruePeakDBTP,
-                maxLoudnessRange: policy.maxLoudnessRange,
-                maxDCOffset: policy.maxDCOffset,
-                maxStereoImbalanceDB: policy.maxStereoImbalanceDB,
-                maxClippedSamples: policy.maxClippedSamples,
-                minimumAnalysisSeconds: policy.minimumAnalysisSeconds,
+                policy: policy,
                 metrics: metrics,
                 passed: issues.isEmpty,
                 issues: issues
@@ -330,7 +309,11 @@ extension ConverterTool {
     func preflightImageInput(_ file: URL, expectedFormat: String? = nil) throws {
         guard fileManager.fileExists(atPath: file.path) else { throw AppError("Image input missing: \(file.path)") }
         guard try fileSizeBytes(file) > 0 else { throw AppError("Image input empty: \(file.path)") }
-        _ = try runner.run("magick", ["identify", file.path])
+        // The cached probe replaces a bare `identify`; the decode below is still required
+        // because `identify` only reads the header and would accept truncated pixel data.
+        guard let probe = try imageProbe(file) else {
+            throw AppError("Image probe failed: \(file.path)")
+        }
         _ = try runner.run("magick", [file.path, "-resize", "1x1!", "null:"])
         let autoExpected: String?
         switch file.pathExtension.lowercasedASCII {
@@ -342,7 +325,7 @@ extension ConverterTool {
             autoExpected = nil
         }
         if let expected = expectedFormat ?? autoExpected {
-            let got = (try imageFormat(file) ?? "").lowercasedASCII
+            let got = probe.format.lowercasedASCII
             if got != expected.lowercasedASCII {
                 throw AppError("Image format mismatch for \(file.path) (got=\(got) expected=\(expected.lowercasedASCII))")
             }
@@ -628,8 +611,7 @@ extension ConverterTool {
             channels: config.wavChannels,
             label: "BW64 WAV",
             format: .s32le,
-            maxAllowedDelta: 256,
-            maxAllowedDifferingSamples: UInt64.max
+            maxAllowedDelta: 256
         )
     }
 
@@ -815,7 +797,18 @@ extension ConverterTool {
     }
 
     // Compare decoded canonical PCM samples directly so container/header differences cannot hide content drift.
-    func compareCanonicalPCMFiles(_ expected: URL, _ actual: URL, format: CanonicalPCMFormat) throws -> (samples: UInt64, differingSamples: UInt64, maxDelta: Int64) {
+    //
+    // A sample fails tolerance when its delta exceeds `maxAllowedDelta`; the scan stops once more than
+    // `maxAllowedFailures` of those have been seen, so the fail-fast point and the final verdict apply the
+    // same rule to the same quantity. Counting every *differing* sample instead would be meaningless for
+    // resampled formats, where nearly every sample differs by a tiny amount by design.
+    func compareCanonicalPCMFiles(
+        _ expected: URL,
+        _ actual: URL,
+        format: CanonicalPCMFormat,
+        maxAllowedDelta: Int64,
+        maxAllowedFailures: UInt64
+    ) throws -> (samples: UInt64, failingSamples: UInt64, maxDelta: Int64) {
         let bytesPerSample = format.bytesPerSample
         let expectedSize = try fileSizeBytes(expected)
         let actualSize = try fileSizeBytes(actual)
@@ -835,7 +828,7 @@ extension ConverterTool {
 
         let chunkSize = format.bytesPerSample * 65_536
         var samples: UInt64 = 0
-        var differingSamples: UInt64 = 0
+        var failingSamples: UInt64 = 0
         var maxDelta: Int64 = 0
 
         while true {
@@ -860,13 +853,13 @@ extension ConverterTool {
                 let expectedSample = littleEndianSignedSample(expectedChunk, offset: offset, format: format)
                 let actualSample = littleEndianSignedSample(actualChunk, offset: offset, format: format)
                 let delta = abs(expectedSample - actualSample)
-                if delta > 0 {
-                    differingSamples += 1
-                    if delta > maxDelta {
-                        maxDelta = delta
-                    }
-                    if delta > format.maxAllowedDelta {
-                        return (samples + UInt64((offset / bytesPerSample) + 1), differingSamples, maxDelta)
+                if delta > maxDelta {
+                    maxDelta = delta
+                }
+                if delta > maxAllowedDelta {
+                    failingSamples += 1
+                    if failingSamples > maxAllowedFailures {
+                        return (samples + UInt64((offset / bytesPerSample) + 1), failingSamples, maxDelta)
                     }
                 }
             }
@@ -874,7 +867,7 @@ extension ConverterTool {
             samples += UInt64(expectedChunk.count / bytesPerSample)
         }
 
-        return (samples, differingSamples, maxDelta)
+        return (samples, failingSamples, maxDelta)
     }
 
     func verifyCanonicalPCMSampleEquivalence(
@@ -901,17 +894,24 @@ extension ConverterTool {
 
         try decodeAudioToCanonicalPCM(source, output: sourcePCM, sampleRate: compareSampleRate, channels: compareChannels, format: format)
         try decodeAudioToCanonicalPCM(output, output: outputPCM, sampleRate: compareSampleRate, channels: compareChannels, format: format)
-        let comparison = try compareCanonicalPCMFiles(sourcePCM, outputPCM, format: format)
-        let allowedDifferingSamples = maxAllowedDifferingSamples ?? UInt64(max(4, compareChannels * 4))
         let allowedDelta = maxAllowedDelta ?? format.maxAllowedDelta
-        if comparison.differingSamples > allowedDifferingSamples || comparison.maxDelta > allowedDelta {
-            let differingDescription = allowedDifferingSamples == UInt64.max ? "unlimited" : String(allowedDifferingSamples)
+        // No sample may exceed the per-sample tolerance. Exact formats (delta 0) stay
+        // strictly bit-exact; resampled formats carry an explicit non-zero tolerance.
+        let allowedFailures = maxAllowedDifferingSamples ?? 0
+        let comparison = try compareCanonicalPCMFiles(
+            sourcePCM,
+            outputPCM,
+            format: format,
+            maxAllowedDelta: allowedDelta,
+            maxAllowedFailures: allowedFailures
+        )
+        if comparison.failingSamples > allowedFailures {
             throw AppError(
-                "Canonical PCM mismatch for \(label): src='\(source.path)' out='\(output.path)' differing_samples=\(comparison.differingSamples) max_delta=\(comparison.maxDelta) allowed_differing=\(differingDescription) allowed_delta=\(allowedDelta) sample_rate=\(compareSampleRate) channels=\(compareChannels) canonical=\(format.ffmpegCodec)"
+                "Canonical PCM mismatch for \(label): src='\(source.path)' out='\(output.path)' out_of_tolerance_samples=\(comparison.failingSamples) max_delta=\(comparison.maxDelta) allowed_out_of_tolerance=\(allowedFailures) allowed_delta=\(allowedDelta) sample_rate=\(compareSampleRate) channels=\(compareChannels) canonical=\(format.ffmpegCodec)"
             )
         }
         logger.debug(
-            "Canonical PCM match for \(label): samples=\(comparison.samples) differing=\(comparison.differingSamples) max_delta=\(comparison.maxDelta) rate=\(compareSampleRate) channels=\(compareChannels) canonical=\(format.ffmpegCodec)"
+            "Canonical PCM match for \(label): samples=\(comparison.samples) out_of_tolerance=\(comparison.failingSamples) max_delta=\(comparison.maxDelta) rate=\(compareSampleRate) channels=\(compareChannels) canonical=\(format.ffmpegCodec)"
         )
     }
 
@@ -1007,5 +1007,4 @@ extension ConverterTool {
             throw AppError("Required ffmpeg encoder is not available: \(encoder)")
         }
     }
-
 }
