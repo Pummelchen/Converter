@@ -50,7 +50,7 @@ JPEG scanning accepts both `.jpg` and `.jpeg`; JPEG outputs are written with `.j
 
 | Command | Input discovery | Output |
 |---|---|---|
-| `-full` / `-run` | exactly 1 source audio (`.flac`/`.wav`/`.mp3`) + 1 source image or direct 8K PNGs in `SRC_DIR` | image deliverables, WAV/M4A/MP3, `*_RF64`/`*_BW64` `.wav`/`.flac` archival companions, main MP4, short MP4, full-song short MP4 (when audio exceeds the short clip cap) |
+| `-full` / `-run` | exactly 1 source audio (`.flac`/`.wav`/`.mp3`) + 1 source image or direct 8K PNGs in `SRC_DIR` | image deliverables, WAV/M4A/MP3, `*_RF64.flac`/`*_RF64.wav`/`*_BW64.wav` archival companions, main MP4, short MP4, full-song short MP4 (when audio exceeds the short clip cap) |
 | `-album` | 2+ `.mp3`/`.wav`/`.flac` in `SRC_DIR`, natural numeric order | normalized (-12 LUFS per track) RF64 `album.wav`, then full-run deliverables |
 | `-wavtoalbum` | `album.txt` (project root) listing `.wav` tracks resolved in `SRC_DIR` | RF64 `album.rf64.wav` (listed order, no normalization) |
 | `-mp3toalbum` | `album.txt` listing `.mp3` tracks | RF64 `album_from_mp3.rf64.wav` (listed order, no normalization) |
@@ -66,6 +66,7 @@ JPEG scanning accepts both `.jpg` and `.jpeg`; JPEG outputs are written with `.j
 | `-bass [FREQ GAIN]` | `.flac`, `.wav`, `.mp3`, `.m4a`, `.mp4` | `_bass` or settings-specific suffix (e.g. `_bass_80Hz_m5dB`) |
 | `-loudscan` | `.flac`, `.wav`, `.mp3`, `.m4a`, `.mp4` | terminal report only |
 | `-loudness [LUFS]` | `.flac`, `.wav`, `.mp3`, `.m4a`, `.mp4` | `_loudness_m12LUFS`-style suffix |
+| `-master` | `.flac`, `.wav`, `.mp3`, `.m4a`, `.mp4` | `_mastered` suffix; two-pass loudnorm to the mastering target, one-pass fallback |
 | `-fade [S]`, `-fadecut C F`, `-fadeout START DUR` | `.flac`, `.wav`, `.mp3` (`.m4a` for `-fadeout`) | settings-specific: `_faded_<S>s` / `_fadecut_<C>s_<F>s` / `_fadeout_<START>s_<DUR>s` |
 | `-fadewav` | `.wav` | faded RF64 WAV |
 | `-noise [S]` | `.flac`, `.wav`, `.mp3`, `.m4a`, `.mp4` | `_noise_<S>s` |

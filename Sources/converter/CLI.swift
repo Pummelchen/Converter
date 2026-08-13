@@ -473,7 +473,7 @@ struct CLIOptions {
             - Image deliverables: 8K/4K PNG, NFT PNGs, 3K/2K PNG, JPG exports
               Direct Horizontal_8K.png/Vertical_8K.png inputs are used as-is for videos; Horizontal_8K.png still derives companion image deliverables.
             - Audio/video deliverables: WAV, M4A, MP3, main MP4, short MP4, full-song short MP4 (same portrait graphics as short MP4)
-            - External audio deliverables: *_RF64.flac, *_RF64.wav, *_BW64.flac, *_BW64.wav
+            - External audio deliverables: *_RF64.flac, *_RF64.wav, *_BW64.wav
               These archival companions are delivery-only and are not reused as full-run source inputs.
 
         Album run:

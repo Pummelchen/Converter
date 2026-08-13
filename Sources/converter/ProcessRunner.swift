@@ -7,11 +7,6 @@ struct ProcessResult {
     let exitCode: Int32
 }
 
-struct PipelineProcessResult {
-    let producer: ProcessResult
-    let consumer: ProcessResult
-}
-
 // Data is Mutex-protected; @unchecked is required only because the captured
 // FileHandle/DispatchGroup thread-safety is not compiler-verifiable.
 private final class PipeCapture: @unchecked Sendable {
@@ -62,7 +57,7 @@ private func closeHandles(_ handles: [FileHandle]) {
     }
 }
 
-private final class TimeoutFlag {
+final class TimeoutFlag: Sendable {
     private let flag = Mutex<Bool>(false)
 
     func set() {
@@ -166,137 +161,5 @@ final class ProcessRunner: Sendable {
         }
 
         return result
-    }
-
-    @discardableResult
-    func runPipeline(
-        producerExecutable: String,
-        producerArguments: [String],
-        consumerExecutable: String,
-        consumerArguments: [String],
-        currentDirectory: URL? = nil,
-        extraEnvironment: [String: String] = [:],
-        allowedProducerExitCodes: Set<Int32> = [0],
-        allowedConsumerExitCodes: Set<Int32> = [0],
-        timeoutSeconds: TimeInterval? = nil
-    ) throws -> PipelineProcessResult {
-        let producerURL = try resolveExecutable(named: producerExecutable)
-        let consumerURL = try resolveExecutable(named: consumerExecutable)
-        if debugEnabled {
-            logger.debug("\(formatCommand(producerURL.path, producerArguments)) | \(formatCommand(consumerURL.path, consumerArguments))")
-        }
-
-        let mergedEnvironment = environment.merging(extraEnvironment) { _, new in new }
-        let dataPipe = Pipe()
-        let producerErrorPipe = Pipe()
-        let consumerErrorPipe = Pipe()
-        let consumerOutputPipe = Pipe()
-
-        let producer = Process()
-        producer.executableURL = producerURL
-        producer.arguments = producerArguments
-        producer.currentDirectoryURL = currentDirectory
-        producer.environment = mergedEnvironment
-        producer.qualityOfService = .userInitiated
-        producer.standardOutput = dataPipe
-        producer.standardError = producerErrorPipe
-
-        let consumer = Process()
-        consumer.executableURL = consumerURL
-        consumer.arguments = consumerArguments
-        consumer.currentDirectoryURL = currentDirectory
-        consumer.environment = mergedEnvironment
-        consumer.qualityOfService = .userInitiated
-        consumer.standardInput = dataPipe
-        consumer.standardOutput = consumerOutputPipe
-        consumer.standardError = consumerErrorPipe
-        let producerErrorCapture = PipeCapture(handle: producerErrorPipe.fileHandleForReading)
-        let consumerOutputCapture = PipeCapture(handle: consumerOutputPipe.fileHandleForReading)
-        let consumerErrorCapture = PipeCapture(handle: consumerErrorPipe.fileHandleForReading)
-
-        do {
-            try consumer.run()
-            try producer.run()
-        } catch {
-            closeHandles([
-                dataPipe.fileHandleForReading,
-                dataPipe.fileHandleForWriting,
-                producerErrorPipe.fileHandleForWriting,
-                consumerOutputPipe.fileHandleForWriting,
-                consumerErrorPipe.fileHandleForWriting
-            ])
-            if consumer.isRunning {
-                consumer.terminate()
-            }
-            if producer.isRunning {
-                producer.terminate()
-            }
-            _ = producerErrorCapture.waitString()
-            _ = consumerOutputCapture.waitString()
-            _ = consumerErrorCapture.waitString()
-            throw AppError(
-                "Failed to launch pipeline: \(formatCommand(producerURL.path, producerArguments)) | \(formatCommand(consumerURL.path, consumerArguments)) | \(error.localizedDescription)"
-            )
-        }
-
-        closeHandles([
-            dataPipe.fileHandleForReading,
-            dataPipe.fileHandleForWriting,
-            producerErrorPipe.fileHandleForWriting,
-            consumerOutputPipe.fileHandleForWriting,
-            consumerErrorPipe.fileHandleForWriting
-        ])
-
-        let timeout = timeoutSeconds ?? Self.defaultTimeoutSeconds
-        let timeoutFlag = TimeoutFlag()
-        let watchdog = DispatchWorkItem { [weak producer, weak consumer, timeoutFlag] in
-            guard let producer, let consumer, producer.isRunning || consumer.isRunning else { return }
-            timeoutFlag.set()
-            if producer.isRunning {
-                producer.terminate()
-            }
-            if consumer.isRunning {
-                consumer.terminate()
-            }
-        }
-        DispatchQueue.global(qos: .userInitiated).asyncAfter(deadline: .now() + timeout, execute: watchdog)
-        producer.waitUntilExit()
-        consumer.waitUntilExit()
-        watchdog.cancel()
-
-        if timeoutFlag.isSet {
-            _ = producerErrorCapture.waitString()
-            _ = consumerOutputCapture.waitString()
-            _ = consumerErrorCapture.waitString()
-            throw AppError(
-                "Pipeline timed out after \(Int(timeout)) seconds: \(formatCommand(producerURL.path, producerArguments)) | \(formatCommand(consumerURL.path, consumerArguments))"
-            )
-        }
-
-        let producerResult = ProcessResult(
-            stdout: "",
-            stderr: producerErrorCapture.waitString(),
-            exitCode: producer.terminationStatus
-        )
-        let consumerResult = ProcessResult(
-            stdout: consumerOutputCapture.waitString(),
-            stderr: consumerErrorCapture.waitString(),
-            exitCode: consumer.terminationStatus
-        )
-
-        if !allowedProducerExitCodes.contains(producerResult.exitCode) {
-            let detail = producerResult.stderr.lastNonEmptyLine ?? consumerResult.stderr.lastNonEmptyLine ?? "exit code \(producerResult.exitCode)"
-            throw AppError(
-                "Pipeline producer failed: \(formatCommand(producerURL.path, producerArguments)) | \(detail)"
-            )
-        }
-        if !allowedConsumerExitCodes.contains(consumerResult.exitCode) {
-            let detail = consumerResult.stderr.lastNonEmptyLine ?? producerResult.stderr.lastNonEmptyLine ?? "exit code \(consumerResult.exitCode)"
-            throw AppError(
-                "Pipeline consumer failed: \(formatCommand(consumerURL.path, consumerArguments)) | \(detail)"
-            )
-        }
-
-        return PipelineProcessResult(producer: producerResult, consumer: consumerResult)
     }
 }

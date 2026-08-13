@@ -60,33 +60,24 @@ final class PipelineIntegrationTests: XCTestCase {
         }
     }
 
-    // Pipelines need concurrent producer/consumer draining so noisy tools do not deadlock each other.
-    func testRunPipelineHandlesLargeProducerOutputWithoutDeadlock() throws {
+    // A chatty child must not be able to exhaust memory or deadlock the parent: output
+    // beyond the capture cap is drained and discarded rather than buffered.
+    func testRunDrainsLargeChildOutputWithoutDeadlock() throws {
         let workspace = try IntegrationWorkspace()
         let runner = workspace.runner()
-        let semaphore = DispatchSemaphore(value: 0)
-        let outcome = ResultBox<Result<PipelineProcessResult, Error>>()
 
-        DispatchQueue.global(qos: .userInitiated).async {
-            let result = Result { () throws -> PipelineProcessResult in
-                try runner.runPipeline(
-                    producerExecutable: "/bin/sh",
-                    producerArguments: [
-                        "-c",
-                        "i=0; while [ $i -lt 12000 ]; do printf 'payload\\n'; printf 'producer-%05d\\n' \"$i\" 1>&2; i=$((i+1)); done"
-                    ],
-                    consumerExecutable: "/usr/bin/wc",
-                    consumerArguments: ["-l"]
-                )
-            }
-            outcome.store(result)
-            semaphore.signal()
-        }
+        let result = try runner.run(
+            "/bin/sh",
+            [
+                "-c",
+                "i=0; while [ $i -lt 12000 ]; do printf 'payload-%05d\\n' \"$i\"; printf 'noise-%05d\\n' \"$i\" 1>&2; i=$((i+1)); done"
+            ],
+            timeoutSeconds: 60
+        )
 
-        XCTAssertEqual(semaphore.wait(timeout: .now() + 10), .success, "ProcessRunner.runPipeline timed out while draining pipes.")
-        let pipelineResult = try XCTUnwrap(outcome.load()).get()
-        XCTAssertEqual(pipelineResult.consumer.stdout.trimmed, "12000")
-        XCTAssertTrue(pipelineResult.producer.stderr.contains("producer-11999"))
+        XCTAssertTrue(result.stdout.contains("payload-11999"))
+        XCTAssertTrue(result.stderr.contains("noise-11999"))
+        XCTAssertEqual(result.exitCode, 0)
     }
 
     func testCleanupTempsRemovesRunScopedHiddenTempFiles() throws {
@@ -150,11 +141,11 @@ final class PipelineIntegrationTests: XCTestCase {
         let tool = try workspace.makeTool(arguments: ["-wavtom4a"])
 
         let checks: [(String, URL, () throws -> URL, (URL) throws -> Void)] = [
-            ("flac->wav", flac, { try tool.convertFLACToWAV(flac) }, { file in
+            ("flac->wav", flac, { try tool.convertAudioToWAV(flac) }, { file in
                 try tool.verifyWAVStandard(file)
                 try tool.verifyDurationMatch(source: flac, output: file)
             }),
-            ("flac->mp3", flac, { try tool.convertFLACToMP3(flac) }, { file in
+            ("flac->mp3", flac, { try tool.convertAudioToMP3(flac) }, { file in
                 try tool.verifyMP3Standard(file)
                 try tool.verifyDurationMatch(source: flac, output: file)
             }),
@@ -162,23 +153,23 @@ final class PipelineIntegrationTests: XCTestCase {
                 try tool.verifyM4AFile(file, sampleRate: tool.config.m4aSampleRate, channels: tool.config.m4aChannels)
                 try tool.verifyDurationMatch(source: flac, output: file)
             }),
-            ("wav->flac", wav, { try tool.convertWAVToFLAC(wav) }, { file in
+            ("wav->flac", wav, { try tool.convertAudioToFLAC(wav) }, { file in
                 try tool.verifyAudioOutput(file, codec: "flac", sampleRate: tool.config.flacSampleRate, channels: tool.config.flacChannels)
                 try tool.verifyDurationMatch(source: wav, output: file)
             }),
-            ("wav->mp3", wav, { try tool.convertWAVToMP3(wav) }, { file in
+            ("wav->mp3", wav, { try tool.convertAudioToMP3(wav) }, { file in
                 try tool.verifyMP3Standard(file)
                 try tool.verifyDurationMatch(source: wav, output: file)
             }),
-            ("wav->m4a", wav, { try tool.convertWAVToM4A(wav) }, { file in
+            ("wav->m4a", wav, { try tool.convertAudioToM4A(wav) }, { file in
                 try tool.verifyM4AFile(file, sampleRate: tool.config.m4aSampleRate, channels: tool.config.m4aChannels)
                 try tool.verifyDurationMatch(source: wav, output: file)
             }),
-            ("mp3->wav", mp3, { try tool.convertMP3ToWAV(mp3) }, { file in
+            ("mp3->wav", mp3, { try tool.convertAudioToWAV(mp3) }, { file in
                 try tool.verifyWAVStandard(file)
                 try tool.verifyDurationMatch(source: mp3, output: file)
             }),
-            ("mp3->flac", mp3, { try tool.convertMP3ToFLAC(mp3) }, { file in
+            ("mp3->flac", mp3, { try tool.convertAudioToFLAC(mp3) }, { file in
                 try tool.verifyAudioOutput(file, codec: "flac", sampleRate: tool.config.flacSampleRate, channels: tool.config.flacChannels)
                 try tool.verifyDurationMatch(source: mp3, output: file)
             }),
@@ -186,15 +177,15 @@ final class PipelineIntegrationTests: XCTestCase {
                 try tool.verifyM4AFile(file, sampleRate: tool.config.m4aSampleRate, channels: tool.config.m4aChannels)
                 try tool.verifyDurationMatch(source: mp3, output: file)
             }),
-            ("m4a->wav", m4a, { try tool.convertM4AToWAV(m4a) }, { file in
+            ("m4a->wav", m4a, { try tool.convertAudioToWAV(m4a) }, { file in
                 try tool.verifyWAVStandard(file)
                 try tool.verifyDurationMatch(source: m4a, output: file)
             }),
-            ("m4a->mp3", m4a, { try tool.convertM4AToMP3(m4a) }, { file in
+            ("m4a->mp3", m4a, { try tool.convertAudioToMP3(m4a) }, { file in
                 try tool.verifyMP3Standard(file)
                 try tool.verifyDurationMatch(source: m4a, output: file)
             }),
-            ("m4a->flac", m4a, { try tool.convertM4AToFLAC(m4a) }, { file in
+            ("m4a->flac", m4a, { try tool.convertAudioToFLAC(m4a) }, { file in
                 try tool.verifyAudioOutput(file, codec: "flac", sampleRate: tool.config.flacSampleRate, channels: tool.config.flacChannels)
                 try tool.verifyDurationMatch(source: m4a, output: file)
             })
@@ -221,11 +212,11 @@ final class PipelineIntegrationTests: XCTestCase {
         XCTAssertNoThrow(try tool.preflightFLACInput(flacWithArtwork))
         XCTAssertNoThrow(try tool.preflightMP3Input(mp3WithArtwork))
 
-        let wavFromFLAC = try tool.convertFLACToWAV(flacWithArtwork)
+        let wavFromFLAC = try tool.convertAudioToWAV(flacWithArtwork)
         try tool.verifyWAVStandard(wavFromFLAC, qcPolicy: nil)
         XCTAssertThrowsError(try tool.requireVideoStream(wavFromFLAC), "WAV output should contain audio only.")
 
-        let wavFromMP3 = try tool.convertMP3ToWAV(mp3WithArtwork)
+        let wavFromMP3 = try tool.convertAudioToWAV(mp3WithArtwork)
         try tool.verifyWAVStandard(wavFromMP3, qcPolicy: nil)
         XCTAssertThrowsError(try tool.requireVideoStream(wavFromMP3), "WAV output should contain audio only.")
     }
@@ -325,7 +316,7 @@ final class PipelineIntegrationTests: XCTestCase {
         let wav = try workspace.createAudio(name: "real_wav", ext: "wav")
         let fakeMP3 = try workspace.copy(wav, as: "fake_song", ext: "mp3")
         let tool = try workspace.makeTool(arguments: ["-mp3towav"])
-        XCTAssertThrowsError(try tool.convertMP3ToWAV(fakeMP3)) { error in
+        XCTAssertThrowsError(try tool.convertAudioToWAV(fakeMP3)) { error in
             XCTAssertTrue(error.localizedDescription.contains("Audio container mismatch") || error.localizedDescription.contains("Audio codec mismatch"))
         }
     }
@@ -335,7 +326,7 @@ final class PipelineIntegrationTests: XCTestCase {
         let mp3 = try workspace.createAudio(name: "real_mp3", ext: "mp3")
         let fakeFLAC = try workspace.copy(mp3, as: "fake_lossless", ext: "flac")
         let tool = try workspace.makeTool(arguments: ["-flactowav"])
-        XCTAssertThrowsError(try tool.convertFLACToWAV(fakeFLAC)) { error in
+        XCTAssertThrowsError(try tool.convertAudioToWAV(fakeFLAC)) { error in
             XCTAssertTrue(error.localizedDescription.contains("Audio container mismatch") || error.localizedDescription.contains("Audio codec mismatch"))
         }
     }
@@ -345,7 +336,7 @@ final class PipelineIntegrationTests: XCTestCase {
         let mp3 = try workspace.createAudio(name: "real_mp3", ext: "mp3")
         let fakeM4A = try workspace.copy(mp3, as: "fake_aac", ext: "m4a")
         let tool = try workspace.makeTool(arguments: ["-m4atowav"])
-        XCTAssertThrowsError(try tool.convertM4AToWAV(fakeM4A)) { error in
+        XCTAssertThrowsError(try tool.convertAudioToWAV(fakeM4A)) { error in
             XCTAssertTrue(error.localizedDescription.contains("Audio codec mismatch") || error.localizedDescription.contains("Unexpected video stream") || error.localizedDescription.contains("Audio container mismatch"))
         }
     }
@@ -354,7 +345,7 @@ final class PipelineIntegrationTests: XCTestCase {
         let workspace = try IntegrationWorkspace()
         let garbage = try workspace.writeGarbageFile(name: "broken", ext: "wav")
         let tool = try workspace.makeTool(arguments: ["-wavtomp3"])
-        XCTAssertThrowsError(try tool.convertWAVToMP3(garbage))
+        XCTAssertThrowsError(try tool.convertAudioToMP3(garbage))
     }
 
     func testRejectsMP4ExtensionWithImagePayload() throws {
@@ -371,7 +362,7 @@ final class PipelineIntegrationTests: XCTestCase {
         let workspace = try IntegrationWorkspace()
         let silent = try workspace.createSilentAudio(name: "silent_track", ext: "mp3")
         let tool = try workspace.makeTool(arguments: ["-mp3towav"])
-        XCTAssertThrowsError(try tool.convertMP3ToWAV(silent)) { error in
+        XCTAssertThrowsError(try tool.convertAudioToWAV(silent)) { error in
             XCTAssertTrue(error.localizedDescription.contains("silent") || error.localizedDescription.contains("audible"))
         }
     }
@@ -1215,7 +1206,7 @@ final class PipelineIntegrationTests: XCTestCase {
         ])
 
         let tool = try workspace.makeTool(arguments: ["-mp3towav"])
-        let wav = try tool.convertMP3ToWAV(delayed)
+        let wav = try tool.convertAudioToWAV(delayed)
         try tool.verifyWAVStandard(wav)
     }
 
@@ -1227,7 +1218,7 @@ final class PipelineIntegrationTests: XCTestCase {
         let input = try workspace.createStereoImbalancedAudio(name: "imbalanced", ext: "wav")
         let tool = try workspace.makeTool(arguments: ["-wavtom4a"])
 
-        let output = try tool.convertWAVToM4A(input)
+        let output = try tool.convertAudioToM4A(input)
         XCTAssertThrowsError(try tool.verifyAudioQC(output, policy: tool.config.deliveryAudioQCPolicy)) { error in
             XCTAssertTrue(error.localizedDescription.contains("stereo imbalance"))
         }
@@ -1239,7 +1230,7 @@ final class PipelineIntegrationTests: XCTestCase {
 
         let riff = try workspace.createPlainRIFFWAV(name: "plain_input")
         let tool = try workspace.makeTool(arguments: ["-wavtom4a"])
-        let output = try tool.convertWAVToM4A(riff)
+        let output = try tool.convertAudioToM4A(riff)
 
         try tool.verifyM4AFile(output, sampleRate: tool.config.m4aSampleRate, channels: tool.config.m4aChannels, qcPolicy: nil)
         try tool.verifyDurationMatch(source: riff, output: output)
@@ -1353,11 +1344,14 @@ final class PipelineIntegrationTests: XCTestCase {
         XCTAssertEqual(try tool.audioField(artifacts.wav, "sample_rate"), String(tool.config.wavSampleRate))
 
         let rf64FLAC = workspace.output.appendingPathComponent("wav_source_RF64.flac")
-        let bw64FLAC = workspace.output.appendingPathComponent("wav_source_BW64.flac")
         XCTAssertEqual(try tool.audioField(rf64FLAC, "sample_rate"), "44100")
-        XCTAssertEqual(try tool.audioField(bw64FLAC, "sample_rate"), "44100")
         try tool.verifyCanonicalPCMSampleEquivalence(source: reference, output: rf64FLAC, sampleRate: 44_100, channels: 2, label: "External FLAC", format: .s24le, maxAllowedDelta: 2048)
-        try tool.verifyCanonicalPCMSampleEquivalence(source: reference, output: bw64FLAC, sampleRate: 44_100, channels: 2, label: "External FLAC", format: .s24le, maxAllowedDelta: 2048)
+
+        // BW64 is a WAV-only container, so no FLAC counterpart may be emitted.
+        XCTAssertFalse(
+            FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("wav_source_BW64.flac").path),
+            "BW64 has no FLAC container variant; emitting one would duplicate the RF64 FLAC byte-for-byte."
+        )
     }
 
     func testFullAudioPreparationPreservesMP3SourceLoudnessEvenIfMasteringConfigIsEnabled() async throws {
@@ -1534,7 +1528,6 @@ final class PipelineIntegrationTests: XCTestCase {
             "\(base)_RF64.wav",
             "\(base)_BW64.wav",
             "\(base)_RF64.flac",
-            "\(base)_BW64.flac",
             "\(base)_8K.mp4",
             "\(base)_8K_Short.mp4"
         ]
@@ -1542,6 +1535,12 @@ final class PipelineIntegrationTests: XCTestCase {
         for name in expectedFiles {
             XCTAssertTrue(FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent(name).path), "Missing full-run output \(name)")
         }
+
+        // Regression guard: every shipped archival deliverable must be distinct.
+        XCTAssertFalse(
+            FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("\(base)_BW64.flac").path),
+            "BW64 has no FLAC container variant; emitting one would duplicate the RF64 FLAC byte-for-byte."
+        )
 
         let wavOutput = workspace.output.appendingPathComponent("\(base).wav")
         let m4aOutput = workspace.output.appendingPathComponent("\(base).m4a")
@@ -1560,12 +1559,6 @@ final class PipelineIntegrationTests: XCTestCase {
         try tool.verifyCanonicalPCMSampleEquivalence(
             source: workspace.output.appendingPathComponent("\(base).wav"),
             output: workspace.output.appendingPathComponent("\(base)_RF64.flac"),
-            label: "External FLAC",
-            format: .s24le
-        )
-        try tool.verifyCanonicalPCMSampleEquivalence(
-            source: workspace.output.appendingPathComponent("\(base).wav"),
-            output: workspace.output.appendingPathComponent("\(base)_BW64.flac"),
             label: "External FLAC",
             format: .s24le
         )
@@ -1740,13 +1733,16 @@ final class PipelineIntegrationTests: XCTestCase {
             "album_RF64.wav",
             "album_BW64.wav",
             "album_RF64.flac",
-            "album_BW64.flac",
             "album_8K.mp4",
             "album_8K_Short.mp4"
         ]
         for name in expectedFiles {
             XCTAssertTrue(FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent(name).path), "Missing album pipeline output \(name)")
         }
+        XCTAssertFalse(
+            FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("album_BW64.flac").path),
+            "BW64 has no FLAC container variant; emitting one would duplicate the RF64 FLAC byte-for-byte."
+        )
 
         let albumWAV = workspace.output.appendingPathComponent("album.wav")
         let mainOutput = workspace.output.appendingPathComponent("album_8K.mp4")
@@ -2017,7 +2013,7 @@ final class PipelineIntegrationTests: XCTestCase {
         let workspace = try IntegrationWorkspace()
         let empty = try workspace.writeEmptyFile(name: "empty_song", ext: "wav")
         let tool = try workspace.makeTool(arguments: ["-wavtomp3"])
-        XCTAssertThrowsError(try tool.convertWAVToMP3(empty)) { error in
+        XCTAssertThrowsError(try tool.convertAudioToMP3(empty)) { error in
             let message = error.localizedDescription
             XCTAssertTrue(message.contains("Audio input empty") || message.contains("WAV header too short"), "Unexpected error: \(message)")
         }

@@ -15,7 +15,7 @@ struct AudioQCPolicy: Hashable, Sendable {
     var maximumLUFS: Double { targetLUFS + lufsTolerance }
 }
 
-struct AudioQCMetrics: Codable, Sendable {
+struct AudioQCMetrics: Sendable {
     let integratedLUFS: Double?
     let truePeakDBTP: Double?
     let loudnessRange: Double?
@@ -27,16 +27,10 @@ struct AudioQCMetrics: Codable, Sendable {
     let analysisLimited: Bool
 }
 
-struct AudioQCResult: Codable, Sendable {
-    let policy: String
-    let targetLUFS: Double
-    let lufsTolerance: Double
-    let maxTruePeakDBTP: Double
-    let maxLoudnessRange: Double
-    let maxDCOffset: Double
-    let maxStereoImbalanceDB: Double
-    let maxClippedSamples: Int
-    let minimumAnalysisSeconds: Double
+struct AudioQCResult: Sendable {
+    // The policy is carried by value rather than mirrored field-by-field; the copies
+    // were written on every QC run and never read back.
+    let policy: AudioQCPolicy
     let metrics: AudioQCMetrics
     let passed: Bool
     let issues: [String]

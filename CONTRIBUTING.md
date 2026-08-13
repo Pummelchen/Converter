@@ -9,10 +9,10 @@ git clone https://github.com/Pummelchen/Converter.git
 cd Converter
 brew install ffmpeg imagemagick        # runtime media tools
 swift build --package-path Sources     # build
-swift test --package-path Sources      # run all tests (122 tests, ~6 min)
+swift test --package-path Sources      # run all tests (146 tests, ~7.5 min)
 ```
 
-Requires Swift tools 6.3.3+ (Swift language mode 6) and macOS 14+. See the [wiki](https://github.com/Pummelchen/Converter/wiki) for command reference and configuration details.
+Requires Swift tools 6.3.3+ (Swift language mode 6) and macOS 15+, matching the `.macOS(.v15)` platform in `Sources/Package.swift`. See the [wiki](https://github.com/Pummelchen/Converter/wiki) for command reference and configuration details.
 
 ## Repository layout essentials
 
@@ -37,6 +37,18 @@ Dependency auto-install is disabled in tests; for manual dependency checks witho
 ```bash
 CONVERTER_AUTO_INSTALL_DEPS=0 ./converter -doctor
 ```
+
+## Language level
+
+The package declares Swift language mode 6 and additionally opts into four upcoming-feature
+flags (`ExistentialAny`, `MemberImportVisibility`, `InferIsolatedConformances`,
+`ImmutableWeakCaptures`) in `Sources/Package.swift`. They build clean today and act as
+ratchets — new code cannot reintroduce bare existentials or the other patterns they forbid.
+`Sources/Package.swift` documents which upcoming features were deliberately declined and why.
+
+Release builds stay CPU-generic so the binary runs on every Apple Silicon Mac. Do not add
+`-mcpu=` targeting to the package; see `docs/KNOWN_GOOD_VERSIONS.md` for the measurements
+behind that decision.
 
 ## Safety rules for changes
 

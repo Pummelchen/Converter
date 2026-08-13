@@ -384,27 +384,27 @@ extension ConverterTool {
             async let archivalTask: Void = withAudioPermit {
                 try self.generateExternalArchivalVariants(baseName: sourceAudio.stem, highQualitySource: sourceAudio)
             }
-            let wav = try await withAudioPermit { try self.convertFLACToWAV(sourceAudio) }
+            let wav = try await withAudioPermit { try self.convertAudioToWAV(sourceAudio) }
             _ = try await archivalTask
-            async let m4aTask: URL = withAudioPermit { try self.convertWAVToM4A(wav) }
-            async let mp3Task: URL = withAudioPermit { try self.convertWAVToMP3(wav) }
+            async let m4aTask: URL = withAudioPermit { try self.convertAudioToM4A(wav) }
+            async let mp3Task: URL = withAudioPermit { try self.convertAudioToMP3(wav) }
             let artifacts = AudioArtifacts(source: sourceAudio, wav: wav, m4a: try await m4aTask, mp3: try await mp3Task)
             return artifacts
         case "mp3":
             try preflightMP3Input(sourceAudio)
-            let wav = try await withAudioPermit { try self.convertMP3ToWAV(sourceAudio) }
+            let wav = try await withAudioPermit { try self.convertAudioToWAV(sourceAudio) }
             logger.info("Full step: external RF64/BW64 audio deliverables")
             async let archivalTask: Void = withAudioPermit {
                 try self.generateExternalArchivalVariants(baseName: sourceAudio.stem, highQualitySource: wav)
             }
             _ = try await archivalTask
-            async let m4aTask: URL = withAudioPermit { try self.convertWAVToM4A(wav) }
+            async let m4aTask: URL = withAudioPermit { try self.convertAudioToM4A(wav) }
             let mp3: URL
             do {
                 mp3 = try ensureStandardMP3Output(from: sourceAudio)
             } catch {
                 self.logger.info("Full step: rebuild MP3 to configured standard")
-                mp3 = try await withAudioPermit { try self.convertWAVToMP3(wav) }
+                mp3 = try await withAudioPermit { try self.convertAudioToMP3(wav) }
             }
             let artifacts = AudioArtifacts(source: sourceAudio, wav: wav, m4a: try await m4aTask, mp3: mp3)
             return artifacts
@@ -440,8 +440,8 @@ extension ConverterTool {
             }
             try preflightWAVStandardInput(sourceAudio)
             _ = try await archivalTask
-            async let m4aTask: URL = withAudioPermit { try self.convertWAVToM4A(sourceAudio) }
-            async let mp3Task: URL = withAudioPermit { try self.convertWAVToMP3(sourceAudio) }
+            async let m4aTask: URL = withAudioPermit { try self.convertAudioToM4A(sourceAudio) }
+            async let mp3Task: URL = withAudioPermit { try self.convertAudioToMP3(sourceAudio) }
             let artifacts = AudioArtifacts(source: sourceAudio, wav: sourceAudio, m4a: try await m4aTask, mp3: try await mp3Task)
             return artifacts
         default:
@@ -598,7 +598,7 @@ extension ConverterTool {
         let files = try files(in: cli.srcDir, matchingExtensions: ["flac"])
         _ = try processBatch(files: files, emptyMessage: "No .flac files found in '\(cli.srcDir.path)'.", failWhenEmpty: true) { file in
             self.logger.info("FLAC -> WAV: \(file.basename)")
-            return try self.convertFLACToWAV(file)
+            return try self.convertAudioToWAV(file)
         }
     }
 
@@ -606,7 +606,7 @@ extension ConverterTool {
         let files = try files(in: cli.srcDir, matchingExtensions: ["mp3"])
         _ = try processBatch(files: files, emptyMessage: "No .mp3 files found in '\(cli.srcDir.path)'.", failWhenEmpty: false) { file in
             self.logger.info("MP3 -> WAV: \(file.basename)")
-            return try self.convertMP3ToWAV(file)
+            return try self.convertAudioToWAV(file)
         }
     }
 
@@ -662,7 +662,7 @@ extension ConverterTool {
         let files = try files(in: cli.srcDir, matchingExtensions: ["m4a"])
         _ = try processBatch(files: files, emptyMessage: "No .m4a files found in '\(cli.srcDir.path)'.", failWhenEmpty: true) { file in
             self.logger.info("M4A -> WAV: \(file.basename)")
-            return try self.convertM4AToWAV(file)
+            return try self.convertAudioToWAV(file)
         }
     }
 
@@ -670,7 +670,7 @@ extension ConverterTool {
         let files = try files(in: cli.srcDir, matchingExtensions: ["wav"])
         _ = try processBatch(files: files, emptyMessage: "No .wav files found in '\(cli.srcDir.path)'.", failWhenEmpty: true) { file in
             self.logger.info("WAV -> M4A: \(file.basename)")
-            return try self.convertWAVToM4A(file)
+            return try self.convertAudioToM4A(file)
         }
     }
 
@@ -694,7 +694,7 @@ extension ConverterTool {
         let files = try files(in: cli.srcDir, matchingExtensions: ["m4a"])
         _ = try processBatch(files: files, emptyMessage: "No .m4a files found in '\(cli.srcDir.path)'.", failWhenEmpty: true) { file in
             self.logger.info("M4A -> MP3: \(file.basename)")
-            return try self.convertM4AToMP3(file)
+            return try self.convertAudioToMP3(file)
         }
     }
 
@@ -702,7 +702,7 @@ extension ConverterTool {
         let files = try files(in: cli.srcDir, matchingExtensions: ["wav"])
         _ = try processBatch(files: files, emptyMessage: "No .wav files found in '\(cli.srcDir.path)'.", failWhenEmpty: true) { file in
             self.logger.info("WAV -> MP3: \(file.basename)")
-            return try self.convertWAVToMP3(file)
+            return try self.convertAudioToMP3(file)
         }
     }
 
@@ -710,7 +710,7 @@ extension ConverterTool {
         let files = try files(in: cli.srcDir, matchingExtensions: ["flac"])
         _ = try processBatch(files: files, emptyMessage: "No .flac files found in '\(cli.srcDir.path)'.", failWhenEmpty: true) { file in
             self.logger.info("FLAC -> MP3: \(file.basename)")
-            return try self.convertFLACToMP3(file)
+            return try self.convertAudioToMP3(file)
         }
     }
 
@@ -718,7 +718,7 @@ extension ConverterTool {
         let files = try files(in: cli.srcDir, matchingExtensions: ["wav"])
         _ = try processBatch(files: files, emptyMessage: "No .wav files found in '\(cli.srcDir.path)'.", failWhenEmpty: true) { file in
             self.logger.info("WAV -> FLAC: \(file.basename)")
-            return try self.convertWAVToFLAC(file)
+            return try self.convertAudioToFLAC(file)
         }
     }
 
@@ -726,7 +726,7 @@ extension ConverterTool {
         let files = try files(in: cli.srcDir, matchingExtensions: ["mp3"])
         _ = try processBatch(files: files, emptyMessage: "No .mp3 files found in '\(cli.srcDir.path)'.", failWhenEmpty: true) { file in
             self.logger.info("MP3 -> FLAC: \(file.basename)")
-            return try self.convertMP3ToFLAC(file)
+            return try self.convertAudioToFLAC(file)
         }
     }
 
@@ -734,7 +734,7 @@ extension ConverterTool {
         let files = try files(in: cli.srcDir, matchingExtensions: ["m4a"])
         _ = try processBatch(files: files, emptyMessage: "No .m4a files found in '\(cli.srcDir.path)'.", failWhenEmpty: true) { file in
             self.logger.info("M4A -> FLAC: \(file.basename)")
-            return try self.convertM4AToFLAC(file)
+            return try self.convertAudioToFLAC(file)
         }
     }
 
@@ -943,31 +943,47 @@ extension ConverterTool {
         _ = try buildAlbumFromFLACDirectory()
     }
 
+    private func requireHashRenameSucceeded(_ outcome: ConverterTool.HashRenameOutcome) throws {
+        guard outcome.failures.isEmpty else {
+            throw AppError("Hash rename failed for \(outcome.failures.count)/\(outcome.considered) file(s): \(outcome.failures.joined(separator: "; "))")
+        }
+    }
+
     func stepFLACHash() throws {
         logger.info("Hash FLAC filenames")
-        try hashRename(ext: "flac")
+        try requireHashRenameSucceeded(try hashRename(ext: "flac"))
     }
 
     func stepUnifiedHash() throws {
         logger.info("Hash WAV, FLAC, MP3, and MP4 filenames")
-        let total =
-            (try hashRename(ext: "wav", warnWhenEmpty: false)) +
-            (try hashRename(ext: "flac", warnWhenEmpty: false)) +
-            (try hashRename(ext: "mp3", warnWhenEmpty: false)) +
-            (try hashRename(ext: "mp4", warnWhenEmpty: false))
-        if total == 0 {
-            logger.warn("No .wav, .flac, .mp3, or .mp4 files found in '\(cli.srcDir.path)'.")
+        var considered = 0
+        var renamed = 0
+        var failures: [String] = []
+        for ext in ["wav", "flac", "mp3", "mp4"] {
+            let outcome = try hashRename(ext: ext, warnWhenEmpty: false)
+            considered += outcome.considered
+            renamed += outcome.renamed
+            failures.append(contentsOf: outcome.failures)
         }
+        // "Nothing found" and "everything failed" are different outcomes and must read differently.
+        if considered == 0 {
+            logger.warn("No .wav, .flac, .mp3, or .mp4 files found in '\(cli.srcDir.path)'.")
+            return
+        }
+        try requireHashRenameSucceeded(
+            ConverterTool.HashRenameOutcome(considered: considered, renamed: renamed, failures: failures)
+        )
+        logger.info("Hash rename complete: renamed=\(renamed)/\(considered) failed=0")
     }
 
     func stepMP3Hash() throws {
         logger.info("Hash MP3 filenames")
-        try hashRename(ext: "mp3")
+        try requireHashRenameSucceeded(try hashRename(ext: "mp3"))
     }
 
     func stepWAVHash() throws {
         logger.info("Hash WAV filenames")
-        try hashRename(ext: "wav")
+        try requireHashRenameSucceeded(try hashRename(ext: "wav"))
     }
 
     func stepM4AToMP4() throws {

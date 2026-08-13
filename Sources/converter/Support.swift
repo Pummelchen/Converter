@@ -70,9 +70,19 @@ final class Logger: Sendable {
 }
 
 actor AsyncSemaphore {
+    // Waiters are identified so cancellation resumes the task that was actually
+    // cancelled. Resuming positionally strands the cancelled task in the queue and
+    // fails an unrelated one, which is reachable whenever `async let` siblings are
+    // torn down after one of them throws.
+    private struct Waiter {
+        let id: UUID
+        let continuation: CheckedContinuation<Void, any Error>
+    }
+
     private let limit: Int
     private var available: Int
-    private var waiters: [CheckedContinuation<Void, Error>] = []
+    private var waiters: [Waiter] = []
+    private var cancelledBeforeSuspension: Set<UUID> = []
 
     init(value: Int) {
         self.limit = max(1, value)
@@ -85,25 +95,39 @@ actor AsyncSemaphore {
             return
         }
 
+        let id = UUID()
         try await withTaskCancellationHandler {
             try await withCheckedThrowingContinuation { continuation in
-                waiters.append(continuation)
+                enqueue(id: id, continuation: continuation)
             }
         } onCancel: {
-            Task { await self.cancelFirstWaiter() }
+            Task { await self.cancelWaiter(id: id) }
         }
     }
 
-    private func cancelFirstWaiter() {
-        guard !waiters.isEmpty else { return }
-        let continuation = waiters.removeFirst()
-        continuation.resume(throwing: CancellationError())
+    private func enqueue(id: UUID, continuation: CheckedContinuation<Void, any Error>) {
+        // The cancellation handler can run before suspension completes; honor it here.
+        if cancelledBeforeSuspension.remove(id) != nil {
+            continuation.resume(throwing: CancellationError())
+            return
+        }
+        waiters.append(Waiter(id: id, continuation: continuation))
+    }
+
+    private func cancelWaiter(id: UUID) {
+        guard let index = waiters.firstIndex(where: { $0.id == id }) else {
+            // Cancellation raced ahead of enqueue; enqueue() will observe this marker.
+            cancelledBeforeSuspension.insert(id)
+            return
+        }
+        let waiter = waiters.remove(at: index)
+        waiter.continuation.resume(throwing: CancellationError())
     }
 
     func signal() {
         if !waiters.isEmpty {
-            let continuation = waiters.removeFirst()
-            continuation.resume()
+            let waiter = waiters.removeFirst()
+            waiter.continuation.resume()
             return
         }
         available = min(limit, available + 1)
@@ -236,7 +260,7 @@ private let posixLocale = Locale(identifier: "en_US_POSIX")
 
 /// Formats a value for ffmpeg/magick arguments with a fixed POSIX locale so a
 /// comma-decimal system locale cannot inject invalid tokens.
-func ffmpegArg(_ format: String, _ arguments: CVarArg...) -> String {
+func ffmpegArg(_ format: String, _ arguments: any CVarArg...) -> String {
     String(format: format, locale: posixLocale, arguments: arguments)
 }
 
