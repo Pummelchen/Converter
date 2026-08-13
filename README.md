@@ -9,10 +9,10 @@ git clone https://github.com/Pummelchen/Converter.git
 cd Converter
 brew install ffmpeg imagemagick            # runtime media tools
 swift build --package-path Sources         # build
-swift test --package-path Sources          # full test suite (129 tests, ~9 min)
+swift test --package-path Sources          # full test suite (146 tests, ~7.5 min)
 
-CONVERTER_AUTO_INSTALL_DEPS=0 ./converter -doctor   # dependency check without install side effects
-./converter -help                                    # command reference
+./converter -doctor                          # verify toolchain, encoders, filters, directories
+./converter -help                            # command reference
 ```
 
 First media run: place exactly 1 source audio (`.flac`/`.wav`/`.mp3`) and 1 source image in `Output/`, then run `./converter -full`. `Output/` is both the default input and output directory — discovery is non-recursive, files in subfolders are ignored, and the directory is meant to be cleaned manually between runs. See [CONTRIBUTING.md](./CONTRIBUTING.md) for contribution guidance and [docs/](./docs/) for format reference, known-good toolchain versions, and the release checklist.
@@ -50,7 +50,7 @@ swift test --package-path Sources
 Pushes and pull requests to `main` run the Swift build and the full test suite on GitHub Actions (`macos-26` with Swift 6.3.3, installing `ffmpeg` and `imagemagick` first). See [`.github/workflows/ci.yml`](./.github/workflows/ci.yml).
 
 ## Runtime Dependencies
-On startup, operational commands auto-check the required external tools and silently install missing Homebrew formulae before media processing starts.
+On startup, operational commands check that the required external tools are present and functional. Missing tools cause a fail-fast error by default; converter does not install anything unless you opt in (see below).
 
 Homebrew formulae:
 - `ffmpeg`, which provides `ffmpeg` and `ffprobe`
@@ -63,7 +63,15 @@ macOS system commands:
 Python packages:
 - none
 
-If Homebrew itself is missing and a required formula must be installed, converter attempts a non-interactive Homebrew install first. Set `CONVERTER_AUTO_INSTALL_DEPS=0` to disable auto-install and fail fast instead.
+### Optional dependency auto-install
+Auto-install is **off by default**. Without it, a missing formula produces an actionable error telling you what to `brew install`.
+
+Set `CONVERTER_AUTO_INSTALL_DEPS=1` (or `true`/`yes`/`on`) to let converter install missing Homebrew formulae itself. Be aware of what that opts you into:
+
+- converter runs `brew install` for each missing formula listed above
+- **if Homebrew itself is missing, converter downloads and executes the official Homebrew install script — `curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh | bash` — which runs remote code on your machine**
+
+Leave the variable unset (the default) on any machine where executing a remote install script is not acceptable, and install `ffmpeg` and `imagemagick` yourself.
 
 ## Core Commands
 ```bash
@@ -193,7 +201,7 @@ When both `Horizontal_8K.png` and `Vertical_8K.png` are present, full run render
 Full run produces:
 - image deliverables: 8K/4K PNG, NFT PNGs, 3K/2K PNG, JPG exports
 - audio deliverables: WAV, M4A, MP3
-- archival deliverables: `*_RF64.flac`, `*_RF64.wav`, `*_BW64.flac`, `*_BW64.wav`
+- archival deliverables: `*_RF64.flac`, `*_RF64.wav`, `*_BW64.wav` (BW64 is a WAV-only container standard, so there is no `*_BW64.flac`)
 - video deliverables: main MP4, short MP4, and full-song short MP4 (same portrait graphics as the short MP4; rendered only when the source audio is longer than the short clip cap)
 
 ## Reliability Features

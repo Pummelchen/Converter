@@ -4,8 +4,8 @@ Checklist for declaring the converter stable as Release v1.0. Track blockers as 
 
 ## Build and test validation
 
-- [ ] `swift build --package-path Sources -c release` succeeds on a clean checkout (macOS 14+, Apple Silicon, Swift tools 6.3.3+)
-- [ ] `swift test --package-path Sources` passes fully (baseline: 122 tests at `c75929f`)
+- [ ] `swift build --package-path Sources -c release` succeeds on a clean checkout (macOS 15+, Apple Silicon, Swift tools 6.3.3+)
+- [ ] `swift test --package-path Sources` passes fully (see `docs/KNOWN_GOOD_VERSIONS.md` for the current recorded baseline)
 - [ ] CI workflow (`.github/workflows/ci.yml`) green on the release commit
 - [ ] Manual smoke test on representative (non-private) media: `-full`, `-album`, `-short`, `-nfttoshort`, one audio batch action, `-doctor`
 
