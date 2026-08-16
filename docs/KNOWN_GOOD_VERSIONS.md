@@ -39,7 +39,7 @@ whole-file canonical PCM comparison, merged QC/image probes, and the shared vide
 | ImageMagick (`magick`) | 7.1.2-29 Q16-HDRI aarch64 | Homebrew formula `imagemagick` |
 
 - `swift build --package-path Sources` — success, clean under `-warnings-as-errors`
-- `swift test --package-path Sources` — 151 tests, 0 failures (~7.5 min)
+- `swift test --package-path Sources` — 154 tests, 0 failures (~7.5 min)
 
 Note: ffmpeg 9.0.1 is a major-version step up from the 8.1.2 recorded above and passes the full suite.
 

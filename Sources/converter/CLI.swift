@@ -470,7 +470,8 @@ struct CLIOptions {
               centering it in the portrait frame with black top/bottom padding.
             - Exactly 1 source audio file: .flac or .wav or .mp3
           Full-run result:
-            - Image deliverables: 8K/4K PNG, NFT PNGs, 3K/2K PNG, JPG exports
+            - Image deliverables: 8K/4K PNG, NFT PNGs, 3K/2K PNG, JPG exports, and both portrait
+              short framings as stills: *_Short_8K.png / *_Short_CenterCut_8K.png plus _1MB/_2MB JPGs
               Direct Horizontal_8K.png/Vertical_8K.png inputs are used as-is for videos; Horizontal_8K.png still derives companion image deliverables.
             - Audio/video deliverables: WAV, M4A, MP3, main MP4, and four portrait shorts:
               _8K_Short.mp4 (fitted, black padding) and _8K_Short_CenterCut.mp4 (centre of the 8K

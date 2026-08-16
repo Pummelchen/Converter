@@ -597,20 +597,68 @@ final class converterTests: XCTestCase {
         try FileManager.default.createDirectory(at: tempDirectory, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: tempDirectory) }
 
-        for name in [
-            "9_8K.png", "9_4K.png", "9_3K.png", "9_2K.png",
-            "9_NFT8K.png", "9_NFT3K.png", "9_NFT2K.png",
-            "9_8K_1MB.jpg", "9_8K_2MB.jpg", "9_8K_20MB.jpg", "9_3K_1MB.jpg", "9_3K_5MB.jpg"
-        ] {
-            FileManager.default.createFile(atPath: tempDirectory.appendingPathComponent(name).path, contents: Data("x".utf8))
+        let tool = try makeTool(tempDirectory: tempDirectory)
+        func write(_ name: String, _ width: Int, _ height: Int) throws {
+            _ = try tool.runner.run("magick", ["-size", "\(width)x\(height)", "canvas:gray", tempDirectory.appendingPathComponent(name).path])
         }
 
-        let tool = try makeTool(tempDirectory: tempDirectory)
+        // Landscape renditions the run derived from its own master.
+        for name in ["9_8K.png", "9_4K.png", "9_3K.png", "9_8K_1MB.jpg", "9_3K_1MB.jpg"] {
+            try write(name, 320, 180)
+        }
+        // Square NFT renditions count as masters too, so they must collapse into the family.
+        for name in ["9_NFT8K.png", "9_NFT3K.png"] {
+            try write(name, 200, 200)
+        }
+
         XCTAssertEqual(try tool.resolveFullImage().lastPathComponent, "9_8K.png")
 
         // A bare source outranks every derived rendition.
-        FileManager.default.createFile(atPath: tempDirectory.appendingPathComponent("9.png").path, contents: Data("x".utf8))
+        try write("9.png", 320, 180)
         XCTAssertEqual(try tool.resolveFullImage().lastPathComponent, "9.png")
+    }
+
+    // A full run takes one landscape master plus, optionally, one portrait image for the
+    // fitted shorts. They are told apart by orientation, so neither needs a special name.
+    func testFullRunSourceImagesSplitByOrientation() throws {
+        let tempDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: tempDirectory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: tempDirectory) }
+        let tool = try makeTool(tempDirectory: tempDirectory)
+
+        func write(_ name: String, _ width: Int, _ height: Int) throws {
+            _ = try tool.runner.run("magick", ["-size", "\(width)x\(height)", "canvas:gray", tempDirectory.appendingPathComponent(name).path])
+        }
+
+        try write("cover.png", 300, 169)
+        let landscapeOnly = try tool.resolveFullRunSourceImages()
+        XCTAssertEqual(landscapeOnly.master.lastPathComponent, "cover.png")
+        XCTAssertNil(landscapeOnly.portrait)
+
+        try write("vertical.png", 108, 192)
+        let both = try tool.resolveFullRunSourceImages()
+        XCTAssertEqual(both.master.lastPathComponent, "cover.png")
+        XCTAssertEqual(both.portrait?.lastPathComponent, "vertical.png")
+
+        // A second portrait is ambiguous and must be rejected rather than silently picked.
+        try write("vertical_alt.png", 200, 400)
+        XCTAssertThrowsError(try tool.resolveFullRunSourceImages()) { error in
+            XCTAssertTrue(error.localizedDescription.contains("at most one portrait"))
+        }
+    }
+
+    func testFullRunSourceImagesRejectTwoLandscapeMasters() throws {
+        let tempDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: tempDirectory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: tempDirectory) }
+        let tool = try makeTool(tempDirectory: tempDirectory)
+
+        for name in ["cover.png", "backdrop.png"] {
+            _ = try tool.runner.run("magick", ["-size", "300x169", "canvas:gray", tempDirectory.appendingPathComponent(name).path])
+        }
+        XCTAssertThrowsError(try tool.resolveFullRunSourceImages()) { error in
+            XCTAssertTrue(error.localizedDescription.contains("exactly one landscape source image"))
+        }
     }
 
     func testResolveFullImageStillRejectsTwoDistinctSources() throws {
@@ -618,13 +666,13 @@ final class converterTests: XCTestCase {
         try FileManager.default.createDirectory(at: tempDirectory, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: tempDirectory) }
 
+        let tool = try makeTool(tempDirectory: tempDirectory)
         for name in ["cover.png", "cover_8K.png", "backdrop.png"] {
-            FileManager.default.createFile(atPath: tempDirectory.appendingPathComponent(name).path, contents: Data("x".utf8))
+            _ = try tool.runner.run("magick", ["-size", "320x180", "canvas:gray", tempDirectory.appendingPathComponent(name).path])
         }
 
-        let tool = try makeTool(tempDirectory: tempDirectory)
         XCTAssertThrowsError(try tool.resolveFullImage()) { error in
-            XCTAssertTrue(error.localizedDescription.contains("exactly one source image"))
+            XCTAssertTrue(error.localizedDescription.contains("exactly one landscape source image"))
         }
     }
 
@@ -637,6 +685,8 @@ final class converterTests: XCTestCase {
         XCTAssertEqual(tool.fullRunImageBaseName("9_8K_20MB"), "9")
         XCTAssertEqual(tool.fullRunImageBaseName("9_NFT3K"), "9")
         XCTAssertEqual(tool.fullRunImageBaseName("mix_8K_take_8K"), "mix_8K_take")
+        XCTAssertEqual(tool.fullRunImageBaseName("9_Short_8K"), "9")
+        XCTAssertEqual(tool.fullRunImageBaseName("9_Short_CenterCut_8K"), "9")
         XCTAssertEqual(tool.fullRunImageBaseName("cover"), "cover")
     }
 

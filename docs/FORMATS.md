@@ -50,7 +50,7 @@ JPEG scanning accepts both `.jpg` and `.jpeg`; JPEG outputs are written with `.j
 
 | Command | Input discovery | Output |
 |---|---|---|
-| `-full` / `-run` | exactly 1 source audio (`.flac`/`.wav`/`.mp3`) + 1 source image or direct 8K PNGs in `SRC_DIR` | image deliverables, WAV/M4A/MP3, `*_RF64.flac`/`*_RF64.wav`/`*_BW64.wav` archival companions, main MP4, and four portrait shorts (`_8K_Short`, `_8K_Short_CenterCut`, each plus a `_FullSong` companion when audio exceeds the short clip cap) |
+| `-full` / `-run` | exactly 1 source audio (`.flac`/`.wav`/`.mp3`) + 1 source image or direct 8K PNGs in `SRC_DIR` | image deliverables, portrait short stills (`*_Short_8K.png`, `*_Short_CenterCut_8K.png`, each with `_1MB.jpg`/`_2MB.jpg`), WAV/M4A/MP3, `*_RF64.flac`/`*_RF64.wav`/`*_BW64.wav` archival companions, main MP4, and four portrait shorts (`_8K_Short`, `_8K_Short_CenterCut`, each plus a `_FullSong` companion when audio exceeds the short clip cap) |
 | `-album` | 2+ `.mp3`/`.wav`/`.flac` in `SRC_DIR`, natural numeric order | normalized (-12 LUFS per track) RF64 `album.wav`, then full-run deliverables |
 | `-wavtoalbum` | `album.txt` (project root) listing `.wav` tracks resolved in `SRC_DIR` | RF64 `album.rf64.wav` (listed order, no normalization) |
 | `-mp3toalbum` | `album.txt` listing `.mp3` tracks | RF64 `album_from_mp3.rf64.wav` (listed order, no normalization) |

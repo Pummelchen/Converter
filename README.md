@@ -11,11 +11,18 @@ brew install ffmpeg imagemagick     # runtime media tools
 ./converter -doctor                 # verify toolchain, encoders, filters
 ```
 
-Put **one audio file** (`.flac`/`.wav`/`.mp3`) and **one image** (`.png`/`.jpg`/`.jpeg`) in `Output/`, then:
+Put **one audio file** (`.flac`/`.wav`/`.mp3`) and **one landscape image** in `Output/`, then:
 
 ```bash
 ./converter -full
 ```
+
+Source images are identified by orientation, not by filename:
+
+- **one landscape image** — required, any size, upscaled to the 8K master
+- **one portrait image** — optional, any size, used for the fitted shorts
+
+Every generated file is named after the audio file, so one release keeps one prefix throughout. Your source files keep their own names.
 
 `Output/` is both the input and output directory. Discovery is non-recursive, and the directory is meant to be cleared between runs.
 
@@ -24,6 +31,7 @@ Put **one audio file** (`.flac`/`.wav`/`.mp3`) and **one image** (`.png`/`.jpg`/
 | | |
 |---|---|
 | Images | 8K/4K PNG, NFT squares (8K/3K/2K), 3K/2K PNG, sized JPG exports |
+| Portrait stills | both short framings as `_Short_8K.png` / `_Short_CenterCut_8K.png` plus `_1MB.jpg` / `_2MB.jpg` |
 | Audio | RF64 WAV (24-bit/96 kHz), ALAC M4A, 320 kbps MP3 |
 | Archival | `*_RF64.flac`, `*_RF64.wav`, `*_BW64.wav` |
 | Video | main MP4 (7680×4320) + four portrait shorts (4320×7680) |
@@ -33,6 +41,8 @@ The four shorts give you both framings, each with a full-length companion when t
 - `_8K_Short.mp4` — image fitted inside the frame, padded with black
 - `_8K_Short_CenterCut.mp4` — centre of the 8K master cropped to fill the frame, no padding
 - `_8K_Short_FullSong.mp4` and `_8K_Short_FullSong_CenterCut.mp4`
+
+Both framings are also saved as stills, so the artwork is usable without pulling a frame out of a video: `<prefix>_Short_8K.png` and `<prefix>_Short_CenterCut_8K.png` at full portrait resolution, each with a `_1MB.jpg` and `_2MB.jpg` export.
 
 ## Documentation
 
@@ -68,7 +78,7 @@ Requires Swift tools 6.3.3+ and macOS 15+. The package lives in `Sources/`, so e
 ```bash
 swift build --package-path Sources -c release
 cp Sources/.build/arm64-apple-macosx/release/converter ./converter && chmod +x ./converter
-swift test --package-path Sources     # 151 tests, ~7.5 min
+swift test --package-path Sources     # 154 tests, ~7.5 min
 ```
 
 A prebuilt `converter` binary ships at the repository root. CI runs the build and full suite on every push and PR to `main` ([ci.yml](./.github/workflows/ci.yml)).

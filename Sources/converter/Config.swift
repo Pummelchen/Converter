@@ -87,7 +87,8 @@ struct ProjectConfig {
     var image3KSize = 3000
     var image2KSize = 2048
     var imageAIPixSharpness = 1.2
-    var imageAIPixFilter = "Lanczos"
+    // LanczosSharp measured best of the candidates on a 4x upscale; see ImagePipeline.resampleArguments.
+    var imageAIPixFilter = "LanczosSharp"
     var imageAIPixPNGCompressionLevel = 1
     var imageJPGToPNGCompressionLevel = 0
     var imagePNGToJPEGQuality = 98

@@ -213,8 +213,10 @@ extension ConverterTool {
         let framing: String
         switch mode {
         case .fit:
+            // A portrait source smaller than the frame is upscaled here, so it needs the
+            // configured high-quality scaler rather than ffmpeg's default.
             framing =
-                "scale=w=\(width):h=\(height):force_original_aspect_ratio=decrease," +
+                "scale=w=\(width):h=\(height):force_original_aspect_ratio=decrease:flags=\(scaleQualityFlags)," +
                 "pad=\(width):\(height):(ow-iw)/2:(oh-ih)/2:color=black"
         case .centerCut:
             // `increase` guarantees both axes reach the target, so the centred crop never
@@ -222,7 +224,7 @@ extension ConverterTool {
             // (a 7680x4320 master contributes only its middle 2430x4320), so it uses the
             // configured high-quality scaler rather than the default.
             framing =
-                "scale=w=\(width):h=\(height):force_original_aspect_ratio=increase:flags=\(config.videoMP4ScaleFilter)," +
+                "scale=w=\(width):h=\(height):force_original_aspect_ratio=increase:flags=\(scaleQualityFlags)," +
                 "crop=\(width):\(height)"
         }
         return framing + ",fps=\(config.shortMP4FPS),format=\(config.shortMP4PixelFormat)," + colorParameterFilter()
@@ -230,6 +232,12 @@ extension ConverterTool {
 
     func centerCutShortMP4Stem(_ stem: String) -> String {
         stem.hasSuffix(ShortFillMode.centerCut.outputStemSuffix) ? stem : stem + ShortFillMode.centerCut.outputStemSuffix
+    }
+
+    // Scaling quality flags for swscale: accurate rounding and full chroma interpolation
+    // cost time and buy precision, which is the trade this pipeline wants.
+    private var scaleQualityFlags: String {
+        "\(config.videoMP4ScaleFilter)+accurate_rnd+full_chroma_int"
     }
 
     private func colorParameterFilter() -> String {
@@ -338,7 +346,7 @@ extension ConverterTool {
                     "-t", ffmpegArg("%.6f", duration)
                 ],
                 videoFilter:
-                    "scale=\(config.videoMP4Width):\(config.videoMP4Height):flags=\(config.videoMP4ScaleFilter)," +
+                    "scale=\(config.videoMP4Width):\(config.videoMP4Height):flags=\(scaleQualityFlags)," +
                     "format=\(config.videoMP4PixelFormat)," +
                     colorParameterFilter(),
                 encoderLadder: encoders,

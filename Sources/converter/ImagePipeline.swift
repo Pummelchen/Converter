@@ -1,6 +1,22 @@
 import Foundation
 
 extension ConverterTool {
+    // Every magick resize goes through this. Resampling is done in linear light rather than
+    // gamma-encoded sRGB, because averaging gamma-encoded values darkens edges and loses
+    // energy wherever contrast is high. Measured on a 4x upscale of a detail-heavy reference,
+    // LanczosSharp in linear light reconstructs the original more accurately than the
+    // gamma-space Lanczos used before (PSNR 30.663 vs 30.616, RMSE 0.02930 vs 0.02946), and
+    // beats Mitchell, Catrom, Lanczos2 and both EWA variants. The extra colourspace
+    // conversions cost a little time, which is the intended trade.
+    func resampleArguments(_ geometry: String) -> [String] {
+        [
+            "-colorspace", "RGB",
+            "-filter", config.imageAIPixFilter,
+            "-resize", geometry,
+            "-colorspace", config.imageOutputColorSpace
+        ]
+    }
+
     private func aipixResizeArguments(
         source: URL,
         resizeHeight: Int,
@@ -13,10 +29,10 @@ extension ConverterTool {
     ) -> [String] {
         var args = [
             source.path,
-            "-auto-orient",
-            "-colorspace", colorSpace,
-            "-filter", filter,
-            "-resize", "x\(resizeHeight)",
+            "-auto-orient"
+        ]
+        args += resampleArguments("x\(resizeHeight)")
+        args += [
             "-gravity", "center",
             "-background", "black",
             "-extent", "\(width)x\(height)"
@@ -104,13 +120,16 @@ extension ConverterTool {
         }
     }
 
-    func aipixFile(_ source: URL) throws -> AIPixOutputs {
+    // `deliveryPrefix` names outputs after the release rather than after the image file, so a
+    // full run's deliverables all share the audio stem. Image-only actions leave it nil and
+    // keep deriving names from their own source.
+    func aipixFile(_ source: URL, deliveryPrefix: String? = nil) throws -> AIPixOutputs {
         try preflightPNGInput(source)
         guard let dimensions = try imageDimensions(source) else {
             throw AppError("Unable to read dimensions: \(source.path)")
         }
 
-        let prefix = imagePrefix(from: source.stem)
+        let prefix = deliveryPrefix ?? imagePrefix(from: source.stem)
         let targets: [(label: String, width: Int, height: Int)] = [
             ("8K", config.image8KWidth, config.image8KHeight),
             ("4K", config.image4KWidth, config.image4KHeight)
@@ -165,10 +184,10 @@ extension ConverterTool {
         return AIPixOutputs(eightK: eightK, fourK: fourK)
     }
 
-    func squarePNGFrom8K(_ source: URL, size: Int, label: String) throws -> URL {
+    func squarePNGFrom8K(_ source: URL, size: Int, label: String, deliveryPrefix: String? = nil) throws -> URL {
         try preflightPNGInput(source)
-        let base = source.stem
-        let outputName = replacingTrailingSuffix(in: base, suffix: "_8K", replacement: "_\(label)")
+        let outputName = deliveryPrefix.map { "\($0)_\(label)" }
+            ?? replacingTrailingSuffix(in: source.stem, suffix: "_8K", replacement: "_\(label)")
         let output = cli.outDir.appendingPathComponent(outputName).appendingPathExtension("png")
         if canReuseOutput(output, verifier: { try verifyImageOutput(output, width: size, height: size, format: "PNG") }) {
             logger.info("Skip existing \(label) PNG: \(output.basename)")
@@ -178,9 +197,8 @@ extension ConverterTool {
         do {
             _ = try runner.run("magick", [
                 source.path,
-                "-auto-orient",
-                "-colorspace", config.imageOutputColorSpace,
-                "-resize", "\(size)x\(size)^",
+                "-auto-orient"
+            ] + resampleArguments("\(size)x\(size)^") + [
                 "-gravity", "center",
                 "-extent", "\(size)x\(size)",
                 "-strip",
@@ -197,7 +215,7 @@ extension ConverterTool {
         }
     }
 
-    func fourKPNGFrom8K(_ source: URL) throws -> URL {
+    func fourKPNGFrom8K(_ source: URL, deliveryPrefix: String? = nil) throws -> URL {
         try preflightPNGInput(source)
         guard let dimensions = try imageDimensions(source) else {
             throw AppError("Unable to read dimensions: \(source.path)")
@@ -206,7 +224,8 @@ extension ConverterTool {
             throw AppError("Skipping \(source.basename): expected \(config.image8KWidth)x\(config.image8KHeight), got \(dimensions.0)x\(dimensions.1)")
         }
 
-        let outputName = replacingTrailingSuffix(in: source.stem, suffix: "_8K", replacement: "_4K")
+        let outputName = deliveryPrefix.map { "\($0)_4K" }
+            ?? replacingTrailingSuffix(in: source.stem, suffix: "_8K", replacement: "_4K")
         let output = cli.outDir.appendingPathComponent(outputName).appendingPathExtension("png")
         if canReuseOutput(output, verifier: { try verifyImageOutput(output, width: config.image4KWidth, height: config.image4KHeight, format: "PNG") }) {
             logger.info("Skip existing 4K PNG: \(output.basename)")
@@ -237,7 +256,7 @@ extension ConverterTool {
         }
     }
 
-    func jpegExtentFromPNG(_ source: URL, requiredWidth: Int, requiredHeight: Int, suffix: String, targetBytes: Int) throws -> URL {
+    func jpegExtentFromPNG(_ source: URL, requiredWidth: Int, requiredHeight: Int, suffix: String, targetBytes: Int, outputStem: String? = nil) throws -> URL {
         try preflightPNGInput(source)
         guard let dimensions = try imageDimensions(source) else {
             throw AppError("Unable to read dimensions: \(source.path)")
@@ -246,7 +265,7 @@ extension ConverterTool {
             throw AppError("Skipping \(source.basename): expected \(requiredWidth)x\(requiredHeight), got \(dimensions.0)x\(dimensions.1)")
         }
 
-        let output = cli.outDir.appendingPathComponent("\(source.stem)_\(suffix)").appendingPathExtension("jpg")
+        let output = cli.outDir.appendingPathComponent(outputStem.map { "\($0)_\(suffix)" } ?? "\(source.stem)_\(suffix)").appendingPathExtension("jpg")
         if canReuseOutput(output, verifier: { try verifyImageOutput(output, width: requiredWidth, height: requiredHeight, format: "JPEG", maxBytes: targetBytes) }) {
             logger.info("Skip existing \(suffix) JPG: \(output.basename)")
             return output
@@ -274,7 +293,73 @@ extension ConverterTool {
         }
     }
 
-    func nftFrom8K(_ source: URL) throws -> NFTOutputs {
+    // Still frames matching exactly what each portrait short shows, so the framing can be
+    // reviewed or reused as artwork without pulling a frame out of the video. The geometry
+    // mirrors the render filters: `.fit` resizes inside the frame and pads with black,
+    // `.centerCut` covers the frame (`^`) and trims the overflow from the centre.
+    struct PortraitShortStills: Sendable {
+        let png: URL
+        let jpg1MB: URL
+        let jpg2MB: URL
+        var all: [URL] { [png, jpg1MB, jpg2MB] }
+    }
+
+    @discardableResult
+    func portraitShortStills(from source: URL, mode: ShortFillMode, prefix: String) throws -> PortraitShortStills {
+        try preflightPNGInput(source)
+        let width = config.shortMP4ScaleW
+        let height = config.shortMP4ScaleH
+        // Labelled by framing, then the standard 8K image suffixes, so the stills sit beside
+        // the other 8K deliverables: <prefix>_Short_8K.png / <prefix>_Short_CenterCut_8K.png.
+        let label = mode == .centerCut ? "Short_CenterCut" : "Short"
+        let stem = "\(prefix)_\(label)_8K"
+
+        let png = cli.outDir.appendingPathComponent(stem).appendingPathExtension("png")
+        if canReuseOutput(png, verifier: { try verifyImageOutput(png, width: width, height: height, format: "PNG") }) {
+            logger.info("Skip existing portrait still: \(png.basename)")
+        } else {
+            let temp = try makeTemp(in: cli.outDir, stem: stem, ext: ".png")
+            do {
+                var arguments = [
+                    source.path,
+                    "-auto-orient"
+                ]
+                switch mode {
+                case .fit:
+                    arguments += resampleArguments("\(width)x\(height)") + ["-background", "black"]
+                    // The fitted source is raw artwork scaled once, so it takes the same
+                    // sharpening the 8K master gets. The centre cut is derived from that
+                    // already-sharpened master and must not be sharpened twice.
+                    let sharpSigma = max(0.0, (config.imageAIPixSharpness - 1.0) * 2.0)
+                    if sharpSigma > 0 {
+                        arguments += ["-sharpen", ffmpegArg("0x%.3f", sharpSigma)]
+                    }
+                case .centerCut:
+                    arguments += resampleArguments("\(width)x\(height)^")
+                }
+                arguments += [
+                    "-gravity", "center",
+                    "-extent", "\(width)x\(height)",
+                    "-define", "png:compression-level=\(config.imageAIPixPNGCompressionLevel)",
+                    "-strip",
+                    temp.path
+                ]
+                _ = try runner.run("magick", arguments)
+                try verifyImageOutput(temp, width: width, height: height, format: "PNG")
+                try publishTemp(temp, to: png)
+                logger.info("Created portrait still: \(png.basename)")
+            } catch {
+                discardTempFile(temp)
+                throw error
+            }
+        }
+
+        let oneMB = try jpegExtentFromPNG(png, requiredWidth: width, requiredHeight: height, suffix: "1MB", targetBytes: config.image8KJPG1MBTargetBytes)
+        let twoMB = try jpegExtentFromPNG(png, requiredWidth: width, requiredHeight: height, suffix: "2MB", targetBytes: config.image8KJPG2MBTargetBytes)
+        return PortraitShortStills(png: png, jpg1MB: oneMB, jpg2MB: twoMB)
+    }
+
+    func nftFrom8K(_ source: URL, deliveryPrefix: String? = nil) throws -> NFTOutputs {
         try preflightPNGInput(source)
         guard let dimensions = try imageDimensions(source) else {
             throw AppError("Unable to read dimensions: \(source.path)")
@@ -283,7 +368,7 @@ extension ConverterTool {
             throw AppError("Skipping \(source.basename): expected \(config.image8KWidth)x\(config.image8KHeight), got \(dimensions.0)x\(dimensions.1)")
         }
 
-        let prefix = imagePrefix(from: replacingTrailingSuffix(in: source.stem, suffix: "_8K", replacement: ""))
+        let prefix = deliveryPrefix ?? imagePrefix(from: replacingTrailingSuffix(in: source.stem, suffix: "_8K", replacement: ""))
 
         let nft8K = cli.outDir.appendingPathComponent("\(prefix)_NFT8K").appendingPathExtension("png")
         let nft3K = cli.outDir.appendingPathComponent("\(prefix)_NFT3K").appendingPathExtension("png")
@@ -313,9 +398,9 @@ extension ConverterTool {
                 temp8K.path
             ])
             try verifyImageOutput(temp8K, width: config.image8KWidth, height: config.image8KWidth, format: "PNG")
-            _ = try runner.run("magick", [temp8K.path, "-colorspace", config.imageOutputColorSpace, "-resize", "\(config.image3KSize)x\(config.image3KSize)!", "-strip", temp3K.path])
+            _ = try runner.run("magick", [temp8K.path] + resampleArguments("\(config.image3KSize)x\(config.image3KSize)!") + ["-strip", temp3K.path])
             try verifyImageOutput(temp3K, width: config.image3KSize, height: config.image3KSize, format: "PNG")
-            _ = try runner.run("magick", [temp8K.path, "-colorspace", config.imageOutputColorSpace, "-resize", "\(config.image2KSize)x\(config.image2KSize)!", "-strip", temp2K.path])
+            _ = try runner.run("magick", [temp8K.path] + resampleArguments("\(config.image2KSize)x\(config.image2KSize)!") + ["-strip", temp2K.path])
             try verifyImageOutput(temp2K, width: config.image2KSize, height: config.image2KSize, format: "PNG")
             try publishTemp(temp8K, to: nft8K)
             try publishTemp(temp3K, to: nft3K)

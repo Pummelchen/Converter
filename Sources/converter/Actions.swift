@@ -63,7 +63,15 @@ extension ConverterTool {
     func fullRunImageBaseName(_ stem: String) -> String {
         var current = stem
         while true {
-            let stripped = stripTrailingDerivedImageSuffix(from: current)
+            var stripped = stripTrailingDerivedImageSuffix(from: current)
+            // Portrait stills carry an extra framing marker between the prefix and _8K.
+            for marker in ["_Short_CenterCut", "_Short"] where stripped.hasSuffix(marker) {
+                let trimmed = String(stripped.dropLast(marker.count))
+                if !trimmed.isEmpty {
+                    stripped = trimmed
+                }
+                break
+            }
             if stripped == current {
                 return current
             }
@@ -135,7 +143,9 @@ extension ConverterTool {
     }
 
     private func runImageBatch(spec: ImageBatchSpec) throws {
-        let files = try files(in: cli.srcDir) { $0.pathExtension.lowercasedASCII == "png" && $0.stem.hasSuffix(spec.stemSuffix) }
+        let files = try files(in: cli.srcDir) {
+            $0.pathExtension.lowercasedASCII == "png" && $0.stem.hasSuffix(spec.stemSuffix) && !isPortraitShortStill($0)
+        }
         _ = try processBatch(files: files, emptyMessage: "No *\(spec.stemSuffix).png files found in '\(cli.srcDir.path)'.", failWhenEmpty: false) { file in
             self.logger.info("\(spec.logPrefix): \(file.basename)")
             return try spec.operation(file)
@@ -184,12 +194,59 @@ extension ConverterTool {
         }
     }
 
-    func resolveFullImage() throws -> URL {
-        let candidates = try rankedFullRunImageCandidates()
-        guard candidates.count == 1, let source = candidates.first else {
-            throw AppError("Full pipeline expects either Horizontal_8K.png for direct render or exactly one source image (.png/.jpg/.jpeg) in '\(cli.srcDir.path)'.")
+    // Deliverables are named after the release, so on a rerun they sit beside the artwork
+    // under a different base name. They must never be mistaken for a second source image.
+    func isFullRunImageDeliverable(_ file: URL, deliveryPrefix: String) -> Bool {
+        let stem = file.stem
+        return stem != deliveryPrefix && fullRunImageBaseName(stem) == deliveryPrefix
+    }
+
+    func resolveFullImage(deliveryPrefix: String? = nil) throws -> URL {
+        try resolveFullRunSourceImages(deliveryPrefix: deliveryPrefix).master
+    }
+
+    // A full run takes one landscape master — whatever its size, it is upscaled to 8K — and
+    // optionally one portrait image used for the fitted shorts. They are told apart by
+    // orientation rather than by filename, so no particular naming is required.
+    func resolveFullRunSourceImages(deliveryPrefix: String? = nil) throws -> (master: URL, portrait: URL?) {
+        var candidates = try files(in: cli.srcDir, matchingExtensions: ["png", "jpg", "jpeg"])
+            .filter { !isNamedFullRunImage($0) }
+        if let deliveryPrefix {
+            let sources = candidates.filter { !isFullRunImageDeliverable($0, deliveryPrefix: deliveryPrefix) }
+            if !sources.isEmpty || candidates.isEmpty {
+                candidates = sources
+            }
         }
-        return source
+
+        var masters: [URL] = []
+        var portraits: [URL] = []
+        for candidate in candidates {
+            guard let dimensions = try imageDimensions(candidate) else {
+                throw AppError("Unable to read dimensions: \(candidate.path)")
+            }
+            if dimensions.1 > dimensions.0 {
+                portraits.append(candidate)
+            } else {
+                masters.append(candidate)
+            }
+        }
+
+        guard portraits.count <= 1 else {
+            let names = portraits.map(\.basename).sorted().joined(separator: ", ")
+            throw AppError("Full pipeline accepts at most one portrait source image for the shorts; found \(portraits.count) in '\(cli.srcDir.path)' (\(names)).")
+        }
+
+        // A rerun can still see an older derived family beside the master; collapse it.
+        let rankedMasters = rankedFamily(
+            masters,
+            groupKey: { self.fullRunImageBaseName($0.stem) },
+            rank: { self.fullRunImageRank($0) },
+            warnMessage: "Full pipeline found multiple same-stem images; auto-selecting "
+        )
+        guard rankedMasters.count == 1, let master = rankedMasters.first else {
+            throw AppError("Full pipeline expects either Horizontal_8K.png for direct render or exactly one landscape source image (.png/.jpg/.jpeg) in '\(cli.srcDir.path)'.")
+        }
+        return (master, portraits.first)
     }
 
     func existingNFT8KImage() throws -> URL? {
@@ -222,6 +279,7 @@ extension ConverterTool {
             $0.pathExtension.lowercasedASCII == "png"
                 && $0.stem.hasSuffix("_8K")
                 && !isNamedFullRunImage($0)
+                && !isPortraitShortStill($0)
         }
         if existing8K.count > 1 {
             throw AppError("Expected at most one *_8K.png in '\(cli.srcDir.path)' for short rendering.")
@@ -297,7 +355,7 @@ extension ConverterTool {
         return audio
     }
 
-    func fullRunImageArtifacts() async throws -> FullRunImageArtifacts {
+    func fullRunImageArtifacts(deliveryPrefix: String) async throws -> FullRunImageArtifacts {
         let horizontal = try namedFullRunImage("Horizontal_8K.png")
         let vertical = try namedFullRunImage("Vertical_8K.png")
 
@@ -310,7 +368,7 @@ extension ConverterTool {
             } else {
                 logger.info("Full step: create NFT8K PNG for short MP4")
             }
-            let generated = try await fullImagePipelineFromDirect8K(horizontal)
+            let generated = try await fullImagePipelineFromDirect8K(horizontal, deliveryPrefix: deliveryPrefix)
             let shortImage = vertical ?? generated.nft8K
             return FullRunImageArtifacts(mainVideoImage: horizontal, shortVideoImage: shortImage)
         }
@@ -320,12 +378,20 @@ extension ConverterTool {
             logger.info("Full step: use Vertical_8K.png for short MP4")
         }
 
-        let sourceImage = try resolveFullImage()
-        let generated = try await fullImagePipeline(sourceImage: sourceImage)
-        return FullRunImageArtifacts(mainVideoImage: generated.eightK, shortVideoImage: vertical ?? generated.nft8K)
+        let sources = try resolveFullRunSourceImages(deliveryPrefix: deliveryPrefix)
+        // A discovered portrait needs no particular size: the fitted short scales it into the
+        // frame. Only the explicitly named Vertical_8K.png is held to exact dimensions.
+        if vertical == nil, let portrait = sources.portrait {
+            logger.info("Full step: use portrait source for fitted shorts: \(portrait.basename)")
+        }
+        let generated = try await fullImagePipeline(sourceImage: sources.master, deliveryPrefix: deliveryPrefix)
+        return FullRunImageArtifacts(
+            mainVideoImage: generated.eightK,
+            shortVideoImage: vertical ?? sources.portrait ?? generated.nft8K
+        )
     }
 
-    func fullImagePipeline(sourceImage: URL) async throws -> ImageArtifacts {
+    func fullImagePipeline(sourceImage: URL, deliveryPrefix: String? = nil) async throws -> ImageArtifacts {
         let sourcePNG: URL
         let ext = sourceImage.pathExtension.lowercasedASCII
         if ext == "jpg" || ext == "jpeg" {
@@ -336,7 +402,7 @@ extension ConverterTool {
         }
 
         logger.info("Full step: PNG variants")
-        let variants = try await withImagePermit { try self.aipixFile(sourcePNG) }
+        let variants = try await withImagePermit { try self.aipixFile(sourcePNG, deliveryPrefix: deliveryPrefix) }
 
         async let nftTask: NFTOutputs = withImagePermit {
             self.logger.info("Full step: NFT assets")
@@ -372,27 +438,27 @@ extension ConverterTool {
         return ImageArtifacts(eightK: variants.eightK, fourK: variants.fourK, threeK: threeK, twoK: twoK, nft8K: nft.nft8K)
     }
 
-    func fullImagePipelineFromDirect8K(_ sourcePNG: URL) async throws -> ImageArtifacts {
+    func fullImagePipelineFromDirect8K(_ sourcePNG: URL, deliveryPrefix: String? = nil) async throws -> ImageArtifacts {
         logger.info("Full step: image deliverables from \(sourcePNG.basename)")
 
         async let fourKTask: URL = withImagePermit {
             self.logger.info("Full step: 4K PNG")
-            return try self.fourKPNGFrom8K(sourcePNG)
+            return try self.fourKPNGFrom8K(sourcePNG, deliveryPrefix: deliveryPrefix)
         }
 
         async let nftTask: NFTOutputs = withImagePermit {
             self.logger.info("Full step: NFT assets")
-            return try self.nftFrom8K(sourcePNG)
+            return try self.nftFrom8K(sourcePNG, deliveryPrefix: deliveryPrefix)
         }
 
         async let twoKTask: URL = withImagePermit {
             self.logger.info("Full step: 2K PNG")
-            return try self.squarePNGFrom8K(sourcePNG, size: self.config.image2KSize, label: "2K")
+            return try self.squarePNGFrom8K(sourcePNG, size: self.config.image2KSize, label: "2K", deliveryPrefix: deliveryPrefix)
         }
 
         async let threeKTask: URL = withImagePermit {
             self.logger.info("Full step: 3K PNG")
-            let threeK = try self.squarePNGFrom8K(sourcePNG, size: self.config.image3KSize, label: "3K")
+            let threeK = try self.squarePNGFrom8K(sourcePNG, size: self.config.image3KSize, label: "3K", deliveryPrefix: deliveryPrefix)
             self.logger.info("Full step: 3K JPG deliverables")
             _ = try self.jpegExtentFromPNG(threeK, requiredWidth: self.config.image3KSize, requiredHeight: self.config.image3KSize, suffix: "1MB", targetBytes: self.config.image3KJPG1MBTargetBytes)
             _ = try self.jpegExtentFromPNG(threeK, requiredWidth: self.config.image3KSize, requiredHeight: self.config.image3KSize, suffix: "5MB", targetBytes: self.config.image3KJPG5MBTargetBytes)
@@ -401,9 +467,10 @@ extension ConverterTool {
 
         async let eightKJPGTask: Void = withImagePermit {
             self.logger.info("Full step: 8K JPG deliverables")
-            _ = try self.jpegExtentFromPNG(sourcePNG, requiredWidth: self.config.image8KWidth, requiredHeight: self.config.image8KHeight, suffix: "1MB", targetBytes: self.config.image8KJPG1MBTargetBytes)
-            _ = try self.jpegExtentFromPNG(sourcePNG, requiredWidth: self.config.image8KWidth, requiredHeight: self.config.image8KHeight, suffix: "2MB", targetBytes: self.config.image8KJPG2MBTargetBytes)
-            _ = try self.jpegExtentFromPNG(sourcePNG, requiredWidth: self.config.image8KWidth, requiredHeight: self.config.image8KHeight, suffix: "20MB", targetBytes: self.config.image8KJPG20MBTargetBytes)
+            let eightKStem = deliveryPrefix.map { "\($0)_8K" }
+            _ = try self.jpegExtentFromPNG(sourcePNG, requiredWidth: self.config.image8KWidth, requiredHeight: self.config.image8KHeight, suffix: "1MB", targetBytes: self.config.image8KJPG1MBTargetBytes, outputStem: eightKStem)
+            _ = try self.jpegExtentFromPNG(sourcePNG, requiredWidth: self.config.image8KWidth, requiredHeight: self.config.image8KHeight, suffix: "2MB", targetBytes: self.config.image8KJPG2MBTargetBytes, outputStem: eightKStem)
+            _ = try self.jpegExtentFromPNG(sourcePNG, requiredWidth: self.config.image8KWidth, requiredHeight: self.config.image8KHeight, suffix: "20MB", targetBytes: self.config.image8KJPG20MBTargetBytes, outputStem: eightKStem)
         }
 
         let fourK = try await fourKTask
@@ -490,7 +557,8 @@ extension ConverterTool {
     }
 
     func runFullProductionPipeline(sourceAudio audio: URL) async throws {
-        async let imageArtifactsTask = fullRunImageArtifacts()
+        // Every generated file — images included — carries the release name.
+        async let imageArtifactsTask = fullRunImageArtifacts(deliveryPrefix: audio.stem)
         async let audioArtifactsTask = fullAudioPreparation(sourceAudio: audio)
 
         let imageArtifacts = try await imageArtifactsTask
@@ -505,13 +573,28 @@ extension ConverterTool {
             )
         }
         if let shortImage = imageArtifacts.shortVideoImage {
-            logger.info("Full step: PNG -> Short: \(shortImage.basename)")
+            // Ship the two portrait framings as stills as well, so the artwork is available
+            // without extracting a frame from the rendered video.
+            // Build both portrait framings as full 4320x7680 assets first, then render every
+            // short from them. Any upscale therefore happens once, through the image pipeline's
+            // high-quality scaler, instead of separately inside each ffmpeg render — and the
+            // still and its video are guaranteed to show the identical frame.
+            logger.info("Full step: portrait short stills")
+            let stillPrefix = audio.stem
+            let fittedStills = try await withImagePermit {
+                try self.portraitShortStills(from: shortImage, mode: .fit, prefix: stillPrefix)
+            }
+            let centerCutStills = try await withImagePermit {
+                try self.portraitShortStills(from: imageArtifacts.mainVideoImage, mode: .centerCut, prefix: stillPrefix)
+            }
+
+            logger.info("Full step: PNG -> Short: \(fittedStills.png.basename)")
             _ = try await withVideoPermit {
                 try self.renderPortraitShortMP4Variants(
-                    imageFile: shortImage,
+                    imageFile: fittedStills.png,
                     audioFile: audioArtifacts.m4a,
                     audioQCPolicy: nil,
-                    centerCutImage: imageArtifacts.mainVideoImage
+                    centerCutImage: centerCutStills.png
                 )
             }
         } else {
@@ -586,7 +669,7 @@ extension ConverterTool {
     }
 
     func stepPNGToNFT() throws {
-        let files = try files(in: cli.srcDir) { $0.pathExtension.lowercasedASCII == "png" && $0.stem.hasSuffix("_8K") }
+        let files = try files(in: cli.srcDir) { $0.pathExtension.lowercasedASCII == "png" && $0.stem.hasSuffix("_8K") && !isPortraitShortStill($0) }
         _ = try processBatch(files: files, emptyMessage: "No *_8K.png files found in '\(cli.srcDir.path)'.", failWhenEmpty: false) { file in
             self.logger.info("NFT assets: \(file.basename)")
             return try self.nftFrom8K(file)
@@ -653,7 +736,7 @@ extension ConverterTool {
 
     func stepNFTToShort() throws {
         let images = try files(in: cli.srcDir, matchingExtensions: ["png", "jpg", "jpeg"])
-        let existing8K = try files(in: cli.srcDir) { $0.pathExtension.lowercasedASCII == "png" && $0.stem.hasSuffix("_8K") }
+        let existing8K = try files(in: cli.srcDir) { $0.pathExtension.lowercasedASCII == "png" && $0.stem.hasSuffix("_8K") && !isPortraitShortStill($0) }
         if existing8K.count + images.count == 0 {
             throw AppError("Expected exactly one source image (.png/.jpg/.jpeg) or one *_8K.png in '\(cli.srcDir.path)'.")
         }
@@ -690,6 +773,15 @@ extension ConverterTool {
         )
     }
 
+    // Portrait short stills are named *_Short_8K / *_Short_CenterCut_8K, so they end in _8K
+    // like the landscape master — but they are 9:16 renders of the short framing, not 16:9
+    // masters. Every _8K discovery path must skip them, or a portrait still gets fed into a
+    // landscape pipeline and fails its dimension check.
+    func isPortraitShortStill(_ file: URL) -> Bool {
+        let stem = file.stem
+        return stem.hasSuffix("_Short_8K") || stem.hasSuffix("_Short_CenterCut_8K")
+    }
+
     // The centre cut is taken from the widest master available, falling back to the image the
     // letterboxed short already uses when there is no separate landscape 8K.
     func centerCutSourceImage(fallback: URL) throws -> URL {
@@ -700,6 +792,7 @@ extension ConverterTool {
             $0.pathExtension.lowercasedASCII == "png"
                 && $0.stem.hasSuffix("_8K")
                 && !isNamedFullRunImage($0)
+                && !isPortraitShortStill($0)
         }
         if existing8K.count == 1, let image = existing8K.first {
             return image
@@ -1091,7 +1184,7 @@ extension ConverterTool {
     }
 
     func stepM4AToMP4() throws {
-        let images = try files(in: cli.srcDir) { $0.pathExtension.lowercasedASCII == "png" && $0.stem.hasSuffix("_8K") }
+        let images = try files(in: cli.srcDir) { $0.pathExtension.lowercasedASCII == "png" && $0.stem.hasSuffix("_8K") && !isPortraitShortStill($0) }
         guard images.count == 1, let image = images.first else {
             throw AppError("Expected exactly one *_8K.png in '\(cli.srcDir.path)'.")
         }

@@ -9,7 +9,7 @@ git clone https://github.com/Pummelchen/Converter.git
 cd Converter
 brew install ffmpeg imagemagick        # runtime media tools
 swift build --package-path Sources     # build
-swift test --package-path Sources      # run all tests (151 tests, ~7.5 min)
+swift test --package-path Sources      # run all tests (154 tests, ~7.5 min)
 ```
 
 Requires Swift tools 6.3.3+ (Swift language mode 6) and macOS 15+, matching the `.macOS(.v15)` platform in `Sources/Package.swift`. See the [wiki](https://github.com/Pummelchen/Converter/wiki) for command reference and configuration details.

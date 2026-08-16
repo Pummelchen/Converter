@@ -80,6 +80,49 @@ final class PipelineIntegrationTests: XCTestCase {
         XCTAssertEqual(result.exitCode, 0)
     }
 
+    // The stills must show exactly what the shorts show: the fitted one pads with black, the
+    // centre cut fills the frame. Verified on pixels, not on the command that produced them.
+    func testPortraitShortStillsMatchTheirRenderFraming() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["magick"])
+
+        let landscape = try workspace.createImage(name: "art_8K", ext: "png", width: 320, height: 180)
+        let square = try workspace.createImage(name: "art_NFT8K", ext: "png", width: 320, height: 320)
+        let tool = try workspace.makeTool(arguments: ["-full"])
+        defer { tool.cleanupTemps() }
+        try tool.initializeForExecution()
+
+        let fitted = try tool.portraitShortStills(from: square, mode: .fit, prefix: "art")
+        let centerCut = try tool.portraitShortStills(from: landscape, mode: .centerCut, prefix: "art")
+
+        XCTAssertEqual(fitted.all.map(\.lastPathComponent), ["art_Short_8K.png", "art_Short_8K_1MB.jpg", "art_Short_8K_2MB.jpg"])
+        XCTAssertEqual(
+            centerCut.all.map(\.lastPathComponent),
+            ["art_Short_CenterCut_8K.png", "art_Short_CenterCut_8K_1MB.jpg", "art_Short_CenterCut_8K_2MB.jpg"]
+        )
+
+        for file in fitted.all + centerCut.all {
+            XCTAssertTrue(FileManager.default.fileExists(atPath: file.path), "missing \(file.lastPathComponent)")
+            let dimensions = try XCTUnwrap(try tool.imageDimensions(file))
+            XCTAssertEqual(dimensions.0, tool.config.shortMP4ScaleW, "width of \(file.lastPathComponent)")
+            XCTAssertEqual(dimensions.1, tool.config.shortMP4ScaleH, "height of \(file.lastPathComponent)")
+        }
+
+        // A square fitted into a 9:16 frame must leave black bands; a centre cut must not.
+        func topStripMaximum(_ file: URL) throws -> Double {
+            let strip = max(1, tool.config.shortMP4ScaleH / 10)
+            let result = try tool.runner.run("magick", [
+                file.path, "-alpha", "off",
+                "-crop", "\(tool.config.shortMP4ScaleW)x\(strip)+0+0", "+repage",
+                "-format", "%[fx:maxima]", "info:"
+            ])
+            return Double(result.stdout.trimmed) ?? -1
+        }
+
+        XCTAssertEqual(try topStripMaximum(fitted.png), 0, accuracy: 0.0001, "fitted still should be letterboxed")
+        XCTAssertGreaterThan(try topStripMaximum(centerCut.png), 0, "centre cut still must fill the frame")
+    }
+
     func testCleanupTempsRemovesRunScopedHiddenTempFiles() throws {
         let workspace = try IntegrationWorkspace()
         let tool = try workspace.makeTool(arguments: ["-full"])
@@ -1512,7 +1555,8 @@ final class PipelineIntegrationTests: XCTestCase {
         let allOutputs = try FileManager.default.contentsOfDirectory(at: workspace.output, includingPropertiesForKeys: [.isRegularFileKey], options: [])
         XCTAssertFalse(allOutputs.contains { $0.lastPathComponent.contains(tool.runToken) }, "Run-scoped temp files leaked into Output.")
 
-        let prefix = "art"
+        // Every generated file — images included — carries the audio stem, not the image name.
+        let prefix = "track"
         let base = "track"
         let expectedFiles = [
             "\(prefix)_8K.png",
@@ -1529,12 +1573,25 @@ final class PipelineIntegrationTests: XCTestCase {
             "\(base)_BW64.wav",
             "\(base)_RF64.flac",
             "\(base)_8K.mp4",
-            "\(base)_8K_Short.mp4"
+            "\(base)_8K_Short.mp4",
+            // Portrait stills: the two short framings as artwork, PNG plus sized JPGs.
+            "\(prefix)_Short_8K.png",
+            "\(prefix)_Short_8K_1MB.jpg",
+            "\(prefix)_Short_8K_2MB.jpg",
+            "\(prefix)_Short_CenterCut_8K.png",
+            "\(prefix)_Short_CenterCut_8K_1MB.jpg",
+            "\(prefix)_Short_CenterCut_8K_2MB.jpg"
         ]
 
         for name in expectedFiles {
             XCTAssertTrue(FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent(name).path), "Missing full-run output \(name)")
         }
+        // The source artwork keeps its own name; only generated files are renamed.
+        XCTAssertTrue(FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("art.png").path))
+        XCTAssertFalse(
+            FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("art_8K.png").path),
+            "image deliverables must be named after the release, not the artwork file"
+        )
 
         // Regression guard: every shipped archival deliverable must be distinct.
         XCTAssertFalse(
@@ -1641,18 +1698,19 @@ final class PipelineIntegrationTests: XCTestCase {
 
         XCTAssertTrue(FileManager.default.fileExists(atPath: mainOutput.path))
         XCTAssertTrue(FileManager.default.fileExists(atPath: shortOutput.path))
+        // Deliverables are named after the release even when the inputs are the named 8K PNGs.
         let expectedImageFiles = [
-            "Horizontal_4K.png",
-            "Horizontal_3K.png",
-            "Horizontal_2K.png",
-            "Horizontal_NFT8K.png",
-            "Horizontal_NFT3K.png",
-            "Horizontal_NFT2K.png",
-            "Horizontal_8K_1MB.jpg",
-            "Horizontal_8K_2MB.jpg",
-            "Horizontal_8K_20MB.jpg",
-            "Horizontal_3K_1MB.jpg",
-            "Horizontal_3K_5MB.jpg"
+            "\(base)_4K.png",
+            "\(base)_3K.png",
+            "\(base)_2K.png",
+            "\(base)_NFT8K.png",
+            "\(base)_NFT3K.png",
+            "\(base)_NFT2K.png",
+            "\(base)_8K_1MB.jpg",
+            "\(base)_8K_2MB.jpg",
+            "\(base)_8K_20MB.jpg",
+            "\(base)_3K_1MB.jpg",
+            "\(base)_3K_5MB.jpg"
         ]
         for name in expectedImageFiles {
             XCTAssertTrue(
@@ -1661,7 +1719,7 @@ final class PipelineIntegrationTests: XCTestCase {
             )
         }
         XCTAssertFalse(
-            FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("Horizontal_8K_8K.png").path),
+            FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("Horizontal_4K.png").path),
             "Direct Horizontal_8K.png input should not be reprocessed as a generic source image."
         )
         XCTAssertFalse(
