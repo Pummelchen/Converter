@@ -164,6 +164,10 @@ extension ConverterTool {
                 failures.append("\(encoder): \(error.localizedDescription)")
                 logger.warn("\(encode.label) encoder failed (\(encoder)): \(error.localizedDescription)")
                 discardTempFile(temp)
+                if (error as? AppError)?.isEncoderIndependent == true {
+                    logger.warn("\(encode.label): skipping remaining encoders — this failure is not encoder-related.")
+                    break
+                }
             }
         }
         // Report every rung. Reporting only the last one hides the first failure, which is
@@ -306,7 +310,7 @@ extension ConverterTool {
             pixelFormat: config.shortMP4PixelFormat,
             fallbackVerifyCodec: config.shortMP4VerifyCodec,
             audioSampleRate: config.shortMP4AudioSampleRate,
-            audioQCPolicy: try audioQCPolicy.map { try loudnessPreservingQCPolicy($0, source: input) },
+            audioQCPolicy: try audioQCPolicy.map { try loudnessPreservingQCPolicy($0, source: input, limitDuration: shortDuration) },
             loudnessSource: input,
             durationCheck: { try self.verifyShortMP4Duration($0, source: input) }
         )
@@ -383,7 +387,7 @@ extension ConverterTool {
             pixelFormat: config.shortMP4PixelFormat,
             fallbackVerifyCodec: config.shortMP4VerifyCodec,
             audioSampleRate: config.shortMP4AudioSampleRate,
-            audioQCPolicy: try audioQCPolicy.map { try loudnessPreservingQCPolicy($0, source: audioFile) },
+            audioQCPolicy: try audioQCPolicy.map { try loudnessPreservingQCPolicy($0, source: audioFile, limitDuration: shortDuration) },
             loudnessSource: audioFile,
             durationCheck: {
                 try self.verifyDuration($0, expectedSeconds: shortDuration, label: verificationLabel, tolerance: 0.5)

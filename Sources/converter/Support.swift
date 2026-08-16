@@ -7,17 +7,22 @@ struct AppError: LocalizedError, CustomStringConvertible, Sendable {
     let fileID: String
     let line: Int
     let underlyingDescription: String?
+    // Set when retrying the same work with a different encoder cannot possibly help, so an
+    // encoder ladder stops instead of repeating an identical failure and burying the cause.
+    let isEncoderIndependent: Bool
 
     init(
         _ message: String,
         exitCode: Int32 = 1,
         underlying: (any Error)? = nil,
+        isEncoderIndependent: Bool = false,
         fileID: String = #fileID,
         line: Int = #line
     ) {
         self.message = message
         self.exitCode = exitCode
         self.underlyingDescription = underlying.map { $0.localizedDescription }
+        self.isEncoderIndependent = isEncoderIndependent
         self.fileID = fileID
         self.line = line
     }

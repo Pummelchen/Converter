@@ -13,8 +13,8 @@ extension ConverterTool {
             .filter { !isExternalArchivalAudioVariant($0) }
         return rankedFamily(
             candidates,
-            rankExtension: { ext in
-                switch ext {
+            rank: { file in
+                switch file.pathExtension.lowercasedASCII {
                 case "flac": return 0
                 case "wav": return 1
                 case "mp3": return 2
@@ -27,21 +27,22 @@ extension ConverterTool {
 
     private func rankedFamily(
         _ candidates: [URL],
-        rankExtension: (String) -> Int,
+        groupKey: (URL) -> String = { $0.stem },
+        rank: (URL) -> Int,
         warnMessage: String
     ) -> [URL] {
         guard candidates.count > 1 else {
             return candidates
         }
 
-        let grouped = Dictionary(grouping: candidates) { $0.stem }
+        let grouped = Dictionary(grouping: candidates, by: groupKey)
         guard grouped.count == 1, let family = grouped.values.first else {
             return candidates
         }
 
         let ranked = family.sorted { lhs, rhs in
-            let lhsRank = rankExtension(lhs.pathExtension.lowercasedASCII)
-            let rhsRank = rankExtension(rhs.pathExtension.lowercasedASCII)
+            let lhsRank = rank(lhs)
+            let rhsRank = rank(rhs)
             if lhsRank != rhsRank {
                 return lhsRank < rhsRank
             }
@@ -53,6 +54,46 @@ extension ConverterTool {
             return [preferred]
         }
         return candidates
+    }
+
+    // A full run writes its image deliverables beside the source it derived them from, so a
+    // rerun in the same directory sees the whole family. Collapsing that family to its most
+    // source-like member keeps -full repeatable, matching how the audio side already behaves.
+    // Two genuinely different source images still group separately and remain an error.
+    func fullRunImageBaseName(_ stem: String) -> String {
+        var current = stem
+        while true {
+            let stripped = stripTrailingDerivedImageSuffix(from: current)
+            if stripped == current {
+                return current
+            }
+            current = stripped
+        }
+    }
+
+    func fullRunImageRank(_ file: URL) -> Int {
+        let stem = file.stem
+        for suffix in ["_1MB", "_2MB", "_5MB", "_20MB"] where stem.hasSuffix(suffix) {
+            return 99
+        }
+        let derivedOrder = ["_NFT8K", "_NFT3K", "_NFT2K", "_8K", "_4K", "_3K", "_2K"]
+        for (index, suffix) in derivedOrder.enumerated() where stem.hasSuffix(suffix) {
+            // Prefer the largest usable rendition: _8K before the NFT squares and smaller sizes.
+            let preference = ["_8K": 1, "_4K": 2, "_3K": 3, "_2K": 4, "_NFT8K": 5, "_NFT3K": 6, "_NFT2K": 7]
+            return preference[suffix] ?? (index + 1)
+        }
+        return 0
+    }
+
+    func rankedFullRunImageCandidates() throws -> [URL] {
+        let candidates = try files(in: cli.srcDir, matchingExtensions: ["png", "jpg", "jpeg"])
+            .filter { !isNamedFullRunImage($0) }
+        return rankedFamily(
+            candidates,
+            groupKey: { self.fullRunImageBaseName($0.stem) },
+            rank: { self.fullRunImageRank($0) },
+            warnMessage: "Full pipeline found multiple same-stem images; auto-selecting "
+        )
     }
 
     @discardableResult
@@ -144,8 +185,7 @@ extension ConverterTool {
     }
 
     func resolveFullImage() throws -> URL {
-        let candidates = try files(in: cli.srcDir, matchingExtensions: ["png", "jpg", "jpeg"])
-            .filter { !isNamedFullRunImage($0) }
+        let candidates = try rankedFullRunImageCandidates()
         guard candidates.count == 1, let source = candidates.first else {
             throw AppError("Full pipeline expects either Horizontal_8K.png for direct render or exactly one source image (.png/.jpg/.jpeg) in '\(cli.srcDir.path)'.")
         }
@@ -236,8 +276,8 @@ extension ConverterTool {
         let candidates = try files(in: cli.srcDir) { isShortAudioCandidate($0) }
         return rankedFamily(
             candidates,
-            rankExtension: { ext in
-                switch ext {
+            rank: { file in
+                switch file.pathExtension.lowercasedASCII {
                 case "m4a": return 0
                 case "flac": return 1
                 case "wav": return 2

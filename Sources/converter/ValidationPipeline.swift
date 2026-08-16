@@ -158,39 +158,73 @@ extension ConverterTool {
         }
     }
 
-    // Renders that preserve source loudness cannot satisfy an absolute true-peak ceiling
-    // without altering the audio, and only -master and -loudness are permitted to do that.
-    // When the source already sits above the ceiling, the check becomes relative: the render
-    // must not introduce peaks the source did not already have. Everything else in the policy
-    // — DC offset, stereo imbalance, clipped samples, loudness range — still applies, and
-    // verifySourceLoudnessPreserved independently guarantees the levels match.
+    // Every ceiling in a delivery QC policy measures a property the render inherits from its
+    // source: true peak, stereo balance, DC offset, loudness range, clipping, level. On the
+    // preserve-loudness paths the render is a faithful copy, so when the source already
+    // breaches a ceiling the render must too — and only -master and -loudness are permitted
+    // to alter the audio. Holding a faithful copy to an absolute target therefore fails
+    // forever, on every encoder, for material the user deliberately mastered that way.
     //
-    // Measured on real masters this stage is transparent (source, WAV, M4A and the 8K MP4 all
-    // report the same true peak to 0.01 dB), so the allowance only covers measurement rounding.
-    func loudnessPreservingQCPolicy(_ policy: AudioQCPolicy, source: URL) throws -> AudioQCPolicy {
-        let sourceTruePeak = try audioQCResult(for: source, policy: policy).metrics.truePeakDBTP
-        guard let sourceTruePeak, sourceTruePeak.isFinite, sourceTruePeak > policy.maxTruePeakDBTP else {
+    // Each breached ceiling is rebased on what the source actually measures, which keeps the
+    // check meaningful: it still catches degradation the render introduces, which is the only
+    // thing this stage controls. verifySourceLoudnessPreserved independently guarantees the
+    // levels match. Untouched ceilings stay exactly as configured.
+    //
+    // `limitDuration` matters: a 58-second short inherits the first 58 seconds, not the whole
+    // track. Measuring the full source would compare against material the render never
+    // contains — a track whose intro is 2.09 dB wide but whose average is 0.31 dB would be
+    // judged against the average and fail.
+    //
+    // Allowances only cover measurement rounding; the pipeline itself is transparent here
+    // (source, WAV, M4A and the 8K MP4 all report the same true peak to 0.01 dB).
+    func loudnessPreservingQCPolicy(_ policy: AudioQCPolicy, source: URL, limitDuration: Double? = nil) throws -> AudioQCPolicy {
+        let metrics = try audioQCResultForComparison(source, policy: policy, limitDuration: limitDuration).metrics
+        var relaxations: [String] = []
+
+        func rebase(_ limit: Double, measured: Double?, allowance: Double, label: String, unit: String) -> Double {
+            guard let measured, measured.isFinite, measured > limit else {
+                return limit
+            }
+            relaxations.append(String(format: "%@ %.2f%@ (limit %.2f)", label, measured, unit, limit))
+            return measured + allowance
+        }
+
+        let truePeak = rebase(policy.maxTruePeakDBTP, measured: metrics.truePeakDBTP, allowance: 0.1, label: "true peak", unit: " dBTP")
+        let imbalance = rebase(policy.maxStereoImbalanceDB, measured: metrics.stereoImbalanceDB, allowance: 0.1, label: "stereo imbalance", unit: " dB")
+        let loudnessRange = rebase(policy.maxLoudnessRange, measured: metrics.loudnessRange, allowance: 0.5, label: "loudness range", unit: "")
+        let dcOffset = rebase(policy.maxDCOffset, measured: metrics.dcOffset, allowance: 0.001, label: "DC offset", unit: "")
+
+        var clippedSamples = policy.maxClippedSamples
+        if metrics.clippedSamples > clippedSamples {
+            relaxations.append("clipped samples \(metrics.clippedSamples) (limit \(clippedSamples))")
+            clippedSamples = metrics.clippedSamples
+        }
+
+        var lufsTolerance = policy.lufsTolerance
+        if let integrated = metrics.integratedLUFS, integrated.isFinite {
+            let required = abs(integrated - policy.targetLUFS) + 0.1
+            if required > lufsTolerance {
+                relaxations.append(String(format: "integrated loudness %.2f LUFS (target %.2f +/- %.2f)", integrated, policy.targetLUFS, lufsTolerance))
+                lufsTolerance = required
+            }
+        }
+
+        guard !relaxations.isEmpty else {
             return policy
         }
 
-        let relaxedCeiling = sourceTruePeak + 0.1
         logger.info(
-            String(
-                format: "Source true peak %.2f dBTP is above the %.2f dBTP ceiling; verifying the render adds no peaks beyond the source (%.2f dBTP) rather than altering the audio.",
-                sourceTruePeak,
-                policy.maxTruePeakDBTP,
-                relaxedCeiling
-            )
+            "Source already exceeds delivery QC on: \(relaxations.joined(separator: "; ")). Verifying the render does not worsen these, rather than altering the audio."
         )
         return AudioQCPolicy(
             name: "\(policy.name)-source-relative",
             targetLUFS: policy.targetLUFS,
-            lufsTolerance: policy.lufsTolerance,
-            maxTruePeakDBTP: relaxedCeiling,
-            maxLoudnessRange: policy.maxLoudnessRange,
-            maxDCOffset: policy.maxDCOffset,
-            maxStereoImbalanceDB: policy.maxStereoImbalanceDB,
-            maxClippedSamples: policy.maxClippedSamples,
+            lufsTolerance: lufsTolerance,
+            maxTruePeakDBTP: truePeak,
+            maxLoudnessRange: loudnessRange,
+            maxDCOffset: dcOffset,
+            maxStereoImbalanceDB: imbalance,
+            maxClippedSamples: clippedSamples,
             minimumAnalysisSeconds: policy.minimumAnalysisSeconds
         )
     }
@@ -198,7 +232,10 @@ extension ConverterTool {
     func verifyAudioQC(_ file: URL, policy: AudioQCPolicy) throws -> AudioQCResult {
         let result = try audioQCResult(for: file, policy: policy)
         if !result.passed {
-            throw AppError("Audio QC failed for \(file.path): \(result.issues.joined(separator: "; "))")
+            throw AppError(
+                "Audio QC failed for \(file.path): \(result.issues.joined(separator: "; "))",
+                isEncoderIndependent: true
+            )
         }
         return result
     }

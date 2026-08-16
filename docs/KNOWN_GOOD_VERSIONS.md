@@ -39,7 +39,7 @@ whole-file canonical PCM comparison, merged QC/image probes, and the shared vide
 | ImageMagick (`magick`) | 7.1.2-29 Q16-HDRI aarch64 | Homebrew formula `imagemagick` |
 
 - `swift build --package-path Sources` — success, clean under `-warnings-as-errors`
-- `swift test --package-path Sources` — 146 tests, 0 failures (~7.5 min)
+- `swift test --package-path Sources` — 149 tests, 0 failures (~7.5 min)
 
 Note: ffmpeg 9.0.1 is a major-version step up from the 8.1.2 recorded above and passes the full suite.
 
@@ -66,6 +66,30 @@ temp files. Three thresholds were mis-calibrated against real material and are n
 Fidelity confirmed across every audio deliverable — WAV, M4A, RF64 FLAC, RF64 WAV, BW64 WAV,
 main MP4 and the full-song vertical all measure −9.35 LUFS / −0.85 dBTP, identical to the
 source. MP3 reads −0.75 dBTP, the expected inter-sample rise from lossy encoding.
+
+### Second master (2026-08-16)
+
+A second production master (−9.86 LUFS, −0.75 dBTP) showed the first source-relative fix was
+too narrow in two ways, both now corrected:
+
+- **Every inherited ceiling, not just true peak.** This track failed on
+  `stereo imbalance 2.09 dB exceeds max 2.00`. Stereo balance, DC offset, loudness range,
+  clipping and level are all inherited from the source exactly like true peak, so all of them
+  are now rebased when the source already breaches them. Untouched ceilings stay as configured.
+- **Measured over the segment the render contains.** This track's imbalance is 2.09 dB across
+  its first 58 seconds but only 0.31 dB across the whole song. Measuring the full source would
+  have compared against material the short never contains and left the ceiling unrelaxed. The
+  58 s short now rebases stereo imbalance while the full-length render rebases true peak —
+  each judged against exactly its own audio.
+
+Also fixed: `-full` could not be rerun in its own output directory. The audio side already
+collapsed a derived family to its best member; the image side did not, so a rerun saw twelve
+images and failed with "expects exactly one source image". Both sides now behave the same.
+Two genuinely different source images remain an error.
+
+Fidelity on this master: source, WAV, M4A, MP3, RF64 FLAC, BW64 WAV, main MP4 and the
+full-song vertical all measure −9.86 LUFS / −0.75 dBTP. The 58 s short matches its own
+segment (−13.09 LUFS, −1.77 vs −1.76 dBTP).
 
 ### Why the release build stays CPU-generic
 

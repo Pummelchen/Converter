@@ -585,6 +585,57 @@ final class converterTests: XCTestCase {
         XCTAssertEqual(try tool.resolveFullAudio().lastPathComponent, "song.flac")
     }
 
+    // A full run writes its image deliverables next to the source, so rerunning in the same
+    // directory used to fail with "expects exactly one source image" once the derived family
+    // existed. The audio side already collapsed its own family; the image side now matches.
+    func testResolveFullImageCollapsesItsOwnDerivedOutputsOnRerun() throws {
+        let tempDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: tempDirectory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: tempDirectory) }
+
+        for name in [
+            "9_8K.png", "9_4K.png", "9_3K.png", "9_2K.png",
+            "9_NFT8K.png", "9_NFT3K.png", "9_NFT2K.png",
+            "9_8K_1MB.jpg", "9_8K_2MB.jpg", "9_8K_20MB.jpg", "9_3K_1MB.jpg", "9_3K_5MB.jpg"
+        ] {
+            FileManager.default.createFile(atPath: tempDirectory.appendingPathComponent(name).path, contents: Data("x".utf8))
+        }
+
+        let tool = try makeTool(tempDirectory: tempDirectory)
+        XCTAssertEqual(try tool.resolveFullImage().lastPathComponent, "9_8K.png")
+
+        // A bare source outranks every derived rendition.
+        FileManager.default.createFile(atPath: tempDirectory.appendingPathComponent("9.png").path, contents: Data("x".utf8))
+        XCTAssertEqual(try tool.resolveFullImage().lastPathComponent, "9.png")
+    }
+
+    func testResolveFullImageStillRejectsTwoDistinctSources() throws {
+        let tempDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: tempDirectory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: tempDirectory) }
+
+        for name in ["cover.png", "cover_8K.png", "backdrop.png"] {
+            FileManager.default.createFile(atPath: tempDirectory.appendingPathComponent(name).path, contents: Data("x".utf8))
+        }
+
+        let tool = try makeTool(tempDirectory: tempDirectory)
+        XCTAssertThrowsError(try tool.resolveFullImage()) { error in
+            XCTAssertTrue(error.localizedDescription.contains("exactly one source image"))
+        }
+    }
+
+    func testFullRunImageBaseNameStripsStackedDerivedSuffixes() throws {
+        let tempDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: tempDirectory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: tempDirectory) }
+        let tool = try makeTool(tempDirectory: tempDirectory)
+
+        XCTAssertEqual(tool.fullRunImageBaseName("9_8K_20MB"), "9")
+        XCTAssertEqual(tool.fullRunImageBaseName("9_NFT3K"), "9")
+        XCTAssertEqual(tool.fullRunImageBaseName("mix_8K_take_8K"), "mix_8K_take")
+        XCTAssertEqual(tool.fullRunImageBaseName("cover"), "cover")
+    }
+
     func testParserRejectsDeprecatedInputOverrideFlags() throws {
         let root = URL(fileURLWithPath: "/tmp/converter-test")
         XCTAssertThrowsError(

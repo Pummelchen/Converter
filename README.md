@@ -9,7 +9,7 @@ git clone https://github.com/Pummelchen/Converter.git
 cd Converter
 brew install ffmpeg imagemagick            # runtime media tools
 swift build --package-path Sources         # build
-swift test --package-path Sources          # full test suite (146 tests, ~7.5 min)
+swift test --package-path Sources          # full test suite (149 tests, ~7.5 min)
 
 ./converter -doctor                          # verify toolchain, encoders, filters, directories
 ./converter -help                            # command reference
