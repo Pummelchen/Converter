@@ -177,6 +177,61 @@ extension ConverterTool {
         throw AppError("All \(encode.label) encoders failed for \(encode.output.basename). \(detail)")
     }
 
+    // How the still image is mapped onto the portrait frame.
+    enum ShortFillMode: Sendable {
+        /// Fit the whole image inside the frame, padding the remainder with black.
+        case fit
+        /// Scale until the frame is covered, then trim the overflow from the centre, so the
+        /// middle of the artwork fills the frame edge to edge with no padding.
+        case centerCut
+
+        var outputStemSuffix: String {
+            switch self {
+            case .fit: return ""
+            case .centerCut: return "_CenterCut"
+            }
+        }
+
+        var tempStem: String {
+            switch self {
+            case .fit: return "portraitshort"
+            case .centerCut: return "portraitshortcentercut"
+            }
+        }
+
+        var label: String {
+            switch self {
+            case .fit: return "portrait short MP4"
+            case .centerCut: return "portrait short MP4 (centre cut)"
+            }
+        }
+    }
+
+    private func shortVideoFilter(mode: ShortFillMode) -> String {
+        let width = config.shortMP4ScaleW
+        let height = config.shortMP4ScaleH
+        let framing: String
+        switch mode {
+        case .fit:
+            framing =
+                "scale=w=\(width):h=\(height):force_original_aspect_ratio=decrease," +
+                "pad=\(width):\(height):(ow-iw)/2:(oh-ih)/2:color=black"
+        case .centerCut:
+            // `increase` guarantees both axes reach the target, so the centred crop never
+            // runs short and no padding is ever introduced. A centre cut usually upscales
+            // (a 7680x4320 master contributes only its middle 2430x4320), so it uses the
+            // configured high-quality scaler rather than the default.
+            framing =
+                "scale=w=\(width):h=\(height):force_original_aspect_ratio=increase:flags=\(config.videoMP4ScaleFilter)," +
+                "crop=\(width):\(height)"
+        }
+        return framing + ",fps=\(config.shortMP4FPS),format=\(config.shortMP4PixelFormat)," + colorParameterFilter()
+    }
+
+    func centerCutShortMP4Stem(_ stem: String) -> String {
+        stem.hasSuffix(ShortFillMode.centerCut.outputStemSuffix) ? stem : stem + ShortFillMode.centerCut.outputStemSuffix
+    }
+
     private func colorParameterFilter() -> String {
         "setparams=color_primaries=\(config.videoColorPrimaries):color_trc=\(config.videoColorTransfer):colorspace=\(config.videoColorSpace):range=\(ffmpegFilterRangeValue(config.videoColorRange))"
     }
@@ -360,7 +415,8 @@ extension ConverterTool {
         audioFile: URL,
         audioQCPolicy: AudioQCPolicy?,
         outputStem: String? = nil,
-        skipLengthCap: Bool = false
+        skipLengthCap: Bool = false,
+        fillMode: ShortFillMode = .fit
     ) throws -> URL {
         try preflightImageInput(imageFile)
         try preflightShortAudioInput(audioFile)
@@ -376,7 +432,7 @@ extension ConverterTool {
         }
         try requireFFmpegEncoder(alacEncoderName)
         let shortDuration = skipLengthCap ? audioDuration : try effectiveShortClipSeconds(forDuration: audioDuration)
-        let verificationLabel = skipLengthCap ? "full-song portrait short MP4 output" : "portrait short MP4 output"
+        let verificationLabel = skipLengthCap ? "full-song \(fillMode.label) output" : "\(fillMode.label) output"
         let output = cli.outDir
             .appendingPathComponent(outputStem ?? portraitShortMP4Stem(forAudioStem: audioFile.stem))
             .appendingPathExtension("mp4")
@@ -395,7 +451,7 @@ extension ConverterTool {
         )
 
         if canReuseOutput(output, verifier: { try self.verifyRenderedVideo(output, spec: spec) }) {
-            logger.info("Skip existing portrait short MP4: \(output.basename)")
+            logger.info("Skip existing \(fillMode.label): \(output.basename)")
             return output
         }
 
@@ -414,19 +470,14 @@ extension ConverterTool {
                     "-i", sourceWAV.path,
                     "-t", ffmpegArg("%.6f", shortDuration)
                 ],
-                videoFilter:
-                    "scale=w=\(config.shortMP4ScaleW):h=\(config.shortMP4ScaleH):force_original_aspect_ratio=decrease," +
-                    "pad=\(config.shortMP4ScaleW):\(config.shortMP4ScaleH):(ow-iw)/2:(oh-ih)/2:color=black," +
-                    "fps=\(config.shortMP4FPS)," +
-                    "format=\(config.shortMP4PixelFormat)," +
-                    colorParameterFilter(),
+                videoFilter: shortVideoFilter(mode: fillMode),
                 encoderLadder: encoders,
                 vtQuality: config.shortMP4VTQuality,
                 softwarePreset: config.shortMP4VideoPreset,
                 softwareCRF: config.shortMP4VideoCRF,
                 tag: nil,
-                tempStem: "portraitshort",
-                label: "portrait short MP4"
+                tempStem: fillMode.tempStem,
+                label: fillMode.label
             ),
             verifying: spec
         )

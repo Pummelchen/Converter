@@ -40,8 +40,8 @@ JPEG scanning accepts both `.jpg` and `.jpeg`; JPEG outputs are written with `.j
 | Command | Input | Output |
 |---|---|---|
 | `-m4atomp4` | exactly 1 `*_8K.png` + exactly 1 `.m4a` | main MP4 (HEVC ladder, 7680x4320, ALAC audio) |
-| `-short` | exactly 1 image (`.png`/`.jpg`/`.jpeg`) + exactly 1 audio-only file supported by ffmpeg | `_8K_Short.mp4` portrait clip (H264 ladder, 4320x7680), capped at 58 s, image fitted with black padding; plus `_8K_Short_FullSong.mp4` full-length variant when the audio is longer than 58 s |
-| `-nfttoshort` | any single audio-only file supported by ffmpeg + `Vertical_8K.png` or existing/derived `*_NFT8K.png` (or any single image as fallback) | `_8K_Short.mp4` portrait clip, capped at 58 s, source loudness preserved; plus `_8K_Short_FullSong.mp4` full-length variant when the audio is longer than 58 s |
+| `-short` | exactly 1 image (`.png`/`.jpg`/`.jpeg`) + exactly 1 audio-only file supported by ffmpeg | `_8K_Short.mp4` (H264 ladder, 4320x7680) with the image fitted and black padding, plus `_8K_Short_CenterCut.mp4` cropping the centre of the 8K master to fill the frame; both capped at 58 s, each with a `_FullSong` variant when the audio is longer |
+| `-nfttoshort` | any single audio-only file supported by ffmpeg + `Vertical_8K.png` or existing/derived `*_NFT8K.png` (or any single image as fallback) | `_8K_Short.mp4` portrait clip plus `_8K_Short_CenterCut.mp4` filling the frame from the centre of the 8K master; both capped at 58 s, source loudness preserved, each with a `_FullSong` variant when the audio is longer |
 | `-mp4toshort` | one or more `.mp4` | `_Short.mp4` portrait clips, capped at 58 s |
 
 `-mp3toshort` was renamed to `-nfttoshort`; the old flag is rejected with an actionable error.
@@ -50,7 +50,7 @@ JPEG scanning accepts both `.jpg` and `.jpeg`; JPEG outputs are written with `.j
 
 | Command | Input discovery | Output |
 |---|---|---|
-| `-full` / `-run` | exactly 1 source audio (`.flac`/`.wav`/`.mp3`) + 1 source image or direct 8K PNGs in `SRC_DIR` | image deliverables, WAV/M4A/MP3, `*_RF64.flac`/`*_RF64.wav`/`*_BW64.wav` archival companions, main MP4, short MP4, full-song short MP4 (when audio exceeds the short clip cap) |
+| `-full` / `-run` | exactly 1 source audio (`.flac`/`.wav`/`.mp3`) + 1 source image or direct 8K PNGs in `SRC_DIR` | image deliverables, WAV/M4A/MP3, `*_RF64.flac`/`*_RF64.wav`/`*_BW64.wav` archival companions, main MP4, and four portrait shorts (`_8K_Short`, `_8K_Short_CenterCut`, each plus a `_FullSong` companion when audio exceeds the short clip cap) |
 | `-album` | 2+ `.mp3`/`.wav`/`.flac` in `SRC_DIR`, natural numeric order | normalized (-12 LUFS per track) RF64 `album.wav`, then full-run deliverables |
 | `-wavtoalbum` | `album.txt` (project root) listing `.wav` tracks resolved in `SRC_DIR` | RF64 `album.rf64.wav` (listed order, no normalization) |
 | `-mp3toalbum` | `album.txt` listing `.mp3` tracks | RF64 `album_from_mp3.rf64.wav` (listed order, no normalization) |

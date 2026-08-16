@@ -210,7 +210,11 @@ final class converterTests: XCTestCase {
         XCTAssertTrue(help.contains("-silence [SECONDS]"))
         XCTAssertTrue(help.contains("-short"))
         XCTAssertTrue(help.contains("audio-only file supported by ffmpeg"))
-        XCTAssertTrue(help.contains("fits the image into the portrait frame as large as possible with black padding"))
+        // Both portrait framings must stay documented in help.
+        XCTAssertTrue(help.contains("fits the image into the frame with black padding"))
+        XCTAssertTrue(help.contains("_8K_Short_CenterCut.mp4"))
+        XCTAssertTrue(help.contains("crops the centre of the 8K master to fill the frame"))
+        XCTAssertTrue(help.contains("_FullSong"))
         XCTAssertTrue(help.contains("Use: -full / -run"))
         XCTAssertFalse(help.contains("Default action with no parameter"))
         XCTAssertTrue(help.contains("-mp3toflac"))
@@ -634,6 +638,44 @@ final class converterTests: XCTestCase {
         XCTAssertEqual(tool.fullRunImageBaseName("9_NFT3K"), "9")
         XCTAssertEqual(tool.fullRunImageBaseName("mix_8K_take_8K"), "mix_8K_take")
         XCTAssertEqual(tool.fullRunImageBaseName("cover"), "cover")
+    }
+
+    // The short set is four files: a letterboxed pair and a centre-cut pair, each with a
+    // full-length companion. The names must stay distinct and stable so they are sortable
+    // in a delivery folder.
+    func testShortMP4StemsCoverLetterboxedAndCenterCutVariants() throws {
+        let tempDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: tempDirectory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: tempDirectory) }
+        let tool = try makeTool(tempDirectory: tempDirectory)
+
+        let shortStem = tool.portraitShortMP4Stem(forAudioStem: "8CF14A3F")
+        let fullSongStem = tool.fullSongShortMP4Stem(forAudioStem: "8CF14A3F")
+
+        XCTAssertEqual(shortStem, "8CF14A3F_8K_Short")
+        XCTAssertEqual(fullSongStem, "8CF14A3F_8K_Short_FullSong")
+        XCTAssertEqual(tool.centerCutShortMP4Stem(shortStem), "8CF14A3F_8K_Short_CenterCut")
+        XCTAssertEqual(tool.centerCutShortMP4Stem(fullSongStem), "8CF14A3F_8K_Short_FullSong_CenterCut")
+
+        // All four are distinct, so no variant can overwrite another.
+        let stems = Set([shortStem, fullSongStem, tool.centerCutShortMP4Stem(shortStem), tool.centerCutShortMP4Stem(fullSongStem)])
+        XCTAssertEqual(stems.count, 4)
+
+        // Applying the suffix twice must not stack it.
+        XCTAssertEqual(
+            tool.centerCutShortMP4Stem(tool.centerCutShortMP4Stem(shortStem)),
+            "8CF14A3F_8K_Short_CenterCut"
+        )
+    }
+
+    func testShortFillModesUseDistinctTempStemsAndSuffixes() throws {
+        XCTAssertEqual(ConverterTool.ShortFillMode.fit.outputStemSuffix, "")
+        XCTAssertEqual(ConverterTool.ShortFillMode.centerCut.outputStemSuffix, "_CenterCut")
+        // Distinct temp stems keep concurrent renders from colliding on the same temp name.
+        XCTAssertNotEqual(
+            ConverterTool.ShortFillMode.fit.tempStem,
+            ConverterTool.ShortFillMode.centerCut.tempStem
+        )
     }
 
     func testParserRejectsDeprecatedInputOverrideFlags() throws {

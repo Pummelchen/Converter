@@ -510,7 +510,8 @@ extension ConverterTool {
                 try self.renderPortraitShortMP4Variants(
                     imageFile: shortImage,
                     audioFile: audioArtifacts.m4a,
-                    audioQCPolicy: nil
+                    audioQCPolicy: nil,
+                    centerCutImage: imageArtifacts.mainVideoImage
                 )
             }
         } else {
@@ -668,7 +669,12 @@ extension ConverterTool {
         guard imageDimensions.0 > 0 && imageDimensions.1 > 0 else {
             throw AppError("Short image dimensions must be positive. Got '\(imageDimensions.0)x\(imageDimensions.1)' for '\(image.path)'.")
         }
-        try renderPortraitShortMP4Variants(imageFile: image, audioFile: audio, audioQCPolicy: nil)
+        try renderPortraitShortMP4Variants(
+            imageFile: image,
+            audioFile: audio,
+            audioQCPolicy: nil,
+            centerCutImage: try centerCutSourceImage(fallback: image)
+        )
     }
 
     func stepShort() throws {
@@ -676,26 +682,84 @@ extension ConverterTool {
         let audio = try resolveShortAudio()
         logger.info("Short source audio: \(audio.basename)")
         logger.info("Short source image: \(image.basename)")
-        try renderPortraitShortMP4Variants(imageFile: image, audioFile: audio, audioQCPolicy: nil)
+        try renderPortraitShortMP4Variants(
+            imageFile: image,
+            audioFile: audio,
+            audioQCPolicy: nil,
+            centerCutImage: try centerCutSourceImage(fallback: image)
+        )
     }
 
-    private func renderPortraitShortMP4Variants(imageFile: URL, audioFile: URL, audioQCPolicy: AudioQCPolicy?) throws {
+    // The centre cut is taken from the widest master available, falling back to the image the
+    // letterboxed short already uses when there is no separate landscape 8K.
+    func centerCutSourceImage(fallback: URL) throws -> URL {
+        if let horizontal = try namedFullRunImage("Horizontal_8K.png") {
+            return horizontal
+        }
+        let existing8K = try files(in: cli.srcDir) {
+            $0.pathExtension.lowercasedASCII == "png"
+                && $0.stem.hasSuffix("_8K")
+                && !isNamedFullRunImage($0)
+        }
+        if existing8K.count == 1, let image = existing8K.first {
+            return image
+        }
+        return fallback
+    }
+
+    // Renders the short set: the letterboxed pair, plus a centre-cut pair that fills the
+    // portrait frame edge to edge from the middle of the artwork. Each pair gains a
+    // full-length companion when the song runs past the clip cap.
+    private func renderPortraitShortMP4Variants(
+        imageFile: URL,
+        audioFile: URL,
+        audioQCPolicy: AudioQCPolicy?,
+        centerCutImage: URL? = nil
+    ) throws {
         let qcPolicy = audioQCPolicy ?? config.shortFormAudioQCPolicy
+        let shortStem = portraitShortMP4Stem(forAudioStem: audioFile.stem)
+        let fullSongStem = fullSongShortMP4Stem(forAudioStem: audioFile.stem)
+
         _ = try renderAudioToShortMP4(imageFile: imageFile, audioFile: audioFile, audioQCPolicy: qcPolicy)
 
         guard let audioDuration = try mediaDuration(audioFile) else {
             throw AppError("Unable to read numeric audio duration from: \(audioFile.path)")
         }
         let shortDuration = try effectiveShortClipSeconds(forDuration: audioDuration)
-        guard audioDuration > shortDuration + 0.01 else { return }
+        let needsFullSongCompanion = audioDuration > shortDuration + 0.01
+
+        if needsFullSongCompanion {
+            _ = try renderAudioToShortMP4(
+                imageFile: imageFile,
+                audioFile: audioFile,
+                audioQCPolicy: qcPolicy,
+                outputStem: fullSongStem,
+                skipLengthCap: true
+            )
+        }
+
+        guard let centerCutImage else {
+            return
+        }
 
         _ = try renderAudioToShortMP4(
-            imageFile: imageFile,
+            imageFile: centerCutImage,
             audioFile: audioFile,
             audioQCPolicy: qcPolicy,
-            outputStem: fullSongShortMP4Stem(forAudioStem: audioFile.stem),
-            skipLengthCap: true
+            outputStem: centerCutShortMP4Stem(shortStem),
+            fillMode: .centerCut
         )
+
+        if needsFullSongCompanion {
+            _ = try renderAudioToShortMP4(
+                imageFile: centerCutImage,
+                audioFile: audioFile,
+                audioQCPolicy: qcPolicy,
+                outputStem: centerCutShortMP4Stem(fullSongStem),
+                skipLengthCap: true,
+                fillMode: .centerCut
+            )
+        }
     }
 
     func stepM4AToWAV() throws {
