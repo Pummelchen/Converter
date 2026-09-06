@@ -745,6 +745,29 @@ final class converterTests: XCTestCase {
         XCTAssertEqual(LoudnormArgument.loudnessRange(80), "50.00")
     }
 
+    // Black-and-white artwork comes back out of the PNG coder as a grayscale frame, so a
+    // deliverable rendered from a bilevel master identified as "gray" where the pipeline had
+    // asked for sRGB and the run aborted on correct output. A genuinely foreign space still
+    // has to fail.
+    func testGrayscaleOutputSatisfiesAnSRGBExpectation() throws {
+        let temp = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+        let tool = try makeTool(tempDirectory: temp)
+
+        XCTAssertTrue(tool.imageColorSpaceMatches(got: "srgb", expected: "srgb"))
+        XCTAssertTrue(tool.imageColorSpaceMatches(got: "gray", expected: "srgb"))
+        XCTAssertTrue(tool.imageColorSpaceMatches(got: "grey", expected: "srgb"))
+        XCTAssertTrue(tool.imageColorSpaceMatches(got: "gray", expected: "rgb"))
+
+        XCTAssertFalse(tool.imageColorSpaceMatches(got: "cmyk", expected: "srgb"))
+        XCTAssertFalse(tool.imageColorSpaceMatches(got: "lab", expected: "srgb"))
+        XCTAssertFalse(tool.imageColorSpaceMatches(got: "ycbcr", expected: "srgb"))
+        XCTAssertFalse(tool.imageColorSpaceMatches(got: "", expected: "srgb"))
+        XCTAssertFalse(tool.imageColorSpaceMatches(got: "srgb", expected: "gray"))
+    }
+
     func testParserRejectsDeprecatedInputOverrideFlags() throws {
         let root = URL(fileURLWithPath: "/tmp/converter-test")
         XCTAssertThrowsError(

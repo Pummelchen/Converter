@@ -39,7 +39,7 @@ whole-file canonical PCM comparison, merged QC/image probes, and the shared vide
 | ImageMagick (`magick`) | 7.1.2-29 Q16-HDRI aarch64 | Homebrew formula `imagemagick` |
 
 - `swift build --package-path Sources` — success, clean under `-warnings-as-errors`
-- `swift test --package-path Sources` — 155 tests, 0 failures (~7.5 min)
+- `swift test --package-path Sources` — 156 tests, 0 failures (~7.5 min)
 
 Note: ffmpeg 9.0.1 is a major-version step up from the 8.1.2 recorded above and passes the full suite.
 
@@ -127,6 +127,30 @@ working folder, leaving an undeletable 46 MB temp behind. The identical run outs
 produced all four shorts with no leftover temps, and a rerun inside Dropbox recovered them. Large
 outputs written into an actively syncing Dropbox folder can be removed after a successful publish;
 render locally and copy across if that matters.
+
+### Black-and-white artwork and the image colourspace check (2026-09-07)
+
+The same master's `-full` then failed on `Image colorspace mismatch ... (got=gray expected=srgb)`
+for the 4K PNG. The artwork is bilevel black and white, so every pixel is achromatic and the PNG
+coder stores the frame as colour-type 0; `identify` reports that as "Gray" no matter that the
+pipeline asked for sRGB. Grayscale PNG is the same sRGB-encoded data in a narrower channel
+layout and the pixels round-trip unchanged, so the deliverable was correct and the run aborted
+anyway — and would have aborted on every run with this artwork.
+
+The strict comparison bought nothing in exchange. `-strip` removes the colour profile and PNG
+carries no colourspace field of its own, so the failure this check was meant to catch — a frame
+written while still in the linear-light half of `resampleArguments` — reads back as "sRGB"
+regardless. Verified directly: a colour image written straight after `-colorspace RGB` identifies
+as sRGB. The check now accepts an achromatic result for an RGB-family expectation and still
+rejects a genuinely foreign space (CMYK, LAB, YCbCr), which is the part worth keeping.
+
+This was the only verification in the pipeline comparing against a property chosen from image
+content rather than one the pipeline sets explicitly. Everything else — dimensions, formats,
+codecs, sample rates, pixel formats, colour primaries/transfer/space/range — is compared against
+a flag the pipeline passed, so it cannot drift with the material.
+
+Confirmed by running `-full` end to end on the real artwork and audio: all image, audio and video
+deliverables including both centre-cut shorts and their `_FullSong` companions, exit 0.
 
 ### Why the release build stays CPU-generic
 

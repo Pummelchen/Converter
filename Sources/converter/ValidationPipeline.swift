@@ -501,6 +501,25 @@ extension ConverterTool {
         try preflightVideoInput(file, expectedContainerTokens: ["mp4", "mov"], requireAudio: requireAudio, requireAudibleAudio: requireAudibleAudio)
     }
 
+    // Artwork whose pixels are all achromatic comes back out of the PNG coder as a grayscale
+    // image, because PNG stores such a frame as color-type 0 rather than truecolour. `identify`
+    // then reports "Gray" where the pipeline asked for sRGB, and a plain string comparison
+    // failed the run on a black-and-white master that was in fact perfectly correct: grayscale
+    // PNG is the same sRGB-encoded data in a narrower channel layout, and the pixels round-trip
+    // unchanged.
+    //
+    // The strict comparison also caught nothing in exchange. `-strip` removes the colour profile
+    // and PNG carries no colourspace field of its own, so a frame written while still in linear
+    // light — the failure this check was meant to guard against — reads back as "sRGB" anyway.
+    // What is left is a guard against a genuinely foreign space (CMYK, LAB, YCbCr) reaching a
+    // deliverable, which is worth keeping.
+    func imageColorSpaceMatches(got: String, expected: String) -> Bool {
+        if got == expected { return true }
+        let achromatic: Set<String> = ["gray", "grey"]
+        let rgbFamily: Set<String> = ["srgb", "rgb"]
+        return achromatic.contains(got) && rgbFamily.contains(expected)
+    }
+
     func verifyImageOutput(
         _ file: URL,
         width: Int? = nil,
@@ -528,7 +547,7 @@ extension ConverterTool {
         let expectedColor = colorspace ?? config.imageOutputColorSpace
         if !expectedColor.trimmed.isEmpty {
             let gotColor = try imageColorSpace(file)?.lowercasedASCII ?? ""
-            if gotColor != expectedColor.lowercasedASCII {
+            if !imageColorSpaceMatches(got: gotColor, expected: expectedColor.lowercasedASCII) {
                 throw AppError("Image colorspace mismatch for \(file.path) (got=\(gotColor) expected=\(expectedColor.lowercasedASCII))")
             }
         }
