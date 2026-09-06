@@ -728,6 +728,23 @@ final class converterTests: XCTestCase {
         )
     }
 
+    // A source-relative true-peak ceiling rebased onto a master that peaks above 0 dBTP once
+    // produced "TP=0.19", which loudnorm rejects with "Result too large" — surfacing as an
+    // encoder failure several layers away from the cause.
+    func testLoudnormArgumentsStayInsideFFmpegsAcceptedRanges() throws {
+        XCTAssertEqual(LoudnormArgument.truePeak(0.19), "0.00")
+        XCTAssertEqual(LoudnormArgument.truePeak(-0.75), "-0.75")
+        XCTAssertEqual(LoudnormArgument.truePeak(-20), "-9.00")
+
+        XCTAssertEqual(LoudnormArgument.integrated(-4), "-5.00")
+        XCTAssertEqual(LoudnormArgument.integrated(-12), "-12.00")
+        XCTAssertEqual(LoudnormArgument.integrated(-90), "-70.00")
+
+        XCTAssertEqual(LoudnormArgument.loudnessRange(0.5), "1.00")
+        XCTAssertEqual(LoudnormArgument.loudnessRange(20), "20.00")
+        XCTAssertEqual(LoudnormArgument.loudnessRange(80), "50.00")
+    }
+
     func testParserRejectsDeprecatedInputOverrideFlags() throws {
         let root = URL(fileURLWithPath: "/tmp/converter-test")
         XCTAssertThrowsError(

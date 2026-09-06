@@ -709,7 +709,7 @@ extension ConverterTool {
     }
 
     func audioSegmentIntegratedLUFS(file: URL, startSeconds: Double, durationSeconds: Double, targetLUFS: Double) throws -> Double {
-        let filter = "loudnorm=I=\(ffmpegArg("%.2f", targetLUFS)):TP=\(ffmpegArg("%.2f", config.audioQCMaxTruePeakDBTP)):LRA=50.00:print_format=json"
+        let filter = "loudnorm=I=\(LoudnormArgument.integrated(targetLUFS)):TP=\(LoudnormArgument.truePeak(config.audioQCMaxTruePeakDBTP)):LRA=\(LoudnormArgument.loudnessRange(50)):print_format=json"
         func runProbe(accurateSeek: Bool) throws -> ProcessResult {
             if accurateSeek {
                 return try runner.run("ffmpeg", [
@@ -1526,19 +1526,20 @@ extension ConverterTool {
                 sampleRate: config.flacSampleRate,
                 channels: config.flacChannels,
                 label: "FLAC output",
-                format: .s24le,
-                maxAllowedDelta: CanonicalPCMFormat.resampledDeliveryDelta
+                format: .s24le
             )
         }) {
             logger.info("Skip existing FLAC: \(output.basename)")
             return output
         }
-        let sourceWAV = try makeInternalWAV(from: source, in: cli.outDir, stem: "\(source.stem).flac.source")
-        defer { discardTempFile(sourceWAV) }
         let temp = try makeTemp(in: cli.outDir, stem: source.stem, ext: ".flac")
         do {
-            try encodeInternalWAVToFLAC(sourceWAV, output: temp, qcPolicy: nil)
-            try verifyFLACFile(temp, sampleRate: config.flacSampleRate, channels: config.flacChannels, qcPolicy: nil)
+            try encodeSourceToFLAC(
+                source,
+                output: temp,
+                sampleRate: config.flacSampleRate,
+                channels: config.flacChannels
+            )
             try verifyDurationMatch(source: source, output: temp)
             try verifyCanonicalPCMSampleEquivalence(
                 source: source,
@@ -1546,8 +1547,7 @@ extension ConverterTool {
                 sampleRate: config.flacSampleRate,
                 channels: config.flacChannels,
                 label: "FLAC output",
-                format: .s24le,
-                maxAllowedDelta: CanonicalPCMFormat.resampledDeliveryDelta
+                format: .s24le
             )
             try publishTemp(temp, to: output)
             logger.info("Created FLAC: \(output.basename)")
@@ -1624,26 +1624,22 @@ extension ConverterTool {
         if canReuseOutput(output, verifier: {
             try verifyFLACFile(output, qcPolicy: nil)
             try verifyDurationMatch(source: source, output: output)
-            try verifyCanonicalPCMSampleEquivalence(source: source, output: output, label: "External FLAC", format: .s24le, maxAllowedDelta: CanonicalPCMFormat.resampledDeliveryDelta)
+            try verifyCanonicalPCMSampleEquivalence(source: source, output: output, label: "External FLAC", format: .s24le)
         }) {
             logger.info("Skip existing external FLAC: \(output.basename)")
             return output
         }
 
-        let sourceWAV = try makeInternalWAV(from: source, in: output.deletingLastPathComponent(), stem: "\(output.stem).externalflac.source")
-        defer { discardTempFile(sourceWAV) }
         let temp = try makeTemp(in: output.deletingLastPathComponent(), stem: output.stem, ext: ".flac")
         do {
-            try encodeInternalWAVToFLAC(
-                sourceWAV,
+            try encodeSourceToFLAC(
+                source,
                 output: temp,
                 sampleRate: try requireAudioSampleRate(source),
-                channels: try requireAudioChannels(source),
-                qcPolicy: nil
+                channels: try requireAudioChannels(source)
             )
-            try verifyFLACFile(temp, qcPolicy: nil)
             try verifyDurationMatch(source: source, output: temp)
-            try verifyCanonicalPCMSampleEquivalence(source: source, output: temp, label: "External FLAC", format: .s24le, maxAllowedDelta: CanonicalPCMFormat.resampledDeliveryDelta)
+            try verifyCanonicalPCMSampleEquivalence(source: source, output: temp, label: "External FLAC", format: .s24le)
             try publishTemp(temp, to: output)
             logger.info("Created external FLAC: \(output.basename)")
             return output

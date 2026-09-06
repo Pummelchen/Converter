@@ -134,6 +134,39 @@ extension ConverterTool {
         try verifyMP3Standard(output, requireAudible: requireAudible, qcPolicy: qcPolicy)
     }
 
+    // FLAC deliverables are encoded straight from their source instead of being staged
+    // through the 96 kHz internal WAV. Staging made a same-rate source take a
+    // 48 -> 96 -> 48 round trip: measured on a real 48 kHz master that reached a worst
+    // per-sample error of 40832 with 401 samples past the old 8192 ceiling, and only 4.5%
+    // of samples surviving unchanged.
+    //
+    // A direct encode is bit-exact under the canonical PCM check, including from a float
+    // WAV and from a source whose rate differs from the output. That holds because the
+    // check decodes *both* sides to one canonical rate, so a single resample to the output
+    // rate cancels out; only the extra hop through 96 kHz showed up as error.
+    func encodeSourceToFLAC(
+        _ source: URL,
+        output: URL,
+        sampleRate: Int,
+        channels: Int,
+        requireAudible: Bool = true,
+        qcPolicy: AudioQCPolicy? = nil
+    ) throws {
+        _ = try runner.run("ffmpeg", [
+            "-hide_banner", "-nostdin", "-v", "error", "-y",
+            "-i", source.path,
+            "-map", "0:a:0",
+            "-vn", "-sn", "-dn",
+            "-ac", String(channels),
+            "-ar", String(sampleRate),
+            "-c:a", "flac",
+            "-compression_level", String(config.flacCompressionLevel),
+            "-map_metadata", "-1",
+            output.path
+        ])
+        try verifyFLACFile(output, sampleRate: sampleRate, channels: channels, requireAudible: requireAudible, qcPolicy: qcPolicy)
+    }
+
     func encodeInternalWAVToFLAC(
         _ wav: URL,
         output: URL,

@@ -68,7 +68,7 @@ extension ConverterTool {
                     "-hide_banner", "-nostdin", "-v", "info",
                     "-i", file.path,
                     "-map", "0:a:0",
-                    "-af", "loudnorm=I=\(ffmpegArg("%.2f", policy.targetLUFS)):TP=\(ffmpegArg("%.2f", policy.maxTruePeakDBTP)):LRA=\(ffmpegArg("%.2f", policy.maxLoudnessRange)):print_format=json",
+                    "-af", "loudnorm=I=\(LoudnormArgument.integrated(policy.targetLUFS)):TP=\(LoudnormArgument.truePeak(policy.maxTruePeakDBTP)):LRA=\(LoudnormArgument.loudnessRange(policy.maxLoudnessRange)):print_format=json",
                     "-f", "null", "-"
                 ],
                 allowedExitCodes: [0]
@@ -247,7 +247,7 @@ extension ConverterTool {
                 "-hide_banner", "-nostdin", "-v", "info",
                 "-i", file.path,
                 "-map", "0:a:0",
-                "-af", "loudnorm=I=\(ffmpegArg("%.2f", policy.targetLUFS)):TP=\(ffmpegArg("%.2f", policy.maxTruePeakDBTP)):LRA=\(ffmpegArg("%.2f", policy.maxLoudnessRange)):print_format=json",
+                "-af", "loudnorm=I=\(LoudnormArgument.integrated(policy.targetLUFS)):TP=\(LoudnormArgument.truePeak(policy.maxTruePeakDBTP)):LRA=\(LoudnormArgument.loudnessRange(policy.maxLoudnessRange)):print_format=json",
                 "-f", "null", "-"
             ],
             allowedExitCodes: [0]
@@ -297,9 +297,9 @@ extension ConverterTool {
         }
 
         return [
-            "loudnorm=I=\(ffmpegArg("%.2f", policy.targetLUFS))",
-            "TP=\(ffmpegArg("%.2f", policy.maxTruePeakDBTP))",
-            "LRA=\(ffmpegArg("%.2f", policy.maxLoudnessRange))",
+            "loudnorm=I=\(LoudnormArgument.integrated(policy.targetLUFS))",
+            "TP=\(LoudnormArgument.truePeak(policy.maxTruePeakDBTP))",
+            "LRA=\(LoudnormArgument.loudnessRange(policy.maxLoudnessRange))",
             "measured_I=\(ffmpegArg("%.2f", measuredI))",
             "measured_LRA=\(ffmpegArg("%.2f", measuredLRA))",
             "measured_TP=\(ffmpegArg("%.2f", measuredTP))",
@@ -312,9 +312,9 @@ extension ConverterTool {
 
     func loudnormSinglePassFilter(policy: AudioQCPolicy) -> String {
         [
-            "loudnorm=I=\(ffmpegArg("%.2f", policy.targetLUFS))",
-            "TP=\(ffmpegArg("%.2f", policy.maxTruePeakDBTP))",
-            "LRA=\(ffmpegArg("%.2f", policy.maxLoudnessRange))",
+            "loudnorm=I=\(LoudnormArgument.integrated(policy.targetLUFS))",
+            "TP=\(LoudnormArgument.truePeak(policy.maxTruePeakDBTP))",
+            "LRA=\(LoudnormArgument.loudnessRange(policy.maxLoudnessRange))",
             "linear=false",
             "print_format=summary"
         ].joined(separator: ":")

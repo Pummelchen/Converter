@@ -78,7 +78,7 @@ Requires Swift tools 6.3.3+ and macOS 15+. The package lives in `Sources/`, so e
 ```bash
 swift build --package-path Sources -c release
 cp Sources/.build/arm64-apple-macosx/release/converter ./converter && chmod +x ./converter
-swift test --package-path Sources     # 154 tests, ~7.5 min
+swift test --package-path Sources     # 155 tests, ~7.5 min
 ```
 
 A prebuilt `converter` binary ships at the repository root. CI runs the build and full suite on every push and PR to `main` ([ci.yml](./.github/workflows/ci.yml)).

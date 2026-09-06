@@ -277,7 +277,7 @@ final class PipelineIntegrationTests: XCTestCase {
 
         try tool.verifyFLACFile(created, qcPolicy: nil)
         XCTAssertThrowsError(try tool.requireVideoStream(created), "External FLAC output should contain audio only.")
-        try tool.verifyCanonicalPCMSampleEquivalence(source: source, output: created, label: "External FLAC", format: .s24le, maxAllowedDelta: 2048)
+        try tool.verifyCanonicalPCMSampleEquivalence(source: source, output: created, label: "External FLAC", format: .s24le)
     }
 
     func testImageConversionsAndDerivativesProduceVerifiedOutputs() throws {
@@ -1388,7 +1388,7 @@ final class PipelineIntegrationTests: XCTestCase {
 
         let rf64FLAC = workspace.output.appendingPathComponent("wav_source_RF64.flac")
         XCTAssertEqual(try tool.audioField(rf64FLAC, "sample_rate"), "44100")
-        try tool.verifyCanonicalPCMSampleEquivalence(source: reference, output: rf64FLAC, sampleRate: 44_100, channels: 2, label: "External FLAC", format: .s24le, maxAllowedDelta: 2048)
+        try tool.verifyCanonicalPCMSampleEquivalence(source: reference, output: rf64FLAC, sampleRate: 44_100, channels: 2, label: "External FLAC", format: .s24le)
 
         // BW64 is a WAV-only container, so no FLAC counterpart may be emitted.
         XCTAssertFalse(
@@ -1533,7 +1533,7 @@ final class PipelineIntegrationTests: XCTestCase {
         let rebuilt = try tool.createExternalFLACVariant(source: source, output: output)
         XCTAssertEqual(rebuilt.standardizedFileURL, output.standardizedFileURL)
         try tool.verifyFLACFile(rebuilt, qcPolicy: nil)
-        try tool.verifyCanonicalPCMSampleEquivalence(source: source, output: rebuilt, label: "External FLAC", format: .s24le, maxAllowedDelta: 2048)
+        try tool.verifyCanonicalPCMSampleEquivalence(source: source, output: rebuilt, label: "External FLAC", format: .s24le)
     }
 
     func testFullPipelineProducesExpectedOutputsAndLeavesNoScopedTemps() async throws {

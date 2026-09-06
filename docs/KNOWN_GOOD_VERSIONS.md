@@ -39,7 +39,7 @@ whole-file canonical PCM comparison, merged QC/image probes, and the shared vide
 | ImageMagick (`magick`) | 7.1.2-29 Q16-HDRI aarch64 | Homebrew formula `imagemagick` |
 
 - `swift build --package-path Sources` — success, clean under `-warnings-as-errors`
-- `swift test --package-path Sources` — 154 tests, 0 failures (~7.5 min)
+- `swift test --package-path Sources` — 155 tests, 0 failures (~7.5 min)
 
 Note: ffmpeg 9.0.1 is a major-version step up from the 8.1.2 recorded above and passes the full suite.
 
@@ -90,6 +90,43 @@ Two genuinely different source images remain an error.
 Fidelity on this master: source, WAV, M4A, MP3, RF64 FLAC, BW64 WAV, main MP4 and the
 full-song vertical all measure −9.86 LUFS / −0.75 dBTP. The 58 s short matches its own
 segment (−13.09 LUFS, −1.77 vs −1.76 dBTP).
+
+### Third master: bass-boosted, clipping above 0 dBTP (2026-09-06)
+
+A `-full` on a bass-boosted 48 kHz master (`-9.25 LUFS`, **+0.13 dBTP**) failed on the archival
+FLAC and exposed two defects.
+
+**The archival FLAC was resampled for no reason.** It is written at the source's own rate but
+was staged through the 96 kHz internal WAV, so a 48 kHz source took a 48 -> 96 -> 48 round trip.
+Measured on this master: worst per-sample error **40832**, 401 samples past the old 8192 ceiling,
+only 4.5% of samples unchanged. The reported `max_delta=9533` understated it because the scan
+stops at the first violation — so raising the ceiling again (as was done when this last surfaced)
+would have failed almost immediately.
+
+FLAC deliverables are now encoded straight from the source and are **bit-exact**: 0 delta across
+21.4M samples. Verified exact from a float WAV and from a source whose rate differs from the
+output, because the canonical check decodes *both* sides to one rate — a single resample to the
+output rate cancels out, and only the extra hop through 96 kHz ever showed up as error. The
+per-sample tolerance constant is gone; the check now demands exactness. The same defect was in
+`convertAudioToFLAC` (`-wavtoflac`, `-mp3toflac`) and is fixed there too.
+
+**loudnorm arguments were not clamped.** A source-relative true-peak ceiling rebased onto a
+master peaking above 0 dBTP produced `TP=0.19`. ffmpeg's loudnorm accepts I -70..-5, TP -9..0,
+LRA 1..50 and rejects anything else with `Error opening output files: Result too large` — which
+surfaced as a `libx264` encoder failure, several layers from the cause. All five filter sites now
+clamp. Clamping bounds only the normalisation target; the measured `input_i`/`input_tp`/`input_lra`
+loudnorm reports back are unaffected, so measurement stays exact.
+
+Fidelity on this master: source, WAV, M4A, RF64 FLAC, BW64 WAV, main MP4 and the full-song centre
+cut all measure -9.25 LUFS. The archival FLAC matches true peak exactly (0.13), consistent with
+being bit-identical; the 96 kHz-staged deliverables read 0.09 and MP3 reads 0.28.
+
+**Not a converter defect, but worth recording:** during this session two finished shorts (11 MB
+and 47 MB) were published successfully, logged as created, and then disappeared from the Dropbox
+working folder, leaving an undeletable 46 MB temp behind. The identical run outside Dropbox
+produced all four shorts with no leftover temps, and a rerun inside Dropbox recovered them. Large
+outputs written into an actively syncing Dropbox folder can be removed after a successful publish;
+render locally and copy across if that matters.
 
 ### Why the release build stays CPU-generic
 
