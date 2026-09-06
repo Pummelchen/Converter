@@ -585,8 +585,11 @@ final class converterTests: XCTestCase {
             FileManager.default.createFile(atPath: tempDirectory.appendingPathComponent(name).path, contents: Data("x".utf8))
         }
 
+        // The family collapses to the FLAC, which the run then renames to the release stem.
         let tool = try makeTool(tempDirectory: tempDirectory)
-        XCTAssertEqual(try tool.resolveFullAudio().lastPathComponent, "song.flac")
+        XCTAssertEqual(try tool.resolveFullAudio().lastPathComponent, "1.flac")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: tempDirectory.appendingPathComponent("song.flac").path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: tempDirectory.appendingPathComponent("song.wav").path))
     }
 
     // A full run writes its image deliverables next to the source, so rerunning in the same
@@ -766,6 +769,97 @@ final class converterTests: XCTestCase {
         XCTAssertFalse(tool.imageColorSpaceMatches(got: "ycbcr", expected: "srgb"))
         XCTAssertFalse(tool.imageColorSpaceMatches(got: "", expected: "srgb"))
         XCTAssertFalse(tool.imageColorSpaceMatches(got: "srgb", expected: "gray"))
+    }
+
+    // A master exported elsewhere and named `Mirage_bass_80Hz_4dB_RF64.flac` was the only audio
+    // in the folder, and the unconditional `_RF64` skip made it invisible: the run reported that
+    // it "expects exactly one source audio file" while exactly one sat there. The suffix only
+    // means "this pipeline's own companion" when the file it was written beside still exists.
+    func testArchivalSuffixOnlySkipsAudioThatSitsBesideItsSource() throws {
+        let temp = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+        let tool = try makeTool(tempDirectory: temp)
+
+        func touch(_ name: String) throws -> URL {
+            let url = temp.appendingPathComponent(name)
+            try Data().write(to: url)
+            return url
+        }
+
+        // Alone in the folder, an _RF64 name is just a filename: it is the source.
+        let lone = try touch("Mirage_bass_80Hz_4dB_RF64.flac")
+        XCTAssertFalse(tool.isExternalArchivalAudioVariant(lone))
+        // Resolving it also renames it, so ask again on a fresh copy of the name.
+        XCTAssertEqual(try tool.resolveFullAudio().basename, "1.flac")
+        try FileManager.default.moveItem(at: temp.appendingPathComponent("1.flac"), to: lone)
+
+        // Once the source it was derived from is present, the same name is a companion.
+        _ = try touch("Mirage_bass_80Hz_4dB.flac")
+        let companion = try touch("Mirage_bass_80Hz_4dB_RF64.wav")
+        let bw64 = try touch("Mirage_bass_80Hz_4dB_BW64.wav")
+        XCTAssertTrue(tool.isExternalArchivalAudioVariant(companion))
+        XCTAssertTrue(tool.isExternalArchivalAudioVariant(bw64))
+        XCTAssertTrue(tool.isExternalArchivalAudioVariant(lone))
+
+        // A rerun of the _RF64-named source keeps working: its own companions carry the suffix
+        // twice, so they are recognised and skipped.
+        let doubled = try touch("Mirage_bass_80Hz_4dB_RF64_RF64.flac")
+        XCTAssertTrue(tool.isExternalArchivalAudioVariant(doubled))
+    }
+
+    // The message has to say what was actually in the folder; "expects exactly one" told the
+    // user nothing when the answer was "one file, and I ignored it".
+    func testMissingSourceAudioErrorNamesWhatWasSkipped() throws {
+        let temp = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+        let tool = try makeTool(tempDirectory: temp)
+
+        XCTAssertThrowsError(try tool.resolveFullAudio()) { error in
+            XCTAssertTrue("\(error)".contains("found no source audio"), "\(error)")
+        }
+
+        // A lone companion, with the source it names already gone: say why it was skipped.
+        try Data().write(to: temp.appendingPathComponent("Mirage.flac"))
+        try Data().write(to: temp.appendingPathComponent("Mirage_RF64.wav"))
+        try FileManager.default.removeItem(at: temp.appendingPathComponent("Mirage.flac"))
+        try Data().write(to: temp.appendingPathComponent("Mirage.mp3"))
+        XCTAssertEqual(try tool.resolveFullAudio().basename, "1.mp3")
+
+        // Two unrelated stems: name both, and do not count the companion among them.
+        try Data().write(to: temp.appendingPathComponent("Other.wav"))
+        XCTAssertThrowsError(try tool.resolveFullAudio()) { error in
+            let message = "\(error)"
+            XCTAssertTrue(message.contains("but found 3"), message)
+            XCTAssertTrue(message.contains("1.mp3"), message)
+            XCTAssertTrue(message.contains("Other.wav"), message)
+        }
+    }
+
+    // The source stem names all 29 deliverables, so the run normalises whatever arrives to `1`
+    // rather than letting an incoming name stamp itself onto every output.
+    func testFullRunRenamesItsSourceAudioToOne() throws {
+        let temp = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+        let tool = try makeTool(tempDirectory: temp)
+
+        try Data().write(to: temp.appendingPathComponent("Mirage_bass_80Hz_4dB_RF64.flac"))
+        XCTAssertEqual(try tool.resolveFullAudio().basename, "1.flac")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: temp.appendingPathComponent("1.flac").path))
+        XCTAssertFalse(FileManager.default.fileExists(
+            atPath: temp.appendingPathComponent("Mirage_bass_80Hz_4dB_RF64.flac").path))
+
+        // A rerun sees `1.flac` beside its own deliverables and leaves the name alone.
+        try Data().write(to: temp.appendingPathComponent("1.wav"))
+        try Data().write(to: temp.appendingPathComponent("1.mp3"))
+        try Data().write(to: temp.appendingPathComponent("1_RF64.flac"))
+        try Data().write(to: temp.appendingPathComponent("1_BW64.wav"))
+        XCTAssertEqual(try tool.resolveFullAudio().basename, "1.flac")
     }
 
     func testParserRejectsDeprecatedInputOverrideFlags() throws {

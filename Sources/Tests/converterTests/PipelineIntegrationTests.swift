@@ -1555,9 +1555,12 @@ final class PipelineIntegrationTests: XCTestCase {
         let allOutputs = try FileManager.default.contentsOfDirectory(at: workspace.output, includingPropertiesForKeys: [.isRegularFileKey], options: [])
         XCTAssertFalse(allOutputs.contains { $0.lastPathComponent.contains(tool.runToken) }, "Run-scoped temp files leaked into Output.")
 
-        // Every generated file — images included — carries the audio stem, not the image name.
-        let prefix = "track"
-        let base = "track"
+        // Every generated file — images included — carries the release stem. The run renames its
+        // single source audio to `1` first, so that is the stem, not the incoming filename.
+        XCTAssertTrue(FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("1.mp3").path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("track.mp3").path))
+        let prefix = "1"
+        let base = "1"
         let expectedFiles = [
             "\(prefix)_8K.png",
             "\(prefix)_4K.png",
@@ -1656,14 +1659,14 @@ final class PipelineIntegrationTests: XCTestCase {
             IntegrationWorkspace.defaultConfig +
                 "\nSHORT_MP4_CLIP_SECONDS=58\n"
         )
-        let sourceMP3 = try workspace.createAudio(name: "track", ext: "mp3", duration: 90.0)
+        _ = try workspace.createAudio(name: "track", ext: "mp3", duration: 90.0)
         let tool = try workspace.makeTool(arguments: ["-full"])
         defer { tool.cleanupTemps() }
         try tool.initializeForExecution()
         try await tool.stepFull()
 
-        let shortOutput = workspace.output.appendingPathComponent("track_8K_Short.mp4")
-        let fullSongShortOutput = workspace.output.appendingPathComponent("track_8K_Short_FullSong.mp4")
+        let shortOutput = workspace.output.appendingPathComponent("1_8K_Short.mp4")
+        let fullSongShortOutput = workspace.output.appendingPathComponent("1_8K_Short_FullSong.mp4")
 
         XCTAssertTrue(FileManager.default.fileExists(atPath: shortOutput.path))
         XCTAssertTrue(FileManager.default.fileExists(atPath: fullSongShortOutput.path))
@@ -1675,8 +1678,10 @@ final class PipelineIntegrationTests: XCTestCase {
         XCTAssertEqual(shortDuration, shortClipSeconds, accuracy: 0.3)
         XCTAssertGreaterThan(fullSongDuration, shortDuration + 20)
 
-        try tool.verifySourceLoudnessPreserved(source: sourceMP3, output: fullSongShortOutput)
-        try tool.verifySourceLoudnessPreserved(source: sourceMP3, output: shortOutput)
+        // The run renamed its source, so compare against the file it actually consumed.
+        let renamedSource = workspace.output.appendingPathComponent("1.mp3")
+        try tool.verifySourceLoudnessPreserved(source: renamedSource, output: fullSongShortOutput)
+        try tool.verifySourceLoudnessPreserved(source: renamedSource, output: shortOutput)
     }
 
     func testFullPipelineUsesNamedHorizontalAndVertical8KPNGs() async throws {
@@ -1685,14 +1690,18 @@ final class PipelineIntegrationTests: XCTestCase {
 
         _ = try workspace.createImage(name: "Horizontal_8K", ext: "png", width: 320, height: 180)
         _ = try workspace.createImage(name: "Vertical_8K", ext: "png", width: 90, height: 160)
-        let sourceFLAC = try workspace.createAudio(name: "463406_B_PH", ext: "flac")
+        _ = try workspace.createAudio(name: "463406_B_PH", ext: "flac")
 
         let tool = try workspace.makeTool(arguments: ["-full"])
         defer { tool.cleanupTemps() }
         try tool.initializeForExecution()
         try await tool.stepFull()
 
-        let base = sourceFLAC.stem
+        // The run renames its source audio to `1`, so that names the release here too.
+        let base = "1"
+        XCTAssertTrue(FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("1.flac").path))
+        XCTAssertFalse(FileManager.default.fileExists(
+            atPath: workspace.output.appendingPathComponent("463406_B_PH.flac").path))
         let mainOutput = workspace.output.appendingPathComponent("\(base)_8K").appendingPathExtension("mp4")
         let shortOutput = workspace.output.appendingPathComponent("\(base)_8K_Short").appendingPathExtension("mp4")
 
@@ -1748,8 +1757,9 @@ final class PipelineIntegrationTests: XCTestCase {
             colorSpace: tool.config.videoColorSpace,
             colorRange: tool.config.videoColorRange
         )
-        try tool.verifySourceLoudnessPreserved(source: sourceFLAC, output: mainOutput)
-        try tool.verifySourceLoudnessPreserved(source: sourceFLAC, output: shortOutput)
+        let renamedSource = workspace.output.appendingPathComponent("1.flac")
+        try tool.verifySourceLoudnessPreserved(source: renamedSource, output: mainOutput)
+        try tool.verifySourceLoudnessPreserved(source: renamedSource, output: shortOutput)
         let shortFrame = try workspace.extractFirstVideoFrame(from: shortOutput, name: "full_vertical_short_frame")
         XCTAssertGreaterThan(
             try workspace.meanGrayValue(image: shortFrame, crop: "90x10+0+0"),

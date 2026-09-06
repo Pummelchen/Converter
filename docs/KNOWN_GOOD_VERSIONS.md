@@ -39,7 +39,7 @@ whole-file canonical PCM comparison, merged QC/image probes, and the shared vide
 | ImageMagick (`magick`) | 7.1.2-29 Q16-HDRI aarch64 | Homebrew formula `imagemagick` |
 
 - `swift build --package-path Sources` — success, clean under `-warnings-as-errors`
-- `swift test --package-path Sources` — 156 tests, 0 failures (~7.5 min)
+- `swift test --package-path Sources` — 159 tests, 0 failures (~7.5 min)
 
 Note: ffmpeg 9.0.1 is a major-version step up from the 8.1.2 recorded above and passes the full suite.
 
@@ -151,6 +151,33 @@ a flag the pipeline passed, so it cannot drift with the material.
 
 Confirmed by running `-full` end to end on the real artwork and audio: all image, audio and video
 deliverables including both centre-cut shorts and their `_FullSong` companions, exit 0.
+
+### A source named `_RF64` was invisible to the full run (2026-09-07)
+
+`-run` on a folder holding exactly one audio file, `Mirage_bass_80Hz_4dB_RF64.flac`, reported
+that it "expects exactly one source audio file". `_RF64` and `_BW64` name the pipeline's own
+archival companions and a rerun must not pick one back up as its source, but the check was a
+bare suffix test — so a master exported from somewhere else under that perfectly ordinary name
+was filtered out, leaving zero candidates.
+
+A companion never arrives alone: it is written beside the source it came from. The suffix now
+disqualifies a file only when that sibling (`<stem>.flac` / `.wav` / `.mp3`) actually exists, so
+an `_RF64` file standing on its own is treated as what it is. Reruns still work, because a
+companion of an `_RF64`-named source carries the suffix twice and its sibling is present.
+
+Both failure messages were also the same sentence regardless of what was found, which said
+nothing when the answer was "one file, and I ignored it". They now name the files seen and, when
+something was filtered, say it was skipped as a companion of audio already in the folder.
+
+Deliverables are named after the source stem, so an `_RF64` source would otherwise yield
+`..._RF64_8K.mp4` and an archival `..._RF64_RF64.flac`. A full run takes exactly one audio file,
+so it now renames that file to `1.<ext>` before anything else and the release is named `1`
+regardless of what arrived. Renaming rather than only deriving a prefix keeps reruns stable: the
+second pass finds `1.flac` beside its own `1.wav` / `1.mp3` deliverables, collapses that
+same-stem family to the FLAC, and skips `1_RF64.flac` as the companion it is.
+
+Verified on the real artwork and a slice of the real master: full run to completion, then a
+second run in the same folder resolving the same source, both exit 0.
 
 ### Why the release build stays CPU-generic
 

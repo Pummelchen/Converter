@@ -2,9 +2,27 @@ import Foundation
 
 extension ConverterTool {
     // External RF64/BW64 deliverables are for handoff only and must never feed the full pipeline.
+    // `_RF64` and `_BW64` name this pipeline's own archival companions, and a rerun must not pick
+    // one of them back up as its source. The suffix on its own is not proof of that, though: it
+    // is an ordinary filename convention, and a master exported from somewhere else is entitled
+    // to be called `Mirage_bass_80Hz_4dB_RF64.flac`. Skipping every such name unconditionally
+    // made the only audio file in the folder invisible, and the run then reported that it
+    // "expects exactly one source audio file" while exactly one sat there.
+    //
+    // A companion never arrives alone — it is written beside the source it was derived from — so
+    // the suffix only disqualifies a file when that sibling is actually present.
     func isExternalArchivalAudioVariant(_ file: URL) -> Bool {
         let stem = file.stem
-        return stem.hasSuffix("_RF64") || stem.hasSuffix("_BW64")
+        guard let suffix = ["_RF64", "_BW64"].first(where: { stem.hasSuffix($0) }) else {
+            return false
+        }
+        let originStem = String(stem.dropLast(suffix.count))
+        guard !originStem.isEmpty else { return false }
+        let directory = file.deletingLastPathComponent()
+        return ["flac", "wav", "mp3"].contains { ext in
+            let sibling = directory.appendingPathComponent(originStem).appendingPathExtension(ext)
+            return fileManager.fileExists(atPath: sibling.path)
+        }
     }
 
     // When a rerun sees same-stem derived audio files, prefer the highest-quality source family member.
@@ -152,15 +170,51 @@ extension ConverterTool {
         }
     }
 
+    // Both failures used to read "expects exactly one source audio file", which says nothing about
+    // what was actually in the folder — least of all when the answer was "one file, and I ignored
+    // it". Name what was seen and why it did not qualify.
     func resolveFullAudio() throws -> URL {
         let candidates = try rankedFullRunAudioCandidates()
-        guard !candidates.isEmpty else {
-            throw AppError("Full pipeline expects exactly one source audio file (.flac/.wav/.mp3) in '\(cli.srcDir.path)'.")
+        if candidates.count == 1 {
+            return try normalizedFullRunSource(candidates[0])
         }
-        if candidates.count > 1 {
-            throw AppError("Full pipeline expects exactly one source audio file (.flac/.wav/.mp3) in '\(cli.srcDir.path)'.")
+
+        let present = try files(in: cli.srcDir, matchingExtensions: ["flac", "wav", "mp3"])
+        let skipped = present.filter { isExternalArchivalAudioVariant($0) }
+        let names = { (files: [URL]) in files.map(\.basename).sorted().joined(separator: ", ") }
+
+        if candidates.isEmpty {
+            if skipped.isEmpty {
+                throw AppError("Full pipeline found no source audio (.flac/.wav/.mp3) in '\(cli.srcDir.path)'.")
+            }
+            throw AppError(
+                "Full pipeline found no source audio in '\(cli.srcDir.path)': "
+                + "\(names(skipped)) \(skipped.count == 1 ? "is an archival companion" : "are archival companions") "
+                + "of audio already in that folder, so \(skipped.count == 1 ? "it was" : "they were") skipped."
+            )
         }
-        return candidates[0]
+        throw AppError(
+            "Full pipeline expects one source audio file in '\(cli.srcDir.path)' but found \(candidates.count): \(names(candidates))."
+        )
+    }
+
+    // A full run takes exactly one audio file, and its stem names all 29 deliverables. Whatever
+    // that file arrives as, the release is named `1`, so the run is renamed to `1.<ext>` up front:
+    // an incoming `Mirage_bass_80Hz_4dB_RF64.flac` would otherwise stamp its own archival suffix
+    // onto every output, down to an archival companion called `..._RF64_RF64.flac`.
+    //
+    // Renaming rather than just deriving the prefix keeps a rerun stable: the second pass finds
+    // `1.flac` beside its own `1.wav` / `1.mp3` deliverables, collapses that same-stem family to
+    // the FLAC, and skips `1_RF64.flac` as the companion it is.
+    private func normalizedFullRunSource(_ source: URL) throws -> URL {
+        guard source.stem != "1" else { return source }
+        let renamed = source.deletingLastPathComponent()
+            .appendingPathComponent("1")
+            .appendingPathExtension(source.pathExtension.lowercasedASCII)
+        guard !fileManager.fileExists(atPath: renamed.path) else { return source }
+        try fileManager.moveItem(at: source, to: renamed)
+        logger.info("Source audio renamed: \(source.basename) -> \(renamed.basename)")
+        return renamed
     }
 
     func isNamedFullRunImage(_ file: URL) -> Bool {
