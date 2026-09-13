@@ -544,6 +544,25 @@ final class PipelineIntegrationTests: XCTestCase {
 
     // audit #0020: a bass boost that drives the 24-bit staging WAV past full scale must fail
     // with a clear message instead of publishing a clipped file with no indication.
+    // audit #0021: every failed rung must be reported. The padded-MP4 ladder used to keep only
+    // the last error, hiding the first rung's (usually real) cause.
+    func testPaddedMP4EncoderLadderReportsEveryFailedRung() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe"])
+        // Both software encoders exist but reject an unknown preset, so both rungs fail in the loop.
+        try workspace.overwriteConfig(
+            IntegrationWorkspace.defaultConfig
+                + "\nVIDEO_MP4_ENCODER=libx264\nVIDEO_MP4_ENCODER_FALLBACKS=libx265\n"
+                + "VIDEO_MP4_SOFTWARE_PRESET=no_such_preset\n")
+        let video = try workspace.createVideoMP4(name: "clip", duration: 1.5)
+        let tool = try workspace.makeTool(arguments: ["-silence", "1"])
+        XCTAssertThrowsError(try tool.addSilenceToMedia(video, spec: SilenceSpec(seconds: 1))) { error in
+            let message = "\(error)"
+            XCTAssertTrue(message.contains("libx264:"), message)
+            XCTAssertTrue(message.contains("libx265:"), message)
+        }
+    }
+
     func testBassBoostRefusesToPublishClippedOutput() throws {
         let workspace = try IntegrationWorkspace()
         try workspace.requireCommands(["ffmpeg", "ffprobe"])

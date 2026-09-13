@@ -1582,6 +1582,39 @@ final class converterTests: XCTestCase {
         await semaphore.signal()
     }
 
+    // audit #0021: one ladder for every render — reports each failed rung, stops at the first
+    // failure that a different encoder cannot fix.
+    func testEncoderLadderReportsEveryRungAndStopsOnEncoderIndependentFailure() throws {
+        let tool = try makeParserTool()
+        var attempted: [String] = []
+        XCTAssertThrowsError(try tool.withEncoderLadder(["a", "b", "c"], label: "test") { encoder in
+            attempted.append(encoder)
+            throw AppError("\(encoder) exploded")
+        }) { error in
+            let message = "\(error)"
+            for rung in ["a: a exploded", "b: b exploded", "c: c exploded"] {
+                XCTAssertTrue(message.contains(rung), message)
+            }
+        }
+        XCTAssertEqual(attempted, ["a", "b", "c"])
+
+        attempted = []
+        XCTAssertThrowsError(try tool.withEncoderLadder(["a", "b"], label: "test") { encoder in
+            attempted.append(encoder)
+            try tool.encoderIndependent { throw AppError("audio wrong") }
+        }) { error in
+            XCTAssertTrue("\(error)".contains("a: audio wrong"), "\(error)")
+            XCTAssertFalse("\(error)".contains("b:"), "\(error)")
+        }
+        XCTAssertEqual(attempted, ["a"], "an encoder-independent failure must stop the ladder")
+
+        let result = try tool.withEncoderLadder(["a", "b"], label: "test") { encoder -> String in
+            guard encoder == "b" else { throw AppError("no") }
+            return "ok"
+        }
+        XCTAssertEqual(result, "ok", "a later rung's success is returned")
+    }
+
     // audit #0022: the whole discovered family moves with the source, so a rerun resolves the
     // same origin: same-stem conversions become 1_source.<ext> siblings and archival companions
     // become 1_source_RF64/_BW64 companions of it. A source that fails preflight keeps its name.

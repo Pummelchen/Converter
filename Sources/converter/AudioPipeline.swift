@@ -1107,19 +1107,18 @@ extension ConverterTool {
             return args
         }
 
-        var lastError: (any Error)?
-        for encoder in encoders {
+        try withEncoderLadder(encoders, label: "\(label.lowercasedASCII) MP4 video") { encoder in
             do {
                 _ = try runner.run("ffmpeg", buildArguments(encoder: encoder) + [output.path])
-                try verifyDuration(output, expectedSeconds: expectedDuration, label: "\(label) MP4 output")
-                return
+                // The padded audio track sets the duration; no other encoder can change it.
+                try encoderIndependent {
+                    try verifyDuration(output, expectedSeconds: expectedDuration, label: "\(label) MP4 output")
+                }
             } catch {
-                lastError = error
-                logger.warn("\(label) MP4 video encoder failed (\(encoder)): \(error.localizedDescription)")
                 try? fileManager.removeItem(at: output)
+                throw error
             }
         }
-        throw AppError("All \(label.lowercasedASCII) MP4 video encoders failed for \(output.basename): \(lastError?.localizedDescription ?? "unknown error")")
     }
 
     func encodeSilencePaddedMP4(source: URL, paddedWAV: URL, output: URL, expectedDuration: Double, spec: SilenceSpec) throws {

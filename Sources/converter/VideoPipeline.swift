@@ -74,9 +74,50 @@ extension ConverterTool {
             colorSpace: colorSpace,
             colorRange: colorRange
         )
-        try verifyALACAudioOutput(url, sampleRate: sampleRate, channels: channels, qcPolicy: qcPolicy)
-        try durationCheck(url)
-        try verifySourceLoudnessPreserved(source: source, output: url, toleranceDB: 1.0)
+        // The audio track, the duration and the loudness do not depend on the video encoder:
+        // a failure here must stop the ladder instead of re-rendering on every rung.
+        try encoderIndependent {
+            try verifyALACAudioOutput(url, sampleRate: sampleRate, channels: channels, qcPolicy: qcPolicy)
+            try durationCheck(url)
+            try verifySourceLoudnessPreserved(source: source, output: url, toleranceDB: 1.0)
+        }
+    }
+
+    // Marks a failure that no other encoder could fix (publishing, audio/duration/loudness
+    // verification, a padded audio track of the wrong length) so the ladder stops there.
+    func encoderIndependent<T>(_ work: () throws -> T) throws -> T {
+        do {
+            return try work()
+        } catch let error as AppError {
+            if error.isEncoderIndependent {
+                throw error
+            }
+            throw AppError(error.message, exitCode: error.exitCode, underlying: error, isEncoderIndependent: true)
+        } catch {
+            throw AppError(error.localizedDescription, underlying: error, isEncoderIndependent: true)
+        }
+    }
+
+    // The one encoder ladder every MP4 render walks: try each encoder in order, stop early on a
+    // failure that is not encoder-related, and report every rung that failed. Reporting only
+    // the last one hides the first failure, which is usually the real cause — a later rung may
+    // fail for an unrelated reason such as an encoder that cannot handle the dimensions at all.
+    func withEncoderLadder<T>(_ encoders: [String], label: String, attempt: (String) throws -> T) throws -> T {
+        var failures: [String] = []
+        for encoder in encoders {
+            do {
+                return try attempt(encoder)
+            } catch {
+                failures.append("\(encoder): \(error.localizedDescription)")
+                logger.warn("\(label) encoder failed (\(encoder)): \(error.localizedDescription)")
+                if (error as? AppError)?.isEncoderIndependent == true {
+                    logger.warn("\(label): skipping remaining encoders — this failure is not encoder-related.")
+                    break
+                }
+            }
+        }
+        let detail = failures.isEmpty ? "unknown error" : failures.joined(separator: " | ")
+        throw AppError("All \(label) encoders failed. \(detail)")
     }
 
     // What a finished render must satisfy. Shared by the reuse check and the encoder
@@ -129,8 +170,7 @@ extension ConverterTool {
     // next encoder on failure. All three render paths share this, so a fix here cannot
     // reach only two of them.
     private func renderVideoWithEncoderLadder(_ encode: VideoEncodeSpec, verifying spec: VideoOutputSpec) throws -> URL {
-        var failures: [String] = []
-        for encoder in encode.encoderLadder {
+        try withEncoderLadder(encode.encoderLadder, label: encode.label) { encoder in
             let temp = try makeTemp(
                 in: encode.output.deletingLastPathComponent(),
                 stem: "\(encode.tempStem).\(encoder)",
@@ -157,24 +197,14 @@ extension ConverterTool {
                 )
                 _ = try runner.run("ffmpeg", arguments + [temp.path])
                 try verifyRenderedVideo(temp, spec: spec, codec: verifyCodec(forEncoder: encoder))
-                try publishTemp(temp, to: encode.output)
+                try encoderIndependent { try publishTemp(temp, to: encode.output) }
                 logger.info("Created \(encode.label): \(encode.output.basename) [encoder=\(encoder)]")
                 return encode.output
             } catch {
-                failures.append("\(encoder): \(error.localizedDescription)")
-                logger.warn("\(encode.label) encoder failed (\(encoder)): \(error.localizedDescription)")
                 discardTempFile(temp)
-                if (error as? AppError)?.isEncoderIndependent == true {
-                    logger.warn("\(encode.label): skipping remaining encoders — this failure is not encoder-related.")
-                    break
-                }
+                throw error
             }
         }
-        // Report every rung. Reporting only the last one hides the first failure, which is
-        // usually the real cause — a later rung may fail for an unrelated reason such as an
-        // encoder that cannot handle the output dimensions at all.
-        let detail = failures.isEmpty ? "unknown error" : failures.joined(separator: " | ")
-        throw AppError("All \(encode.label) encoders failed for \(encode.output.basename). \(detail)")
     }
 
     // How the still image is mapped onto the portrait frame.
