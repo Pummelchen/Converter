@@ -2,15 +2,15 @@
 
 Session: `2026-09-13` · branch `audit/2026-09-13` · baseline commit `4bb136a`
 
-**known-total:100 done:44 open:55 blocked:1 new-this-session:100**
+**known-total:100 done:48 open:51 blocked:1 new-this-session:100**
 
 | status | count |
 |---|---|
 | START | 50 |
 | PROGRESS | 1 |
-| TEST | 4 |
+| TEST | 0 |
 | AUDIT | 0 |
-| DONE | 44 |
+| DONE | 48 |
 | BLOCKED | 1 |
 
 Status gates: START (reproduced/proven + expected behaviour written) → PROGRESS (diff) → TEST (failing-before/passing-after test pasted, full suite green, no new warnings) → AUDIT (cold re-read, all scanners re-run, no baseline regression, no new placeholder) → DONE (committed atomically). BLOCKED needs reason + what was tried + ≥2 options for a human.
@@ -29,7 +29,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 |---|---|---|---|---|---|---|---|
 | #0029 | S1 | repo | LICENSE (missing) | Repository has no LICENSE file | deps | BLOCKED |  |
 
-## Open S2 / S3 (52)
+## Open S2 / S3 (48)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
@@ -37,11 +37,8 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 | #0040 | S2 | converter/ProcessRunner | Sources/converter/ProcessRunner.swift:145; Actions.swift:615-619 | Cancellation does not terminate sibling external processes after a fan-out failure | unsafe | START |  |
 | #0041 | S2 | converter/DependencyBootstrap | Sources/converter/DependencyBootstrap.swift:216-248 | Installer subprocesses have no timeout and discard diagnostics | incomplete | START |  |
 | #0042 | S2 | converter/ProcessRunner | Sources/converter/ProcessRunner.swift:112-124 | Child stdin inherited from the terminal | unsafe | START |  |
-| #0043 | S2 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:683-691,1013-1028 | containsChunk is a 64 KiB substring scan, not a RIFF chunk walk | unsafe | TEST | 9bc41f4 |
-| #0047 | S2 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:16-32,59-63 | Source clip re-rendered and re-analysed for every short variant | perf | TEST | c238583 |
 | #0050 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:327-336,367-387,591-600 | Loudness fallback publishes any true-peak breach with a misleading 'closest-safe' label | logic | START |  |
 | #0051 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:992,1170,1029,508 | Redundant padding verification, uncached ffmpeg -filters, per-file ladder resolution | perf | START |  |
-| #0052 | S2 | converter/ImagePipeline | Sources/converter/ValidationPipeline.swift:391 (preflightImageInput call sites) | Full-decode image preflight of the same master repeated ~10x per run | perf | TEST | fbefda6 |
 | #0053 | S2 | converter/Support | Sources/converter/Support.swift:308 | M:SS timecode parsing drops empty components; empty-component guard unreachable | logic | START |  |
 | #0054 | S2 | converter/Actions | Sources/converter/Actions.swift:1254 | -mp4toshort re-ingests the pipeline's own _Short_CenterCut/_FullSong outputs | bug | START |  |
 | #0055 | S2 | converter/ImagePipeline | Sources/converter/ImagePipeline.swift:329-336 | Fitted portrait still double-sharpens derived masters and user Vertical_8K.png | logic | START |  |
@@ -67,7 +64,6 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 | #0078 | S3 | converter/PipelineCore | Sources/converter/PipelineCore.swift:372-379 | ensureWritableDirectory accepts a regular file at OUT_DIR | logic | START |  |
 | #0079 | S3 | converter/ProcessRunner | Sources/converter/ProcessRunner.swift:156-160 | Signal deaths reported as ordinary exit codes | incomplete | START |  |
 | #0080 | S3 | converter/PipelineCore | Sources/converter/PipelineCore.swift:323-344,271 | Orphan-temp detection keys on local PID only; synced directories across hosts | logic | START |  |
-| #0081 | S3 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:203-210 | LUFS rebase widens the tolerance symmetrically | logic | TEST | bccf942 |
 | #0083 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:905 | Noise seed is Int.random; reruns not reproducible | logic | START |  |
 | #0084 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:53-77 | Derived-media predicates use the first _silence_/_noise_ occurrence | logic | START |  |
 | #0085 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:1850-1854 | Track-number parse uses Unicode isNumber and can overflow | logic | START |  |
@@ -86,7 +82,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 | #0098 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:529,534 | Exact ffmpeg bass filter string pinned without a stated reason | test | START |  |
 | #0100 | S3 | converter/Actions | Sources/converter/Actions.swift (normalizedFullRunSource / resolveFullAudio) | Full-run source is renamed before preflight; a corrupt source loses its original name in the error | logic | START |  |
 
-## Done (44)
+## Done (48)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
@@ -124,14 +120,18 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 | #0001 | S2 | repo/AUDIT | AUDIT/inventory.md | Phase A: scope inventory, dependency graph, trust boundaries, blast radius | docs | DONE | 5fa6546 |
 | #0002 | S2 | repo/AUDIT | AUDIT/environment.md | Phase A: environment record and audit tooling install (§1/§1b) | docs | DONE | 5fa6546 |
 | #0003 | S2 | repo/AUDIT | AUDIT/baseline.md | Phase A: baseline metrics at 4bb136a (§3) | docs | DONE | 2184906 |
+| #0043 | S2 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:683-691,1013-1028 | containsChunk is a 64 KiB substring scan, not a RIFF chunk walk | unsafe | DONE | 9bc41f4 |
 | #0044 | S2 | converter/Config | Sources/converter/Config.swift:203-205 | archive profile is a no-op placeholder | placeholder | DONE | fa443f1 |
 | #0045 | S2 | converter/Config | Sources/converter/Config.swift:197-200 | youtube_short overlay puts a known-failing encoder first at the default portrait size | logic | DONE | 6cee542 |
 | #0046 | S2 | converter/Config | Sources/converter/Config.swift:159-161 | Unknown config keys dropped at debug level only; BOM not stripped | incomplete | DONE | 7455803 |
+| #0047 | S2 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:16-32,59-63 | Source clip re-rendered and re-analysed for every short variant | perf | DONE | c238583 |
 | #0048 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:94-97; Actions.swift:1071 | -master is not idempotent (re-masters its own _mastered outputs) | logic | DONE | 8fac9dc |
 | #0049 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:2104-2113 | -flactoalbum concatenates the pipeline's own derived/archival FLACs | logic | DONE | 8fac9dc |
+| #0052 | S2 | converter/ImagePipeline | Sources/converter/ValidationPipeline.swift:391 (preflightImageInput call sites) | Full-decode image preflight of the same master repeated ~10x per run | perf | DONE | fbefda6 |
 | #0063 | S2 | converterTests+Config | Sources/Tests/converterTests/converterTests.swift:128-140; Config.swift:400; VideoPipeline.swift:269 | SHORT_MP4_CLIP_SECONDS validated with Double() but consumed via parseFlexibleTimecode; test sets a value validate() rejects | test | DONE | 17816b6 |
 | #0070 | S2 | converterTests | Sources/Tests/converterTests/converterTests.swift:737-749 | LoudnormArgument clamping untested at the exact bounds | test | DONE | e33815c |
 | #0071 | S2 | converter/Config+tests | Sources/converter/Config.swift:319-452 | Config validation gaps (ranges, empty strings, zero byte targets, CRC chunk bound, negative message) and only 3 keys tested | test | DONE | 87c940b |
+| #0081 | S3 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:203-210 | LUFS rebase widens the tolerance symmetrically | logic | DONE | bccf942 |
 | #0082 | S3 | repo/docs | config.txt; wiki Configuration | PREFLIGHT_SECONDS, DURATION_TOLERANCE_SEC, CRC_CHUNK_BYTES supported but undocumented | docs | DONE | bbf40ef |
 | #0099 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:34,1967 | Test target compiles with two warnings (bare 'Error' existential, unused 'wav' binding) | style | DONE | 9343977 |
 
@@ -645,7 +645,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **discovered-by:** reviewer C-7
 - **evidence-before:** AUDIT/findings/L2-core-runtime.md C-7
 
-### #0043 · S2 · TEST · containsChunk is a 64 KiB substring scan, not a RIFF chunk walk
+### #0043 · S2 · DONE · containsChunk is a 64 KiB substring scan, not a RIFF chunk walk
 
 - **project/module:** converter/ValidationPipeline
 - **file:line:** Sources/converter/ValidationPipeline.swift:683-691,1013-1028
@@ -654,7 +654,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **discovered-by:** reviewer V-4; tests T-18
 - **evidence-before:** AUDIT/findings/L2-validation-config.md V-4; L6-tests.md T-18
 - **fix-summary:** New RIFFChunkWalker (bounds/overflow-checked walk from offset 12, ds64 required first for RF64/BW64 and validated, 0xFFFFFFFF resolved through ds64, chunk past EOF / placeholder in RIFF / trailing bytes are errors); containsChunk answers via the walk, so bext/ds64 text inside LIST/INFO or bext no longer counts and a bext beyond 64 KiB is found. WAVFixture byte builder; 8 tests incl. header/PCM boundary pins.
-- **evidence-after:** AUDIT/evidence/0043-before.log (5 of 8 tests fail on the substring scan), 0043-after.log (14 pass incl. neighbours); swiftlint 533/56. Full suite pending
+- **evidence-after:** AUDIT/evidence/0043-before.log (5 of 8 tests fail on the substring scan), 0043-after.log (14 pass incl. neighbours); swiftlint 533/56. Full suite (AUDIT/evidence/validation-group-fullsuite.txt): 226 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** 9bc41f4
 - **notes:** Bounds-checked chunk walker; boundary tests for header/PCM parsers.
 
@@ -694,7 +694,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **evidence-after:** AUDIT/evidence/0046-before.log (no WARN line before), 0046-after.log (7 config tests pass); swiftlint 533/56. Full suite (AUDIT/evidence/config-group-fullsuite.txt): 215 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** 7455803
 
-### #0047 · S2 · TEST · Source clip re-rendered and re-analysed for every short variant
+### #0047 · S2 · DONE · Source clip re-rendered and re-analysed for every short variant
 
 - **project/module:** converter/ValidationPipeline
 - **file:line:** Sources/converter/ValidationPipeline.swift:16-32,59-63
@@ -703,7 +703,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **discovered-by:** reviewer V-8
 - **evidence-before:** AUDIT/findings/L2-validation-config.md V-8
 - **fix-summary:** AudioSegmentQCCacheKey (fingerprint, limit ms, sampleRate, decode kind, policy) + ProbeCache.cachedAudioSegmentQCResult; renderDomainQCResult and the comparison clip compute once per key, so the four short variants of a song decode the segment once. CommandInvocationLog test helper counts real ffmpeg invocations.
-- **evidence-after:** AUDIT/evidence/0047-before.log (2 decodes/analyses per identical call), 0047-after.log (1 each; #0015 and short neighbours pass); swiftlint 533/56. Full suite pending
+- **evidence-after:** AUDIT/evidence/0047-before.log (2 decodes/analyses per identical call), 0047-after.log (1 each; #0015 and short neighbours pass); swiftlint 533/56. Full suite (AUDIT/evidence/validation-group-fullsuite.txt): 226 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** c238583
 
 ### #0048 · S2 · DONE · -master is not idempotent (re-masters its own _mastered outputs)
@@ -750,7 +750,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **discovered-by:** reviewer A-10
 - **evidence-before:** AUDIT/findings/L2-audio.md A-10
 
-### #0052 · S2 · TEST · Full-decode image preflight of the same master repeated ~10x per run
+### #0052 · S2 · DONE · Full-decode image preflight of the same master repeated ~10x per run
 
 - **project/module:** converter/ImagePipeline
 - **file:line:** Sources/converter/ValidationPipeline.swift:391 (preflightImageInput call sites)
@@ -759,7 +759,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **discovered-by:** reviewer X-13
 - **evidence-before:** AUDIT/findings/L2-video-image-actions-cli.md X-13
 - **fix-summary:** ProbeCache.verifyImageDecodeOnce remembers fingerprints whose full decode succeeded (failures are not remembered); preflightImageInput decodes each file version once.
-- **evidence-after:** AUDIT/evidence/0052-before.log (4 decodes for 4 preflights), 0052-after.log (1; rewritten file re-decoded once); swiftlint 533/56. Full suite pending
+- **evidence-after:** AUDIT/evidence/0052-before.log (4 decodes for 4 preflights), 0052-after.log (1; rewritten file re-decoded once); swiftlint 533/56. Full suite (AUDIT/evidence/validation-group-fullsuite.txt): 226 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** fbefda6
 
 ### #0053 · S2 · START · M:SS timecode parsing drops empty components; empty-component guard unreachable
@@ -1030,7 +1030,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **discovered-by:** reviewer C-13
 - **evidence-before:** AUDIT/findings/L2-core-runtime.md C-13
 
-### #0081 · S3 · TEST · LUFS rebase widens the tolerance symmetrically
+### #0081 · S3 · DONE · LUFS rebase widens the tolerance symmetrically
 
 - **project/module:** converter/ValidationPipeline
 - **file:line:** Sources/converter/ValidationPipeline.swift:203-210
@@ -1039,7 +1039,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **discovered-by:** reviewer V-9
 - **evidence-before:** AUDIT/findings/L2-validation-config.md V-9
 - **fix-summary:** AudioQCPolicy gains minimumLUFSOverride/maximumLUFSOverride; loudnessPreservingQCPolicy moves only the breached LUFS bound (measured -/+ 0.1) and QC issue text names the real window.
-- **evidence-after:** AUDIT/evidence/0081-before.log (max rebased to +1.35, loud render passed), 0081-after.log (only the breached bound moves; neighbours pass); swiftlint 533/56. Full suite pending
+- **evidence-after:** AUDIT/evidence/0081-before.log (max rebased to +1.35, loud render passed), 0081-after.log (only the breached bound moves; neighbours pass); swiftlint 533/56. Full suite (AUDIT/evidence/validation-group-fullsuite.txt): 226 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** bccf942
 
 ### #0082 · S3 · DONE · PREFLIGHT_SECONDS, DURATION_TOLERANCE_SEC, CRC_CHUNK_BYTES supported but undocumented
