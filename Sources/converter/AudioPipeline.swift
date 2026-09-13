@@ -1,5 +1,20 @@
 import Foundation
 
+// Which of the two generated noise segments a value belongs to. Each position carries its own
+// seed salt so the leading and trailing noise of one deliverable are different noise while
+// both stay a pure function of the source.
+enum NoiseSegment: CaseIterable, Sendable {
+    case leading
+    case trailing
+
+    var seedSalt: UInt32 {
+        switch self {
+        case .leading: return 0x4C45_4144
+        case .trailing: return 0x5452_4149
+        }
+    }
+}
+
 struct LoudnessStaticGainPlan: Equatable {
     let sourceIntegratedLUFS: Double
     let sourcePeakDBFS: Double
@@ -811,7 +826,42 @@ extension ConverterTool {
         try verifySilencePadding(file, expectedDuration: expectedDuration, spec: spec)
     }
 
+    // The source had to pass verifyAudibleAudioTrack (max_volume above -70 dBFS) before it was
+    // padded, so the programme between the two transition silences must still clear that bar:
+    // a concat that dropped or muted the source would otherwise pass every other noise check.
+    func verifyNoisePaddedProgrammeAudible(_ file: URL, expectedDuration: Double, spec: NoiseSpec) throws {
+        let minimumProgrammeMaxVolumeDBFS = -70.0
+        let padding = spec.seconds + NoiseSpec.transitionSilenceSeconds
+        let programmeSeconds = expectedDuration - (padding * 2)
+        let margin = min(0.05, programmeSeconds / 4)
+        let probeSeconds = programmeSeconds - (margin * 2)
+        guard probeSeconds >= 0.20 else {
+            return
+        }
+        let probeStart = padding + margin
+        let maxVolume: Double
+        do {
+            maxVolume = try audioSegmentMaxVolumeDBFS(
+                file: file,
+                startSeconds: probeStart,
+                durationSeconds: probeSeconds
+            )
+        } catch {
+            throw AppError(
+                "Programme peak verification failed for \(file.path): start=\(String(format: "%.3f", probeStart)) "
+                    + "duration=\(String(format: "%.3f", probeSeconds)) error=\(error.localizedDescription)"
+            )
+        }
+        if maxVolume <= minimumProgrammeMaxVolumeDBFS {
+            throw AppError(
+                "Noise padding verification failed for \(file.path): the programme between the noise segments "
+                    + "is silent (max_volume=\(String(format: "%.2f", maxVolume)) dBFS)"
+            )
+        }
+    }
+
     func verifyNoisePadding(_ file: URL, expectedDuration: Double, spec: NoiseSpec) throws {
+        try verifyNoisePaddedProgrammeAudible(file, expectedDuration: expectedDuration, spec: spec)
         let boundaryMargin = min(0.05, spec.seconds / 4)
         let probeSeconds = max(0, spec.seconds - (boundaryMargin * 2))
         guard probeSeconds >= 0.20 else {
@@ -938,9 +988,15 @@ extension ConverterTool {
         }
     }
 
-    func makeRawNoiseSegmentWAV(spec: NoiseSpec, stem: String) throws -> URL {
+    // The generator seed is a pure function of the source bytes and the segment position, so a
+    // rerun over the same source reproduces the same deliverable byte for byte and two runs can be
+    // compared by hash. anoisesrc accepts any seed in 0...UInt32.max.
+    func noiseSeed(for source: URL, segment: NoiseSegment) throws -> UInt32 {
+        try crc32Value(for: source) ^ segment.seedSalt
+    }
+
+    func makeRawNoiseSegmentWAV(spec: NoiseSpec, stem: String, seed: UInt32) throws -> URL {
         let temp = try makeTemp(in: cli.outDir, stem: stem, ext: ".wav")
-        let seed = Int.random(in: 1 ... Int(Int32.max))
         do {
             _ = try runner.run("ffmpeg", [
                 "-hide_banner", "-nostdin", "-v", "error", "-y",
@@ -965,8 +1021,8 @@ extension ConverterTool {
         }
     }
 
-    func makeNormalizedNoiseSegmentWAV(spec: NoiseSpec, stem: String) throws -> URL {
-        let rawNoise = try makeRawNoiseSegmentWAV(spec: spec, stem: "\(stem).raw")
+    func makeNormalizedNoiseSegmentWAV(spec: NoiseSpec, stem: String, seed: UInt32) throws -> URL {
+        let rawNoise = try makeRawNoiseSegmentWAV(spec: spec, stem: "\(stem).raw", seed: seed)
         defer { discardTempFile(rawNoise) }
 
         let policy = noiseLoudnessPolicy(for: spec)
@@ -997,9 +1053,17 @@ extension ConverterTool {
     func makeNoisePaddedWAV(from source: URL, spec: NoiseSpec, expectedDuration: Double) throws -> URL {
         let sourceWAV = try makeInternalWAV(from: source, in: cli.outDir, stem: "\(source.stem).noise.source")
         defer { discardTempFile(sourceWAV) }
-        let leadingNoise = try makeNormalizedNoiseSegmentWAV(spec: spec, stem: "\(source.stem).noise.leading")
+        let leadingNoise = try makeNormalizedNoiseSegmentWAV(
+            spec: spec,
+            stem: "\(source.stem).noise.leading",
+            seed: noiseSeed(for: source, segment: .leading)
+        )
         defer { discardTempFile(leadingNoise) }
-        let trailingNoise = try makeNormalizedNoiseSegmentWAV(spec: spec, stem: "\(source.stem).noise.trailing")
+        let trailingNoise = try makeNormalizedNoiseSegmentWAV(
+            spec: spec,
+            stem: "\(source.stem).noise.trailing",
+            seed: noiseSeed(for: source, segment: .trailing)
+        )
         defer { discardTempFile(trailingNoise) }
 
         let paddedWAV = try makeTemp(in: cli.outDir, stem: "\(source.stem).noise.padded", ext: ".wav")
@@ -1826,6 +1890,10 @@ extension ConverterTool {
     }
 
     func crc32(for file: URL) throws -> String {
+        String(format: "%08X", try crc32Value(for: file))
+    }
+
+    func crc32Value(for file: URL) throws -> UInt32 {
         let handle = try FileHandle(forReadingFrom: file)
         defer { try? handle.close() }
 
@@ -1861,7 +1929,7 @@ extension ConverterTool {
             }
         }
         crc ^= 0xFFFFFFFF
-        return String(format: "%08X", crc)
+        return crc
     }
 
     struct HashRenameOutcome {

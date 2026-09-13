@@ -1143,7 +1143,7 @@ final class PipelineIntegrationTests: XCTestCase {
 
         let tool = try workspace.makeTool(arguments: ["-noise", "3"])
         let spec = try tool.cli.noiseSpec()
-        let noise = try tool.makeNormalizedNoiseSegmentWAV(spec: spec, stem: "production.noise")
+        let noise = try tool.makeNormalizedNoiseSegmentWAV(spec: spec, stem: "production.noise", seed: 1)
         defer { tool.discardTempFile(noise) }
 
         let result = try tool.audioQCResult(for: noise, policy: tool.noiseLoudnessPolicy(for: spec))
@@ -1171,6 +1171,79 @@ final class PipelineIntegrationTests: XCTestCase {
             targetLUFS: NoiseSpec.targetLUFS
         )
         XCTAssertEqual(leadingLUFS, NoiseSpec.targetLUFS, accuracy: tool.noiseLUFSTolerance(for: spec))
+    }
+
+    // audit #0083: the noise generator was seeded with Int.random, so two -noise runs over the same
+    // source produced different deliverables and a rerun could never be checked against an earlier
+    // one. The seed now derives from the source's CRC-32 and the segment position: the same source
+    // always yields the same output, and the leading and trailing segments still differ.
+    func testNoiseOutputIsReproducibleAcrossReruns() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe"])
+
+        let flac = try workspace.createAudio(name: "repeat_flac", ext: "flac", duration: 0.8)
+        let wav = try workspace.createAudio(name: "repeat_wav", ext: "wav", duration: 0.8)
+        let tool = try workspace.makeTool(arguments: ["-noise", "0.5", "--overwrite"])
+        let spec = try tool.cli.noiseSpec()
+
+        XCTAssertNotEqual(
+            try tool.noiseSeed(for: flac, segment: .leading),
+            try tool.noiseSeed(for: flac, segment: .trailing),
+            "leading and trailing noise must not be the same segment twice"
+        )
+        let copy = workspace.output.appendingPathComponent("repeat_flac_copy.flac")
+        try FileManager.default.copyItem(at: flac, to: copy)
+        XCTAssertEqual(
+            try tool.noiseSeed(for: flac, segment: .leading),
+            try tool.noiseSeed(for: copy, segment: .leading),
+            "byte-identical sources must share a seed"
+        )
+        try FileManager.default.removeItem(at: copy)
+
+        for source in [flac, wav] {
+            let first = try tool.addNoiseToMedia(source, spec: spec)
+            let firstCRC = try tool.crc32(for: first)
+            let second = try tool.addNoiseToMedia(source, spec: spec)
+            XCTAssertEqual(first, second)
+            XCTAssertEqual(try tool.crc32(for: second), firstCRC, "rerun of \(source.basename) must be byte-identical")
+        }
+    }
+
+    // audit #0083: verifyNoisePadding checked the noise segments and the transition gaps but never
+    // the programme between them, so a concat that dropped the source audio would still have been
+    // published as a valid noise-padded deliverable.
+    func testNoisePaddingVerifierRejectsSilentProgramme() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe"])
+
+        let tool = try workspace.makeTool(arguments: ["-noise", "0.5"])
+        let spec = try tool.cli.noiseSpec()
+        let noise = try tool.makeNormalizedNoiseSegmentWAV(spec: spec, stem: "silent.programme.noise", seed: 7)
+        defer { tool.discardTempFile(noise) }
+
+        let programmeSeconds = 0.8
+        let expectedDuration = tool.noiseExpectedDuration(sourceDuration: programmeSeconds, spec: spec)
+        let middleSeconds = programmeSeconds + 2 * NoiseSpec.transitionSilenceSeconds
+        let rate = tool.config.wavSampleRate
+        let padded = workspace.output.appendingPathComponent("silent_programme.wav")
+        _ = try tool.runner.run("ffmpeg", [
+            "-hide_banner", "-nostdin", "-v", "error", "-y",
+            "-i", noise.path,
+            "-f", "lavfi", "-i", "anullsrc=r=\(rate):cl=stereo:d=\(String(format: "%.6f", middleSeconds))",
+            "-i", noise.path,
+            "-filter_complex", "[0:a:0][1:a:0][2:a:0]concat=n=3:v=0:a=1[out]",
+            "-map", "[out]", "-ac", "2", "-ar", String(rate), "-c:a", tool.config.wavCodec,
+            "-f", "wav", "-rf64", "always", padded.path
+        ])
+
+        XCTAssertThrowsError(
+            try tool.verifyNoisePadding(padded, expectedDuration: expectedDuration, spec: spec)
+        ) { error in
+            XCTAssertTrue(
+                String(describing: error).contains("programme"),
+                "the silent programme must be named, got: \(error)"
+            )
+        }
     }
 
     func testFadeCutProcessesMP3WAVAndFLACWithShortenedDuration() throws {

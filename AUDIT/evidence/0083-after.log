@@ -1,0 +1,61 @@
+Building for debugging...
+[0/6] Write sources
+[2/6] Write swift-version--58304C5D6DBC2206.txt
+[4/8] Compiling converter AudioPipeline.swift
+[5/8] Emitting module converter
+[5/10] Write Objects.LinkFileList
+[6/10] Linking converter
+[7/10] Applying converter
+[9/12] Compiling converterTests PipelineIntegrationTests.swift
+[10/12] Emitting module converterTests
+[10/12] Write Objects.LinkFileList
+[11/12] Linking converterPackageTests
+Build complete! (3.24s)
+Test Suite 'Selected tests' started at 2026-09-13 23:38:07.762.
+Test Suite 'converterPackageTests.xctest' started at 2026-09-13 23:38:07.762.
+Test Suite 'PipelineIntegrationTests' started at 2026-09-13 23:38:07.762.
+Test Case '-[converterTests.PipelineIntegrationTests testNoiseAddsLeadingAndTrailingNoiseToAudioMedia]' started.
+[2026-09-13 23:38:08] [converterTests] [INFO] Add noise noise_flac.flac: before=0.500 silence=2 after=0.500 level=-12 LUFS
+[2026-09-13 23:38:14] [converterTests] [INFO] Created noise-padded media: noise_flac_noise_0_5s.flac
+[2026-09-13 23:38:14] [converterTests] [INFO] Add noise noise_m4a.m4a: before=0.500 silence=2 after=0.500 level=-12 LUFS
+[2026-09-13 23:38:21] [converterTests] [INFO] Created noise-padded media: noise_m4a_noise_0_5s.m4a
+[2026-09-13 23:38:21] [converterTests] [INFO] Add noise noise_mp3.mp3: before=0.500 silence=2 after=0.500 level=-12 LUFS
+[2026-09-13 23:38:27] [converterTests] [INFO] Created noise-padded media: noise_mp3_noise_0_5s.mp3
+[2026-09-13 23:38:27] [converterTests] [INFO] Add noise noise_video.mp4: before=0.500 silence=2 after=0.500 level=-12 LUFS
+[2026-09-13 23:38:32] [converterTests] [INFO] Noise MP4 video encoders: hevc_videotoolbox, libx264
+[2026-09-13 23:38:34] [converterTests] [INFO] Created noise-padded media: noise_video_noise_0_5s.mp4
+[2026-09-13 23:38:34] [converterTests] [INFO] Add noise noise_wav.wav: before=0.500 silence=2 after=0.500 level=-12 LUFS
+[2026-09-13 23:38:40] [converterTests] [INFO] Created noise-padded media: noise_wav_noise_0_5s.wav
+Test Case '-[converterTests.PipelineIntegrationTests testNoiseAddsLeadingAndTrailingNoiseToAudioMedia]' passed (39.671 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testNoiseIgnoresPreviouslyGeneratedNoiseOutputs]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testNoiseIgnoresPreviouslyGeneratedNoiseOutputs]' passed (0.138 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testNoiseOutputIsReproducibleAcrossReruns]' started.
+[2026-09-13 23:38:54] [converterTests] [INFO] Created noise-padded media: repeat_flac_noise_0_5s.flac
+[2026-09-13 23:39:00] [converterTests] [INFO] Created noise-padded media: repeat_flac_noise_0_5s.flac
+[2026-09-13 23:39:06] [converterTests] [INFO] Created noise-padded media: repeat_wav_noise_0_5s.wav
+[2026-09-13 23:39:12] [converterTests] [INFO] Created noise-padded media: repeat_wav_noise_0_5s.wav
+Test Case '-[converterTests.PipelineIntegrationTests testNoiseOutputIsReproducibleAcrossReruns]' passed (25.002 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testNoisePaddingStaysAtTargetAfterFLACDeliveryEncode]' started.
+[2026-09-13 23:39:20] [converterTests] [INFO] Created noise-padded media: delivery_noise_noise_6s.flac
+Test Case '-[converterTests.PipelineIntegrationTests testNoisePaddingStaysAtTargetAfterFLACDeliveryEncode]' passed (9.219 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testNoisePaddingVerifierRejectsSilentProgramme]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testNoisePaddingVerifierRejectsSilentProgramme]' passed (1.616 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testNoiseSegmentUsesDynamicLoudnormForProductionDurations]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testNoiseSegmentUsesDynamicLoudnormForProductionDurations]' passed (1.602 seconds).
+Test Suite 'PipelineIntegrationTests' passed at 2026-09-13 23:39:25.011.
+	 Executed 6 tests, with 0 failures (0 unexpected) in 77.248 (77.249) seconds
+Test Suite 'converterTests' started at 2026-09-13 23:39:25.011.
+Test Case '-[converterTests.converterTests testNoiseParsesDefaultAndExplicitDuration]' started.
+Test Case '-[converterTests.converterTests testNoiseParsesDefaultAndExplicitDuration]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testNoiseRejectsInvalidArguments]' started.
+Test Case '-[converterTests.converterTests testNoiseRejectsInvalidArguments]' passed (0.000 seconds).
+Test Suite 'converterTests' passed at 2026-09-13 23:39:25.012.
+	 Executed 2 tests, with 0 failures (0 unexpected) in 0.001 (0.001) seconds
+Test Suite 'converterPackageTests.xctest' passed at 2026-09-13 23:39:25.012.
+	 Executed 8 tests, with 0 failures (0 unexpected) in 77.249 (77.250) seconds
+Test Suite 'Selected tests' passed at 2026-09-13 23:39:25.012.
+	 Executed 8 tests, with 0 failures (0 unexpected) in 77.249 (77.250) seconds
+◇ Test run started.
+↳ Testing Library Version: 1902
+↳ Target Platform: arm64e-apple-macos14.0
+✔ Test run with 0 tests in 0 suites passed after 0.001 seconds.
