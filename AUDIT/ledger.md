@@ -2,28 +2,26 @@
 
 Session: `2026-09-13` · branch `audit/2026-09-13` · baseline commit `4bb136a`
 
-**known-total:100 done:35 open:64 blocked:1 new-this-session:100**
+**known-total:100 done:37 open:62 blocked:1 new-this-session:100**
 
 | status | count |
 |---|---|
 | START | 54 |
 | PROGRESS | 1 |
-| TEST | 9 |
+| TEST | 7 |
 | AUDIT | 0 |
-| DONE | 35 |
+| DONE | 37 |
 | BLOCKED | 1 |
 
 Status gates: START (reproduced/proven + expected behaviour written) → PROGRESS (diff) → TEST (failing-before/passing-after test pasted, full suite green, no new warnings) → AUDIT (cold re-read, all scanners re-run, no baseline regression, no new placeholder) → DONE (committed atomically). BLOCKED needs reason + what was tried + ≥2 options for a human.
 
-## Open S0 / S1 (5)
+## Open S0 / S1 (3)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
 | #0006 | S0 | repo | node1 (fresh clone) | Phase E: independent verification from a fresh clone on node1 | test | START |  |
 | #0005 | S1 | repo | wiki | Create and maintain the wiki audit tracker page mirroring the ledger (§9) | docs | PROGRESS | 0ac7242 |
 | #0030 | S1 | repo/docs | README.md:25,59; Sources/converter/CLI.swift:461-481,664-665; CONTRIBUTING.md:59; wiki Home/Full-Run-Contract | README, CLI help, CONTRIBUTING and wiki contradict actual behaviour (source rename, audio alteration, portrait input, --keep-full-name, 58 s, auto-install wording) | docs | START |  |
-| #0037 | S1 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:1138-1167 | loudnessPreservingQCPolicy has no direct test; 'hot' fixture is not hot | test | TEST | a715956 |
-| #0038 | S1 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:126-146 | Orphan temp cleanup untested against a live foreign PID | test | TEST | a53673a |
 
 ## Blocked (1)
 
@@ -95,7 +93,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 | #0098 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:529,534 | Exact ffmpeg bass filter string pinned without a stated reason | test | START |  |
 | #0100 | S3 | converter/Actions | Sources/converter/Actions.swift (normalizedFullRunSource / resolveFullAudio) | Full-run source is renamed before preflight; a corrupt source loses its original name in the error | logic | START |  |
 
-## Done (35)
+## Done (37)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
@@ -128,6 +126,8 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 | #0034 | S1 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:63-81 | PipeCapture cap test never reaches the 64 MiB cap | test | DONE | 2185827 |
 | #0035 | S1 | converterTests | Sources/converter/Actions.swift:126-154 | --continue-on-error batch semantics and summary untested | test | DONE | 7a94113 |
 | #0036 | S1 | converterTests | Sources/converter/PipelineCore.swift:842-856 | -clean has no test guarding 'never deletes user files' | test | DONE | 03bfa6d |
+| #0037 | S1 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:1138-1167 | loudnessPreservingQCPolicy has no direct test; 'hot' fixture is not hot | test | DONE | a715956 |
+| #0038 | S1 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:126-146 | Orphan temp cleanup untested against a live foreign PID | test | DONE | a53673a |
 | #0001 | S2 | repo/AUDIT | AUDIT/inventory.md | Phase A: scope inventory, dependency graph, trust boundaries, blast radius | docs | DONE | 5fa6546 |
 | #0002 | S2 | repo/AUDIT | AUDIT/environment.md | Phase A: environment record and audit tooling install (§1/§1b) | docs | DONE | 5fa6546 |
 | #0003 | S2 | repo/AUDIT | AUDIT/baseline.md | Phase A: baseline metrics at 4bb136a (§3) | docs | DONE | 2184906 |
@@ -585,7 +585,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **evidence-after:** AUDIT/evidence/0036-before.log (guard dropped: 4 failures), 0036-after.log (2 pass); swiftlint 533/56. Full suite (AUDIT/evidence/0015-0031-0036-fullsuite.txt): 198 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** 03bfa6d
 
-### #0037 · S1 · TEST · loudnessPreservingQCPolicy has no direct test; 'hot' fixture is not hot
+### #0037 · S1 · DONE · loudnessPreservingQCPolicy has no direct test; 'hot' fixture is not hot
 
 - **project/module:** converterTests
 - **file:line:** Sources/Tests/converterTests/PipelineIntegrationTests.swift:1138-1167
@@ -594,10 +594,10 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **discovered-by:** reviewer T-9
 - **evidence-before:** AUDIT/findings/L6-tests.md T-9
 - **fix-summary:** Portrait-path fixture now breaches -1 dBTP (asserted); three direct tests of loudnessPreservingQCPolicy: breached ceiling rebased to measured+0.1 with others untouched, clean source returns the input policy, limitDuration measures the leading seconds.
-- **evidence-after:** AUDIT/evidence/0037-before.log (rebase disabled: 3/4 fail), 0037-after.log (4 pass); swiftlint 533/56. Full suite pending
+- **evidence-after:** AUDIT/evidence/0037-before.log (rebase disabled: 3/4 fail), 0037-after.log (4 pass); swiftlint 533/56. Full suite (AUDIT/evidence/0037-0038-fullsuite.txt): 203 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** a715956
 
-### #0038 · S1 · TEST · Orphan temp cleanup untested against a live foreign PID
+### #0038 · S1 · DONE · Orphan temp cleanup untested against a live foreign PID
 
 - **project/module:** converterTests
 - **file:line:** Sources/Tests/converterTests/PipelineIntegrationTests.swift:126-146
@@ -606,7 +606,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **discovered-by:** reviewer T-10
 - **evidence-before:** AUDIT/findings/L6-tests.md T-10
 - **fix-summary:** Two integration tests with a real child process cover every branch of isOrphanedConverterTempFile and processExists: own PID, parent, PID 1 (EPERM), live child (kept), exited child (swept), malformed and prefix-less names (kept).
-- **evidence-after:** AUDIT/evidence/0038-before.log (processExists forced false: 9 failures), 0038-after.log (3 pass); swiftlint 533/56. Full suite pending
+- **evidence-after:** AUDIT/evidence/0038-before.log (processExists forced false: 9 failures), 0038-after.log (3 pass); swiftlint 533/56. Full suite (AUDIT/evidence/0037-0038-fullsuite.txt): 203 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** a53673a
 
 ### #0039 · S2 · START · AsyncSemaphore grants permits to already-cancelled tasks
