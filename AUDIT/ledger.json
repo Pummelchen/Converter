@@ -613,7 +613,7 @@
       "evidence_before": "AUDIT/findings/L6-tests.md T-7",
       "fix_summary": "Unit tests pin cleanTransients() (exact surviving listing, byte-identical user files) and the -clean entry point including publish-backup recovery and orphan-temp cleanup.",
       "evidence_after": "AUDIT/evidence/0036-before.log (guard dropped: 4 failures), 0036-after.log (2 pass); swiftlint 533/56. Full suite pending",
-      "commit": "",
+      "commit": "03bfa6d",
       "notes": ""
     },
     {
