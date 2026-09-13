@@ -1,0 +1,48 @@
+[0/1] Planning build
+Building for debugging...
+[0/6] Write swift-version--58304C5D6DBC2206.txt
+[2/21] Compiling converter Main.swift
+[3/21] Compiling converter PipelineCore.swift
+[4/22] Compiling converter VideoPipeline.swift
+[5/22] Compiling converter Support.swift
+[6/22] Compiling converter ValidationPipeline.swift
+[7/22] Compiling converter ProcessRunner.swift
+[8/22] Compiling converter QualityReporting.swift
+[9/22] Compiling converter CLI.swift
+[10/22] Compiling converter Config.swift
+[11/22] Compiling converter ImagePipeline.swift
+[12/22] Compiling converter LosslessAudioPipeline.swift
+[13/22] Compiling converter DependencyBootstrap.swift
+[14/22] Compiling converter Diagnostics.swift
+[15/22] Emitting module converter
+[16/22] Compiling converter Actions.swift
+[17/22] Compiling converter AudioPipeline.swift
+[17/21] Linking converter
+[18/21] Applying converter
+[20/25] Compiling converterTests converterTests.swift
+[21/25] Emitting module converterTests
+[22/25] Compiling converterTests IntegrationTestSupport.swift
+[23/25] Compiling converterTests PipelineIntegrationTests.swift
+[24/27] Emitting module converterPackageTests
+[25/27] Compiling converterPackageTests runner.swift
+[25/26] Linking converterPackageTests
+Build complete! (3.54s)
+Test Suite 'Selected tests' started at 2026-09-13 20:22:43.307.
+Test Suite 'converterPackageTests.xctest' started at 2026-09-13 20:22:43.308.
+Test Suite 'converterTests' started at 2026-09-13 20:22:43.308.
+Test Case '-[converterTests.converterTests testPublishTempKeepsDestinationWhenBackupMoveFails]' started.
+Test Case '-[converterTests.converterTests testPublishTempKeepsDestinationWhenBackupMoveFails]' passed (0.006 seconds).
+Test Case '-[converterTests.converterTests testPublishTempLeavesNoBackupBehind]' started.
+Test Case '-[converterTests.converterTests testPublishTempLeavesNoBackupBehind]' passed (0.002 seconds).
+Test Case '-[converterTests.converterTests testPublishTempRestoresPreviousVersionWhenTempMoveFails]' started.
+Test Case '-[converterTests.converterTests testPublishTempRestoresPreviousVersionWhenTempMoveFails]' passed (0.003 seconds).
+Test Suite 'converterTests' passed at 2026-09-13 20:22:43.318.
+	 Executed 3 tests, with 0 failures (0 unexpected) in 0.010 (0.011) seconds
+Test Suite 'converterPackageTests.xctest' passed at 2026-09-13 20:22:43.318.
+	 Executed 3 tests, with 0 failures (0 unexpected) in 0.010 (0.011) seconds
+Test Suite 'Selected tests' passed at 2026-09-13 20:22:43.318.
+	 Executed 3 tests, with 0 failures (0 unexpected) in 0.010 (0.012) seconds
+◇ Test run started.
+↳ Testing Library Version: 1902
+↳ Target Platform: arm64e-apple-macos14.0
+✔ Test run with 0 tests in 0 suites passed after 0.001 seconds.

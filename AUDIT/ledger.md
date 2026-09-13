@@ -6,9 +6,9 @@ Session: `2026-09-13` · branch `audit/2026-09-13` · baseline commit `4bb136a`
 
 | status | count |
 |---|---|
-| START | 67 |
+| START | 66 |
 | PROGRESS | 1 |
-| TEST | 3 |
+| TEST | 4 |
 | AUDIT | 0 |
 | DONE | 28 |
 | BLOCKED | 1 |
@@ -24,7 +24,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 | #0015 | S1 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:18-32,97,197-201 | Clipped-samples rebase is not sample-rate invariant (source clip measured at 96 kHz, render at its own rate) | logic | TEST | 3d7ee94 |
 | #0030 | S1 | repo/docs | README.md:25,59; Sources/converter/CLI.swift:461-481,664-665; CONTRIBUTING.md:59; wiki Home/Full-Run-Contract | README, CLI help, CONTRIBUTING and wiki contradict actual behaviour (source rename, audio alteration, portrait input, --keep-full-name, 58 s, auto-install wording) | docs | START |  |
 | #0031 | S1 | converterTests | Sources/Tests/converterTests/IntegrationTestSupport.swift:25,133-143 | Integration workspace inherits OUTPUT_DIR/SRC_DIR/OUT_DIR/CONFIG_FILE/DEBUG from the host shell | test | TEST | d047f82 |
-| #0032 | S1 | converterTests | Sources/converter/PipelineCore.swift:487-505 | publishTemp restore-on-failure branch has no test | test | START |  |
+| #0032 | S1 | converterTests | Sources/converter/PipelineCore.swift:487-505 | publishTemp restore-on-failure branch has no test | test | TEST |  |
 | #0033 | S1 | converterTests | Sources/converter/PipelineCore.swift:551-561 | requireDirectChild never tested with .., symlinks, absolute paths | test | TEST | 1682212 |
 | #0034 | S1 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:63-81 | PipeCapture cap test never reaches the 64 MiB cap | test | START |  |
 | #0035 | S1 | converterTests | Sources/converter/Actions.swift:126-154 | --continue-on-error batch semantics and summary untested | test | START |  |
@@ -525,7 +525,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **evidence-after:** AUDIT/evidence/0031-before.log (17 failures with unsanitised helpers), 0031-after.log (2 new tests + 14-test and 12-test slices pass); swiftlint 533/56. Full suite pending
 - **commit sha:** d047f82
 
-### #0032 · S1 · START · publishTemp restore-on-failure branch has no test
+### #0032 · S1 · TEST · publishTemp restore-on-failure branch has no test
 
 - **project/module:** converterTests
 - **file:line:** Sources/converter/PipelineCore.swift:487-505
@@ -533,6 +533,8 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **host-used:** local
 - **discovered-by:** reviewer T-2
 - **evidence-before:** AUDIT/findings/L6-tests.md T-2
+- **fix-summary:** Two unit tests: temp removed after makeTemp (backup made, second move fails) restores the previous version, leaves no backup, rethrows the original error, unregisters the temp; immutable destination (first rename fails) leaves destination and temp intact. Restore-fails branch documented as unreachable without a hook.
+- **evidence-after:** AUDIT/evidence/0032-before.log (restore no-op: previous version lost), 0032-after.log (3 pass); swiftlint 533/56. Full suite pending
 
 ### #0033 · S1 · TEST · requireDirectChild never tested with .., symlinks, absolute paths
 

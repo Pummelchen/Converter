@@ -1342,6 +1342,95 @@ final class converterTests: XCTestCase {
         XCTAssertTrue(leftovers.isEmpty, "publishTemp must not leave backups behind")
     }
 
+    // audit #0032: publishTemp's restore-on-failure branch (the `catch` in PipelineCore.publishTemp) had no
+    // test. publishTemp never checks that `temp` exists, so deleting the temp after makeTemp lets the
+    // destination -> backup move succeed and makes the temp -> destination move fail with
+    // NSFileNoSuchFileError. The catch must move the backup back, leave no `.publish-backup` behind,
+    // unregister the temp and rethrow the original move error (not the "could not be restored" AppError).
+    func testPublishTempRestoresPreviousVersionWhenTempMoveFails() throws {
+        let tempDirectory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("converter-test-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: tempDirectory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: tempDirectory) }
+
+        let tool = try makeTool(tempDirectory: tempDirectory, arguments: ["-short"])
+        let destination = tool.cli.outDir.appendingPathComponent("song.wav")
+        let backup = tool.cli.outDir.appendingPathComponent(".song.wav.publish-backup")
+        let firstTemp = try tool.makeTemp(in: tool.cli.outDir, stem: "publish1", ext: ".wav")
+        try "first".write(to: firstTemp, atomically: true, encoding: .utf8)
+        try tool.publishTemp(firstTemp, to: destination)
+
+        // The second temp lives in a subdirectory that is neither srcDir nor outDir, so the run-scoped
+        // sweep in cleanupTemps() cannot touch it: only the RuntimeState registry could, which is what
+        // proves the unregistration below.
+        let scratch = tempDirectory.appendingPathComponent("scratch", isDirectory: true)
+        let secondTemp = try tool.makeTemp(in: scratch, stem: "publish2", ext: ".wav")
+        try "second".write(to: secondTemp, atomically: true, encoding: .utf8)
+        try FileManager.default.removeItem(at: secondTemp)
+
+        XCTAssertThrowsError(try tool.publishTemp(secondTemp, to: destination)) { error in
+            let nsError = error as NSError
+            XCTAssertEqual(nsError.domain, NSCocoaErrorDomain, "expected Foundation's own move error: \(error)")
+            XCTAssertEqual(nsError.code, NSFileNoSuchFileError, "expected the missing-temp move error: \(error)")
+            XCTAssertFalse(error is AppError, "the original move error must be rethrown, got: \(error)")
+            XCTAssertFalse(error.localizedDescription.contains("could not be restored"), "\(error)")
+        }
+
+        XCTAssertTrue(FileManager.default.fileExists(atPath: destination.path), "previous version must be restored")
+        XCTAssertEqual(try String(contentsOf: destination, encoding: .utf8), "first")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: backup.path), "backup must be moved back, not kept")
+        let leftovers = try FileManager.default.contentsOfDirectory(atPath: tool.cli.outDir.path)
+            .filter { $0.contains("publish-backup") }
+        XCTAssertTrue(leftovers.isEmpty, "restore must not leave a backup behind: \(leftovers)")
+
+        // The failed temp must be unregistered: a file recreated at its path survives cleanupTemps().
+        try "sentinel".write(to: secondTemp, atomically: true, encoding: .utf8)
+        tool.cleanupTemps()
+        XCTAssertTrue(FileManager.default.fileExists(atPath: secondTemp.path), "temp must be unregistered")
+        XCTAssertEqual(try String(contentsOf: destination, encoding: .utf8), "first")
+    }
+
+    // audit #0032: the other half of publishTemp's catch. When the destination -> backup move itself fails
+    // (here the destination carries UF_IMMUTABLE, Finder's "Locked" checkbox, so rename(2) returns EPERM)
+    // the destination still exists: no restore may be attempted, no backup may be left behind, the temp
+    // must be unregistered and the original error rethrown. The temp stays on disk until cleanupTemps()
+    // sweeps the run-scoped names out of outDir.
+    func testPublishTempKeepsDestinationWhenBackupMoveFails() throws {
+        let tempDirectory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("converter-test-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: tempDirectory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: tempDirectory) }
+
+        let tool = try makeTool(tempDirectory: tempDirectory, arguments: ["-short"])
+        let destination = tool.cli.outDir.appendingPathComponent("song.wav")
+        let backup = tool.cli.outDir.appendingPathComponent(".song.wav.publish-backup")
+        let firstTemp = try tool.makeTemp(in: tool.cli.outDir, stem: "publish1", ext: ".wav")
+        try "first".write(to: firstTemp, atomically: true, encoding: .utf8)
+        try tool.publishTemp(firstTemp, to: destination)
+        try FileManager.default.setAttributes([.immutable: true], ofItemAtPath: destination.path)
+        defer { try? FileManager.default.setAttributes([.immutable: false], ofItemAtPath: destination.path) }
+        let secondTemp = try tool.makeTemp(in: tool.cli.outDir, stem: "publish2", ext: ".wav")
+        try "second".write(to: secondTemp, atomically: true, encoding: .utf8)
+
+        XCTAssertThrowsError(try tool.publishTemp(secondTemp, to: destination)) { error in
+            let nsError = error as NSError
+            XCTAssertEqual(nsError.domain, NSCocoaErrorDomain, "expected Foundation's own move error: \(error)")
+            XCTAssertEqual(nsError.code, NSFileWriteNoPermissionError, "expected the EPERM move error: \(error)")
+            XCTAssertFalse(error is AppError, "the original move error must be rethrown, got: \(error)")
+            XCTAssertFalse(error.localizedDescription.contains("could not be restored"), "\(error)")
+        }
+
+        XCTAssertEqual(try String(contentsOf: destination, encoding: .utf8), "first")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: backup.path), "no backup may be left behind")
+        XCTAssertTrue(
+            FileManager.default.fileExists(atPath: secondTemp.path),
+            "a failed publish must not delete the temp"
+        )
+        tool.cleanupTemps()
+        XCTAssertFalse(FileManager.default.fileExists(atPath: secondTemp.path), "run-scoped sweep removes the temp")
+        XCTAssertEqual(try String(contentsOf: destination, encoding: .utf8), "first")
+    }
+
     func testAlbumFileFlagRejectionNamesAlbumTxtAndDirectoryCommands() throws {
         let root = URL(fileURLWithPath: "/tmp/converter-test")
         XCTAssertThrowsError(
