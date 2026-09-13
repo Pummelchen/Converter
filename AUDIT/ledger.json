@@ -452,13 +452,13 @@
       "location": "SECURITY.md:1-21",
       "title": "SECURITY.md is the unedited GitHub template with fictitious versions",
       "category": "placeholder",
-      "status": "START",
+      "status": "TEST",
       "host": "local",
       "discovered_by": "reviewer B-2",
       "session": "2026-09-13",
       "evidence_before": "AUDIT/findings/L0-L3-bridge-repo.md B-2",
-      "fix_summary": "",
-      "evidence_after": "",
+      "fix_summary": "SECURITY.md rewritten: supported = main + checked-in binary; GitHub private vulnerability reporting; 7/30-day expectations; scope notes.",
+      "evidence_after": "grep -c 'Use this section' SECURITY.md = 0 (was 2); no fictitious versions remain. Docs-only change, no test impact.",
       "commit": "",
       "notes": ""
     },
@@ -474,8 +474,8 @@
       "discovered_by": "reviewer B-3",
       "session": "2026-09-13",
       "evidence_before": "AUDIT/findings/L0-L3-bridge-repo.md B-3",
-      "fix_summary": "",
-      "evidence_after": "",
+      "fix_summary": "UPSTREAM.md for libbw64 (0.10.0 == upstream latest, Apache-2.0, unmodified) and README Third-party section.",
+      "evidence_after": "Files present; README references the licence and UPSTREAM.md. Docs-only change.",
       "commit": "",
       "notes": "UPSTREAM.md + README third-party section."
     },
@@ -486,7 +486,7 @@
       "location": "LICENSE (missing)",
       "title": "Repository has no LICENSE file",
       "category": "deps",
-      "status": "START",
+      "status": "BLOCKED",
       "host": "local",
       "discovered_by": "reviewer B-3",
       "session": "2026-09-13",
@@ -494,7 +494,8 @@
       "fix_summary": "",
       "evidence_after": "",
       "commit": "",
-      "notes": "License text is the owner's decision \u2014 expected BLOCKED with options."
+      "notes": "License text is the owner's decision \u2014 expected BLOCKED with options. Owner: repository maintainer (Pummelchen).",
+      "blocked_reason": "Choosing a licence is the repository owner's legal decision, not an engineering one; the audit must not pick one. Tried: confirmed no LICENSE exists anywhere in history (git log --all --diff-filter=A -- 'LICENSE*' is empty) and that the only licence text in the tree is libbw64's Apache-2.0. Options for the owner: (1) MIT or Apache-2.0 for a permissive tool (Apache-2.0 pairs naturally with the vendored libbw64 and adds an explicit patent grant); (2) GPL-3.0 if derivatives must stay open; (3) keep it proprietary \u2014 then state 'All rights reserved' in README and remove the CONTRIBUTING invitation for outside PRs, or add a contributor licence statement. Once decided: add LICENSE at the root, name it in README, and note the inbound=outbound rule in CONTRIBUTING."
     },
     {
       "id": "#0030",
