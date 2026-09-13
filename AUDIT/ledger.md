@@ -22,7 +22,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 | #0006 | S0 | repo | node1 (fresh clone) | Phase E: independent verification from a fresh clone on node1 | test | START |  |
 | #0005 | S1 | repo | wiki | Create and maintain the wiki audit tracker page mirroring the ledger (§9) | docs | PROGRESS | 0ac7242 |
 | #0015 | S1 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:18-32,97,197-201 | Clipped-samples rebase is not sample-rate invariant (source clip measured at 96 kHz, render at its own rate) | logic | START |  |
-| #0019 | S1 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:1316-1340 | ensureStandardMP3Output publishes without duration/loudness verification and re-encodes an already-standard MP3 | bug | TEST |  |
+| #0019 | S1 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:1316-1340 | ensureStandardMP3Output publishes without duration/loudness verification and re-encodes an already-standard MP3 | bug | TEST | 3da33d1 |
 | #0020 | S1 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:492-530,487-490 | -bass can clip the 24-bit staging WAV; nothing verifies true peak/clipping before publish | incomplete | START |  |
 | #0021 | S1 | converter/VideoPipeline+AudioPipeline | Sources/converter/VideoPipeline.swift:159-171; AudioPipeline.swift:1070-1082 | Encoder ladders fall through on encoder-independent failures (publish, ALAC/duration/loudness verify) and the padded-MP4 ladder reports only the last rung | logic | START |  |
 | #0022 | S1 | converter/Actions | Sources/converter/Actions.swift:209-218 | normalizedFullRunSource renames only the winning family member and orphans siblings/companions, breaking reruns; silent fallback when 1.<ext> exists | logic | START |  |
@@ -370,6 +370,7 @@ _none_
 - **evidence-before:** AUDIT/findings/L2-audio.md A-4
 - **fix-summary:** ensureStandardMP3Output deleted; its verified copy path lives in fullRunMP3Deliverable (#0007).
 - **evidence-after:** Reachability proof in commit message; build with -warnings-as-errors clean. Full suite: covered by the next batch run.
+- **commit sha:** 3da33d1
 - **notes:** Copy byte-for-byte when standard; verify like convertAudioToMP3. Coordinate with #0007.
 
 ### #0020 · S1 · START · -bass can clip the 24-bit staging WAV; nothing verifies true peak/clipping before publish
