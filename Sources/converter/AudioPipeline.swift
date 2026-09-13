@@ -50,12 +50,15 @@ extension ConverterTool {
         return stem.contains("_faded") || stem.contains("_fadecut") || stem.contains("_fadeout")
     }
 
-    func isSilenceDerivedMedia(_ file: URL) -> Bool {
+    // The padding actions append "<marker><seconds>s" to the stem, so their output is recognised
+    // by the LAST marker in the stem: a file padded twice (song_silence_2s_silence_3s) carries two,
+    // and only the final one is followed by the bare duration token this test expects.
+    func isPaddingDerivedMedia(_ file: URL, marker: String) -> Bool {
         let stem = file.stem.lowercasedASCII
-        guard let marker = stem.range(of: "_silence_") else {
+        guard let markerRange = stem.range(of: marker, options: .backwards) else {
             return false
         }
-        let suffix = stem[marker.upperBound...]
+        let suffix = stem[markerRange.upperBound...]
         guard suffix.hasSuffix("s") else {
             return false
         }
@@ -63,17 +66,12 @@ extension ConverterTool {
         return !numericToken.isEmpty && numericToken.allSatisfy { $0.isNumber || $0 == "_" }
     }
 
+    func isSilenceDerivedMedia(_ file: URL) -> Bool {
+        isPaddingDerivedMedia(file, marker: "_silence_")
+    }
+
     func isNoiseDerivedMedia(_ file: URL) -> Bool {
-        let stem = file.stem.lowercasedASCII
-        guard let marker = stem.range(of: "_noise_") else {
-            return false
-        }
-        let suffix = stem[marker.upperBound...]
-        guard suffix.hasSuffix("s") else {
-            return false
-        }
-        let numericToken = suffix.dropLast()
-        return !numericToken.isEmpty && numericToken.allSatisfy { $0.isNumber || $0 == "_" }
+        isPaddingDerivedMedia(file, marker: "_noise_")
     }
 
     func isBassDerivedAudio(_ file: URL) -> Bool {

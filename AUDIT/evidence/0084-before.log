@@ -1,0 +1,19 @@
+Test Suite 'Selected tests' started at 2026-09-13 23:30:11.242.
+Test Suite 'converterPackageTests.xctest' started at 2026-09-13 23:30:11.243.
+Test Suite 'converterTests' started at 2026-09-13 23:30:11.243.
+Test Case '-[converterTests.converterTests testDerivedMediaPredicatesRecogniseRepeatedPaddingMarkers]' started.
+/Users/node4/Downloads/Converter-wt/audio/Sources/Tests/converterTests/converterTests.swift:1810: error: -[converterTests.converterTests testDerivedMediaPredicatesRecogniseRepeatedPaddingMarkers] : XCTAssertTrue failed - second marker must be recognised
+/Users/node4/Downloads/Converter-wt/audio/Sources/Tests/converterTests/converterTests.swift:1811: error: -[converterTests.converterTests testDerivedMediaPredicatesRecogniseRepeatedPaddingMarkers] : XCTAssertTrue failed - second marker must be recognised
+/Users/node4/Downloads/Converter-wt/audio/Sources/Tests/converterTests/converterTests.swift:1823: error: -[converterTests.converterTests testDerivedMediaPredicatesRecogniseRepeatedPaddingMarkers] : XCTAssertEqual failed: ("["song.wav", "song_noise_2s.wav", "song_noise_2s_noise_3s.wav", "song_silence_2s_silence_3s.wav"]") is not equal to ("["song.wav", "song_noise_2s.wav", "song_noise_2s_noise_3s.wav"]")
+/Users/node4/Downloads/Converter-wt/audio/Sources/Tests/converterTests/converterTests.swift:1825: error: -[converterTests.converterTests testDerivedMediaPredicatesRecogniseRepeatedPaddingMarkers] : XCTAssertEqual failed: ("["song.wav", "song_noise_2s_noise_3s.wav", "song_silence_2s.wav", "song_silence_2s_silence_3s.wav"]") is not equal to ("["song.wav", "song_silence_2s.wav", "song_silence_2s_silence_3s.wav"]")
+Test Case '-[converterTests.converterTests testDerivedMediaPredicatesRecogniseRepeatedPaddingMarkers]' failed (0.065 seconds).
+Test Suite 'converterTests' failed at 2026-09-13 23:30:11.308.
+	 Executed 1 test, with 4 failures (0 unexpected) in 0.065 (0.065) seconds
+Test Suite 'converterPackageTests.xctest' failed at 2026-09-13 23:30:11.308.
+	 Executed 1 test, with 4 failures (0 unexpected) in 0.065 (0.065) seconds
+Test Suite 'Selected tests' failed at 2026-09-13 23:30:11.308.
+	 Executed 1 test, with 4 failures (0 unexpected) in 0.065 (0.066) seconds
+◇ Test run started.
+↳ Testing Library Version: 1902
+↳ Target Platform: arm64e-apple-macos14.0
+✔ Test run with 0 tests in 0 suites passed after 0.001 seconds.

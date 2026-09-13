@@ -1,0 +1,43 @@
+Building for debugging...
+[0/6] Write sources
+[2/6] Write swift-version--58304C5D6DBC2206.txt
+[4/8] Compiling converter AudioPipeline.swift
+[5/8] Emitting module converter
+[6/12] Compiling converter LosslessAudioPipeline.swift
+[7/12] Compiling converter VideoPipeline.swift
+[8/12] Compiling converter Actions.swift
+[9/12] Compiling converter ValidationPipeline.swift
+[9/14] Write Objects.LinkFileList
+[10/14] Linking converter
+[11/14] Applying converter
+[13/17] Compiling converterTests PipelineIntegrationTests.swift
+[14/17] Compiling converterTests converterTests.swift
+[15/17] Emitting module converterTests
+[15/17] Write Objects.LinkFileList
+[16/17] Linking converterPackageTests
+Build complete! (4.04s)
+Test Suite 'Selected tests' started at 2026-09-13 23:29:58.487.
+Test Suite 'converterPackageTests.xctest' started at 2026-09-13 23:29:58.488.
+Test Suite 'PipelineIntegrationTests' started at 2026-09-13 23:29:58.488.
+Test Case '-[converterTests.PipelineIntegrationTests testNoiseIgnoresPreviouslyGeneratedNoiseOutputs]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testNoiseIgnoresPreviouslyGeneratedNoiseOutputs]' passed (0.138 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testSilenceIgnoresPreviouslyGeneratedSilenceOutputs]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testSilenceIgnoresPreviouslyGeneratedSilenceOutputs]' passed (0.132 seconds).
+Test Suite 'PipelineIntegrationTests' passed at 2026-09-13 23:29:58.759.
+	 Executed 2 tests, with 0 failures (0 unexpected) in 0.271 (0.271) seconds
+Test Suite 'converterTests' started at 2026-09-13 23:29:58.759.
+Test Case '-[converterTests.converterTests testAlbumCandidatesCollapseSameStemFamiliesAndSkipDerivedOutputs]' started.
+[2026-09-13 23:29:58] [converterTests] [WARN] Album track 01.flac has same-stem conversions beside it; ignoring 01.wav, 01.mp3.
+Test Case '-[converterTests.converterTests testAlbumCandidatesCollapseSameStemFamiliesAndSkipDerivedOutputs]' passed (0.002 seconds).
+Test Case '-[converterTests.converterTests testDerivedMediaPredicatesRecogniseRepeatedPaddingMarkers]' started.
+Test Case '-[converterTests.converterTests testDerivedMediaPredicatesRecogniseRepeatedPaddingMarkers]' passed (0.001 seconds).
+Test Suite 'converterTests' passed at 2026-09-13 23:29:58.763.
+	 Executed 2 tests, with 0 failures (0 unexpected) in 0.003 (0.004) seconds
+Test Suite 'converterPackageTests.xctest' passed at 2026-09-13 23:29:58.763.
+	 Executed 4 tests, with 0 failures (0 unexpected) in 0.274 (0.275) seconds
+Test Suite 'Selected tests' passed at 2026-09-13 23:29:58.763.
+	 Executed 4 tests, with 0 failures (0 unexpected) in 0.274 (0.275) seconds
+◇ Test run started.
+↳ Testing Library Version: 1902
+↳ Target Platform: arm64e-apple-macos14.0
+✔ Test run with 0 tests in 0 suites passed after 0.001 seconds.

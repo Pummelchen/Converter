@@ -2398,6 +2398,37 @@ final class converterTests: XCTestCase {
         XCTAssertEqual(try tool.albumAudioCandidates().map(\.basename), ["01.flac", "02.mp3", "05.wav"])
     }
 
+    // audit #0084: isSilenceDerivedMedia / isNoiseDerivedMedia looked at the FIRST "_silence_" /
+    // "_noise_" marker, so a file padded twice (song_silence_2s_silence_3s.wav, the output of a
+    // -silence rerun over its own output) read as a fresh source and was padded a third time.
+    func testDerivedMediaPredicatesRecogniseRepeatedPaddingMarkers() throws {
+        let temp = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+        let tool = try makeTool(tempDirectory: temp)
+
+        let doubleSilence = temp.appendingPathComponent("a_silence_2s_silence_3s.wav")
+        let doubleNoise = temp.appendingPathComponent("a_noise_2s_noise_0_5s.flac")
+        XCTAssertTrue(tool.isSilenceDerivedMedia(doubleSilence), "second marker must be recognised")
+        XCTAssertTrue(tool.isNoiseDerivedMedia(doubleNoise), "second marker must be recognised")
+        XCTAssertTrue(tool.isSilenceDerivedMedia(temp.appendingPathComponent("a_silence_2s.wav")))
+        XCTAssertTrue(tool.isNoiseDerivedMedia(temp.appendingPathComponent("a_noise_2s.wav")))
+        // A marker that is not the tail of the stem is not this pipeline's output.
+        XCTAssertFalse(tool.isSilenceDerivedMedia(temp.appendingPathComponent("a_silence_2s_take.wav")))
+        XCTAssertFalse(tool.isNoiseDerivedMedia(temp.appendingPathComponent("a_noise_2s_mix.wav")))
+        XCTAssertFalse(tool.isSilenceDerivedMedia(temp.appendingPathComponent("a_silence_s.wav")))
+
+        for name in ["song.wav", "song_silence_2s.wav", "song_silence_2s_silence_3s.wav",
+                     "song_noise_2s.wav", "song_noise_2s_noise_3s.wav"] {
+            try Data().write(to: temp.appendingPathComponent(name))
+        }
+        XCTAssertEqual(try tool.audioSilenceCandidates().map(\.basename).sorted(),
+                       ["song.wav", "song_noise_2s.wav", "song_noise_2s_noise_3s.wav"])
+        XCTAssertEqual(try tool.audioNoiseCandidates().map(\.basename).sorted(),
+                       ["song.wav", "song_silence_2s.wav", "song_silence_2s_silence_3s.wav"])
+    }
+
     // audit #0011: the Homebrew bootstrap must only ever execute the exact installer it was
     // reviewed against: pinned to a commit, verified by SHA-256 before a single line runs.
     func testHomebrewInstallerIsPinnedAndIntegrityChecked() throws {
