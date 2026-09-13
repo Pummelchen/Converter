@@ -158,19 +158,42 @@ final class converterTests: XCTestCase {
         XCTAssertEqual(try defaultTool.effectiveShortClipSeconds(forDuration: 12.25), 12.25, accuracy: 0.0001)
         XCTAssertEqual(try defaultTool.effectiveShortClipSeconds(forDuration: 90), 58, accuracy: 0.0001)
 
-        var previewConfig = ProjectConfig()
-        previewConfig.shortMP4ClipSeconds = "0:30"
-        let logger = Logger(scriptName: "converterTests", debugEnabled: false)
-        let runner = ProcessRunner(logger: logger, environment: [:], debugEnabled: false)
-        let previewTool = ConverterTool(
-            cli: defaultTool.cli,
-            config: previewConfig,
-            logger: logger,
-            runner: runner,
-            environment: [:]
-        )
+        // audit #0063: this used to assign shortMP4ClipSeconds="0:30" straight to the struct, a value
+        // validate() rejected, so the MM:SS form was only ever exercised on a config no user could load.
+        // The value now arrives the way production receives it, through ProjectConfig.load.
+        let workspace = try IntegrationWorkspace()
+        try workspace.overwriteConfig(IntegrationWorkspace.defaultConfig + "\nSHORT_MP4_CLIP_SECONDS=0:30\n")
+        let previewTool = try workspace.makeTool(arguments: ["-short"])
+        XCTAssertEqual(previewTool.config.shortMP4ClipSeconds, "0:30")
         XCTAssertEqual(try previewTool.configuredShortClipSeconds(), 30, accuracy: 0.0001)
         XCTAssertEqual(try previewTool.effectiveShortClipSeconds(forDuration: 90), 30, accuracy: 0.0001)
+    }
+
+    // audit #0063: validate() checked SHORT_MP4_CLIP_SECONDS with Double() while the render read it
+    // through parseFlexibleTimecode, so "0:58" and "1:30" were rejected at load although the consumer
+    // understood them. One parser now decides: seconds, MM:SS and HH:MM:SS load, and zero, negative,
+    // malformed and absurdly large values fail with a message naming the key.
+    func testShortClipSecondsAcceptsTimecodesAndRejectsNonPositiveOrMalformedValues() throws {
+        let workspace = try IntegrationWorkspace()
+        func load(_ value: String) throws -> Double {
+            try workspace.overwriteConfig(IntegrationWorkspace.defaultConfig + "\nSHORT_MP4_CLIP_SECONDS=\(value)\n")
+            let config = try loadConfig(from: workspace)
+            return try parseFlexibleTimecode(config.shortMP4ClipSeconds, label: "SHORT_MP4_CLIP_SECONDS")
+        }
+
+        XCTAssertEqual(try load("58"), 58)
+        XCTAssertEqual(try load("0:58"), 58)
+        XCTAssertEqual(try load("1:30"), 90)
+        XCTAssertEqual(try load("0:01:30.5"), 90.5)
+
+        for invalid in ["0", "0:00", "-5", "1:75", "abc", "1e300", "1:2:3:4"] {
+            XCTAssertThrowsError(try load(invalid), "SHORT_MP4_CLIP_SECONDS=\(invalid) must be rejected") { error in
+                XCTAssertTrue(
+                    error.localizedDescription.contains("SHORT_MP4_CLIP_SECONDS"),
+                    "'\(invalid)': \(error.localizedDescription)"
+                )
+            }
+        }
     }
 
     func testOutputNamingAndSuffixHelpersAreStable() throws {

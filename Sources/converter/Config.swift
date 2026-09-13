@@ -403,7 +403,13 @@ struct ProjectConfig {
         if videoColorPrimaries.trimmed.isEmpty || videoColorTransfer.trimmed.isEmpty || videoColorSpace.trimmed.isEmpty || videoColorRange.trimmed.isEmpty {
             throw AppError("VIDEO color settings must not be empty")
         }
-        try requirePositiveDurationString(shortMP4ClipSeconds, "SHORT_MP4_CLIP_SECONDS")
+        // configuredShortClipSeconds reads this value through parseFlexibleTimecode, so the same parser
+        // decides what is valid here: "58", "0:58" and "1:30" alike, capped by maximumTimecodeSeconds.
+        // Validating with Double() instead rejected every MM:SS value the consumer would have accepted.
+        let shortClipSeconds = try parseFlexibleTimecode(shortMP4ClipSeconds, label: "SHORT_MP4_CLIP_SECONDS")
+        guard shortClipSeconds > 0 else {
+            throw AppError("SHORT_MP4_CLIP_SECONDS must be > 0 (got '\(shortMP4ClipSeconds)')")
+        }
         try requirePositiveRateString(shortMP4FPS, "SHORT_MP4_FPS")
         try requirePositive(shortMP4AudioSampleRate, "SHORT_MP4_AUDIO_SAMPLE_RATE")
         if shortMP4AudioSampleRate != 48_000 {
@@ -503,13 +509,6 @@ private func requireNumericString(_ value: String, _ name: String) throws {
     try requireNonEmpty(value, name)
     guard Double(value) != nil else {
         throw AppError("\(name) must be numeric (got '\(value)')")
-    }
-}
-
-private func requirePositiveDurationString(_ value: String, _ name: String) throws {
-    try requireNumericString(value, name)
-    guard let parsed = Double(value), parsed > 0 else {
-        throw AppError("\(name) must be > 0 (got '\(value)')")
     }
 }
 

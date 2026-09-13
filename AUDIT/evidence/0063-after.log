@@ -1,0 +1,56 @@
+Building for debugging...
+[0/5] Write sources
+[1/5] Write swift-version--58304C5D6DBC2206.txt
+[3/7] Compiling converter Config.swift
+[4/7] Emitting module converter
+[5/21] Compiling converter VideoPipeline.swift
+[6/21] Compiling converter QualityReporting.swift
+[7/21] Compiling converter Support.swift
+[8/21] Compiling converter ValidationPipeline.swift
+[9/21] Compiling converter Diagnostics.swift
+[10/21] Compiling converter ImagePipeline.swift
+[11/21] Compiling converter LosslessAudioPipeline.swift
+[12/21] Compiling converter Main.swift
+[13/21] Compiling converter PipelineCore.swift
+[14/21] Compiling converter ProcessRunner.swift
+[15/21] Compiling converter CLI.swift
+[16/21] Compiling converter DependencyBootstrap.swift
+[17/21] Compiling converter Actions.swift
+[18/21] Compiling converter AudioPipeline.swift
+[18/23] Write Objects.LinkFileList
+[19/23] Linking converter
+[20/23] Applying converter
+[22/27] Compiling converterTests PipelineIntegrationTests.swift
+[23/27] Compiling converterTests converterTests.swift
+[24/27] Compiling converterTests IntegrationTestSupport.swift
+[25/27] Emitting module converterTests
+[25/27] Write Objects.LinkFileList
+[26/27] Linking converterPackageTests
+Build complete! (3.76s)
+Test Suite 'Selected tests' started at 2026-09-13 23:16:26.312.
+Test Suite 'converterPackageTests.xctest' started at 2026-09-13 23:16:26.313.
+Test Suite 'converterTests' started at 2026-09-13 23:16:26.313.
+Test Case '-[converterTests.converterTests testFadeOutParsesFlexibleTimeArguments]' started.
+Test Case '-[converterTests.converterTests testFadeOutParsesFlexibleTimeArguments]' passed (0.001 seconds).
+Test Case '-[converterTests.converterTests testFlexibleTimecodeParsingAcceptsSupportedFormsAndRejectsInvalidBounds]' started.
+Test Case '-[converterTests.converterTests testFlexibleTimecodeParsingAcceptsSupportedFormsAndRejectsInvalidBounds]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testInvalidStringConfigIsRejectedDuringLoad]' started.
+Test Case '-[converterTests.converterTests testInvalidStringConfigIsRejectedDuringLoad]' passed (0.003 seconds).
+Test Case '-[converterTests.converterTests testProjectLoudnessDefaultsAreMinus12LUFS]' started.
+Test Case '-[converterTests.converterTests testProjectLoudnessDefaultsAreMinus12LUFS]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testShortClipSecondsAcceptsTimecodesAndRejectsNonPositiveOrMalformedValues]' started.
+Test Case '-[converterTests.converterTests testShortClipSecondsAcceptsTimecodesAndRejectsNonPositiveOrMalformedValues]' passed (0.009 seconds).
+Test Case '-[converterTests.converterTests testShortDurationHelpersClampToInputDurationConfigAndHardLimit]' started.
+Test Case '-[converterTests.converterTests testShortDurationHelpersClampToInputDurationConfigAndHardLimit]' passed (0.002 seconds).
+Test Case '-[converterTests.converterTests testValidateRejectsH264VideoToolboxPrimaryAboveVideoToolboxSessionLimit]' started.
+Test Case '-[converterTests.converterTests testValidateRejectsH264VideoToolboxPrimaryAboveVideoToolboxSessionLimit]' passed (0.006 seconds).
+Test Suite 'converterTests' passed at 2026-09-13 23:16:26.335.
+	 Executed 7 tests, with 0 failures (0 unexpected) in 0.022 (0.022) seconds
+Test Suite 'converterPackageTests.xctest' passed at 2026-09-13 23:16:26.335.
+	 Executed 7 tests, with 0 failures (0 unexpected) in 0.022 (0.022) seconds
+Test Suite 'Selected tests' passed at 2026-09-13 23:16:26.335.
+	 Executed 7 tests, with 0 failures (0 unexpected) in 0.022 (0.023) seconds
+◇ Test run started.
+↳ Testing Library Version: 1902
+↳ Target Platform: arm64e-apple-macos14.0
+✔ Test run with 0 tests in 0 suites passed after 0.001 seconds.
