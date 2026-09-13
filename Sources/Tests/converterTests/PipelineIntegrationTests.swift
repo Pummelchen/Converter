@@ -105,6 +105,30 @@ final class PipelineIntegrationTests: XCTestCase {
         XCTAssertLessThan(Date().timeIntervalSince(start), 15, "timeout must not block on a pipe held by a grandchild")
     }
 
+    // audit #0024: the batch image actions must never re-ingest the full run's portrait stills.
+    // -aipix on a 4320x7680 `_Short_8K.png` used to rewrite it as a letterboxed landscape 8K.
+    func testImageBatchActionsSkipPortraitShortStills() async throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["magick"])
+        try workspace.overwriteConfig(
+            IntegrationWorkspace.defaultConfig + "\nIMAGE_8K_WIDTH=320\nIMAGE_8K_HEIGHT=180\n")
+        let still = try workspace.createImage(name: "art_Short_8K", ext: "png", width: 180, height: 320)
+        let centerCut = try workspace.createImage(name: "art_Short_CenterCut_8K", ext: "png", width: 180, height: 320)
+        let reference = try workspace.copy(still, as: "art_Short_8K_reference", ext: "png")
+
+        let aipix = try workspace.makeTool(arguments: ["-aipix"])
+        try aipix.stepAIPix()
+        let runPix = try workspace.makeTool(arguments: ["-run_pix", "--continue-on-error"])
+        try? await runPix.stepRunPix()
+        let toJPG = try workspace.makeTool(arguments: ["-pngtojpg"])
+        try toJPG.stepPNGToJPG()
+
+        XCTAssertEqual(try aipix.crc32(for: still), try aipix.crc32(for: reference), "still must be untouched")
+        XCTAssertEqual(try aipix.imageDimensions(centerCut).map { "\($0.0)x\($0.1)" }, "180x320")
+        XCTAssertFalse(FileManager.default.fileExists(atPath: workspace.output.path + "/art_Short_8K.jpg"))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: workspace.output.path + "/art_Short_8K_4K.png"))
+    }
+
     // The stills must show exactly what the shorts show: the fitted one pads with black, the
     // centre cut fills the frame. Verified on pixels, not on the command that produced them.
     func testPortraitShortStillsMatchTheirRenderFraming() throws {

@@ -1,0 +1,220 @@
+[0/1] Planning build
+Building for debugging...
+[0/6] Write sources
+[1/6] Write swift-version--58304C5D6DBC2206.txt
+[3/21] Compiling converter DependencyBootstrap.swift
+[4/21] Compiling converter Diagnostics.swift
+[5/22] Compiling converter CLI.swift
+[6/22] Compiling converter Config.swift
+[7/22] Compiling converter VideoPipeline.swift
+[8/22] Compiling converter ImagePipeline.swift
+[9/22] Compiling converter LosslessAudioPipeline.swift
+[10/22] Compiling converter Main.swift
+[11/22] Compiling converter PipelineCore.swift
+[12/22] Compiling converter ProcessRunner.swift
+[13/22] Compiling converter QualityReporting.swift
+[14/22] Compiling converter Support.swift
+[15/22] Compiling converter ValidationPipeline.swift
+[16/22] Emitting module converter
+[17/22] Compiling converter Actions.swift
+[18/22] Compiling converter AudioPipeline.swift
+[18/22] Linking converter
+[19/22] Applying converter
+[21/26] Compiling converterTests converterTests.swift
+[22/26] Compiling converterTests IntegrationTestSupport.swift
+[23/26] Emitting module converterTests
+[24/26] Compiling converterTests PipelineIntegrationTests.swift
+[25/27] Emitting module converterPackageTests
+[25/27] Write Objects.LinkFileList
+[26/27] Linking converterPackageTests
+Build complete! (5.61s)
+Test Suite 'Selected tests' started at 2026-09-13 19:06:34.041.
+Test Suite 'converterPackageTests.xctest' started at 2026-09-13 19:06:34.049.
+Test Suite 'PipelineIntegrationTests' started at 2026-09-13 19:06:34.049.
+Test Case '-[converterTests.PipelineIntegrationTests testImageBatchActionsSkipPortraitShortStills]' started.
+[2026-09-13 19:06:34] [converterTests] [INFO] PNG variants: art_Short_8K_reference.png
+[2026-09-13 19:06:34] [converterTests] [INFO] Created 8K PNG: art_Short_8K_reference_8K.png
+[2026-09-13 19:06:34] [converterTests] [INFO] Created 4K PNG: art_Short_8K_reference_4K.png
+[2026-09-13 19:06:34] [converterTests] [INFO] PNG variants: art_Short_8K.png
+[2026-09-13 19:06:34] [converterTests] [INFO] Created 8K PNG: art_Short_8K.png
+[2026-09-13 19:06:34] [converterTests] [INFO] Created 4K PNG: art_Short_4K.png
+[2026-09-13 19:06:34] [converterTests] [INFO] PNG variants: art_Short_CenterCut_8K.png
+[2026-09-13 19:06:34] [converterTests] [INFO] Created 8K PNG: art_Short_CenterCut_8K.png
+[2026-09-13 19:06:34] [converterTests] [INFO] Created 4K PNG: art_Short_CenterCut_4K.png
+[2026-09-13 19:06:34] [converterTests] [INFO] Run_pix image: art_Short_4K.png
+[2026-09-13 19:06:34] [converterTests] [INFO] Full step: PNG variants
+[2026-09-13 19:06:34] [converterTests] [INFO] Skip existing 8K PNG: art_Short_8K.png
+[2026-09-13 19:06:34] [converterTests] [INFO] Skip existing 4K PNG: art_Short_4K.png
+[2026-09-13 19:06:34] [converterTests] [INFO] Full step: NFT assets
+[2026-09-13 19:06:34] [converterTests] [INFO] Full step: 2K PNG
+[2026-09-13 19:06:34] [converterTests] [INFO] Created 2K PNG: art_Short_2K.png
+[2026-09-13 19:06:34] [converterTests] [INFO] Full step: 3K PNG
+[2026-09-13 19:06:34] [converterTests] [INFO] Created 3K PNG: art_Short_3K.png
+[2026-09-13 19:06:34] [converterTests] [INFO] Full step: 3K JPG deliverables
+[2026-09-13 19:06:34] [converterTests] [INFO] Created NFT set: art_Short
+[2026-09-13 19:06:34] [converterTests] [INFO] Full step: 8K JPG deliverables
+[2026-09-13 19:06:34] [converterTests] [INFO] Created 1MB JPG: art_Short_3K_1MB.jpg
+[2026-09-13 19:06:34] [converterTests] [INFO] Created 1MB JPG: art_Short_8K_1MB.jpg
+[2026-09-13 19:06:34] [converterTests] [INFO] Created 5MB JPG: art_Short_3K_5MB.jpg
+[2026-09-13 19:06:34] [converterTests] [INFO] Created 2MB JPG: art_Short_8K_2MB.jpg
+[2026-09-13 19:06:34] [converterTests] [INFO] Created 20MB JPG: art_Short_8K_20MB.jpg
+[2026-09-13 19:06:34] [converterTests] [INFO] Run_pix image: art_Short_8K_reference_4K.png
+[2026-09-13 19:06:34] [converterTests] [INFO] Full step: PNG variants
+[2026-09-13 19:06:34] [converterTests] [INFO] Skip existing 8K PNG: art_Short_8K_reference_8K.png
+[2026-09-13 19:06:34] [converterTests] [INFO] Skip existing 4K PNG: art_Short_8K_reference_4K.png
+[2026-09-13 19:06:34] [converterTests] [INFO] Full step: NFT assets
+[2026-09-13 19:06:34] [converterTests] [INFO] Full step: 2K PNG
+[2026-09-13 19:06:34] [converterTests] [INFO] Created 2K PNG: art_Short_8K_reference_2K.png
+[2026-09-13 19:06:34] [converterTests] [INFO] Full step: 3K PNG
+[2026-09-13 19:06:35] [converterTests] [INFO] Created 3K PNG: art_Short_8K_reference_3K.png
+[2026-09-13 19:06:35] [converterTests] [INFO] Full step: 3K JPG deliverables
+[2026-09-13 19:06:35] [converterTests] [INFO] Created NFT set: art_Short_8K_reference
+[2026-09-13 19:06:35] [converterTests] [INFO] Full step: 8K JPG deliverables
+[2026-09-13 19:06:35] [converterTests] [INFO] Created 1MB JPG: art_Short_8K_reference_3K_1MB.jpg
+[2026-09-13 19:06:35] [converterTests] [INFO] Created 1MB JPG: art_Short_8K_reference_8K_1MB.jpg
+[2026-09-13 19:06:35] [converterTests] [INFO] Created 5MB JPG: art_Short_8K_reference_3K_5MB.jpg
+[2026-09-13 19:06:35] [converterTests] [INFO] Created 2MB JPG: art_Short_8K_reference_8K_2MB.jpg
+[2026-09-13 19:06:35] [converterTests] [INFO] Created 20MB JPG: art_Short_8K_reference_8K_20MB.jpg
+[2026-09-13 19:06:35] [converterTests] [INFO] Run_pix image: art_Short_8K_reference_8K.png
+[2026-09-13 19:06:35] [converterTests] [INFO] Full step: PNG variants
+[2026-09-13 19:06:35] [converterTests] [INFO] Skip existing 8K PNG: art_Short_8K_reference_8K.png
+[2026-09-13 19:06:35] [converterTests] [INFO] Skip existing 4K PNG: art_Short_8K_reference_4K.png
+[2026-09-13 19:06:35] [converterTests] [INFO] Full step: NFT assets
+[2026-09-13 19:06:35] [converterTests] [INFO] Full step: 2K PNG
+[2026-09-13 19:06:35] [converterTests] [INFO] Skip existing 2K PNG: art_Short_8K_reference_2K.png
+[2026-09-13 19:06:35] [converterTests] [INFO] Full step: 3K PNG
+[2026-09-13 19:06:35] [converterTests] [INFO] Skip existing 3K PNG: art_Short_8K_reference_3K.png
+[2026-09-13 19:06:35] [converterTests] [INFO] Full step: 3K JPG deliverables
+[2026-09-13 19:06:35] [converterTests] [INFO] Skip existing NFT set: art_Short_8K_reference
+[2026-09-13 19:06:35] [converterTests] [INFO] Full step: 8K JPG deliverables
+[2026-09-13 19:06:35] [converterTests] [INFO] Skip existing 1MB JPG: art_Short_8K_reference_3K_1MB.jpg
+[2026-09-13 19:06:35] [converterTests] [INFO] Skip existing 1MB JPG: art_Short_8K_reference_8K_1MB.jpg
+[2026-09-13 19:06:35] [converterTests] [INFO] Skip existing 5MB JPG: art_Short_8K_reference_3K_5MB.jpg
+[2026-09-13 19:06:35] [converterTests] [INFO] Skip existing 2MB JPG: art_Short_8K_reference_8K_2MB.jpg
+[2026-09-13 19:06:35] [converterTests] [INFO] Skip existing 20MB JPG: art_Short_8K_reference_8K_20MB.jpg
+[2026-09-13 19:06:35] [converterTests] [INFO] Run_pix image: art_Short_8K_reference.png
+[2026-09-13 19:06:35] [converterTests] [INFO] Full step: PNG variants
+[2026-09-13 19:06:35] [converterTests] [INFO] Skip existing 8K PNG: art_Short_8K_reference_8K.png
+[2026-09-13 19:06:35] [converterTests] [INFO] Skip existing 4K PNG: art_Short_8K_reference_4K.png
+[2026-09-13 19:06:35] [converterTests] [INFO] Full step: NFT assets
+[2026-09-13 19:06:35] [converterTests] [INFO] Full step: 2K PNG
+[2026-09-13 19:06:35] [converterTests] [INFO] Skip existing 2K PNG: art_Short_8K_reference_2K.png
+[2026-09-13 19:06:35] [converterTests] [INFO] Full step: 3K PNG
+[2026-09-13 19:06:35] [converterTests] [INFO] Skip existing NFT set: art_Short_8K_reference
+[2026-09-13 19:06:35] [converterTests] [INFO] Skip existing 3K PNG: art_Short_8K_reference_3K.png
+[2026-09-13 19:06:35] [converterTests] [INFO] Full step: 3K JPG deliverables
+[2026-09-13 19:06:35] [converterTests] [INFO] Full step: 8K JPG deliverables
+[2026-09-13 19:06:35] [converterTests] [INFO] Skip existing 1MB JPG: art_Short_8K_reference_3K_1MB.jpg
+[2026-09-13 19:06:35] [converterTests] [INFO] Skip existing 1MB JPG: art_Short_8K_reference_8K_1MB.jpg
+[2026-09-13 19:06:35] [converterTests] [INFO] Skip existing 5MB JPG: art_Short_8K_reference_3K_5MB.jpg
+[2026-09-13 19:06:35] [converterTests] [INFO] Skip existing 2MB JPG: art_Short_8K_reference_8K_2MB.jpg
+[2026-09-13 19:06:35] [converterTests] [INFO] Skip existing 20MB JPG: art_Short_8K_reference_8K_20MB.jpg
+[2026-09-13 19:06:35] [converterTests] [INFO] Run_pix image: art_Short_8K.png
+[2026-09-13 19:06:35] [converterTests] [INFO] Full step: PNG variants
+[2026-09-13 19:06:35] [converterTests] [INFO] Skip existing 8K PNG: art_Short_8K.png
+[2026-09-13 19:06:35] [converterTests] [INFO] Skip existing 4K PNG: art_Short_4K.png
+[2026-09-13 19:06:35] [converterTests] [INFO] Full step: NFT assets
+[2026-09-13 19:06:35] [converterTests] [INFO] Full step: 2K PNG
+[2026-09-13 19:06:35] [converterTests] [INFO] Skip existing 2K PNG: art_Short_2K.png
+[2026-09-13 19:06:35] [converterTests] [INFO] Full step: 3K PNG
+[2026-09-13 19:06:35] [converterTests] [INFO] Skip existing 3K PNG: art_Short_3K.png
+[2026-09-13 19:06:35] [converterTests] [INFO] Full step: 3K JPG deliverables
+[2026-09-13 19:06:35] [converterTests] [INFO] Skip existing NFT set: art_Short
+[2026-09-13 19:06:35] [converterTests] [INFO] Full step: 8K JPG deliverables
+[2026-09-13 19:06:35] [converterTests] [INFO] Skip existing 1MB JPG: art_Short_3K_1MB.jpg
+[2026-09-13 19:06:35] [converterTests] [INFO] Skip existing 1MB JPG: art_Short_8K_1MB.jpg
+[2026-09-13 19:06:35] [converterTests] [INFO] Skip existing 5MB JPG: art_Short_3K_5MB.jpg
+[2026-09-13 19:06:35] [converterTests] [INFO] Skip existing 2MB JPG: art_Short_8K_2MB.jpg
+[2026-09-13 19:06:35] [converterTests] [INFO] Skip existing 20MB JPG: art_Short_8K_20MB.jpg
+[2026-09-13 19:06:35] [converterTests] [INFO] Run_pix image: art_Short_CenterCut_4K.png
+[2026-09-13 19:06:35] [converterTests] [INFO] Full step: PNG variants
+[2026-09-13 19:06:35] [converterTests] [INFO] Skip existing 8K PNG: art_Short_CenterCut_8K.png
+[2026-09-13 19:06:35] [converterTests] [INFO] Skip existing 4K PNG: art_Short_CenterCut_4K.png
+[2026-09-13 19:06:35] [converterTests] [INFO] Full step: NFT assets
+[2026-09-13 19:06:35] [converterTests] [INFO] Full step: 2K PNG
+[2026-09-13 19:06:35] [converterTests] [INFO] Created 2K PNG: art_Short_CenterCut_2K.png
+[2026-09-13 19:06:35] [converterTests] [INFO] Full step: 3K PNG
+[2026-09-13 19:06:35] [converterTests] [INFO] Created 3K PNG: art_Short_CenterCut_3K.png
+[2026-09-13 19:06:35] [converterTests] [INFO] Full step: 3K JPG deliverables
+[2026-09-13 19:06:35] [converterTests] [INFO] Created NFT set: art_Short_CenterCut
+[2026-09-13 19:06:35] [converterTests] [INFO] Full step: 8K JPG deliverables
+[2026-09-13 19:06:35] [converterTests] [INFO] Created 1MB JPG: art_Short_CenterCut_3K_1MB.jpg
+[2026-09-13 19:06:35] [converterTests] [INFO] Created 1MB JPG: art_Short_CenterCut_8K_1MB.jpg
+[2026-09-13 19:06:35] [converterTests] [INFO] Created 5MB JPG: art_Short_CenterCut_3K_5MB.jpg
+[2026-09-13 19:06:35] [converterTests] [INFO] Created 2MB JPG: art_Short_CenterCut_8K_2MB.jpg
+[2026-09-13 19:06:36] [converterTests] [INFO] Created 20MB JPG: art_Short_CenterCut_8K_20MB.jpg
+[2026-09-13 19:06:36] [converterTests] [INFO] Run_pix image: art_Short_CenterCut_8K.png
+[2026-09-13 19:06:36] [converterTests] [INFO] Full step: PNG variants
+[2026-09-13 19:06:36] [converterTests] [INFO] Skip existing 8K PNG: art_Short_CenterCut_8K.png
+[2026-09-13 19:06:36] [converterTests] [INFO] Skip existing 4K PNG: art_Short_CenterCut_4K.png
+[2026-09-13 19:06:36] [converterTests] [INFO] Full step: NFT assets
+[2026-09-13 19:06:36] [converterTests] [INFO] Full step: 2K PNG
+[2026-09-13 19:06:36] [converterTests] [INFO] Skip existing 2K PNG: art_Short_CenterCut_2K.png
+[2026-09-13 19:06:36] [converterTests] [INFO] Full step: 3K PNG
+[2026-09-13 19:06:36] [converterTests] [INFO] Skip existing 3K PNG: art_Short_CenterCut_3K.png
+[2026-09-13 19:06:36] [converterTests] [INFO] Full step: 3K JPG deliverables
+[2026-09-13 19:06:36] [converterTests] [INFO] Skip existing NFT set: art_Short_CenterCut
+[2026-09-13 19:06:36] [converterTests] [INFO] Full step: 8K JPG deliverables
+[2026-09-13 19:06:36] [converterTests] [INFO] Skip existing 1MB JPG: art_Short_CenterCut_3K_1MB.jpg
+[2026-09-13 19:06:36] [converterTests] [INFO] Skip existing 1MB JPG: art_Short_CenterCut_8K_1MB.jpg
+[2026-09-13 19:06:36] [converterTests] [INFO] Skip existing 5MB JPG: art_Short_CenterCut_3K_5MB.jpg
+[2026-09-13 19:06:36] [converterTests] [INFO] Skip existing 2MB JPG: art_Short_CenterCut_8K_2MB.jpg
+[2026-09-13 19:06:36] [converterTests] [INFO] Skip existing 20MB JPG: art_Short_CenterCut_8K_20MB.jpg
+[2026-09-13 19:06:36] [converterTests] [INFO] PNG -> JPG: art_Short_2K.png
+[2026-09-13 19:06:36] [converterTests] [INFO] Created JPG image: art_Short_2K.jpg
+[2026-09-13 19:06:36] [converterTests] [INFO] PNG -> JPG: art_Short_3K.png
+[2026-09-13 19:06:36] [converterTests] [INFO] Created JPG image: art_Short_3K.jpg
+[2026-09-13 19:06:36] [converterTests] [INFO] PNG -> JPG: art_Short_4K.png
+[2026-09-13 19:06:36] [converterTests] [INFO] Created JPG image: art_Short_4K.jpg
+[2026-09-13 19:06:36] [converterTests] [INFO] PNG -> JPG: art_Short_8K_reference_2K.png
+[2026-09-13 19:06:36] [converterTests] [INFO] Created JPG image: art_Short_8K_reference_2K.jpg
+[2026-09-13 19:06:36] [converterTests] [INFO] PNG -> JPG: art_Short_8K_reference_3K.png
+[2026-09-13 19:06:36] [converterTests] [INFO] Created JPG image: art_Short_8K_reference_3K.jpg
+[2026-09-13 19:06:36] [converterTests] [INFO] PNG -> JPG: art_Short_8K_reference_4K.png
+[2026-09-13 19:06:36] [converterTests] [INFO] Created JPG image: art_Short_8K_reference_4K.jpg
+[2026-09-13 19:06:36] [converterTests] [INFO] PNG -> JPG: art_Short_8K_reference_8K.png
+[2026-09-13 19:06:36] [converterTests] [INFO] Created JPG image: art_Short_8K_reference_8K.jpg
+[2026-09-13 19:06:36] [converterTests] [INFO] PNG -> JPG: art_Short_8K_reference_NFT2K.png
+[2026-09-13 19:06:36] [converterTests] [INFO] Created JPG image: art_Short_8K_reference_NFT2K.jpg
+[2026-09-13 19:06:36] [converterTests] [INFO] PNG -> JPG: art_Short_8K_reference_NFT3K.png
+[2026-09-13 19:06:36] [converterTests] [INFO] Created JPG image: art_Short_8K_reference_NFT3K.jpg
+[2026-09-13 19:06:36] [converterTests] [INFO] PNG -> JPG: art_Short_8K_reference_NFT8K.png
+[2026-09-13 19:06:36] [converterTests] [INFO] Created JPG image: art_Short_8K_reference_NFT8K.jpg
+[2026-09-13 19:06:36] [converterTests] [INFO] PNG -> JPG: art_Short_8K_reference.png
+[2026-09-13 19:06:36] [converterTests] [INFO] Created JPG image: art_Short_8K_reference.jpg
+[2026-09-13 19:06:36] [converterTests] [INFO] PNG -> JPG: art_Short_8K.png
+[2026-09-13 19:06:36] [converterTests] [INFO] Created JPG image: art_Short_8K.jpg
+[2026-09-13 19:06:36] [converterTests] [INFO] PNG -> JPG: art_Short_CenterCut_2K.png
+[2026-09-13 19:06:36] [converterTests] [INFO] Created JPG image: art_Short_CenterCut_2K.jpg
+[2026-09-13 19:06:36] [converterTests] [INFO] PNG -> JPG: art_Short_CenterCut_3K.png
+[2026-09-13 19:06:36] [converterTests] [INFO] Created JPG image: art_Short_CenterCut_3K.jpg
+[2026-09-13 19:06:36] [converterTests] [INFO] PNG -> JPG: art_Short_CenterCut_4K.png
+[2026-09-13 19:06:36] [converterTests] [INFO] Created JPG image: art_Short_CenterCut_4K.jpg
+[2026-09-13 19:06:36] [converterTests] [INFO] PNG -> JPG: art_Short_CenterCut_8K.png
+[2026-09-13 19:06:37] [converterTests] [INFO] Created JPG image: art_Short_CenterCut_8K.jpg
+[2026-09-13 19:06:37] [converterTests] [INFO] PNG -> JPG: art_Short_CenterCut_NFT2K.png
+[2026-09-13 19:06:37] [converterTests] [INFO] Created JPG image: art_Short_CenterCut_NFT2K.jpg
+[2026-09-13 19:06:37] [converterTests] [INFO] PNG -> JPG: art_Short_CenterCut_NFT3K.png
+[2026-09-13 19:06:37] [converterTests] [INFO] Created JPG image: art_Short_CenterCut_NFT3K.jpg
+[2026-09-13 19:06:37] [converterTests] [INFO] PNG -> JPG: art_Short_CenterCut_NFT8K.png
+[2026-09-13 19:06:37] [converterTests] [INFO] Created JPG image: art_Short_CenterCut_NFT8K.jpg
+[2026-09-13 19:06:37] [converterTests] [INFO] PNG -> JPG: art_Short_NFT2K.png
+[2026-09-13 19:06:37] [converterTests] [INFO] Created JPG image: art_Short_NFT2K.jpg
+[2026-09-13 19:06:37] [converterTests] [INFO] PNG -> JPG: art_Short_NFT3K.png
+[2026-09-13 19:06:37] [converterTests] [INFO] Created JPG image: art_Short_NFT3K.jpg
+[2026-09-13 19:06:37] [converterTests] [INFO] PNG -> JPG: art_Short_NFT8K.png
+[2026-09-13 19:06:37] [converterTests] [INFO] Created JPG image: art_Short_NFT8K.jpg
+/Users/andreborchert/Library/CloudStorage/Dropbox/Coding/Converter/Sources/Tests/converterTests/PipelineIntegrationTests.swift:125: error: -[converterTests.PipelineIntegrationTests testImageBatchActionsSkipPortraitShortStills] : XCTAssertEqual failed: ("75641709") is not equal to ("3A3ABAE8") - the still must be untouched
+/Users/andreborchert/Library/CloudStorage/Dropbox/Coding/Converter/Sources/Tests/converterTests/PipelineIntegrationTests.swift:126: error: -[converterTests.PipelineIntegrationTests testImageBatchActionsSkipPortraitShortStills] : XCTAssertEqual failed: ("Optional("320x180")") is not equal to ("Optional("180x320")")
+/Users/andreborchert/Library/CloudStorage/Dropbox/Coding/Converter/Sources/Tests/converterTests/PipelineIntegrationTests.swift:127: error: -[converterTests.PipelineIntegrationTests testImageBatchActionsSkipPortraitShortStills] : XCTAssertFalse failed
+Test Case '-[converterTests.PipelineIntegrationTests testImageBatchActionsSkipPortraitShortStills]' failed (3.334 seconds).
+Test Suite 'PipelineIntegrationTests' failed at 2026-09-13 19:06:37.383.
+	 Executed 1 test, with 3 failures (0 unexpected) in 3.334 (3.334) seconds
+Test Suite 'converterPackageTests.xctest' failed at 2026-09-13 19:06:37.383.
+	 Executed 1 test, with 3 failures (0 unexpected) in 3.334 (3.334) seconds
+Test Suite 'Selected tests' failed at 2026-09-13 19:06:37.383.
+	 Executed 1 test, with 3 failures (0 unexpected) in 3.334 (3.342) seconds
+􀟈  Test run started.
+􀄵  Testing Library Version: 1902
+􀄵  Target Platform: arm64e-apple-macos14.0
+􁁛  Test run with 0 tests in 0 suites passed after 0.001 seconds.

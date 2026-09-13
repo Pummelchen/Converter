@@ -688,8 +688,15 @@ extension ConverterTool {
         logger.info("Album pipeline complete")
     }
 
+    // Batch image actions read source artwork. The full run's portrait stills
+    // (`*_Short_8K.png`, `*_Short_CenterCut_8K.png`) are deliverables that would otherwise be
+    // fed back in and rewritten as letterboxed landscape masters.
+    func sourceImageFiles(matchingExtensions extensions: [String]) throws -> [URL] {
+        try files(in: cli.srcDir, matchingExtensions: extensions).filter { !isPortraitShortStill($0) }
+    }
+
     func stepRunPix() async throws {
-        let images = try files(in: cli.srcDir, matchingExtensions: ["png", "jpg", "jpeg"])
+        let images = try sourceImageFiles(matchingExtensions: ["png", "jpg", "jpeg"])
         if images.isEmpty {
             throw AppError("No source images found in '\(cli.srcDir.path)'.")
         }
@@ -721,7 +728,7 @@ extension ConverterTool {
     }
 
     func stepPNGToJPG() throws {
-        let files = try files(in: cli.srcDir, matchingExtensions: ["png"])
+        let files = try sourceImageFiles(matchingExtensions: ["png"])
         _ = try processBatch(files: files, emptyMessage: "No .png files found in '\(cli.srcDir.path)'.", failWhenEmpty: false) { file in
             self.logger.info("PNG -> JPG: \(file.basename)")
             return try self.convertPNGToJPEG(file, outputExtension: "jpg")
@@ -729,7 +736,7 @@ extension ConverterTool {
     }
 
     func stepAIPix() throws {
-        let files = try files(in: cli.srcDir, matchingExtensions: ["png"])
+        let files = try sourceImageFiles(matchingExtensions: ["png"])
         _ = try processBatch(files: files, emptyMessage: "No PNG files found in '\(cli.srcDir.path)'.", failWhenEmpty: false) { file in
             self.logger.info("PNG variants: \(file.basename)")
             return try self.aipixFile(file)
