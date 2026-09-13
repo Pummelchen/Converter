@@ -6,9 +6,9 @@ Session: `2026-09-13` · branch `audit/2026-09-13` · baseline commit `4bb136a`
 
 | status | count |
 |---|---|
-| START | 76 |
+| START | 75 |
 | PROGRESS | 1 |
-| TEST | 0 |
+| TEST | 1 |
 | AUDIT | 0 |
 | DONE | 23 |
 | BLOCKED | 0 |
@@ -22,7 +22,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 | #0006 | S0 | repo | node1 (fresh clone) | Phase E: independent verification from a fresh clone on node1 | test | START |  |
 | #0005 | S1 | repo | wiki | Create and maintain the wiki audit tracker page mirroring the ledger (§9) | docs | PROGRESS | 0ac7242 |
 | #0015 | S1 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:18-32,97,197-201 | Clipped-samples rebase is not sample-rate invariant (source clip measured at 96 kHz, render at its own rate) | logic | START |  |
-| #0020 | S1 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:492-530,487-490 | -bass can clip the 24-bit staging WAV; nothing verifies true peak/clipping before publish | incomplete | START |  |
+| #0020 | S1 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:492-530,487-490 | -bass can clip the 24-bit staging WAV; nothing verifies true peak/clipping before publish | incomplete | TEST |  |
 | #0021 | S1 | converter/VideoPipeline+AudioPipeline | Sources/converter/VideoPipeline.swift:159-171; AudioPipeline.swift:1070-1082 | Encoder ladders fall through on encoder-independent failures (publish, ALAC/duration/loudness verify) and the padded-MP4 ladder reports only the last rung | logic | START |  |
 | #0026 | S1 | BW64Bridge | Sources/BW64Bridge/bw64_bridge.cpp:178-197 | Disk-write failures undetectable; bridge self-validates against the ds64 size it wrote | bug | START |  |
 | #0027 | S1 | repo/docs | SECURITY.md:1-21 | SECURITY.md is the unedited GitHub template with fictitious versions | placeholder | START |  |
@@ -374,7 +374,7 @@ _none_
 - **commit sha:** 3da33d1
 - **notes:** Copy byte-for-byte when standard; verify like convertAudioToMP3. Coordinate with #0007.
 
-### #0020 · S1 · START · -bass can clip the 24-bit staging WAV; nothing verifies true peak/clipping before publish
+### #0020 · S1 · TEST · -bass can clip the 24-bit staging WAV; nothing verifies true peak/clipping before publish
 
 - **project/module:** converter/AudioPipeline
 - **file:line:** Sources/converter/AudioPipeline.swift:492-530,487-490
@@ -382,6 +382,8 @@ _none_
 - **host-used:** local
 - **discovered-by:** reviewer A-5
 - **evidence-before:** AUDIT/findings/L2-audio.md A-5
+- **fix-summary:** verifyBassHeadroom: processed vs source clipped-sample count under a headroom-only policy; fails with an actionable message.
+- **evidence-after:** AUDIT/evidence/0020-before.log; 0020-after.log: 8 bass tests pass; swiftlint 535/56. Full suite: next batch run.
 
 ### #0021 · S1 · START · Encoder ladders fall through on encoder-independent failures (publish, ALAC/duration/loudness verify) and the padded-MP4 ladder reports only the last rung
 

@@ -1,0 +1,28 @@
+Building for debugging...
+[0/5] Write sources
+[1/5] Write swift-version--58304C5D6DBC2206.txt
+[3/5] Emitting module converterTests
+[4/5] Compiling converterTests PipelineIntegrationTests.swift
+[5/7] Emitting module converterPackageTests
+[5/7] Write Objects.LinkFileList
+[6/7] Linking converterPackageTests
+Build complete! (2.44s)
+Test Suite 'Selected tests' started at 2026-09-13 19:21:39.809.
+Test Suite 'converterPackageTests.xctest' started at 2026-09-13 19:21:39.816.
+Test Suite 'PipelineIntegrationTests' started at 2026-09-13 19:21:39.816.
+Test Case '-[converterTests.PipelineIntegrationTests testBassBoostRefusesToPublishClippedOutput]' started.
+[2026-09-13 19:21:42] [converterTests] [INFO] Created bass-adjusted media: sub_bass_bass.wav
+/Users/andreborchert/Library/CloudStorage/Dropbox/Coding/Converter/Sources/Tests/converterTests/PipelineIntegrationTests.swift:553: error: -[converterTests.PipelineIntegrationTests testBassBoostRefusesToPublishClippedOutput] : XCTAssertThrowsError failed: did not throw an error
+/Users/andreborchert/Library/CloudStorage/Dropbox/Coding/Converter/Sources/Tests/converterTests/PipelineIntegrationTests.swift:556: error: -[converterTests.PipelineIntegrationTests testBassBoostRefusesToPublishClippedOutput] : XCTAssertFalse failed
+[2026-09-13 19:21:44] [converterTests] [INFO] Created bass-adjusted media: quiet_low_bass.wav
+Test Case '-[converterTests.PipelineIntegrationTests testBassBoostRefusesToPublishClippedOutput]' failed (4.921 seconds).
+Test Suite 'PipelineIntegrationTests' failed at 2026-09-13 19:21:44.738.
+	 Executed 1 test, with 2 failures (0 unexpected) in 4.921 (4.922) seconds
+Test Suite 'converterPackageTests.xctest' failed at 2026-09-13 19:21:44.738.
+	 Executed 1 test, with 2 failures (0 unexpected) in 4.921 (4.922) seconds
+Test Suite 'Selected tests' failed at 2026-09-13 19:21:44.738.
+	 Executed 1 test, with 2 failures (0 unexpected) in 4.921 (4.929) seconds
+􀟈  Test run started.
+􀄵  Testing Library Version: 1902
+􀄵  Target Platform: arm64e-apple-macos14.0
+􁁛  Test run with 0 tests in 0 suites passed after 0.001 seconds.

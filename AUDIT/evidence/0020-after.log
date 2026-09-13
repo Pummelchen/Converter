@@ -1,0 +1,20 @@
+Test Case '-[converterTests.PipelineIntegrationTests testBassBoostProcessesAudioAndMP4Inputs]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testBassBoostProcessesAudioAndMP4Inputs]' passed (18.958 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testBassBoostRefusesToPublishClippedOutput]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testBassBoostRefusesToPublishClippedOutput]' passed (4.756 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testBassNegativeGainReducesLowBandEnergy]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testBassNegativeGainReducesLowBandEnergy]' passed (3.139 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testBassUsesSettingsSpecificSuffixForManualValues]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testBassUsesSettingsSpecificSuffixForManualValues]' passed (0.004 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testLoudnessDoesNotApplyBassBoost]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testLoudnessDoesNotApplyBassBoost]' passed (5.683 seconds).
+	 Executed 5 tests, with 0 failures (0 unexpected) in 32.541 (32.541) seconds
+Test Case '-[converterTests.converterTests testBassParsesDefaultsAndManualValues]' started.
+Test Case '-[converterTests.converterTests testBassParsesDefaultsAndManualValues]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testBassRejectsInvalidArguments]' started.
+Test Case '-[converterTests.converterTests testBassRejectsInvalidArguments]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testLoudnessFiltersRejectBassAndEQFilters]' started.
+Test Case '-[converterTests.converterTests testLoudnessFiltersRejectBassAndEQFilters]' passed (0.001 seconds).
+	 Executed 3 tests, with 0 failures (0 unexpected) in 0.002 (0.002) seconds
+	 Executed 8 tests, with 0 failures (0 unexpected) in 32.542 (32.543) seconds
+	 Executed 8 tests, with 0 failures (0 unexpected) in 32.542 (32.550) seconds

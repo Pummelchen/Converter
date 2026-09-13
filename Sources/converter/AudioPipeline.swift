@@ -495,6 +495,34 @@ extension ConverterTool {
         try verifyDuration(file, expectedSeconds: expectedDuration, label: "fadeout output")
     }
 
+    // The bass filter computes in float, but the staging WAV is 24-bit integer: any overshoot
+    // is hard-clipped there and then baked into every deliverable. A boost that introduces
+    // full-scale samples the source did not have is refused rather than published.
+    func verifyBassHeadroom(processedWAV: URL, sourceWAV: URL, source: URL, spec: BassBoostSpec) throws {
+        let policy = AudioQCPolicy(
+            name: "bass-headroom",
+            targetLUFS: config.audioQCTargetLUFS,
+            lufsTolerance: 200,
+            maxTruePeakDBTP: 0,
+            maxLoudnessRange: 50,
+            maxDCOffset: 1,
+            maxStereoImbalanceDB: 200,
+            maxClippedSamples: config.audioQCMaxClippedSamples,
+            minimumAnalysisSeconds: config.audioQCMinimumAnalysisSeconds
+        )
+        let before = try audioQCResult(for: sourceWAV, policy: policy).metrics
+        let after = try audioQCResult(for: processedWAV, policy: policy).metrics
+        let allowed = max(config.audioQCMaxClippedSamples, before.clippedSamples)
+        guard after.clippedSamples <= allowed else {
+            let peak = after.peakLevelDBFS.map { String(format: "%.2f", $0) } ?? "n/a"
+            throw AppError(
+                "Bass adjustment of \(source.basename) clips: \(after.clippedSamples) full-scale samples "
+                + "(peak \(peak) dBFS, source had \(before.clippedSamples)) after \(ffmpegNumber(spec.gainDB)) dB "
+                + "below \(ffmpegNumber(spec.frequencyHz)) Hz. Reduce the gain or lower the source level first."
+            )
+        }
+    }
+
     func verifyBassOutput(_ file: URL, source: URL) throws {
         try verifyTypedAudioOutput(file, sourceExtension: source.pathExtension, source: source, qcPolicy: nil)
         try verifyDurationMatch(source: source, output: file)
@@ -528,6 +556,7 @@ extension ConverterTool {
                 stem: "\(source.stem).bass.processed"
             )
             defer { discardTempFile(processedWAV) }
+            try verifyBassHeadroom(processedWAV: processedWAV, sourceWAV: sourceWAV, source: source, spec: spec)
             try encodeProcessedWAV(processedWAV, matching: source, to: temp, qcPolicy: nil)
             try verifyBassOutput(temp, source: source)
             try publishTemp(temp, to: output)
