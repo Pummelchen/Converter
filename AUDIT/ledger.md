@@ -6,9 +6,9 @@ Session: `2026-09-13` · branch `audit/2026-09-13` · baseline commit `4bb136a`
 
 | status | count |
 |---|---|
-| START | 53 |
+| START | 52 |
 | PROGRESS | 1 |
-| TEST | 1 |
+| TEST | 2 |
 | AUDIT | 0 |
 | DONE | 44 |
 | BLOCKED | 1 |
@@ -38,7 +38,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 | #0041 | S2 | converter/DependencyBootstrap | Sources/converter/DependencyBootstrap.swift:216-248 | Installer subprocesses have no timeout and discard diagnostics | incomplete | START |  |
 | #0042 | S2 | converter/ProcessRunner | Sources/converter/ProcessRunner.swift:112-124 | Child stdin inherited from the terminal | unsafe | START |  |
 | #0043 | S2 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:683-691,1013-1028 | containsChunk is a 64 KiB substring scan, not a RIFF chunk walk | unsafe | TEST | 9bc41f4 |
-| #0047 | S2 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:16-32,59-63 | Source clip re-rendered and re-analysed for every short variant | perf | START |  |
+| #0047 | S2 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:16-32,59-63 | Source clip re-rendered and re-analysed for every short variant | perf | TEST | c238583 |
 | #0050 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:327-336,367-387,591-600 | Loudness fallback publishes any true-peak breach with a misleading 'closest-safe' label | logic | START |  |
 | #0051 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:992,1170,1029,508 | Redundant padding verification, uncached ffmpeg -filters, per-file ladder resolution | perf | START |  |
 | #0052 | S2 | converter/ImagePipeline | Sources/converter/ValidationPipeline.swift:391 (preflightImageInput call sites) | Full-decode image preflight of the same master repeated ~10x per run | perf | START |  |
@@ -694,7 +694,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **evidence-after:** AUDIT/evidence/0046-before.log (no WARN line before), 0046-after.log (7 config tests pass); swiftlint 533/56. Full suite (AUDIT/evidence/config-group-fullsuite.txt): 215 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** 7455803
 
-### #0047 · S2 · START · Source clip re-rendered and re-analysed for every short variant
+### #0047 · S2 · TEST · Source clip re-rendered and re-analysed for every short variant
 
 - **project/module:** converter/ValidationPipeline
 - **file:line:** Sources/converter/ValidationPipeline.swift:16-32,59-63
@@ -702,6 +702,9 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **host-used:** local
 - **discovered-by:** reviewer V-8
 - **evidence-before:** AUDIT/findings/L2-validation-config.md V-8
+- **fix-summary:** AudioSegmentQCCacheKey (fingerprint, limit ms, sampleRate, decode kind, policy) + ProbeCache.cachedAudioSegmentQCResult; renderDomainQCResult and the comparison clip compute once per key, so the four short variants of a song decode the segment once. CommandInvocationLog test helper counts real ffmpeg invocations.
+- **evidence-after:** AUDIT/evidence/0047-before.log (2 decodes/analyses per identical call), 0047-after.log (1 each; #0015 and short neighbours pass); swiftlint 533/56. Full suite pending
+- **commit sha:** c238583
 
 ### #0048 · S2 · DONE · -master is not idempotent (re-masters its own _mastered outputs)
 

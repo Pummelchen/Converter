@@ -793,14 +793,14 @@
       "location": "Sources/converter/ValidationPipeline.swift:16-32,59-63",
       "title": "Source clip re-rendered and re-analysed for every short variant",
       "category": "perf",
-      "status": "START",
+      "status": "TEST",
       "host": "local",
       "discovered_by": "reviewer V-8",
       "session": "2026-09-13",
       "evidence_before": "AUDIT/findings/L2-validation-config.md V-8",
-      "fix_summary": "",
-      "evidence_after": "",
-      "commit": "",
+      "fix_summary": "AudioSegmentQCCacheKey (fingerprint, limit ms, sampleRate, decode kind, policy) + ProbeCache.cachedAudioSegmentQCResult; renderDomainQCResult and the comparison clip compute once per key, so the four short variants of a song decode the segment once. CommandInvocationLog test helper counts real ffmpeg invocations.",
+      "evidence_after": "AUDIT/evidence/0047-before.log (2 decodes/analyses per identical call), 0047-after.log (1 each; #0015 and short neighbours pass); swiftlint 533/56. Full suite pending",
+      "commit": "c238583",
       "notes": ""
     },
     {
