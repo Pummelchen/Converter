@@ -330,25 +330,31 @@ struct ProjectConfig {
         if durationToleranceSec < 0 {
             throw AppError("DURATION_TOLERANCE_SEC must be >= 0")
         }
-        try requirePositive(crcChunkBytes, "CRC_CHUNK_BYTES")
+        // Each CRC chunk is read into memory whole, so the upper bound keeps a typo from turning the
+        // hash pass into a multi-gigabyte allocation.
+        try requireRange(crcChunkBytes, 1 ... maximumCRCChunkBytes, "CRC_CHUNK_BYTES")
         try requirePositive(wavSampleRate, "WAV_SAMPLE_RATE")
         try requireChannels(wavChannels, "WAV_CHANNELS")
-        if wavSampleRate != 96_000 || wavCodec.lowercasedASCII != "pcm_s24le" || wavChannels != 2 {
-            throw AppError("Internal WAV processing must be 24-bit, 96 kHz, stereo (WAV_SAMPLE_RATE=96000, WAV_CODEC=pcm_s24le, WAV_CHANNELS=2).")
-        }
+        let wavStandard = "internal WAV processing is fixed at 24-bit, 96 kHz, stereo"
+        try requireProjectStandard(wavSampleRate, 96_000, "WAV_SAMPLE_RATE", wavStandard)
+        try requireProjectStandard(wavCodec.lowercasedASCII, "pcm_s24le", "WAV_CODEC", wavStandard)
+        try requireProjectStandard(wavChannels, 2, "WAV_CHANNELS", wavStandard)
+        try requireRange(wavWriteBext, 0 ... 1, "WAV_WRITE_BEXT")
         try requirePositive(mp3SampleRate, "MP3_SAMPLE_RATE")
         try requireChannels(mp3Channels, "MP3_CHANNELS")
         try requirePositive(mp3MinBitrateBps, "MP3_MIN_BITRATE_BPS")
-        if mp3SampleRate != 48_000 || mp3Bitrate.lowercasedASCII != "320k" || mp3Channels != 2 {
-            throw AppError("MP3 output must use the project maximum quality setting: 320k, 48 kHz, stereo.")
-        }
+        let mp3Standard = "MP3 output is fixed at the project maximum quality: 320k, 48 kHz, stereo"
+        try requireProjectStandard(mp3SampleRate, 48_000, "MP3_SAMPLE_RATE", mp3Standard)
+        try requireProjectStandard(mp3Bitrate.lowercasedASCII, "320k", "MP3_BITRATE", mp3Standard)
+        try requireProjectStandard(mp3Channels, 2, "MP3_CHANNELS", mp3Standard)
         try requirePositive(flacSampleRate, "FLAC_SAMPLE_RATE")
         try requireChannels(flacChannels, "FLAC_CHANNELS")
+        try requireRange(flacCompressionLevel, 0 ... 12, "FLAC_COMPRESSION_LEVEL")
         try requirePositive(m4aSampleRate, "M4A_SAMPLE_RATE")
         try requireChannels(m4aChannels, "M4A_CHANNELS")
-        if m4aSampleRate != 48_000 || m4aChannels != 2 {
-            throw AppError("M4A output must be ALAC at 48 kHz stereo.")
-        }
+        let m4aStandard = "M4A output is fixed at ALAC, 48 kHz, stereo"
+        try requireProjectStandard(m4aSampleRate, 48_000, "M4A_SAMPLE_RATE", m4aStandard)
+        try requireProjectStandard(m4aChannels, 2, "M4A_CHANNELS", m4aStandard)
         if audioQCLUFSTolerance < 0 {
             throw AppError("AUDIO_QC_LUFS_TOLERANCE must be >= 0")
         }
@@ -386,23 +392,25 @@ struct ProjectConfig {
             throw AppError("MASTERING_MAX_LOUDNESS_RANGE must be >= 0")
         }
         try requireNonEmpty(videoMP4Encoder, "VIDEO_MP4_ENCODER")
-        try requireNumericString(videoMP4VTQuality, "VIDEO_MP4_VT_QUALITY")
+        try requireNumericRange(videoMP4VTQuality, videoToolboxQualityRange, "VIDEO_MP4_VT_QUALITY")
         try requireNonEmpty(videoMP4SoftwarePreset, "VIDEO_MP4_SOFTWARE_PRESET")
-        try requireNumericString(videoMP4SoftwareCRF, "VIDEO_MP4_SOFTWARE_CRF")
+        try requireNumericRange(videoMP4SoftwareCRF, softwareCRFRange, "VIDEO_MP4_SOFTWARE_CRF")
         try requirePositiveRateString(videoMP4InputFPS, "VIDEO_MP4_INPUT_FPS")
         try requirePositive(videoMP4AudioSampleRate, "VIDEO_MP4_AUDIO_SAMPLE_RATE")
-        if videoMP4AudioSampleRate != 48_000 {
-            throw AppError("Main MP4 audio output must be ALAC at 24-bit, 48 kHz, stereo.")
-        }
+        try requireProjectStandard(
+            videoMP4AudioSampleRate, 48_000, "VIDEO_MP4_AUDIO_SAMPLE_RATE",
+            "main MP4 audio is fixed at ALAC, 24-bit, 48 kHz, stereo"
+        )
         try requirePositive(videoMP4Width, "VIDEO_MP4_WIDTH")
         try requirePositive(videoMP4Height, "VIDEO_MP4_HEIGHT")
         try requireNonEmpty(videoMP4ScaleFilter, "VIDEO_MP4_SCALE_FILTER")
         try requireNonEmpty(videoMP4PixelFormat, "VIDEO_MP4_PIXEL_FORMAT")
         try requireNonEmpty(videoMP4Tag, "VIDEO_MP4_TAG")
         try requireNonEmpty(videoMP4VerifyCodec, "VIDEO_MP4_VERIFY_CODEC")
-        if videoColorPrimaries.trimmed.isEmpty || videoColorTransfer.trimmed.isEmpty || videoColorSpace.trimmed.isEmpty || videoColorRange.trimmed.isEmpty {
-            throw AppError("VIDEO color settings must not be empty")
-        }
+        try requireNonEmpty(videoColorPrimaries, "VIDEO_COLOR_PRIMARIES")
+        try requireNonEmpty(videoColorTransfer, "VIDEO_COLOR_TRANSFER")
+        try requireNonEmpty(videoColorSpace, "VIDEO_COLOR_SPACE")
+        try requireNonEmpty(videoColorRange, "VIDEO_COLOR_RANGE")
         // configuredShortClipSeconds reads this value through parseFlexibleTimecode, so the same parser
         // decides what is valid here: "58", "0:58" and "1:30" alike, capped by maximumTimecodeSeconds.
         // Validating with Double() instead rejected every MM:SS value the consumer would have accepted.
@@ -412,14 +420,15 @@ struct ProjectConfig {
         }
         try requirePositiveRateString(shortMP4FPS, "SHORT_MP4_FPS")
         try requirePositive(shortMP4AudioSampleRate, "SHORT_MP4_AUDIO_SAMPLE_RATE")
-        if shortMP4AudioSampleRate != 48_000 {
-            throw AppError("Short MP4 audio output must be ALAC at 24-bit, 48 kHz, stereo.")
-        }
+        try requireProjectStandard(
+            shortMP4AudioSampleRate, 48_000, "SHORT_MP4_AUDIO_SAMPLE_RATE",
+            "short MP4 audio is fixed at ALAC, 24-bit, 48 kHz, stereo"
+        )
         try requirePositive(shortMP4ScaleW, "SHORT_MP4_SCALE_W")
         try requirePositive(shortMP4ScaleH, "SHORT_MP4_SCALE_H")
         try requireNonEmpty(shortMP4VideoPreset, "SHORT_MP4_VIDEO_PRESET")
-        try requireNumericString(shortMP4VideoCRF, "SHORT_MP4_VIDEO_CRF")
-        try requireNumericString(shortMP4VTQuality, "SHORT_MP4_VT_QUALITY")
+        try requireNumericRange(shortMP4VideoCRF, softwareCRFRange, "SHORT_MP4_VIDEO_CRF")
+        try requireNumericRange(shortMP4VTQuality, videoToolboxQualityRange, "SHORT_MP4_VT_QUALITY")
         try requireNonEmpty(shortMP4VideoCodec, "SHORT_MP4_VIDEO_CODEC")
         try requireNonEmpty(shortMP4PixelFormat, "SHORT_MP4_PIXEL_FORMAT")
         try requireNonEmpty(shortMP4VerifyCodec, "SHORT_MP4_VERIFY_CODEC")
@@ -443,15 +452,22 @@ struct ProjectConfig {
         try requirePositive(image4KHeight, "IMAGE_4K_HEIGHT")
         try requirePositive(image3KSize, "IMAGE_3K_SIZE")
         try requirePositive(image2KSize, "IMAGE_2K_SIZE")
-        if !(1 ... 100).contains(imagePNGToJPEGQuality) {
-            throw AppError("IMAGE_PNG_TO_JPEG_QUALITY must be between 1 and 100 (got '\(imagePNGToJPEGQuality)')")
-        }
+        try requireRange(imagePNGToJPEGQuality, 1 ... 100, "IMAGE_PNG_TO_JPEG_QUALITY")
         if imageAIPixSharpness < 0 {
             throw AppError("IMAGE_AIPIX_SHARPNESS must be >= 0")
         }
-        if imageOutputColorSpace.trimmed.isEmpty {
-            throw AppError("IMAGE_OUTPUT_COLORSPACE must not be empty")
-        }
+        try requireNonEmpty(imageAIPixFilter, "IMAGE_AIPIX_FILTER")
+        // Both are ImageMagick's own 0-9 zlib level scale.
+        try requireRange(imageAIPixPNGCompressionLevel, 0 ... 9, "IMAGE_AIPIX_PNG_COMPRESSION_LEVEL")
+        try requireRange(imageJPGToPNGCompressionLevel, 0 ... 9, "IMAGE_JPG_TO_PNG_COMPRESSION_LEVEL")
+        try requireNonEmpty(imageJpegSamplingFactor, "IMAGE_JPEG_SAMPLING_FACTOR")
+        try requireNonEmpty(imageOutputColorSpace, "IMAGE_OUTPUT_COLORSPACE")
+        // A zero byte target makes every JPEG size search fail after the encode work is done.
+        try requirePositive(image3KJPG1MBTargetBytes, "IMAGE_3K_JPG_1MB_TARGET_BYTES")
+        try requirePositive(image3KJPG5MBTargetBytes, "IMAGE_3K_JPG_5MB_TARGET_BYTES")
+        try requirePositive(image8KJPG1MBTargetBytes, "IMAGE_8K_JPG_1MB_TARGET_BYTES")
+        try requirePositive(image8KJPG2MBTargetBytes, "IMAGE_8K_JPG_2MB_TARGET_BYTES")
+        try requirePositive(image8KJPG20MBTargetBytes, "IMAGE_8K_JPG_20MB_TARGET_BYTES")
         try requirePositive(albumSilenceSecs, "ALBUM_SILENCE_SECS")
         try requirePositive(wavFadeDur, "WAV_FADE_DUR")
     }
@@ -464,9 +480,14 @@ private extension String {
     }
 }
 
+// Every integer key is a count, size or rate, so a negative value is never meaningful; the message
+// says so instead of calling "-1" "not an integer".
 private func parseInt(_ key: String, _ value: String) throws -> Int {
-    guard let parsed = Int(value), parsed >= 0 else {
+    guard let parsed = Int(value) else {
         throw AppError("\(key) must be an integer (got '\(value)')")
+    }
+    guard parsed >= 0 else {
+        throw AppError("\(key) must be a non-negative integer (got '\(value)')")
     }
     return parsed
 }
@@ -481,6 +502,22 @@ private func parseDouble(_ key: String, _ value: String) throws -> Double {
 private func requirePositive(_ value: Int, _ name: String) throws {
     if value <= 0 {
         throw AppError("\(name) must be > 0 (got '\(value)')")
+    }
+}
+
+private func requireRange(_ value: Int, _ range: ClosedRange<Int>, _ name: String) throws {
+    if !range.contains(value) {
+        throw AppError("\(name) must be between \(range.lowerBound) and \(range.upperBound) (got '\(value)')")
+    }
+}
+
+// Several outputs are fixed project standards rather than tunables; the message names the key that
+// deviates and why it cannot, instead of one composite line that hides which setting is wrong.
+private func requireProjectStandard<Value: Equatable>(
+    _ value: Value, _ expected: Value, _ name: String, _ standard: String
+) throws {
+    if value != expected {
+        throw AppError("\(name) must be \(expected) (got '\(value)'): \(standard)")
     }
 }
 
@@ -505,10 +542,21 @@ private func requireNonEmpty(_ value: String, _ name: String) throws {
     }
 }
 
-private func requireNumericString(_ value: String, _ name: String) throws {
+// ffmpeg's h264/hevc_videotoolbox take -q:v 1-100 and libx264/libx265 take -crf 0-51; either
+// silently clamps or errors deep inside the encoder, so the bounds are enforced here by name.
+private let videoToolboxQualityRange: ClosedRange<Double> = 1 ... 100
+private let softwareCRFRange: ClosedRange<Double> = 0 ... 51
+// 64 MiB reads comfortably in one call while bounding the buffer a CRC pass allocates.
+private let maximumCRCChunkBytes = 64 * 1_048_576
+
+private func requireNumericRange(_ value: String, _ range: ClosedRange<Double>, _ name: String) throws {
     try requireNonEmpty(value, name)
-    guard Double(value) != nil else {
+    guard let parsed = Double(value), parsed.isFinite else {
         throw AppError("\(name) must be numeric (got '\(value)')")
+    }
+    guard range.contains(parsed) else {
+        let bounds = "\(ffmpegNumber(range.lowerBound)) and \(ffmpegNumber(range.upperBound))"
+        throw AppError("\(name) must be between \(bounds) (got '\(value)')")
     }
 }
 

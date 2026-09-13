@@ -1217,6 +1217,194 @@ final class converterTests: XCTestCase {
         XCTAssertFalse(standardError.contains("[WARN]"), "no line may be reported as unknown: \(standardError)")
     }
 
+    // audit #0071: only three config keys had a rejection test, and several rules were missing
+    // outright (WAV_WRITE_BEXT, FLAC_COMPRESSION_LEVEL, PNG levels, byte targets, CRF and VT quality
+    // bounds, an upper bound on CRC_CHUNK_BYTES, empty filter and sampling strings). Every key with a
+    // rule gets one invalid value here, loaded through ProjectConfig.load, and the error must name the
+    // key and the bound it broke so a user can act on it.
+    private struct InvalidConfigValue {
+        let key: String
+        let value: String
+        let expected: String
+        init(_ key: String, _ value: String, _ expected: String) {
+            self.key = key
+            self.value = value
+            self.expected = expected
+        }
+    }
+
+    private static let invalidConfigValues: [InvalidConfigValue] = [
+        .init("PROFILE", "bogus", "PROFILE must be one of"),
+        .init("PREFLIGHT_SECONDS", "0", "PREFLIGHT_SECONDS must be > 0"),
+        .init("PREFLIGHT_SECONDS", "-1", "PREFLIGHT_SECONDS must be a non-negative integer"),
+        .init("PREFLIGHT_SECONDS", "abc", "PREFLIGHT_SECONDS must be an integer"),
+        .init("DURATION_TOLERANCE_SEC", "-1", "DURATION_TOLERANCE_SEC must be >= 0"),
+        .init("DURATION_TOLERANCE_SEC", "nan", "DURATION_TOLERANCE_SEC must be a finite number"),
+        .init("CRC_CHUNK_BYTES", "0", "CRC_CHUNK_BYTES must be between 1 and 67108864"),
+        .init("CRC_CHUNK_BYTES", "67108865", "CRC_CHUNK_BYTES must be between 1 and 67108864"),
+        .init("WAV_SAMPLE_RATE", "0", "WAV_SAMPLE_RATE must be > 0"),
+        .init("WAV_SAMPLE_RATE", "48000", "WAV_SAMPLE_RATE must be 96000"),
+        .init("WAV_CODEC", "pcm_s16le", "WAV_CODEC must be pcm_s24le"),
+        .init("WAV_CHANNELS", "3", "WAV_CHANNELS must be 1 or 2"),
+        .init("WAV_CHANNELS", "1", "WAV_CHANNELS must be 2"),
+        .init("WAV_WRITE_BEXT", "2", "WAV_WRITE_BEXT must be between 0 and 1"),
+        .init("MP3_SAMPLE_RATE", "0", "MP3_SAMPLE_RATE must be > 0"),
+        .init("MP3_SAMPLE_RATE", "44100", "MP3_SAMPLE_RATE must be 48000"),
+        .init("MP3_BITRATE", "128k", "MP3_BITRATE must be 320k"),
+        .init("MP3_CHANNELS", "0", "MP3_CHANNELS must be 1 or 2"),
+        .init("MP3_CHANNELS", "1", "MP3_CHANNELS must be 2"),
+        .init("MP3_MIN_BITRATE_BPS", "0", "MP3_MIN_BITRATE_BPS must be > 0"),
+        .init("FLAC_SAMPLE_RATE", "0", "FLAC_SAMPLE_RATE must be > 0"),
+        .init("FLAC_CHANNELS", "3", "FLAC_CHANNELS must be 1 or 2"),
+        .init("FLAC_COMPRESSION_LEVEL", "13", "FLAC_COMPRESSION_LEVEL must be between 0 and 12"),
+        .init("M4A_SAMPLE_RATE", "0", "M4A_SAMPLE_RATE must be > 0"),
+        .init("M4A_SAMPLE_RATE", "44100", "M4A_SAMPLE_RATE must be 48000"),
+        .init("M4A_CHANNELS", "3", "M4A_CHANNELS must be 1 or 2"),
+        .init("M4A_CHANNELS", "1", "M4A_CHANNELS must be 2"),
+        .init("AUDIO_QC_TARGET_LUFS", "-4", "AUDIO_QC_TARGET_LUFS must be between -70 and -5"),
+        .init("AUDIO_QC_LUFS_TOLERANCE", "-1", "AUDIO_QC_LUFS_TOLERANCE must be >= 0"),
+        .init("AUDIO_QC_MAX_TRUE_PEAK_DBTP", "1", "AUDIO_QC_MAX_TRUE_PEAK_DBTP must be <= 0"),
+        .init("AUDIO_QC_MAX_LOUDNESS_RANGE", "-1", "AUDIO_QC_MAX_LOUDNESS_RANGE must be >= 0"),
+        .init("AUDIO_QC_MAX_DC_OFFSET", "-1", "AUDIO_QC_MAX_DC_OFFSET must be >= 0"),
+        .init("AUDIO_QC_MAX_STEREO_IMBALANCE_DB", "-1", "AUDIO_QC_MAX_STEREO_IMBALANCE_DB must be >= 0"),
+        .init("AUDIO_QC_MAX_CLIPPED_SAMPLES", "-1", "AUDIO_QC_MAX_CLIPPED_SAMPLES must be a non-negative integer"),
+        .init("AUDIO_QC_MINIMUM_ANALYSIS_SECONDS", "0", "AUDIO_QC_MINIMUM_ANALYSIS_SECONDS must be > 0"),
+        .init("SHORT_AUDIO_QC_TARGET_LUFS", "-80", "SHORT_AUDIO_QC_TARGET_LUFS must be between -70 and -5"),
+        .init("SHORT_AUDIO_QC_LUFS_TOLERANCE", "-1", "SHORT_AUDIO_QC_LUFS_TOLERANCE must be >= 0"),
+        .init("SHORT_AUDIO_QC_MAX_LOUDNESS_RANGE", "-1", "SHORT_AUDIO_QC_MAX_LOUDNESS_RANGE must be >= 0"),
+        .init("MASTERING_TARGET_LUFS", "0", "MASTERING_TARGET_LUFS must be between -70 and -5"),
+        .init("MASTERING_MAX_TRUE_PEAK_DBTP", "0.5", "MASTERING_MAX_TRUE_PEAK_DBTP must be <= 0"),
+        .init("MASTERING_MAX_LOUDNESS_RANGE", "-1", "MASTERING_MAX_LOUDNESS_RANGE must be >= 0"),
+        .init("VIDEO_MP4_ENCODER", "", "VIDEO_MP4_ENCODER must not be empty"),
+        .init("VIDEO_MP4_VT_QUALITY", "0", "VIDEO_MP4_VT_QUALITY must be between 1 and 100"),
+        .init("VIDEO_MP4_VT_QUALITY", "101", "VIDEO_MP4_VT_QUALITY must be between 1 and 100"),
+        .init("VIDEO_MP4_VT_QUALITY", "abc", "VIDEO_MP4_VT_QUALITY must be numeric"),
+        .init("VIDEO_MP4_SOFTWARE_PRESET", "", "VIDEO_MP4_SOFTWARE_PRESET must not be empty"),
+        .init("VIDEO_MP4_SOFTWARE_CRF", "52", "VIDEO_MP4_SOFTWARE_CRF must be between 0 and 51"),
+        .init("VIDEO_MP4_SOFTWARE_CRF", "-1", "VIDEO_MP4_SOFTWARE_CRF must be between 0 and 51"),
+        .init("VIDEO_MP4_INPUT_FPS", "0", "VIDEO_MP4_INPUT_FPS must be a positive number or ratio"),
+        .init("VIDEO_MP4_INPUT_FPS", "1/0", "VIDEO_MP4_INPUT_FPS must be a positive number or ratio"),
+        .init("VIDEO_MP4_AUDIO_SAMPLE_RATE", "0", "VIDEO_MP4_AUDIO_SAMPLE_RATE must be > 0"),
+        .init("VIDEO_MP4_AUDIO_SAMPLE_RATE", "44100", "VIDEO_MP4_AUDIO_SAMPLE_RATE must be 48000"),
+        .init("VIDEO_MP4_WIDTH", "0", "VIDEO_MP4_WIDTH must be > 0"),
+        .init("VIDEO_MP4_HEIGHT", "0", "VIDEO_MP4_HEIGHT must be > 0"),
+        .init("VIDEO_MP4_SCALE_FILTER", "", "VIDEO_MP4_SCALE_FILTER must not be empty"),
+        .init("VIDEO_MP4_PIXEL_FORMAT", "", "VIDEO_MP4_PIXEL_FORMAT must not be empty"),
+        .init("VIDEO_MP4_TAG", "", "VIDEO_MP4_TAG must not be empty"),
+        .init("VIDEO_MP4_VERIFY_CODEC", "", "VIDEO_MP4_VERIFY_CODEC must not be empty"),
+        .init("VIDEO_COLOR_PRIMARIES", "", "VIDEO_COLOR_PRIMARIES must not be empty"),
+        .init("VIDEO_COLOR_TRANSFER", "", "VIDEO_COLOR_TRANSFER must not be empty"),
+        .init("VIDEO_COLOR_SPACE", "", "VIDEO_COLOR_SPACE must not be empty"),
+        .init("VIDEO_COLOR_RANGE", "", "VIDEO_COLOR_RANGE must not be empty"),
+        .init("SHORT_MP4_CLIP_SECONDS", "0", "SHORT_MP4_CLIP_SECONDS must be > 0"),
+        .init("SHORT_MP4_FPS", "0", "SHORT_MP4_FPS must be a positive number or ratio"),
+        .init("SHORT_MP4_SCALE_W", "0", "SHORT_MP4_SCALE_W must be > 0"),
+        .init("SHORT_MP4_SCALE_H", "0", "SHORT_MP4_SCALE_H must be > 0"),
+        .init("SHORT_MP4_VIDEO_PRESET", "", "SHORT_MP4_VIDEO_PRESET must not be empty"),
+        .init("SHORT_MP4_VIDEO_CRF", "52", "SHORT_MP4_VIDEO_CRF must be between 0 and 51"),
+        .init("SHORT_MP4_VT_QUALITY", "0", "SHORT_MP4_VT_QUALITY must be between 1 and 100"),
+        .init("SHORT_MP4_AUDIO_SAMPLE_RATE", "44100", "SHORT_MP4_AUDIO_SAMPLE_RATE must be 48000"),
+        .init("SHORT_MP4_VIDEO_CODEC", "", "SHORT_MP4_VIDEO_CODEC must not be empty"),
+        .init("SHORT_MP4_PIXEL_FORMAT", "", "SHORT_MP4_PIXEL_FORMAT must not be empty"),
+        .init("SHORT_MP4_VERIFY_CODEC", "", "SHORT_MP4_VERIFY_CODEC must not be empty"),
+        .init("IMAGE_8K_WIDTH", "0", "IMAGE_8K_WIDTH must be > 0"),
+        .init("IMAGE_8K_HEIGHT", "0", "IMAGE_8K_HEIGHT must be > 0"),
+        .init("IMAGE_4K_WIDTH", "0", "IMAGE_4K_WIDTH must be > 0"),
+        .init("IMAGE_4K_HEIGHT", "0", "IMAGE_4K_HEIGHT must be > 0"),
+        .init("IMAGE_3K_SIZE", "0", "IMAGE_3K_SIZE must be > 0"),
+        .init("IMAGE_2K_SIZE", "0", "IMAGE_2K_SIZE must be > 0"),
+        .init("IMAGE_AIPIX_SHARPNESS", "-0.1", "IMAGE_AIPIX_SHARPNESS must be >= 0"),
+        .init("IMAGE_AIPIX_FILTER", "", "IMAGE_AIPIX_FILTER must not be empty"),
+        .init("IMAGE_AIPIX_PNG_COMPRESSION_LEVEL", "10", "IMAGE_AIPIX_PNG_COMPRESSION_LEVEL must be between 0 and 9"),
+        .init("IMAGE_JPG_TO_PNG_COMPRESSION_LEVEL", "10", "IMAGE_JPG_TO_PNG_COMPRESSION_LEVEL must be between 0 and 9"),
+        .init("IMAGE_PNG_TO_JPEG_QUALITY", "0", "IMAGE_PNG_TO_JPEG_QUALITY must be between 1 and 100"),
+        .init("IMAGE_PNG_TO_JPEG_QUALITY", "101", "IMAGE_PNG_TO_JPEG_QUALITY must be between 1 and 100"),
+        .init("IMAGE_JPEG_SAMPLING_FACTOR", "", "IMAGE_JPEG_SAMPLING_FACTOR must not be empty"),
+        .init("IMAGE_OUTPUT_COLORSPACE", "", "IMAGE_OUTPUT_COLORSPACE must not be empty"),
+        .init("IMAGE_3K_JPG_1MB_TARGET_BYTES", "0", "IMAGE_3K_JPG_1MB_TARGET_BYTES must be > 0"),
+        .init("IMAGE_3K_JPG_5MB_TARGET_BYTES", "0", "IMAGE_3K_JPG_5MB_TARGET_BYTES must be > 0"),
+        .init("IMAGE_8K_JPG_1MB_TARGET_BYTES", "0", "IMAGE_8K_JPG_1MB_TARGET_BYTES must be > 0"),
+        .init("IMAGE_8K_JPG_2MB_TARGET_BYTES", "0", "IMAGE_8K_JPG_2MB_TARGET_BYTES must be > 0"),
+        .init("IMAGE_8K_JPG_20MB_TARGET_BYTES", "0", "IMAGE_8K_JPG_20MB_TARGET_BYTES must be > 0"),
+        .init("ALBUM_SILENCE_SECS", "0", "ALBUM_SILENCE_SECS must be > 0"),
+        .init("WAV_FADE_DUR", "0", "WAV_FADE_DUR must be > 0")
+    ]
+
+    func testEveryConfigRuleRejectsAnInvalidValueNamingTheKey() throws {
+        let workspace = try IntegrationWorkspace()
+        let table = Self.invalidConfigValues
+
+        // The two fallback lists are free-form (any comma-separated encoder names, including none),
+        // so they are the only supported keys without a rule. Everything else must appear in the table.
+        let freeFormKeys: Set<String> = ["VIDEO_MP4_ENCODER_FALLBACKS", "SHORT_MP4_VIDEO_FALLBACKS"]
+        XCTAssertEqual(Set(table.map(\.key)), ProjectConfig.supportedKeys.subtracting(freeFormKeys))
+
+        for row in table {
+            try workspace.overwriteConfig(IntegrationWorkspace.defaultConfig + "\n\(row.key)=\(row.value)\n")
+            XCTAssertThrowsError(try loadConfig(from: workspace), "\(row.key)=\(row.value) must be rejected") { error in
+                let message = error.localizedDescription
+                XCTAssertTrue(message.contains(row.expected), "\(row.key)=\(row.value): got '\(message)'")
+            }
+        }
+    }
+
+    // audit #0071: the bounds are inclusive; each edge that a user may legitimately choose must load.
+    func testConfigRangeRulesAcceptTheirBoundaryValues() throws {
+        let workspace = try IntegrationWorkspace()
+        let accepted: [(key: String, value: String)] = [
+            ("WAV_WRITE_BEXT", "0"), ("WAV_WRITE_BEXT", "1"),
+            ("FLAC_COMPRESSION_LEVEL", "0"), ("FLAC_COMPRESSION_LEVEL", "12"),
+            ("IMAGE_AIPIX_PNG_COMPRESSION_LEVEL", "9"), ("IMAGE_JPG_TO_PNG_COMPRESSION_LEVEL", "9"),
+            ("IMAGE_PNG_TO_JPEG_QUALITY", "1"), ("IMAGE_PNG_TO_JPEG_QUALITY", "100"),
+            ("VIDEO_MP4_SOFTWARE_CRF", "0"), ("VIDEO_MP4_SOFTWARE_CRF", "51"), ("SHORT_MP4_VIDEO_CRF", "23.5"),
+            ("VIDEO_MP4_VT_QUALITY", "1"), ("VIDEO_MP4_VT_QUALITY", "100"), ("SHORT_MP4_VT_QUALITY", "100"),
+            ("CRC_CHUNK_BYTES", "1"), ("CRC_CHUNK_BYTES", "67108864"),
+            ("IMAGE_3K_JPG_1MB_TARGET_BYTES", "1"), ("DURATION_TOLERANCE_SEC", "0"), ("IMAGE_AIPIX_SHARPNESS", "0")
+        ]
+        for row in accepted {
+            try workspace.overwriteConfig(IntegrationWorkspace.defaultConfig + "\n\(row.key)=\(row.value)\n")
+            XCTAssertNoThrow(try loadConfig(from: workspace), "\(row.key)=\(row.value) must load")
+        }
+    }
+
+    // audit #0071: the repository's config.txt is the reference every user starts from, so every key
+    // in it must be one the loader knows (a stale or misspelled key there would be reported as unknown
+    // on every run) and the file as shipped must pass validation.
+    func testRepositoryConfigKeysAreSupportedAndTheFileLoadsWithoutWarnings() throws {
+        let configURL = IntegrationWorkspace.projectRoot.appendingPathComponent("config.txt")
+        let keys = try Self.configKeys(in: configURL)
+        XCTAssertFalse(keys.isEmpty)
+        XCTAssertEqual(keys.subtracting(ProjectConfig.supportedKeys), [], "config.txt keys the loader does not know")
+
+        let options = try CLIOptions.parse(
+            arguments: ["-help"],
+            environment: [:],
+            scriptDirectory: IntegrationWorkspace.projectRoot,
+            scriptName: "converter"
+        )
+        var loaded: ProjectConfig?
+        let standardError = try captureStandardError {
+            loaded = try ProjectConfig.load(
+                from: configURL,
+                environment: [:],
+                cli: options,
+                logger: Logger(scriptName: "converterTests", debugEnabled: false)
+            )
+        }
+        XCTAssertEqual(loaded?.profileName, "youtube_master")
+        XCTAssertFalse(standardError.contains("[WARN]"), standardError)
+    }
+
+    static func configKeys(in url: URL) throws -> Set<String> {
+        let text = try String(contentsOf: url, encoding: .utf8)
+        let keys = text.split(whereSeparator: \.isNewline).compactMap { rawLine -> String? in
+            let line = rawLine.trimmingCharacters(in: .whitespaces)
+            guard !line.isEmpty, !line.hasPrefix("#"), let separator = line.firstIndex(of: "=") else { return nil }
+            return String(line[..<separator]).trimmingCharacters(in: .whitespaces)
+        }
+        return Set(keys)
+    }
+
     func testMatrixInitializationDoesNotRequireProjectOutputDirectory() throws {
         let tempDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         try FileManager.default.createDirectory(at: tempDirectory, withIntermediateDirectories: true)

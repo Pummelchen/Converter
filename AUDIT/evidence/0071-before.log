@@ -1,0 +1,88 @@
+[0/1] Planning build
+Building for debugging...
+[0/8] Write sources
+[2/8] Write swift-version--58304C5D6DBC2206.txt
+[4/23] Compiling converter ImagePipeline.swift
+[5/23] Compiling converter LosslessAudioPipeline.swift
+[6/23] Compiling converter DependencyBootstrap.swift
+[7/23] Compiling converter Diagnostics.swift
+[8/24] Compiling converter VideoPipeline.swift
+[9/24] Compiling converter ProcessRunner.swift
+[10/24] Compiling converter QualityReporting.swift
+[11/24] Compiling converter Main.swift
+[12/24] Compiling converter PipelineCore.swift
+[13/24] Compiling converter Support.swift
+[14/24] Compiling converter ValidationPipeline.swift
+[15/24] Compiling converter CLI.swift
+[16/24] Compiling converter Config.swift
+[17/24] Compiling converter Actions.swift
+[18/24] Compiling converter AudioPipeline.swift
+[19/24] Emitting module converter
+[19/24] Write Objects.LinkFileList
+[20/24] Linking converter
+[21/24] Applying converter
+[23/28] Compiling converterTests IntegrationTestSupport.swift
+[24/28] Compiling converterTests PipelineIntegrationTests.swift
+[25/28] Emitting module converterTests
+[26/28] Compiling converterTests converterTests.swift
+[27/30] Compiling converterPackageTests runner.swift
+[28/30] Emitting module converterPackageTests
+[28/30] Write Objects.LinkFileList
+[29/30] Linking converterPackageTests
+Build complete! (4.16s)
+Test Suite 'Selected tests' started at 2026-09-13 23:20:04.639.
+Test Suite 'converterPackageTests.xctest' started at 2026-09-13 23:20:04.639.
+Test Suite 'converterTests' started at 2026-09-13 23:20:04.639.
+Test Case '-[converterTests.converterTests testConfigRangeRulesAcceptTheirBoundaryValues]' started.
+Test Case '-[converterTests.converterTests testConfigRangeRulesAcceptTheirBoundaryValues]' passed (0.015 seconds).
+Test Case '-[converterTests.converterTests testEveryConfigRuleRejectsAnInvalidValueNamingTheKey]' started.
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:1333: error: -[converterTests.converterTests testEveryConfigRuleRejectsAnInvalidValueNamingTheKey] : XCTAssertTrue failed - PREFLIGHT_SECONDS=-1: got 'PREFLIGHT_SECONDS must be an integer (got '-1')'
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:1333: error: -[converterTests.converterTests testEveryConfigRuleRejectsAnInvalidValueNamingTheKey] : XCTAssertTrue failed - CRC_CHUNK_BYTES=0: got 'CRC_CHUNK_BYTES must be > 0 (got '0')'
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:1331: error: -[converterTests.converterTests testEveryConfigRuleRejectsAnInvalidValueNamingTheKey] : XCTAssertThrowsError failed: did not throw an error - CRC_CHUNK_BYTES=67108865 must be rejected
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:1333: error: -[converterTests.converterTests testEveryConfigRuleRejectsAnInvalidValueNamingTheKey] : XCTAssertTrue failed - WAV_SAMPLE_RATE=48000: got 'Internal WAV processing must be 24-bit, 96 kHz, stereo (WAV_SAMPLE_RATE=96000, WAV_CODEC=pcm_s24le, WAV_CHANNELS=2).'
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:1333: error: -[converterTests.converterTests testEveryConfigRuleRejectsAnInvalidValueNamingTheKey] : XCTAssertTrue failed - WAV_CODEC=pcm_s16le: got 'Internal WAV processing must be 24-bit, 96 kHz, stereo (WAV_SAMPLE_RATE=96000, WAV_CODEC=pcm_s24le, WAV_CHANNELS=2).'
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:1333: error: -[converterTests.converterTests testEveryConfigRuleRejectsAnInvalidValueNamingTheKey] : XCTAssertTrue failed - WAV_CHANNELS=1: got 'Internal WAV processing must be 24-bit, 96 kHz, stereo (WAV_SAMPLE_RATE=96000, WAV_CODEC=pcm_s24le, WAV_CHANNELS=2).'
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:1331: error: -[converterTests.converterTests testEveryConfigRuleRejectsAnInvalidValueNamingTheKey] : XCTAssertThrowsError failed: did not throw an error - WAV_WRITE_BEXT=2 must be rejected
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:1333: error: -[converterTests.converterTests testEveryConfigRuleRejectsAnInvalidValueNamingTheKey] : XCTAssertTrue failed - MP3_SAMPLE_RATE=44100: got 'MP3 output must use the project maximum quality setting: 320k, 48 kHz, stereo.'
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:1333: error: -[converterTests.converterTests testEveryConfigRuleRejectsAnInvalidValueNamingTheKey] : XCTAssertTrue failed - MP3_BITRATE=128k: got 'MP3 output must use the project maximum quality setting: 320k, 48 kHz, stereo.'
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:1333: error: -[converterTests.converterTests testEveryConfigRuleRejectsAnInvalidValueNamingTheKey] : XCTAssertTrue failed - MP3_CHANNELS=1: got 'MP3 output must use the project maximum quality setting: 320k, 48 kHz, stereo.'
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:1331: error: -[converterTests.converterTests testEveryConfigRuleRejectsAnInvalidValueNamingTheKey] : XCTAssertThrowsError failed: did not throw an error - FLAC_COMPRESSION_LEVEL=13 must be rejected
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:1333: error: -[converterTests.converterTests testEveryConfigRuleRejectsAnInvalidValueNamingTheKey] : XCTAssertTrue failed - M4A_SAMPLE_RATE=44100: got 'M4A output must be ALAC at 48 kHz stereo.'
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:1333: error: -[converterTests.converterTests testEveryConfigRuleRejectsAnInvalidValueNamingTheKey] : XCTAssertTrue failed - M4A_CHANNELS=1: got 'M4A output must be ALAC at 48 kHz stereo.'
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:1333: error: -[converterTests.converterTests testEveryConfigRuleRejectsAnInvalidValueNamingTheKey] : XCTAssertTrue failed - AUDIO_QC_MAX_CLIPPED_SAMPLES=-1: got 'AUDIO_QC_MAX_CLIPPED_SAMPLES must be an integer (got '-1')'
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:1331: error: -[converterTests.converterTests testEveryConfigRuleRejectsAnInvalidValueNamingTheKey] : XCTAssertThrowsError failed: did not throw an error - VIDEO_MP4_VT_QUALITY=0 must be rejected
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:1331: error: -[converterTests.converterTests testEveryConfigRuleRejectsAnInvalidValueNamingTheKey] : XCTAssertThrowsError failed: did not throw an error - VIDEO_MP4_VT_QUALITY=101 must be rejected
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:1331: error: -[converterTests.converterTests testEveryConfigRuleRejectsAnInvalidValueNamingTheKey] : XCTAssertThrowsError failed: did not throw an error - VIDEO_MP4_SOFTWARE_CRF=52 must be rejected
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:1331: error: -[converterTests.converterTests testEveryConfigRuleRejectsAnInvalidValueNamingTheKey] : XCTAssertThrowsError failed: did not throw an error - VIDEO_MP4_SOFTWARE_CRF=-1 must be rejected
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:1333: error: -[converterTests.converterTests testEveryConfigRuleRejectsAnInvalidValueNamingTheKey] : XCTAssertTrue failed - VIDEO_MP4_AUDIO_SAMPLE_RATE=44100: got 'Main MP4 audio output must be ALAC at 24-bit, 48 kHz, stereo.'
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:1333: error: -[converterTests.converterTests testEveryConfigRuleRejectsAnInvalidValueNamingTheKey] : XCTAssertTrue failed - VIDEO_COLOR_PRIMARIES=: got 'VIDEO color settings must not be empty'
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:1333: error: -[converterTests.converterTests testEveryConfigRuleRejectsAnInvalidValueNamingTheKey] : XCTAssertTrue failed - VIDEO_COLOR_TRANSFER=: got 'VIDEO color settings must not be empty'
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:1333: error: -[converterTests.converterTests testEveryConfigRuleRejectsAnInvalidValueNamingTheKey] : XCTAssertTrue failed - VIDEO_COLOR_SPACE=: got 'VIDEO color settings must not be empty'
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:1333: error: -[converterTests.converterTests testEveryConfigRuleRejectsAnInvalidValueNamingTheKey] : XCTAssertTrue failed - VIDEO_COLOR_RANGE=: got 'VIDEO color settings must not be empty'
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:1331: error: -[converterTests.converterTests testEveryConfigRuleRejectsAnInvalidValueNamingTheKey] : XCTAssertThrowsError failed: did not throw an error - SHORT_MP4_VIDEO_CRF=52 must be rejected
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:1331: error: -[converterTests.converterTests testEveryConfigRuleRejectsAnInvalidValueNamingTheKey] : XCTAssertThrowsError failed: did not throw an error - SHORT_MP4_VT_QUALITY=0 must be rejected
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:1333: error: -[converterTests.converterTests testEveryConfigRuleRejectsAnInvalidValueNamingTheKey] : XCTAssertTrue failed - SHORT_MP4_AUDIO_SAMPLE_RATE=44100: got 'Short MP4 audio output must be ALAC at 24-bit, 48 kHz, stereo.'
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:1331: error: -[converterTests.converterTests testEveryConfigRuleRejectsAnInvalidValueNamingTheKey] : XCTAssertThrowsError failed: did not throw an error - IMAGE_AIPIX_FILTER= must be rejected
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:1331: error: -[converterTests.converterTests testEveryConfigRuleRejectsAnInvalidValueNamingTheKey] : XCTAssertThrowsError failed: did not throw an error - IMAGE_AIPIX_PNG_COMPRESSION_LEVEL=10 must be rejected
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:1331: error: -[converterTests.converterTests testEveryConfigRuleRejectsAnInvalidValueNamingTheKey] : XCTAssertThrowsError failed: did not throw an error - IMAGE_JPG_TO_PNG_COMPRESSION_LEVEL=10 must be rejected
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:1331: error: -[converterTests.converterTests testEveryConfigRuleRejectsAnInvalidValueNamingTheKey] : XCTAssertThrowsError failed: did not throw an error - IMAGE_JPEG_SAMPLING_FACTOR= must be rejected
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:1331: error: -[converterTests.converterTests testEveryConfigRuleRejectsAnInvalidValueNamingTheKey] : XCTAssertThrowsError failed: did not throw an error - IMAGE_3K_JPG_1MB_TARGET_BYTES=0 must be rejected
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:1331: error: -[converterTests.converterTests testEveryConfigRuleRejectsAnInvalidValueNamingTheKey] : XCTAssertThrowsError failed: did not throw an error - IMAGE_3K_JPG_5MB_TARGET_BYTES=0 must be rejected
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:1331: error: -[converterTests.converterTests testEveryConfigRuleRejectsAnInvalidValueNamingTheKey] : XCTAssertThrowsError failed: did not throw an error - IMAGE_8K_JPG_1MB_TARGET_BYTES=0 must be rejected
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:1331: error: -[converterTests.converterTests testEveryConfigRuleRejectsAnInvalidValueNamingTheKey] : XCTAssertThrowsError failed: did not throw an error - IMAGE_8K_JPG_2MB_TARGET_BYTES=0 must be rejected
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:1331: error: -[converterTests.converterTests testEveryConfigRuleRejectsAnInvalidValueNamingTheKey] : XCTAssertThrowsError failed: did not throw an error - IMAGE_8K_JPG_20MB_TARGET_BYTES=0 must be rejected
+Test Case '-[converterTests.converterTests testEveryConfigRuleRejectsAnInvalidValueNamingTheKey]' failed (0.128 seconds).
+Test Case '-[converterTests.converterTests testRepositoryConfigKeysAreSupportedAndTheFileLoadsWithoutWarnings]' started.
+Test Case '-[converterTests.converterTests testRepositoryConfigKeysAreSupportedAndTheFileLoadsWithoutWarnings]' passed (0.001 seconds).
+Test Suite 'converterTests' failed at 2026-09-13 23:20:04.784.
+	 Executed 3 tests, with 35 failures (0 unexpected) in 0.144 (0.145) seconds
+Test Suite 'converterPackageTests.xctest' failed at 2026-09-13 23:20:04.784.
+	 Executed 3 tests, with 35 failures (0 unexpected) in 0.144 (0.145) seconds
+Test Suite 'Selected tests' failed at 2026-09-13 23:20:04.784.
+	 Executed 3 tests, with 35 failures (0 unexpected) in 0.144 (0.146) seconds
+◇ Test run started.
+↳ Testing Library Version: 1902
+↳ Target Platform: arm64e-apple-macos14.0
+✔ Test run with 0 tests in 0 suites passed after 0.001 seconds.
+
+# audit #0071 note: run with the Config.swift change reverted (old validate() rules and parseInt message).
