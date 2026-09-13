@@ -2273,6 +2273,33 @@ final class converterTests: XCTestCase {
         await semaphore.signal()
     }
 
+    // audit #0076: when signal() resumed a waiter and the waiter's task was cancelled at the
+    // same moment, cancelWaiter() found no queued waiter and left a "cancelled before
+    // suspension" marker that nothing ever consumed, one per race for the life of the
+    // semaphore. Racing the two 500 times must leave the marker set empty and the permit intact.
+    func testAsyncSemaphoreSignalRacingCancellationLeavesNoMarkerBehind() async throws {
+        let semaphore = AsyncSemaphore(value: 1)
+
+        for _ in 0 ..< 500 {
+            try await semaphore.wait()
+            let waiter = Task { try await semaphore.withPermit { } }
+            try await waitUntil { await semaphore.waiterCount == 1 }
+
+            // Hand over the permit and cancel the receiver in the same breath; whichever wins,
+            // withPermit returns the permit.
+            await semaphore.signal()
+            waiter.cancel()
+            _ = await waiter.result
+        }
+
+        let pending = await semaphore.pendingCancellationCount
+        XCTAssertEqual(pending, 0, "a cancel that lost the race against signal() must leave no marker")
+        let queued = await semaphore.waiterCount
+        XCTAssertEqual(queued, 0)
+        try await expectCompletion { try await semaphore.wait() }
+        await semaphore.signal()
+    }
+
     // audit #0021: one ladder for every render — reports each failed rung, stops at the first
     // failure that a different encoder cannot fix.
     func testEncoderLadderReportsEveryRungAndStopsOnEncoderIndependentFailure() throws {
@@ -2972,6 +2999,21 @@ private func expectCompletion<T: Sendable>(
         }
         group.cancelAll()
         return result
+    }
+}
+
+// audit #0076: yields until `condition` holds, failing after `seconds` so a state that never
+// arrives (a waiter that never queued) is reported instead of spun on forever.
+private func waitUntil(
+    within seconds: Double = 1,
+    _ condition: @escaping @Sendable () async -> Bool
+) async throws {
+    let deadline = Date().addingTimeInterval(seconds)
+    while await !condition() {
+        guard Date() < deadline else {
+            throw AwaitTimedOut(seconds: seconds)
+        }
+        await Task.yield()
     }
 }
 

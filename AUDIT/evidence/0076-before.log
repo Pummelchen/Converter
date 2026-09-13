@@ -1,0 +1,3 @@
+# audit #0076 BEFORE: cancelWaiter() restored to the pre-fix unconditional marker insert (the count properties are kept so the test compiles); swift test --filter testAsyncSemaphoreSignalRacingCancellation
+/Users/node4/Downloads/Converter-wt/runtime/Sources/Tests/converterTests/converterTests.swift:1795: error: -[converterTests.converterTests testAsyncSemaphoreSignalRacingCancellationLeavesNoMarkerBehind] : XCTAssertEqual failed: ("500") is not equal to ("0") - a cancel that lost the race against signal() must leave no marker
+Test Case '-[converterTests.converterTests testAsyncSemaphoreSignalRacingCancellationLeavesNoMarkerBehind]' failed (0.077 seconds).
