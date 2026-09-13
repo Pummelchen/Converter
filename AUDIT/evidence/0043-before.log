@@ -1,0 +1,49 @@
+Test Suite 'Selected tests' started at 2026-09-13 23:19:16.931.
+Test Suite 'converterPackageTests.xctest' started at 2026-09-13 23:19:16.932.
+Test Suite 'PipelineIntegrationTests' started at 2026-09-13 23:19:16.932.
+Test Case '-[converterTests.PipelineIntegrationTests testBW64StructureRejectsDs64TextInsideBext]' started.
+/Users/node4/Downloads/Converter-wt/validation/Sources/Tests/converterTests/PipelineIntegrationTests.swift:2733: error: -[converterTests.PipelineIntegrationTests testBW64StructureRejectsDs64TextInsideBext] : XCTAssertTrue failed - Command failed: /opt/homebrew/bin/ffprobe -v error -show_entries format=format_name -of default=nw=1:nk=1 /var/folders/k5/fzyk9mb96rqbc6_vnxv5mh3h0000gn/T/converter-tests.993EA871-BE00-4455-AC7D-1E61BF61EA29/Output/no_ds64.wav | /var/folders/k5/fzyk9mb96rqbc6_vnxv5mh3h0000gn/T/converter-tests.993EA871-BE00-4455-AC7D-1E61BF61EA29/Output/no_ds64.wav: Invalid data found when processing input
+Test Case '-[converterTests.PipelineIntegrationTests testBW64StructureRejectsDs64TextInsideBext]' failed (0.282 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testCanonicalPCMEquivalenceRejectsLengthAndChannelMismatch]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testCanonicalPCMEquivalenceRejectsLengthAndChannelMismatch]' passed (0.608 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testExternalWAVStructureFindsBextChunkBeyond64KiB]' started.
+/Users/node4/Downloads/Converter-wt/validation/Sources/Tests/converterTests/PipelineIntegrationTests.swift:2713: error: -[converterTests.PipelineIntegrationTests testExternalWAVStructureFindsBextChunkBeyond64KiB] : XCTAssertNoThrow failed: threw error "Broadcast metadata mismatch for /var/folders/k5/fzyk9mb96rqbc6_vnxv5mh3h0000gn/T/converter-tests.164CB7AD-9549-4295-926B-F31153E5D80B/Output/far_bext.wav (got=absent expected=present)"
+/Users/node4/Downloads/Converter-wt/validation/Sources/Tests/converterTests/PipelineIntegrationTests.swift:2714: error: -[converterTests.PipelineIntegrationTests testExternalWAVStructureFindsBextChunkBeyond64KiB] : XCTAssertThrowsError failed: did not throw an error
+Test Case '-[converterTests.PipelineIntegrationTests testExternalWAVStructureFindsBextChunkBeyond64KiB]' failed (0.600 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testExternalWAVStructureIgnoresBextTextInsideListInfo]' started.
+/Users/node4/Downloads/Converter-wt/validation/Sources/Tests/converterTests/PipelineIntegrationTests.swift:2686: error: -[converterTests.PipelineIntegrationTests testExternalWAVStructureIgnoresBextTextInsideListInfo] : XCTAssertNoThrow failed: threw error "Broadcast metadata mismatch for /var/folders/k5/fzyk9mb96rqbc6_vnxv5mh3h0000gn/T/converter-tests.B316F640-D89E-4FCF-8D3A-E26BC12B97D9/Output/comment_only.wav (got=present expected=absent)"
+/Users/node4/Downloads/Converter-wt/validation/Sources/Tests/converterTests/PipelineIntegrationTests.swift:2687: error: -[converterTests.PipelineIntegrationTests testExternalWAVStructureIgnoresBextTextInsideListInfo] : XCTAssertThrowsError failed: did not throw an error
+Test Case '-[converterTests.PipelineIntegrationTests testExternalWAVStructureIgnoresBextTextInsideListInfo]' failed (1.210 seconds).
+Test Suite 'PipelineIntegrationTests' failed at 2026-09-13 23:19:19.632.
+	 Executed 4 tests, with 5 failures (0 unexpected) in 2.699 (2.700) seconds
+Test Suite 'converterTests' started at 2026-09-13 23:19:19.632.
+Test Case '-[converterTests.converterTests testCanonicalPCMSampleDecodingAndLengthBoundaries]' started.
+Test Case '-[converterTests.converterTests testCanonicalPCMSampleDecodingAndLengthBoundaries]' passed (0.002 seconds).
+Test Case '-[converterTests.converterTests testContainsChunkRejectsMalformedRIFFStructures]' started.
+/Users/node4/Downloads/Converter-wt/validation/Sources/Tests/converterTests/converterTests.swift:2278: error: -[converterTests.converterTests testContainsChunkRejectsMalformedRIFFStructures] : XCTAssertThrowsError failed: did not throw an error - eight_bytes.wav
+/Users/node4/Downloads/Converter-wt/validation/Sources/Tests/converterTests/converterTests.swift:2279: error: -[converterTests.converterTests testContainsChunkRejectsMalformedRIFFStructures] : XCTAssertThrowsError failed: did not throw an error - wavx.wav
+/Users/node4/Downloads/Converter-wt/validation/Sources/Tests/converterTests/converterTests.swift:2282: error: -[converterTests.converterTests testContainsChunkRejectsMalformedRIFFStructures] : XCTAssertThrowsError failed: did not throw an error - rf64_no_ds64.wav
+/Users/node4/Downloads/Converter-wt/validation/Sources/Tests/converterTests/converterTests.swift:2285: error: -[converterTests.converterTests testContainsChunkRejectsMalformedRIFFStructures] : XCTAssertThrowsError failed: did not throw an error - bw64_ds64_text.wav
+/Users/node4/Downloads/Converter-wt/validation/Sources/Tests/converterTests/converterTests.swift:2291: error: -[converterTests.converterTests testContainsChunkRejectsMalformedRIFFStructures] : XCTAssertThrowsError failed: did not throw an error - truncated_data.wav
+/Users/node4/Downloads/Converter-wt/validation/Sources/Tests/converterTests/converterTests.swift:2294: error: -[converterTests.converterTests testContainsChunkRejectsMalformedRIFFStructures] : XCTAssertThrowsError failed: did not throw an error - riff_placeholder.wav
+/Users/node4/Downloads/Converter-wt/validation/Sources/Tests/converterTests/converterTests.swift:2298: error: -[converterTests.converterTests testContainsChunkRejectsMalformedRIFFStructures] : XCTAssertThrowsError failed: did not throw an error - short_ds64.wav
+/Users/node4/Downloads/Converter-wt/validation/Sources/Tests/converterTests/converterTests.swift:2301: error: -[converterTests.converterTests testContainsChunkRejectsMalformedRIFFStructures] : XCTAssertThrowsError failed: did not throw an error - trailing.wav
+Test Case '-[converterTests.converterTests testContainsChunkRejectsMalformedRIFFStructures]' failed (0.004 seconds).
+Test Case '-[converterTests.converterTests testContainsChunkWalksChunksInsteadOfScanningBytes]' started.
+/Users/node4/Downloads/Converter-wt/validation/Sources/Tests/converterTests/converterTests.swift:2223: error: -[converterTests.converterTests testContainsChunkWalksChunksInsteadOfScanningBytes] : XCTAssertFalse failed - bext inside LIST/INFO text is not a chunk
+/Users/node4/Downloads/Converter-wt/validation/Sources/Tests/converterTests/converterTests.swift:2229: error: -[converterTests.converterTests testContainsChunkWalksChunksInsteadOfScanningBytes] : XCTAssertFalse failed - bext inside the samples is not a chunk
+/Users/node4/Downloads/Converter-wt/validation/Sources/Tests/converterTests/converterTests.swift:2240: error: -[converterTests.converterTests testContainsChunkWalksChunksInsteadOfScanningBytes] : XCTAssertTrue failed - a bext chunk past 64 KiB must be found
+/Users/node4/Downloads/Converter-wt/validation/Sources/Tests/converterTests/converterTests.swift:2252: error: -[converterTests.converterTests testContainsChunkWalksChunksInsteadOfScanningBytes] : XCTAssertTrue failed - the chunk after a placeholder-sized data chunk
+Test Case '-[converterTests.converterTests testContainsChunkWalksChunksInsteadOfScanningBytes]' failed (0.003 seconds).
+Test Case '-[converterTests.converterTests testWAVHeaderRejectsTruncatedWAVXAndMismatchedContainers]' started.
+Test Case '-[converterTests.converterTests testWAVHeaderRejectsTruncatedWAVXAndMismatchedContainers]' passed (0.001 seconds).
+Test Suite 'converterTests' failed at 2026-09-13 23:19:19.642.
+	 Executed 4 tests, with 12 failures (0 unexpected) in 0.010 (0.010) seconds
+Test Suite 'converterPackageTests.xctest' failed at 2026-09-13 23:19:19.642.
+	 Executed 8 tests, with 17 failures (0 unexpected) in 2.709 (2.710) seconds
+Test Suite 'Selected tests' failed at 2026-09-13 23:19:19.642.
+	 Executed 8 tests, with 17 failures (0 unexpected) in 2.709 (2.711) seconds
+◇ Test run started.
+↳ Testing Library Version: 1902
+↳ Target Platform: arm64e-apple-macos14.0
+✔ Test run with 0 tests in 0 suites passed after 0.001 seconds.

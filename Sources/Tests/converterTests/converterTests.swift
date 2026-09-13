@@ -2697,6 +2697,187 @@ final class converterTests: XCTestCase {
         let remaining = try FileManager.default.contentsOfDirectory(atPath: temp.path).sorted()
         XCTAssertEqual(remaining, (untouched + ["keep", "lost.wav"]).sorted())
     }
+
+    private func writeFixture(_ data: Data, as name: String, in directory: URL) throws -> URL {
+        let url = directory.appendingPathComponent(name)
+        try data.write(to: url)
+        return url
+    }
+
+    // audit #0043: containsChunk was a 64 KiB substring scan. The four bytes of a chunk id inside
+    // a LIST/INFO string (or inside the samples) counted as the chunk, a chunk past 64 KiB read
+    // as absent, and the RF64 size placeholder was never resolved through ds64, so nothing after
+    // a large data chunk was reachable. A chunk id is only a chunk id at a chunk boundary.
+    func testContainsChunkWalksChunksInsteadOfScanningBytes() throws {
+        let tool = try makeParserTool()
+        let directory = tool.cli.outDir
+        let fmt = WAVFixture.pcmFormatChunk(channels: 2, sampleRate: 96_000, bitsPerSample: 24)
+        var samples = Data(count: 6 * 97)
+        samples.replaceSubrange(30 ..< 34, with: WAVFixture.fourCC("bext"))
+
+        // "bext" as text inside LIST/INFO or inside the PCM is not a bext chunk.
+        let info = WAVFixture.fourCC("INFO") + WAVFixture.chunk("ICMT", Data("bext is only a word here\0".utf8))
+        let textOnly = try writeFixture(
+            WAVFixture.rf64File(container: "RF64", before: [fmt, WAVFixture.chunk("LIST", info)], dataPayload: samples),
+            as: "text_only.wav", in: directory
+        )
+        XCTAssertFalse(try tool.containsChunk(textOnly, chunkID: "bext"), "bext inside LIST/INFO text is not a chunk")
+        XCTAssertTrue(try tool.containsChunk(textOnly, chunkID: "LIST"))
+        XCTAssertTrue(try tool.containsChunk(textOnly, chunkID: "data"))
+        let plain = try writeFixture(
+            WAVFixture.riffFile(chunks: [fmt, WAVFixture.chunk("data", samples)]), as: "plain.wav", in: directory
+        )
+        XCTAssertFalse(try tool.containsChunk(plain, chunkID: "bext"), "bext inside the samples is not a chunk")
+        XCTAssertTrue(try tool.containsChunk(plain, chunkID: "data"))
+
+        // A real bext chunk after 70 001 bytes of JUNK (odd, so the pad byte is walked) is present.
+        let junk = WAVFixture.chunk("JUNK", Data(count: 70_001))
+        let farBext = try writeFixture(
+            WAVFixture.rf64File(
+                container: "RF64", before: [fmt, junk, WAVFixture.bextChunk(description: "late")], dataPayload: samples
+            ),
+            as: "far_bext.wav", in: directory
+        )
+        XCTAssertTrue(try tool.containsChunk(farBext, chunkID: "bext"), "a bext chunk past 64 KiB must be found")
+
+        // The data chunk carries the placeholder; only ds64 says where it ends, and the chunk
+        // behind it is reachable only through that substitution.
+        let afterData = try writeFixture(
+            WAVFixture.rf64File(
+                container: "BW64", before: [fmt], dataPayload: Data(count: 6 * 12_000),
+                after: [WAVFixture.bextChunk(description: "trailing")]
+            ),
+            as: "after_data.wav", in: directory
+        )
+        XCTAssertTrue(try tool.containsChunk(afterData, chunkID: "ds64"))
+        XCTAssertTrue(
+            try tool.containsChunk(afterData, chunkID: "bext"), "the chunk after a placeholder-sized data chunk"
+        )
+        XCTAssertFalse(try tool.containsChunk(afterData, chunkID: "JUNK"))
+    }
+
+    // audit #0043: the walk is bounds-checked and fails closed. Each layout below either passed
+    // the byte scan or was never examined: a file that ends after its header, a form type that
+    // is not WAVE, an RF64 whose first chunk is not ds64, a BW64 whose only "ds64" is text inside
+    // bext, a chunk running past the end of the file, the RF64 size placeholder inside a plain
+    // RIFF, a ds64 too short to hold its sizes, and stray bytes after the last chunk.
+    func testContainsChunkRejectsMalformedRIFFStructures() throws {
+        let tool = try makeParserTool()
+        let directory = tool.cli.outDir
+        let fmt = WAVFixture.pcmFormatChunk(channels: 2, sampleRate: 96_000, bitsPerSample: 24)
+        let samples = Data(count: 6 * 40)
+        let data = WAVFixture.chunk("data", samples)
+        let header = WAVFixture.fourCC("RF64") + WAVFixture.uint32LE(WAVFixture.sizePlaceholder)
+            + WAVFixture.fourCC("WAVE")
+
+        func assertRejected(_ bytes: Data, as name: String, reason: String, line: UInt = #line) throws {
+            let url = try writeFixture(bytes, as: name, in: directory)
+            XCTAssertThrowsError(try tool.containsChunk(url, chunkID: "data"), name, line: line) { error in
+                let message = error.localizedDescription
+                XCTAssertTrue(message.contains(reason), "\(name): expected '\(reason)' in: \(message)", line: line)
+                XCTAssertTrue(message.contains(url.path), "\(name): the error must name the file", line: line)
+            }
+        }
+
+        let riffHeader = WAVFixture.fourCC("RIFF") + WAVFixture.uint32LE(4)
+        try assertRejected(riffHeader, as: "eight_bytes.wav", reason: "need 12")
+        try assertRejected(riffHeader + WAVFixture.fourCC("WAVX"), as: "wavx.wav", reason: "WAVE")
+        try assertRejected(
+            WAVFixture.rf64FileWithoutDs64(container: "RF64", chunks: [fmt, data]),
+            as: "rf64_no_ds64.wav", reason: "ds64"
+        )
+        try assertRejected(
+            WAVFixture.rf64FileWithoutDs64(
+                container: "BW64", chunks: [WAVFixture.bextChunk(description: "ds64 lives here"), fmt, data]
+            ),
+            as: "bw64_ds64_text.wav", reason: "ds64"
+        )
+        try assertRejected(
+            WAVFixture.riffFile(chunks: [fmt, data]).dropLast(10), as: "truncated_data.wav", reason: "ends at"
+        )
+        try assertRejected(
+            WAVFixture.riffFile(chunks: [fmt, WAVFixture.placeholderChunk("data", samples)]),
+            as: "riff_placeholder.wav", reason: "placeholder"
+        )
+        try assertRejected(
+            header + WAVFixture.chunk("ds64", Data(count: 16)) + fmt + data, as: "short_ds64.wav", reason: "ds64"
+        )
+        try assertRejected(
+            WAVFixture.riffFile(chunks: [fmt, data]) + Data("junk".utf8), as: "trailing.wav", reason: "trailing"
+        )
+    }
+
+    // audit #0043 (T-18): verifyWAVHeader boundaries pinned alongside the walker. A file that
+    // ends inside the header, a form type other than WAVE, and a RIFF where RF64 is required
+    // are all rejected with the message that names the mismatch; "ANY" accepts both containers.
+    func testWAVHeaderRejectsTruncatedWAVXAndMismatchedContainers() throws {
+        let tool = try makeParserTool()
+        let directory = tool.cli.outDir
+        let fmt = WAVFixture.pcmFormatChunk(channels: 2, sampleRate: 96_000, bitsPerSample: 24)
+        let data = WAVFixture.chunk("data", Data(count: 6 * 40))
+
+        let riffHeader = WAVFixture.fourCC("RIFF") + WAVFixture.uint32LE(4)
+        let eightBytes = try writeFixture(riffHeader, as: "eight.wav", in: directory)
+        XCTAssertThrowsError(try tool.verifyWAVHeader(eightBytes)) { error in
+            XCTAssertTrue(error.localizedDescription.contains("WAV header too short"), error.localizedDescription)
+        }
+        let wavx = try writeFixture(riffHeader + WAVFixture.fourCC("WAVX") + fmt + data, as: "wavx.wav", in: directory)
+        XCTAssertThrowsError(try tool.verifyWAVHeader(wavx, expectedContainer: "ANY")) { error in
+            XCTAssertTrue(error.localizedDescription.contains("got='WAVX' expected='WAVE'"), error.localizedDescription)
+        }
+        let riff = try writeFixture(WAVFixture.riffFile(chunks: [fmt, data]), as: "riff.wav", in: directory)
+        XCTAssertThrowsError(try tool.verifyWAVHeader(riff, expectedContainer: "RF64")) { error in
+            XCTAssertTrue(error.localizedDescription.contains("got='RIFF' expected='RF64'"), error.localizedDescription)
+        }
+        XCTAssertNoThrow(try tool.verifyWAVHeader(riff, expectedContainer: "RIFF"))
+        XCTAssertNoThrow(try tool.verifyWAVHeader(riff, expectedContainer: "ANY"))
+        let rf64 = try writeFixture(
+            WAVFixture.rf64File(container: "RF64", before: [fmt], dataPayload: Data(count: 6 * 40)),
+            as: "rf64.wav", in: directory
+        )
+        XCTAssertNoThrow(try tool.verifyWAVHeader(rf64, expectedContainer: "RF64"))
+        XCTAssertThrowsError(try tool.verifyWAVHeader(rf64, expectedContainer: "RIFF"))
+    }
+
+    // audit #0043 (T-18): the canonical PCM comparison's own boundaries. Sign extension at the
+    // extremes of both sample widths, a length mismatch, and a byte count that is not a whole
+    // number of samples are each pinned; the lossless guarantee rests on these paths.
+    func testCanonicalPCMSampleDecodingAndLengthBoundaries() throws {
+        let tool = try makeParserTool()
+        let directory = tool.cli.outDir
+
+        let s24 = Data([0xFF, 0xFF, 0x7F, 0x00, 0x00, 0x80, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00])
+        XCTAssertEqual(tool.littleEndianSignedSample(s24, offset: 0, format: .s24le), 8_388_607)
+        XCTAssertEqual(tool.littleEndianSignedSample(s24, offset: 3, format: .s24le), -8_388_608)
+        XCTAssertEqual(tool.littleEndianSignedSample(s24, offset: 6, format: .s24le), -1)
+        XCTAssertEqual(tool.littleEndianSignedSample(s24, offset: 9, format: .s24le), 0)
+        let s32 = Data([0xFF, 0xFF, 0xFF, 0x7F, 0x00, 0x00, 0x00, 0x80, 0xFF, 0xFF, 0xFF, 0xFF])
+        XCTAssertEqual(tool.littleEndianSignedSample(s32, offset: 0, format: .s32le), Int64(Int32.max))
+        XCTAssertEqual(tool.littleEndianSignedSample(s32, offset: 4, format: .s32le), Int64(Int32.min))
+        XCTAssertEqual(tool.littleEndianSignedSample(s32, offset: 8, format: .s32le), -1)
+
+        let reference = try writeFixture(Data(count: 3 * 1_000), as: "reference.s24le", in: directory)
+        let shorter = try writeFixture(Data(count: 3 * 999), as: "shorter.s24le", in: directory)
+        func compare(_ expected: URL, _ actual: URL) throws {
+            _ = try tool.compareCanonicalPCMFiles(
+                expected, actual, format: .s24le, maxAllowedDelta: 0, maxAllowedFailures: 0
+            )
+        }
+        XCTAssertThrowsError(try compare(reference, shorter)) { error in
+            let message = error.localizedDescription
+            XCTAssertTrue(message.contains("size mismatch (expected=3000 actual=2997)"), message)
+        }
+        let unaligned = try writeFixture(Data(count: 3 * 1_000 + 1), as: "unaligned.s24le", in: directory)
+        let unalignedCopy = try writeFixture(Data(count: 3 * 1_000 + 1), as: "unaligned_copy.s24le", in: directory)
+        XCTAssertThrowsError(try compare(unaligned, unalignedCopy)) { error in
+            XCTAssertTrue(error.localizedDescription.contains("not sample-aligned"), error.localizedDescription)
+        }
+        let same = try tool.compareCanonicalPCMFiles(
+            reference, reference, format: .s24le, maxAllowedDelta: 0, maxAllowedFailures: 0
+        )
+        XCTAssertEqual(same.samples, 1_000)
+        XCTAssertEqual(same.failingSamples, 0)
+    }
 }
 
 private actor PermitPeakTracker {

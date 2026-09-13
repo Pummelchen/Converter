@@ -536,3 +536,97 @@ final class ConcurrencyCounter: @unchecked Sendable {
         return peakTotal
     }
 }
+
+// Hand-assembled WAV files for the chunk-walker tests (audit #0043). Every byte is placed on
+// purpose — chunk order, declared sizes, pad bytes, the RF64 size placeholder — so a test can
+// put a chunk id where it is only text, or a real chunk where a byte scan does not look.
+enum WAVFixture {
+    static let sizePlaceholder: UInt32 = 0xFFFF_FFFF
+
+    static func fourCC(_ text: String) -> Data {
+        Data(text.utf8)
+    }
+
+    static func uint32LE(_ value: UInt32) -> Data {
+        withUnsafeBytes(of: value.littleEndian) { Data($0) }
+    }
+
+    static func uint64LE(_ value: UInt64) -> Data {
+        withUnsafeBytes(of: value.littleEndian) { Data($0) }
+    }
+
+    // A chunk with its real size, padded to an even length as RIFF requires.
+    static func chunk(_ chunkID: String, _ payload: Data) -> Data {
+        var data = fourCC(chunkID) + uint32LE(UInt32(payload.count)) + payload
+        if payload.count % 2 == 1 {
+            data.append(0)
+        }
+        return data
+    }
+
+    // A chunk whose header carries the RF64 placeholder; its real size must come from ds64.
+    static func placeholderChunk(_ chunkID: String, _ payload: Data) -> Data {
+        var data = fourCC(chunkID) + uint32LE(sizePlaceholder) + payload
+        if payload.count % 2 == 1 {
+            data.append(0)
+        }
+        return data
+    }
+
+    static func pcmFormatChunk(channels: Int, sampleRate: Int, bitsPerSample: Int) -> Data {
+        let blockAlign = channels * bitsPerSample / 8
+        var payload = Data()
+        payload += withUnsafeBytes(of: UInt16(1).littleEndian) { Data($0) }
+        payload += withUnsafeBytes(of: UInt16(channels).littleEndian) { Data($0) }
+        payload += uint32LE(UInt32(sampleRate))
+        payload += uint32LE(UInt32(sampleRate * blockAlign))
+        payload += withUnsafeBytes(of: UInt16(blockAlign).littleEndian) { Data($0) }
+        payload += withUnsafeBytes(of: UInt16(bitsPerSample).littleEndian) { Data($0) }
+        return chunk("fmt ", payload)
+    }
+
+    // A 602-byte bext payload with the given text at the start of its description field.
+    static func bextChunk(description: String) -> Data {
+        var payload = Data(count: 602)
+        let text = Data(description.utf8.prefix(256))
+        payload.replaceSubrange(0 ..< text.count, with: text)
+        return chunk("bext", payload)
+    }
+
+    static func ds64Chunk(
+        riffSize: UInt64, dataSize: UInt64, sampleCount: UInt64, table: [(String, UInt64)] = []
+    ) -> Data {
+        var payload = uint64LE(riffSize) + uint64LE(dataSize) + uint64LE(sampleCount)
+        payload += uint32LE(UInt32(table.count))
+        for (chunkID, size) in table {
+            payload += fourCC(chunkID) + uint64LE(size)
+        }
+        return chunk("ds64", payload)
+    }
+
+    // A plain RIFF file: the header size is the real byte count after it.
+    static func riffFile(chunks: [Data]) -> Data {
+        let body = chunks.reduce(Data(), +)
+        return fourCC("RIFF") + uint32LE(UInt32(4 + body.count)) + fourCC("WAVE") + body
+    }
+
+    // An RF64 or BW64 file as ffmpeg and libbw64 write it: placeholder RIFF size, ds64 first
+    // with the real RIFF and data sizes, the data chunk carrying the placeholder too.
+    static func rf64File(
+        container: String, before: [Data], dataPayload: Data, after: [Data] = [], blockAlign: Int = 6
+    ) -> Data {
+        let body = before.reduce(Data(), +) + placeholderChunk("data", dataPayload) + after.reduce(Data(), +)
+        let ds64Length = 8 + 28
+        let riffSize = UInt64(4 + ds64Length + body.count)
+        let ds64 = ds64Chunk(
+            riffSize: riffSize, dataSize: UInt64(dataPayload.count), sampleCount: UInt64(dataPayload.count / blockAlign)
+        )
+        return fourCC(container) + uint32LE(sizePlaceholder) + fourCC("WAVE") + ds64 + body
+    }
+
+    // The same header layout with the ds64 chunk left out: what the byte scan cannot tell
+    // apart from a valid file when "ds64" appears as text elsewhere.
+    static func rf64FileWithoutDs64(container: String, chunks: [Data]) -> Data {
+        fourCC(container) + uint32LE(sizePlaceholder) + fourCC("WAVE") + chunks.reduce(Data(), +)
+    }
+}

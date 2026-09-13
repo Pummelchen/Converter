@@ -2855,4 +2855,135 @@ final class PipelineIntegrationTests: XCTestCase {
         XCTAssertFalse(outputExists("b_loudness_m12LUFS.wav", in: workspace), "garbage b.wav must not yield output")
         XCTAssertFalse(outputExists("c_loudness_m12LUFS.wav", in: workspace), "c.wav must not run after b failed")
     }
+
+    // Raw little-endian 24-bit stereo PCM at the project WAV rate, for hand-assembled WAV fixtures.
+    private func canonicalPCMSamples(
+        _ workspace: IntegrationWorkspace, name: String, duration: Double = 1.2
+    ) throws -> Data {
+        let raw = workspace.output.appendingPathComponent(name).appendingPathExtension("s24le")
+        _ = try workspace.runner().run("ffmpeg", [
+            "-hide_banner", "-nostdin", "-v", "error", "-y",
+            "-f", "lavfi",
+            "-i", "sine=frequency=440:duration=\(String(format: "%.3f", duration)):sample_rate=96000",
+            "-ac", "2", "-f", "s24le", "-c:a", "pcm_s24le", raw.path
+        ])
+        return try Data(contentsOf: raw)
+    }
+
+    // audit #0043: an ffmpeg-written RF64 whose LIST/INFO comment contains the word "bext"
+    // used to verify as carrying broadcast metadata, so an external WAV that must not have a
+    // bext chunk was rejected — and one that lost its bext was accepted. Only the chunk counts.
+    func testExternalWAVStructureIgnoresBextTextInsideListInfo() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe"])
+        let tool = try workspace.makeTool(arguments: ["-wavtoflac"])
+
+        func writeRF64(name: String, bext: Bool) throws -> URL {
+            let target = workspace.output.appendingPathComponent(name).appendingPathExtension("wav")
+            _ = try workspace.runner().run("ffmpeg", [
+                "-hide_banner", "-nostdin", "-v", "error", "-y",
+                "-f", "lavfi", "-i", "sine=frequency=440:duration=1.2:sample_rate=96000",
+                "-ac", "2", "-c:a", "pcm_s24le", "-ar", "96000",
+                "-metadata", "comment=bext is only a word in this comment",
+                "-f", "wav", "-rf64", "always", "-write_bext", bext ? "1" : "0",
+                target.path
+            ])
+            return target
+        }
+
+        let withoutBext = try writeRF64(name: "comment_only", bext: false)
+        XCTAssertNoThrow(try tool.verifyExternalWAVStructure(withoutBext, expectBext: false))
+        XCTAssertThrowsError(try tool.verifyExternalWAVStructure(withoutBext, expectBext: true)) { error in
+            let message = error.localizedDescription
+            XCTAssertTrue(message.contains("got=absent expected=present"), message)
+        }
+
+        let withBext = try writeRF64(name: "comment_and_bext", bext: true)
+        XCTAssertNoThrow(try tool.verifyExternalWAVStructure(withBext, expectBext: true))
+        XCTAssertThrowsError(try tool.verifyExternalWAVStructure(withBext, expectBext: false)) { error in
+            let message = error.localizedDescription
+            XCTAssertTrue(message.contains("got=present expected=absent"), message)
+        }
+    }
+
+    // audit #0043: a bext chunk that sits behind more than 64 KiB of other chunks was reported
+    // absent, so a valid external WAV with a large leading chunk failed verification. The
+    // fixture is a real RF64 (ds64 sizes, placeholder data size) that ffprobe decodes.
+    func testExternalWAVStructureFindsBextChunkBeyond64KiB() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe"])
+        let tool = try workspace.makeTool(arguments: ["-wavtoflac"])
+        let samples = try canonicalPCMSamples(workspace, name: "far_bext_pcm")
+
+        let fmt = WAVFixture.pcmFormatChunk(channels: 2, sampleRate: 96_000, bitsPerSample: 24)
+        let junk = WAVFixture.chunk("JUNK", Data(count: 70_001))
+        let bext = WAVFixture.bextChunk(description: "behind the junk")
+        let file = workspace.output.appendingPathComponent("far_bext.wav")
+        try WAVFixture.rf64File(container: "RF64", before: [fmt, junk, bext], dataPayload: samples).write(to: file)
+
+        XCTAssertNoThrow(try tool.verifyExternalWAVStructure(file, expectBext: true))
+        XCTAssertThrowsError(try tool.verifyExternalWAVStructure(file, expectBext: false))
+    }
+
+    // audit #0043 (T-18): a BW64 with no ds64 chunk but the bytes "ds64" inside its bext
+    // description passed the ds64 check. The walk requires ds64 as the first chunk of an
+    // RF64/BW64 and names it when it is missing.
+    func testBW64StructureRejectsDs64TextInsideBext() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe"])
+        let tool = try workspace.makeTool(arguments: ["-wavtoflac"])
+        let samples = try canonicalPCMSamples(workspace, name: "bw64_pcm")
+
+        let fmt = WAVFixture.pcmFormatChunk(channels: 2, sampleRate: 96_000, bitsPerSample: 24)
+        let bext = WAVFixture.bextChunk(description: "ds64 is only text here")
+        let file = workspace.output.appendingPathComponent("no_ds64.wav")
+        try WAVFixture.rf64FileWithoutDs64(container: "BW64", chunks: [bext, fmt, WAVFixture.chunk("data", samples)])
+            .write(to: file)
+
+        XCTAssertThrowsError(try tool.verifyBW64WAVStructure(file)) { error in
+            XCTAssertTrue(error.localizedDescription.contains("ds64 chunk"), error.localizedDescription)
+        }
+
+        // The bridge's own BW64 (ds64 first, placeholder data size) still walks and verifies.
+        let source = try workspace.createAudio(name: "bw64_source", ext: "wav", sampleRate: 96_000)
+        let written = try tool.createExternalBW64WAVVariant(
+            source: source, output: workspace.output.appendingPathComponent("bw64_source_BW64.wav")
+        )
+        XCTAssertNoThrow(try tool.verifyBW64WAVVariant(written, source: source))
+        XCTAssertTrue(try tool.containsChunk(written, chunkID: "ds64"))
+        XCTAssertTrue(try tool.containsChunk(written, chunkID: "data"))
+    }
+
+    // audit #0043 (T-18): the canonical PCM equivalence check on real decodes. An output that
+    // is longer than its source fails on length before any sample is compared, and an output
+    // that collapsed a stereo source to mono fails on content once both are decoded to the
+    // source's channel count.
+    func testCanonicalPCMEquivalenceRejectsLengthAndChannelMismatch() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe"])
+        let tool = try workspace.makeTool(arguments: ["-wavtoflac"])
+        let source = try workspace.createStereoImbalancedAudio(name: "wide_source", ext: "wav", duration: 1.2)
+
+        let longer = try workspace.createStereoImbalancedAudio(name: "longer_output", ext: "wav", duration: 2.4)
+        XCTAssertThrowsError(
+            try tool.verifyCanonicalPCMSampleEquivalence(
+                source: source, output: longer, label: "longer", format: .s24le
+            )
+        ) { error in
+            let message = error.localizedDescription
+            XCTAssertTrue(message.contains("Canonical PCM size mismatch"), message)
+        }
+
+        let mono = workspace.output.appendingPathComponent("mono_output.wav")
+        _ = try workspace.runner().run("ffmpeg", [
+            "-hide_banner", "-nostdin", "-v", "error", "-y",
+            "-i", source.path, "-map", "0:a:0", "-ac", "1", "-c:a", "pcm_s24le", "-ar", "48000", mono.path
+        ])
+        XCTAssertThrowsError(
+            try tool.verifyCanonicalPCMSampleEquivalence(source: source, output: mono, label: "mono", format: .s24le)
+        ) { error in
+            let message = error.localizedDescription
+            XCTAssertTrue(message.contains("Canonical PCM mismatch for mono"), message)
+        }
+    }
 }

@@ -781,14 +781,12 @@ extension ConverterTool {
         }
     }
 
-    func containsChunk(_ file: URL, chunkID: String, scanBytes: Int = 65_536) throws -> Bool {
-        let handle = try FileHandle(forReadingFrom: file)
-        defer { try? handle.close() }
-        let data = try handle.read(upToCount: scanBytes) ?? Data()
-        guard let needle = chunkID.data(using: .ascii), needle.count == 4 else {
-            return false
-        }
-        return data.range(of: needle) != nil
+    // Presence means the chunk walk reached a chunk with this id. A byte scan used to answer
+    // this and mistook "bext" inside a LIST/INFO comment for the chunk, missed a bext behind
+    // 64 KiB of other chunks, and never checked that an RF64/BW64 opens with ds64 (#0043).
+    // A file the walk cannot parse is malformed, and that is an error rather than "absent".
+    func containsChunk(_ file: URL, chunkID: String) throws -> Bool {
+        try RIFFChunkWalker(file: file).contains(chunkID)
     }
 
     func verifyExternalWAVVariant(_ file: URL, source: URL, expectBext: Bool) throws {
