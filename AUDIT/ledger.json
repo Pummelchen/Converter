@@ -725,14 +725,14 @@
       "location": "Sources/converter/ValidationPipeline.swift:683-691,1013-1028",
       "title": "containsChunk is a 64 KiB substring scan, not a RIFF chunk walk",
       "category": "unsafe",
-      "status": "START",
+      "status": "TEST",
       "host": "local",
       "discovered_by": "reviewer V-4; tests T-18",
       "session": "2026-09-13",
       "evidence_before": "AUDIT/findings/L2-validation-config.md V-4; L6-tests.md T-18",
-      "fix_summary": "",
-      "evidence_after": "",
-      "commit": "",
+      "fix_summary": "New RIFFChunkWalker (bounds/overflow-checked walk from offset 12, ds64 required first for RF64/BW64 and validated, 0xFFFFFFFF resolved through ds64, chunk past EOF / placeholder in RIFF / trailing bytes are errors); containsChunk answers via the walk, so bext/ds64 text inside LIST/INFO or bext no longer counts and a bext beyond 64 KiB is found. WAVFixture byte builder; 8 tests incl. header/PCM boundary pins.",
+      "evidence_after": "AUDIT/evidence/0043-before.log (5 of 8 tests fail on the substring scan), 0043-after.log (14 pass incl. neighbours); swiftlint 533/56. Full suite pending",
+      "commit": "9bc41f4",
       "notes": "Bounds-checked chunk walker; boundary tests for header/PCM parsers."
     },
     {

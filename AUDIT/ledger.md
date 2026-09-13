@@ -6,9 +6,9 @@ Session: `2026-09-13` · branch `audit/2026-09-13` · baseline commit `4bb136a`
 
 | status | count |
 |---|---|
-| START | 54 |
+| START | 53 |
 | PROGRESS | 1 |
-| TEST | 0 |
+| TEST | 1 |
 | AUDIT | 0 |
 | DONE | 44 |
 | BLOCKED | 1 |
@@ -37,7 +37,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 | #0040 | S2 | converter/ProcessRunner | Sources/converter/ProcessRunner.swift:145; Actions.swift:615-619 | Cancellation does not terminate sibling external processes after a fan-out failure | unsafe | START |  |
 | #0041 | S2 | converter/DependencyBootstrap | Sources/converter/DependencyBootstrap.swift:216-248 | Installer subprocesses have no timeout and discard diagnostics | incomplete | START |  |
 | #0042 | S2 | converter/ProcessRunner | Sources/converter/ProcessRunner.swift:112-124 | Child stdin inherited from the terminal | unsafe | START |  |
-| #0043 | S2 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:683-691,1013-1028 | containsChunk is a 64 KiB substring scan, not a RIFF chunk walk | unsafe | START |  |
+| #0043 | S2 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:683-691,1013-1028 | containsChunk is a 64 KiB substring scan, not a RIFF chunk walk | unsafe | TEST | 9bc41f4 |
 | #0047 | S2 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:16-32,59-63 | Source clip re-rendered and re-analysed for every short variant | perf | START |  |
 | #0050 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:327-336,367-387,591-600 | Loudness fallback publishes any true-peak breach with a misleading 'closest-safe' label | logic | START |  |
 | #0051 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:992,1170,1029,508 | Redundant padding verification, uncached ffmpeg -filters, per-file ladder resolution | perf | START |  |
@@ -645,7 +645,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **discovered-by:** reviewer C-7
 - **evidence-before:** AUDIT/findings/L2-core-runtime.md C-7
 
-### #0043 · S2 · START · containsChunk is a 64 KiB substring scan, not a RIFF chunk walk
+### #0043 · S2 · TEST · containsChunk is a 64 KiB substring scan, not a RIFF chunk walk
 
 - **project/module:** converter/ValidationPipeline
 - **file:line:** Sources/converter/ValidationPipeline.swift:683-691,1013-1028
@@ -653,6 +653,9 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **host-used:** local
 - **discovered-by:** reviewer V-4; tests T-18
 - **evidence-before:** AUDIT/findings/L2-validation-config.md V-4; L6-tests.md T-18
+- **fix-summary:** New RIFFChunkWalker (bounds/overflow-checked walk from offset 12, ds64 required first for RF64/BW64 and validated, 0xFFFFFFFF resolved through ds64, chunk past EOF / placeholder in RIFF / trailing bytes are errors); containsChunk answers via the walk, so bext/ds64 text inside LIST/INFO or bext no longer counts and a bext beyond 64 KiB is found. WAVFixture byte builder; 8 tests incl. header/PCM boundary pins.
+- **evidence-after:** AUDIT/evidence/0043-before.log (5 of 8 tests fail on the substring scan), 0043-after.log (14 pass incl. neighbours); swiftlint 533/56. Full suite pending
+- **commit sha:** 9bc41f4
 - **notes:** Bounds-checked chunk walker; boundary tests for header/PCM parsers.
 
 ### #0044 · S2 · DONE · archive profile is a no-op placeholder
