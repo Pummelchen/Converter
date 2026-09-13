@@ -1370,32 +1370,6 @@ extension ConverterTool {
         }
     }
 
-    func ensureStandardMP3Output(from source: URL) throws -> URL {
-        let output = cli.outDir.appendingPathComponent(source.lastPathComponent)
-        if source.standardizedFileURL == output.standardizedFileURL {
-            try preflightMP3Input(source)
-            try verifyMP3Standard(source, qcPolicy: nil)
-            return source
-        }
-        if canReuseOutput(output, verifier: { try verifyMP3Standard(output, qcPolicy: nil) }) {
-            return output
-        }
-        let sourceWAV = try makeInternalWAV(from: source, in: cli.outDir, stem: "\(source.stem).mp3standard")
-        defer { discardTempFile(sourceWAV) }
-        let temp = try makeTemp(in: cli.outDir, stem: source.stem, ext: ".mp3")
-        do {
-            try encodeInternalWAVToMP3(sourceWAV, output: temp, qcPolicy: nil)
-            try verifyMP3Standard(temp, qcPolicy: nil)
-            try publishTemp(temp, to: output)
-            logger.info("Created MP3: \(output.basename)")
-            return output
-        } catch {
-            try? fileManager.removeItem(at: temp)
-            state.unregister(tempFile: temp)
-            throw error
-        }
-    }
-
     func normalizeWAVInPlace(_ source: URL) throws {
         logger.info("Normalize WAV: \(source.basename)")
         try preflightWAVInput(source)
