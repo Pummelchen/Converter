@@ -2091,6 +2091,111 @@ final class converterTests: XCTestCase {
             }
         }
     }
+
+    // audit #0036: -clean must only remove converter-owned normalisation scratch files, i.e. hidden
+    // entries whose name contains ".normalized". Every other OUT_DIR entry (visible files whatever
+    // their name or extension, other hidden files, publish backups, subdirectories) is user data and
+    // must survive byte-for-byte. No test guarded that before.
+    func testCleanTransientsRemovesOnlyHiddenNormalizedFiles() throws {
+        let temp = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+        let tool = try makeTool(tempDirectory: temp, arguments: ["-clean"])
+
+        let transients = [".x.normalized.wav", ".x.normalized"]
+        let survivors = [
+            "song.normalized.wav", ".song.wav.publish-backup", ".converter-tmp.1.foo",
+            "song.wav", "notes.log", "mix.w64", ".DS_Store"
+        ]
+        for name in transients + survivors {
+            try Data(name.utf8).write(to: temp.appendingPathComponent(name))
+        }
+        let keepDirectory = temp.appendingPathComponent("keep", isDirectory: true)
+        try FileManager.default.createDirectory(at: keepDirectory, withIntermediateDirectories: false)
+        let keptFile = keepDirectory.appendingPathComponent("inner.wav")
+        try Data("inner".utf8).write(to: keptFile)
+
+        try tool.cleanTransients()
+
+        for name in transients {
+            XCTAssertFalse(
+                FileManager.default.fileExists(atPath: temp.appendingPathComponent(name).path),
+                "\(name) is a converter transient and must be removed"
+            )
+        }
+        for name in survivors {
+            XCTAssertEqual(
+                try Data(contentsOf: temp.appendingPathComponent(name)),
+                Data(name.utf8),
+                "\(name) must survive -clean with its bytes untouched"
+            )
+        }
+        var isDirectory: ObjCBool = false
+        XCTAssertTrue(FileManager.default.fileExists(atPath: keepDirectory.path, isDirectory: &isDirectory))
+        XCTAssertTrue(isDirectory.boolValue, "keep/ must remain a directory")
+        XCTAssertEqual(try Data(contentsOf: keptFile), Data("inner".utf8), "keep/inner.wav must survive")
+        let remaining = try FileManager.default.contentsOfDirectory(atPath: temp.path).sorted()
+        XCTAssertEqual(remaining, (survivors + ["keep"]).sorted(), "exactly the two transients may go")
+    }
+
+    // audit #0036: the real `-clean` entry point (initializeForExecution + execute) also runs
+    // publish-backup recovery and orphaned-temp cleanup before cleanTransients(). Only converter-owned
+    // artefacts may change there: a backup whose destination is missing is restored (not deleted),
+    // a stale backup and a temp of a dead process are removed, a temp of a live process stays, and
+    // every user file keeps its bytes.
+    func testCleanActionEntryPointPreservesUserFiles() async throws {
+        let temp = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+        let tool = try makeTool(tempDirectory: temp, arguments: ["-clean"])
+        XCTAssertEqual(tool.cli.action, .clean)
+
+        // PID 1 (launchd) is always alive; Int32.max is never a live PID, so that temp is orphaned.
+        let orphanTemp = ".converter-tmp.\(Int32.max).orphan"
+        let untouched = [
+            "song.normalized.wav", "song.wav", "notes.log", "mix.w64", ".DS_Store", ".converter-tmp.1.foo"
+        ]
+        let removed = [".x.normalized.wav", ".x.normalized", ".song.wav.publish-backup", orphanTemp]
+        for name in untouched + removed {
+            try Data(name.utf8).write(to: temp.appendingPathComponent(name))
+        }
+        let previousVersion = Data("previous version of lost.wav".utf8)
+        try previousVersion.write(to: temp.appendingPathComponent(".lost.wav.publish-backup"))
+        let keepDirectory = temp.appendingPathComponent("keep", isDirectory: true)
+        try FileManager.default.createDirectory(at: keepDirectory, withIntermediateDirectories: false)
+        let keptFile = keepDirectory.appendingPathComponent("inner.wav")
+        try Data("inner".utf8).write(to: keptFile)
+
+        try tool.initializeForExecution()
+        try await tool.execute()
+
+        for name in removed + [".lost.wav.publish-backup"] {
+            XCTAssertFalse(
+                FileManager.default.fileExists(atPath: temp.appendingPathComponent(name).path),
+                "\(name) is converter-owned and must be gone after -clean"
+            )
+        }
+        for name in untouched {
+            XCTAssertEqual(
+                try Data(contentsOf: temp.appendingPathComponent(name)),
+                Data(name.utf8),
+                "\(name) must survive the -clean entry point with its bytes untouched"
+            )
+        }
+        XCTAssertEqual(
+            try Data(contentsOf: temp.appendingPathComponent("lost.wav")),
+            previousVersion,
+            "a publish backup without its destination is restored, never deleted"
+        )
+        var isDirectory: ObjCBool = false
+        XCTAssertTrue(FileManager.default.fileExists(atPath: keepDirectory.path, isDirectory: &isDirectory))
+        XCTAssertTrue(isDirectory.boolValue, "keep/ must remain a directory")
+        XCTAssertEqual(try Data(contentsOf: keptFile), Data("inner".utf8), "keep/inner.wav must survive")
+        let remaining = try FileManager.default.contentsOfDirectory(atPath: temp.path).sorted()
+        XCTAssertEqual(remaining, (untouched + ["keep", "lost.wav"]).sorted())
+    }
 }
 
 private actor PermitPeakTracker {
