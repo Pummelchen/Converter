@@ -1,3 +1,4 @@
+import CryptoKit
 import Foundation
 
 struct HomebrewFormulaDependency: Equatable, Sendable {
@@ -160,13 +161,16 @@ enum DependencyBootstrapper {
             return brew
         }
 
-        logger.info("Dependency bootstrap: Homebrew missing, installing Homebrew non-interactively")
+        logger.info("Dependency bootstrap: Homebrew missing, installing the pinned installer non-interactively")
+        let installer = try fetchVerifiedInstaller(
+            from: homebrewInstallerURL,
+            expectedSHA256: homebrewInstallerSHA256,
+            environment: environment
+        )
+        defer { try? FileManager.default.removeItem(at: installer) }
         try runSilent(
             URL(fileURLWithPath: "/bin/bash"),
-            arguments: [
-                "-c",
-                "/usr/bin/curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh | /bin/bash"
-            ],
+            arguments: [installer.path],
             environment: environment.merging([
                 "NONINTERACTIVE": "1",
                 "CI": "1",
@@ -180,6 +184,51 @@ enum DependencyBootstrapper {
             return brew
         }
         throw AppError("Homebrew installation completed but the brew executable was not found in PATH.")
+    }
+
+    // The installer is pinned to a reviewed commit and verified by SHA-256 before a single line
+    // of it runs. `HEAD` would execute whatever the branch holds at run time, and piping curl
+    // into bash executes a truncated script on a mid-stream disconnect. Update both constants
+    // together when deliberately moving to a newer installer.
+    static let homebrewInstallerURL =
+        "https://raw.githubusercontent.com/Homebrew/install/fde1410a61157a71c78d2dc0c3a57a3a848b9756/install.sh"
+    static let homebrewInstallerSHA256 = "25548e1da7930c1563dbbe2cb05834a4131c4da09234540b6fdac812fda3c287"
+
+    static func sha256Hex(of data: Data) -> String {
+        SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
+    }
+
+    // Downloads `url` to a private (0600) temp file, checks its SHA-256 against `expectedSHA256`
+    // and returns the verified copy. Nothing is executed here; a mismatch removes the download
+    // and throws. `file://` is allowed so the check can be tested without the network.
+    static func fetchVerifiedInstaller(
+        from url: String, expectedSHA256: String, environment: [String: String]
+    ) throws -> URL {
+        let temp = FileManager.default.temporaryDirectory
+            .appendingPathComponent("converter-homebrew-installer-\(UUID().uuidString).sh")
+        let privateMode: [FileAttributeKey: Any] = [.posixPermissions: 0o600]
+        guard FileManager.default.createFile(atPath: temp.path, contents: nil, attributes: privateMode) else {
+            throw AppError("Unable to create a private temporary file for the Homebrew installer.")
+        }
+        do {
+            try runSilent(
+                URL(fileURLWithPath: "/usr/bin/curl"),
+                arguments: ["-fsSL", "--proto", "=https,file", "--tlsv1.2", "--max-time", "300", "-o", temp.path, url],
+                environment: environment
+            )
+            let actual = sha256Hex(of: try Data(contentsOf: temp))
+            guard actual == expectedSHA256.lowercased() else {
+                throw AppError(
+                    "Homebrew installer integrity check failed: expected SHA-256 \(expectedSHA256) "
+                    + "but the download has \(actual). "
+                    + "Refusing to execute it. Install Homebrew manually from https://brew.sh and rerun."
+                )
+            }
+            return temp
+        } catch {
+            try? FileManager.default.removeItem(at: temp)
+            throw error
+        }
     }
 
     private static func installHomebrewFormula(_ formula: String, brew: URL, environment: [String: String]) throws {

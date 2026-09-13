@@ -2,26 +2,25 @@
 
 Session: `2026-09-13` · branch `audit/2026-09-13` · baseline commit `4bb136a`
 
-**known-total:99 done:13 open:86 blocked:0 new-this-session:99**
+**known-total:99 done:14 open:85 blocked:0 new-this-session:99**
 
 | status | count |
 |---|---|
-| START | 85 |
+| START | 83 |
 | PROGRESS | 1 |
-| TEST | 0 |
+| TEST | 1 |
 | AUDIT | 0 |
-| DONE | 13 |
+| DONE | 14 |
 | BLOCKED | 0 |
 
 Status gates: START (reproduced/proven + expected behaviour written) → PROGRESS (diff) → TEST (failing-before/passing-after test pasted, full suite green, no new warnings) → AUDIT (cold re-read, all scanners re-run, no baseline regression, no new placeholder) → DONE (committed atomically). BLOCKED needs reason + what was tried + ≥2 options for a human.
 
-## Open S0 / S1 (26)
+## Open S0 / S1 (25)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
 | #0006 | S0 | repo | node1 (fresh clone) | Phase E: independent verification from a fresh clone on node1 | test | START |  |
 | #0005 | S1 | repo | wiki | Create and maintain the wiki audit tracker page mirroring the ledger (§9) | docs | PROGRESS | 0ac7242 |
-| #0011 | S1 | converter/DependencyBootstrap | Sources/converter/DependencyBootstrap.swift:164-176 | Homebrew installer fetched from unpinned HEAD URL, piped to bash, no integrity check, no pipefail | unsafe | START |  |
 | #0015 | S1 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:18-32,97,197-201 | Clipped-samples rebase is not sample-rate invariant (source clip measured at 96 kHz, render at its own rate) | logic | START |  |
 | #0016 | S1 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:1910-1913,1866-1908 | -album concatenates the same track once per format and includes _mastered/_silence_/_noise_ outputs | logic | START |  |
 | #0017 | S1 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:2076-2085 | album.txt builds silently skip missing/invalid tracks and publish a shorter album with exit 0 | bug | START |  |
@@ -31,7 +30,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 | #0021 | S1 | converter/VideoPipeline+AudioPipeline | Sources/converter/VideoPipeline.swift:159-171; AudioPipeline.swift:1070-1082 | Encoder ladders fall through on encoder-independent failures (publish, ALAC/duration/loudness verify) and the padded-MP4 ladder reports only the last rung | logic | START |  |
 | #0022 | S1 | converter/Actions | Sources/converter/Actions.swift:209-218 | normalizedFullRunSource renames only the winning family member and orphans siblings/companions, breaking reruns; silent fallback when 1.<ext> exists | logic | START |  |
 | #0024 | S1 | converter/Actions | Sources/converter/Actions.swift:717-723,677-686,709 | -aipix/-run_pix/-pngtojpg re-ingest portrait stills and overwrite them with landscape renders | bug | START |  |
-| #0025 | S1 | converter/CLI | Sources/converter/CLI.swift:271-279 | Unknown --options and stray positionals are silently accepted | bug | START |  |
+| #0025 | S1 | converter/CLI | Sources/converter/CLI.swift:271-279 | Unknown --options and stray positionals are silently accepted | bug | TEST |  |
 | #0026 | S1 | BW64Bridge | Sources/BW64Bridge/bw64_bridge.cpp:178-197 | Disk-write failures undetectable; bridge self-validates against the ds64 size it wrote | bug | START |  |
 | #0027 | S1 | repo/docs | SECURITY.md:1-21 | SECURITY.md is the unedited GitHub template with fictitious versions | placeholder | START |  |
 | #0028 | S1 | repo/docs | README.md:94; Sources/ThirdParty/libbw64 | No third-party attribution/provenance for vendored Apache-2.0 libbw64 | deps | START |  |
@@ -115,7 +114,7 @@ _none_
 | #0097 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:1902-1911 | -doctor has only a no-throw happy path | test | START |  |
 | #0098 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:529,534 | Exact ffmpeg bass filter string pinned without a stated reason | test | START |  |
 
-## Done (13)
+## Done (14)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
@@ -124,6 +123,7 @@ _none_
 | #0004 | S1 | converter/BW64Bridge | Sources/ | Phase A: sanitizer baseline — test suite under ASan, UBSan, TSan | test | DONE | ce3addc |
 | #0009 | S1 | converter/ProcessRunner | Sources/converter/ProcessRunner.swift:139-152; DependencyBootstrap.swift:145-153 | Process timeout sends SIGTERM only; a child ignoring it (or a grandchild holding the pipe) hangs the run forever | bug | DONE | 69d6f14 |
 | #0010 | S1 | converter/Support | Sources/converter/Support.swift:218,295; CLI.swift:325-329 | Int(Double) traps on large-but-finite user durations (-silence 1e300 etc.) | bug | DONE | e89447a |
+| #0011 | S1 | converter/DependencyBootstrap | Sources/converter/DependencyBootstrap.swift:164-176 | Homebrew installer fetched from unpinned HEAD URL, piped to bash, no integrity check, no pipefail | unsafe | DONE | pending-this-commit |
 | #0012 | S1 | converter/PipelineCore | Sources/converter/PipelineCore.swift:711-714 | parseLoudnormJSON slices from the first '{' in stderr; metadata containing '{' breaks QC on valid files | bug | DONE | b8e97f9 |
 | #0013 | S1 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:93,98 | Stereo-imbalance check fail-open when one channel is digitally silent (-inf RMS dropped) | bug | DONE | 672c224 |
 | #0014 | S1 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:92-99,111-121,96 | astats-derived QC metrics fail-open on missing/unparseable report; Int(Double) trap on Peak count | bug | DONE | 672c224 |
@@ -259,15 +259,18 @@ _none_
 - **commit sha:** e89447a
 - **notes:** Int(exactly:) plus an upper bound in parseFlexibleTimecode. Batched full-suite run shared with #0010/#0012/#0013/#0014/#0099 (one atomic commit per task).
 
-### #0011 · S1 · START · Homebrew installer fetched from unpinned HEAD URL, piped to bash, no integrity check, no pipefail
+### #0011 · S1 · DONE · Homebrew installer fetched from unpinned HEAD URL, piped to bash, no integrity check, no pipefail
 
 - **project/module:** converter/DependencyBootstrap
 - **file:line:** Sources/converter/DependencyBootstrap.swift:164-176
 - **category:** unsafe
 - **host-used:** local
 - **discovered-by:** reviewer C-3
-- **evidence-before:** AUDIT/findings/L2-core-runtime.md C-3
-- **notes:** Opt-in path only. Decision: pin + SHA-256 verify, or remove self-install and keep brew install only; document rejected alternative.
+- **evidence-before:** AUDIT/findings/L2-core-runtime.md C-3 \| AUDIT/evidence/0011-before.txt: DependencyBootstrap.swift:168 executed `curl -fsSL …/Homebrew/install/HEAD/install.sh \| /bin/bash`.
+- **fix-summary:** Homebrew self-install downloads a PINNED installer (commit fde1410a…, 2026-09-11) to a 0600 temp file with curl (--proto =https,file --tlsv1.2 --max-time 300), verifies SHA-256 (CryptoKit) against an embedded constant, and only then runs /bin/bash <file>; a mismatch removes the download and throws with a manual-install hint. No curl\|bash pipeline remains.
+- **evidence-after:** AUDIT/evidence/0011-0025-after.log: testHomebrewInstallerIsPinnedAndIntegrityChecked (pinned 40-hex URL, 64-hex digest, file:// fixture: wrong hash refused before execution and no sentinel written; right hash returns the verified copy). 38 targeted tests pass. swiftlint 529/56, semgrep 0. Full suite (AUDIT/evidence/0011-0025-fullsuite.txt): 172 executed, 0 failures, 0 compiler warnings; swiftlint 532/56 after wrapping.
+- **commit sha:** pending-this-commit
+- **notes:** Opt-in path only. Decision: pin + SHA-256 verify, or remove self-install and keep brew install only; document rejected alternative. Rejected alternative: removing Homebrew self-install entirely — it is an opt-in, documented feature the owner built; pinning + integrity verification keeps it while removing the unpinned remote-code path. The pinned script's own behaviour (git clone of brew) is Homebrew's contract, not ours.
 
 ### #0012 · S1 · DONE · parseLoudnormJSON slices from the first '{' in stderr; metadata containing '{' breaks QC on valid files
 
@@ -410,14 +413,16 @@ _none_
 - **evidence-before:** AUDIT/findings/L2-video-image-actions-cli.md X-5
 - **notes:** Single isFullRunDerivedImage predicate in every batch discovery.
 
-### #0025 · S1 · START · Unknown --options and stray positionals are silently accepted
+### #0025 · S1 · TEST · Unknown --options and stray positionals are silently accepted
 
 - **project/module:** converter/CLI
 - **file:line:** Sources/converter/CLI.swift:271-279
 - **category:** bug
 - **host-used:** local
 - **discovered-by:** reviewer X-7; tests T-21
-- **evidence-before:** AUDIT/findings/L2-video-image-actions-cli.md X-7; L6-tests.md T-21
+- **evidence-before:** AUDIT/findings/L2-video-image-actions-cli.md X-7; L6-tests.md T-21 \| AUDIT/evidence/0025-before.log: `-full --overwite`, `-full --continue-on-eror`, `-loudness --sharpnes 2`, `-short -verbose`, `-full 45`, `-doctor x`, `-flactomp3 song.flac` all parsed without error.
+- **fix-summary:** CLI: a dash-prefixed argument that is not a known option and not a number is an 'Unknown option' error; positional values are accepted only by actions that read them (-bass, -loudness, -fade, -fadecut, -fadeout, -noise, -silence, -visualsubs), every other action rejects stray words with an actionable message.
+- **evidence-after:** AUDIT/evidence/0011-0025-after.log: testUnknownOptionsAndStrayPositionalsAreRejected + existing parser/flag tests (38) pass. Full suite (AUDIT/evidence/0011-0025-fullsuite.txt): 172 executed, 0 failures, 0 compiler warnings; swiftlint 532/56 after wrapping.
 
 ### #0026 · S1 · START · Disk-write failures undetectable; bridge self-validates against the ds64 size it wrote
 

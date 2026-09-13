@@ -1578,6 +1578,38 @@ final class converterTests: XCTestCase {
         await semaphore.signal()
     }
 
+    // audit #0011: the Homebrew bootstrap must only ever execute the exact installer it was
+    // reviewed against: pinned to a commit, verified by SHA-256 before a single line runs.
+    func testHomebrewInstallerIsPinnedAndIntegrityChecked() throws {
+        let pinnedPattern = #"/Homebrew/install/[0-9a-f]{40}/install\.sh$"#
+        XCTAssertNotNil(DependencyBootstrapper.homebrewInstallerURL.range(of: pinnedPattern, options: .regularExpression),
+                        DependencyBootstrapper.homebrewInstallerURL)
+        XCTAssertEqual(DependencyBootstrapper.homebrewInstallerSHA256.count, 64)
+
+        let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+        let sentinel = temp.appendingPathComponent("executed")
+        let script = temp.appendingPathComponent("installer.sh")
+        try "#!/bin/bash\ntouch '\(sentinel.path)'\n".write(to: script, atomically: true, encoding: .utf8)
+        let good = DependencyBootstrapper.sha256Hex(of: try Data(contentsOf: script))
+
+        // Wrong hash: refused before execution, nothing runs, no temp copy is left behind.
+        XCTAssertThrowsError(try DependencyBootstrapper.fetchVerifiedInstaller(
+            from: "file://\(script.path)", expectedSHA256: String(repeating: "0", count: 64),
+            environment: ProcessInfo.processInfo.environment)
+        ) { error in
+            XCTAssertTrue("\(error)".contains("integrity"), "\(error)")
+        }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: sentinel.path))
+
+        // Right hash: the verified copy is handed back for execution.
+        let verified = try DependencyBootstrapper.fetchVerifiedInstaller(
+            from: "file://\(script.path)", expectedSHA256: good, environment: ProcessInfo.processInfo.environment)
+        defer { try? FileManager.default.removeItem(at: verified) }
+        XCTAssertEqual(try Data(contentsOf: verified), try Data(contentsOf: script))
+    }
+
     // audit #0014: an astats report that is missing pieces used to degrade every derived
     // ceiling to "pass"; it must fail closed. audit #0013: "-inf" RMS is a measurement.
     func testAstatsMetricsFailClosedAndTreatSilentChannelAsInfiniteImbalance() throws {
