@@ -2,29 +2,26 @@
 
 Session: `2026-09-13` · branch `audit/2026-09-13` · baseline commit `4bb136a`
 
-**known-total:99 done:15 open:84 blocked:0 new-this-session:99**
+**known-total:99 done:20 open:79 blocked:0 new-this-session:99**
 
 | status | count |
 |---|---|
-| START | 83 |
+| START | 78 |
 | PROGRESS | 1 |
 | TEST | 0 |
 | AUDIT | 0 |
-| DONE | 15 |
+| DONE | 20 |
 | BLOCKED | 0 |
 
 Status gates: START (reproduced/proven + expected behaviour written) → PROGRESS (diff) → TEST (failing-before/passing-after test pasted, full suite green, no new warnings) → AUDIT (cold re-read, all scanners re-run, no baseline regression, no new placeholder) → DONE (committed atomically). BLOCKED needs reason + what was tried + ≥2 options for a human.
 
-## Open S0 / S1 (24)
+## Open S0 / S1 (21)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
 | #0006 | S0 | repo | node1 (fresh clone) | Phase E: independent verification from a fresh clone on node1 | test | START |  |
 | #0005 | S1 | repo | wiki | Create and maintain the wiki audit tracker page mirroring the ledger (§9) | docs | PROGRESS | 0ac7242 |
 | #0015 | S1 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:18-32,97,197-201 | Clipped-samples rebase is not sample-rate invariant (source clip measured at 96 kHz, render at its own rate) | logic | START |  |
-| #0016 | S1 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:1910-1913,1866-1908 | -album concatenates the same track once per format and includes _mastered/_silence_/_noise_ outputs | logic | START |  |
-| #0017 | S1 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:2076-2085 | album.txt builds silently skip missing/invalid tracks and publish a shorter album with exit 0 | bug | START |  |
-| #0018 | S1 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:1562-1583 | -mp3clean overwrites the source MP3 in place with a lossy LAME re-encode instead of a stream copy | bug | START |  |
 | #0019 | S1 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:1316-1340 | ensureStandardMP3Output publishes without duration/loudness verification and re-encodes an already-standard MP3 | bug | START |  |
 | #0020 | S1 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:492-530,487-490 | -bass can clip the 24-bit staging WAV; nothing verifies true peak/clipping before publish | incomplete | START |  |
 | #0021 | S1 | converter/VideoPipeline+AudioPipeline | Sources/converter/VideoPipeline.swift:159-171; AudioPipeline.swift:1070-1082 | Encoder ladders fall through on encoder-independent failures (publish, ALAC/duration/loudness verify) and the padded-MP4 ladder reports only the last rung | logic | START |  |
@@ -48,7 +45,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 
 _none_
 
-## Open S2 / S3 (60)
+## Open S2 / S3 (58)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
@@ -61,8 +58,6 @@ _none_
 | #0045 | S2 | converter/Config | Sources/converter/Config.swift:197-200 | youtube_short overlay puts a known-failing encoder first at the default portrait size | logic | START |  |
 | #0046 | S2 | converter/Config | Sources/converter/Config.swift:159-161 | Unknown config keys dropped at debug level only; BOM not stripped | incomplete | START |  |
 | #0047 | S2 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:16-32,59-63 | Source clip re-rendered and re-analysed for every short variant | perf | START |  |
-| #0048 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:94-97; Actions.swift:1071 | -master is not idempotent (re-masters its own _mastered outputs) | logic | START |  |
-| #0049 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:2104-2113 | -flactoalbum concatenates the pipeline's own derived/archival FLACs | logic | START |  |
 | #0050 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:327-336,367-387,591-600 | Loudness fallback publishes any true-peak breach with a misleading 'closest-safe' label | logic | START |  |
 | #0051 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:992,1170,1029,508 | Redundant padding verification, uncached ffmpeg -filters, per-file ladder resolution | perf | START |  |
 | #0052 | S2 | converter/ImagePipeline | Sources/converter/ValidationPipeline.swift:391 (preflightImageInput call sites) | Full-decode image preflight of the same master repeated ~10x per run | perf | START |  |
@@ -113,7 +108,7 @@ _none_
 | #0097 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:1902-1911 | -doctor has only a no-throw happy path | test | START |  |
 | #0098 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:529,534 | Exact ffmpeg bass filter string pinned without a stated reason | test | START |  |
 
-## Done (15)
+## Done (20)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
@@ -126,11 +121,16 @@ _none_
 | #0012 | S1 | converter/PipelineCore | Sources/converter/PipelineCore.swift:711-714 | parseLoudnormJSON slices from the first '{' in stderr; metadata containing '{' breaks QC on valid files | bug | DONE | b8e97f9 |
 | #0013 | S1 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:93,98 | Stereo-imbalance check fail-open when one channel is digitally silent (-inf RMS dropped) | bug | DONE | 672c224 |
 | #0014 | S1 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:92-99,111-121,96 | astats-derived QC metrics fail-open on missing/unparseable report; Int(Double) trap on Peak count | bug | DONE | 672c224 |
+| #0016 | S1 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:1910-1913,1866-1908 | -album concatenates the same track once per format and includes _mastered/_silence_/_noise_ outputs | logic | DONE | pending |
+| #0017 | S1 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:2076-2085 | album.txt builds silently skip missing/invalid tracks and publish a shorter album with exit 0 | bug | DONE | pending |
+| #0018 | S1 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:1562-1583 | -mp3clean overwrites the source MP3 in place with a lossy LAME re-encode instead of a stream copy | bug | DONE | pending |
 | #0023 | S1 | converter/Actions | Sources/converter/Actions.swift:576-600 | Non-standard WAV source is rewritten in place; no bit-exact original survives | unsafe | DONE | e71f9dc |
 | #0025 | S1 | converter/CLI | Sources/converter/CLI.swift:271-279 | Unknown --options and stray positionals are silently accepted | bug | DONE | 58a6826 |
 | #0001 | S2 | repo/AUDIT | AUDIT/inventory.md | Phase A: scope inventory, dependency graph, trust boundaries, blast radius | docs | DONE | 5fa6546 |
 | #0002 | S2 | repo/AUDIT | AUDIT/environment.md | Phase A: environment record and audit tooling install (§1/§1b) | docs | DONE | 5fa6546 |
 | #0003 | S2 | repo/AUDIT | AUDIT/baseline.md | Phase A: baseline metrics at 4bb136a (§3) | docs | DONE | 2184906 |
+| #0048 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:94-97; Actions.swift:1071 | -master is not idempotent (re-masters its own _mastered outputs) | logic | DONE | pending |
+| #0049 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:2104-2113 | -flactoalbum concatenates the pipeline's own derived/archival FLACs | logic | DONE | pending |
 | #0099 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:34,1967 | Test target compiles with two warnings (bare 'Error' existential, unused 'wav' binding) | style | DONE | 9343977 |
 
 ## Full records
@@ -321,34 +321,43 @@ _none_
 - **evidence-before:** AUDIT/findings/L2-validation-config.md V-3
 - **notes:** Medium confidence; verify with a clipped 48 kHz fixture first.
 
-### #0016 · S1 · START · -album concatenates the same track once per format and includes _mastered/_silence_/_noise_ outputs
+### #0016 · S1 · DONE · -album concatenates the same track once per format and includes _mastered/_silence_/_noise_ outputs
 
 - **project/module:** converter/AudioPipeline
 - **file:line:** Sources/converter/AudioPipeline.swift:1910-1913,1866-1908
 - **category:** logic
 - **host-used:** local
 - **discovered-by:** reviewer audio A-1
-- **evidence-before:** AUDIT/findings/L2-audio.md A-1
-- **notes:** Collapse by stem via rankedFamily; extend isAlbumDerivedAudio. Related #0048, #0049.
+- **evidence-before:** AUDIT/findings/L2-audio.md A-1 \| AUDIT/evidence/0016-0018-before.log: candidates were [01.flac, 01.wav, 01.mp3, 02.mp3, 02_mastered.mp3, 03_noise_30s.flac, 04_silence_10s.wav, 05.wav] for three logical tracks.
+- **fix-summary:** albumAudioCandidates collapses same-stem families to the best member (flac > wav > mp3, warning names the ignored conversions) and isAlbumDerivedAudio now also excludes _mastered, _silence_<n>s and _noise_<n>s outputs.
+- **evidence-after:** AUDIT/evidence/0016-0018-after.log: 32 targeted tests pass (album, album.txt, mp3clean, master, flactoalbum, timecode, fade). swiftlint 535/56 vs baseline 533/56: the +2 net is three inclusive_language warnings on the new identifiers isMasterDerivedAudio/audioMasterCandidates (justified: 'master' is the audio-engineering term behind the existing -master command and its 19 baseline hits; any name for these must contain it), offset by one function_body_length warning that went away. semgrep 0. Full suite (AUDIT/evidence/0016-0018-fullsuite.txt): 175 executed, 0 failures, 0 compiler warnings.
+- **commit sha:** pending
+- **notes:** Collapse by stem via rankedFamily; extend isAlbumDerivedAudio. Related #0048, #0049. Committed together with the other album/master selection fixes (#0016/#0017/#0048/#0049): they touch the same hunks of AudioPipeline.swift and were verified by one suite run; #0018 has its own commit.
 
-### #0017 · S1 · START · album.txt builds silently skip missing/invalid tracks and publish a shorter album with exit 0
+### #0017 · S1 · DONE · album.txt builds silently skip missing/invalid tracks and publish a shorter album with exit 0
 
 - **project/module:** converter/AudioPipeline
 - **file:line:** Sources/converter/AudioPipeline.swift:2076-2085
 - **category:** bug
 - **host-used:** local
 - **discovered-by:** reviewer A-2
-- **evidence-before:** AUDIT/findings/L2-audio.md A-2
-- **notes:** Fail closed unless --continue-on-error.
+- **evidence-before:** AUDIT/findings/L2-audio.md A-2 \| AUDIT/evidence/0016-0018-before.log: album.txt with a missing entry built album.rf64.wav and returned without error.
+- **fix-summary:** resolveAlbumFileEntries: an unresolvable or missing album.txt entry throws; with --continue-on-error it is logged, the album is built from the remaining tracks, and the run ends with a summary error naming every failed entry. The old test that asserted silent skipping (testAlbumFileSkipsMissingTracksAndKeepsListedOrder) was replaced by testAlbumFileFailsClosedOnMissingTracksUnlessContinueOnError because it encoded the defect.
+- **evidence-after:** AUDIT/evidence/0016-0018-after.log: 32 targeted tests pass (album, album.txt, mp3clean, master, flactoalbum, timecode, fade). swiftlint 535/56 vs baseline 533/56: the +2 net is three inclusive_language warnings on the new identifiers isMasterDerivedAudio/audioMasterCandidates (justified: 'master' is the audio-engineering term behind the existing -master command and its 19 baseline hits; any name for these must contain it), offset by one function_body_length warning that went away. semgrep 0. Full suite (AUDIT/evidence/0016-0018-fullsuite.txt): 175 executed, 0 failures, 0 compiler warnings.
+- **commit sha:** pending
+- **notes:** Fail closed unless --continue-on-error. Committed together with the other album/master selection fixes (#0016/#0017/#0048/#0049): they touch the same hunks of AudioPipeline.swift and were verified by one suite run; #0018 has its own commit.
 
-### #0018 · S1 · START · -mp3clean overwrites the source MP3 in place with a lossy LAME re-encode instead of a stream copy
+### #0018 · S1 · DONE · -mp3clean overwrites the source MP3 in place with a lossy LAME re-encode instead of a stream copy
 
 - **project/module:** converter/AudioPipeline
 - **file:line:** Sources/converter/AudioPipeline.swift:1562-1583
 - **category:** bug
 - **host-used:** local
 - **discovered-by:** reviewer A-3
-- **evidence-before:** AUDIT/findings/L2-audio.md A-3
+- **evidence-before:** AUDIT/findings/L2-audio.md A-3 \| AUDIT/evidence/0016-0018-before.log: a 44.1 kHz tagged MP3 came back at 48 000 Hz with out_of_tolerance_samples=1 max_delta=783 (re-encoded). Experiment (scratchpad exp18): ffmpeg stream copy decodes bit-identically, gapless info preserved.
+- **fix-summary:** cleanMP3 is an ffmpeg stream copy (-map 0:a:0 -c:a copy -map_metadata -1 -map_chapters -1 -vn -sn -dn -id3v2_version 0) verified by verifyMP3File, duration match and canonical PCM sample equivalence against the source before publishing in place. Two old tests asserting verifyMP3Standard after cleaning were changed to verifyMP3File: a clean keeps the file's own bitrate/rate by design (documented contract change; help text updated under #0030).
+- **evidence-after:** AUDIT/evidence/0016-0018-after.log: 32 targeted tests pass (album, album.txt, mp3clean, master, flactoalbum, timecode, fade). swiftlint 535/56 vs baseline 533/56: the +2 net is three inclusive_language warnings on the new identifiers isMasterDerivedAudio/audioMasterCandidates (justified: 'master' is the audio-engineering term behind the existing -master command and its 19 baseline hits; any name for these must contain it), offset by one function_body_length warning that went away. semgrep 0. Full suite (AUDIT/evidence/0016-0018-fullsuite.txt): 175 executed, 0 failures, 0 compiler warnings.
+- **commit sha:** pending
 - **notes:** Stream copy + canonical PCM equivalence.
 
 ### #0019 · S1 · START · ensureStandardMP3Output publishes without duration/loudness verification and re-encodes an already-standard MP3
@@ -628,23 +637,31 @@ _none_
 - **discovered-by:** reviewer V-8
 - **evidence-before:** AUDIT/findings/L2-validation-config.md V-8
 
-### #0048 · S2 · START · -master is not idempotent (re-masters its own _mastered outputs)
+### #0048 · S2 · DONE · -master is not idempotent (re-masters its own _mastered outputs)
 
 - **project/module:** converter/AudioPipeline
 - **file:line:** Sources/converter/AudioPipeline.swift:94-97; Actions.swift:1071
 - **category:** logic
 - **host-used:** local
 - **discovered-by:** reviewer A-7
-- **evidence-before:** AUDIT/findings/L2-audio.md A-7
+- **evidence-before:** AUDIT/findings/L2-audio.md A-7 \| Statically proven: stepMaster used audioLoudnessCandidates which only excludes _loudness_ (reviewer A-7).
+- **fix-summary:** isMasterDerivedAudio + audioMasterCandidates (excludes _mastered and _loudness_ outputs); stepMaster uses it.
+- **evidence-after:** AUDIT/evidence/0016-0018-after.log: 32 targeted tests pass (album, album.txt, mp3clean, master, flactoalbum, timecode, fade). swiftlint 535/56 vs baseline 533/56: the +2 net is three inclusive_language warnings on the new identifiers isMasterDerivedAudio/audioMasterCandidates (justified: 'master' is the audio-engineering term behind the existing -master command and its 19 baseline hits; any name for these must contain it), offset by one function_body_length warning that went away. semgrep 0. Full suite (AUDIT/evidence/0016-0018-fullsuite.txt): 175 executed, 0 failures, 0 compiler warnings.
+- **commit sha:** pending
+- **notes:**  Committed together with the other album/master selection fixes (#0016/#0017/#0048/#0049): they touch the same hunks of AudioPipeline.swift and were verified by one suite run; #0018 has its own commit.
 
-### #0049 · S2 · START · -flactoalbum concatenates the pipeline's own derived/archival FLACs
+### #0049 · S2 · DONE · -flactoalbum concatenates the pipeline's own derived/archival FLACs
 
 - **project/module:** converter/AudioPipeline
 - **file:line:** Sources/converter/AudioPipeline.swift:2104-2113
 - **category:** logic
 - **host-used:** local
 - **discovered-by:** reviewer A-8
-- **evidence-before:** AUDIT/findings/L2-audio.md A-8
+- **evidence-before:** AUDIT/findings/L2-audio.md A-8 \| Statically proven: buildAlbumFromFLACDirectory concatenated every .flac including _RF64/_loudness_/_bass/_faded outputs (reviewer A-8).
+- **fix-summary:** flacAlbumCandidates filters isAlbumDerivedAudio before the natural sort; buildAlbumFromFLACDirectory uses it.
+- **evidence-after:** AUDIT/evidence/0016-0018-after.log: 32 targeted tests pass (album, album.txt, mp3clean, master, flactoalbum, timecode, fade). swiftlint 535/56 vs baseline 533/56: the +2 net is three inclusive_language warnings on the new identifiers isMasterDerivedAudio/audioMasterCandidates (justified: 'master' is the audio-engineering term behind the existing -master command and its 19 baseline hits; any name for these must contain it), offset by one function_body_length warning that went away. semgrep 0. Full suite (AUDIT/evidence/0016-0018-fullsuite.txt): 175 executed, 0 failures, 0 compiler warnings.
+- **commit sha:** pending
+- **notes:**  Committed together with the other album/master selection fixes (#0016/#0017/#0048/#0049): they touch the same hunks of AudioPipeline.swift and were verified by one suite run; #0018 has its own commit.
 
 ### #0050 · S2 · START · Loudness fallback publishes any true-peak breach with a misleading 'closest-safe' label
 

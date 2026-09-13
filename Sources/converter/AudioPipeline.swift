@@ -91,6 +91,17 @@ extension ConverterTool {
         file.stem.lowercasedASCII.contains("_loudness_")
     }
 
+    func isMasterDerivedAudio(_ file: URL) -> Bool {
+        file.stem.lowercasedASCII.hasSuffix("_mastered")
+    }
+
+    // -master must not pick up what it produced on an earlier run (X_mastered_mastered…),
+    // nor the outputs of the other loudness action.
+    func audioMasterCandidates() throws -> [URL] {
+        try files(in: cli.srcDir, matchingExtensions: ["flac", "wav", "mp3", "m4a", "mp4"])
+            .filter { !isMasterDerivedAudio($0) && !isLoudnessDerivedAudio($0) }
+    }
+
     func audioLoudnessCandidates(includeDerived: Bool = false) throws -> [URL] {
         let candidates = try files(in: cli.srcDir, matchingExtensions: ["flac", "wav", "mp3", "m4a", "mp4"])
         return includeDerived ? candidates : candidates.filter { !isLoudnessDerivedAudio($0) }
@@ -1965,14 +1976,52 @@ extension ConverterTool {
             || stem.hasPrefix("album_from_mp3")
             || isExternalArchivalAudioVariant(file)
             || isLoudnessDerivedAudio(file)
+            || isMasterDerivedAudio(file)
             || isBassDerivedAudio(file)
             || isFadeDerivedAudio(file)
+            || isSilenceDerivedMedia(file)
+            || isNoiseDerivedMedia(file)
+    }
+
+    // One album entry per logical track. With the default shared SRC_DIR/OUT_DIR an earlier
+    // conversion leaves 01.wav / 01.mp3 beside 01.flac; the highest-quality family member
+    // is the track, the rest are its own derivatives, not extra tracks.
+    func collapseAlbumTrackFamilies(_ candidates: [URL]) -> [URL] {
+        func extensionRank(_ file: URL) -> Int {
+            switch file.pathExtension.lowercasedASCII {
+            case "flac": return 0
+            case "wav": return 1
+            case "mp3": return 2
+            default: return 9
+            }
+        }
+        let families = Dictionary(grouping: candidates, by: \.stem)
+        var chosen: [URL] = []
+        for (_, members) in families {
+            let ranked = members.sorted { lhs, rhs in
+                let lhsRank = extensionRank(lhs), rhsRank = extensionRank(rhs)
+                if lhsRank != rhsRank { return lhsRank < rhsRank }
+                return lhs.lastPathComponent.localizedStandardCompare(rhs.lastPathComponent) == .orderedAscending
+            }
+            guard let best = ranked.first else { continue }
+            if ranked.count > 1 {
+                let ignored = ranked.dropFirst().map(\.basename).joined(separator: ", ")
+                logger.warn("Album track \(best.basename) has same-stem conversions beside it; ignoring \(ignored).")
+            }
+            chosen.append(best)
+        }
+        return chosen
     }
 
     func albumAudioCandidates() throws -> [URL] {
         let candidates = try files(in: cli.srcDir, matchingExtensions: ["mp3", "wav", "flac"])
             .filter { !isAlbumDerivedAudio($0) }
-        return sortAlbumAudioTracks(candidates)
+        return sortAlbumAudioTracks(collapseAlbumTrackFamilies(candidates))
+    }
+
+    // -flactoalbum takes every FLAC in the folder except this pipeline's own derived outputs.
+    func flacAlbumCandidates() throws -> [URL] {
+        try sortNatural(files(in: cli.srcDir, matchingExtensions: ["flac"]).filter { !isAlbumDerivedAudio($0) })
     }
 
     func preflightAlbumAudioInput(_ file: URL) throws {
@@ -2121,13 +2170,20 @@ extension ConverterTool {
         }
     }
 
-    func buildAlbumFromAlbumFile(extension ext: String, defaultOutputName: String) throws -> URL {
-        let albumPath = cli.scriptDirectory.appendingPathComponent("album.txt")
-        guard fileManager.fileExists(atPath: albumPath.path) else {
-            throw AppError("Missing album file: \(albumPath.path)")
-        }
-        let text = try String(contentsOf: albumPath, encoding: .utf8)
+    // Resolves the tracks listed in album.txt. A listed track that cannot be used is an error:
+    // album.txt promises the listed order and a silently shorter album is a wrong result.
+    // --continue-on-error keeps what resolves and returns the failures for the summary.
+    func resolveAlbumFileEntries(_ text: String, extension ext: String) throws -> (entries: [URL], failures: [String]) {
         var entries: [URL] = []
+        var failures: [String] = []
+        func reject(_ entry: String, _ reason: String) throws {
+            let message = "album.txt entry '\(entry)': \(reason)"
+            guard cli.continueOnError else {
+                throw AppError(message)
+            }
+            logger.error(message)
+            failures.append(message)
+        }
         for rawLine in text.split(whereSeparator: \.isNewline) {
             let line = String(rawLine).trimmed
             if line.isEmpty || line.hasPrefix("#") {
@@ -2138,11 +2194,11 @@ extension ConverterTool {
             do {
                 file = try resolveExplicitPath(candidateName, baseDirectory: cli.srcDir)
             } catch {
-                logger.warn("Skipping invalid album entry '\(candidateName)': \(error.localizedDescription)")
+                try reject(candidateName, error.localizedDescription)
                 continue
             }
             guard fileManager.fileExists(atPath: file.path) else {
-                logger.warn("Missing track, skipping: \(file.path)")
+                try reject(candidateName, "missing track \(file.path)")
                 continue
             }
             // Only -wavtoalbum and -mp3toalbum read album.txt; a new caller must opt in explicitly.
@@ -2156,15 +2212,32 @@ extension ConverterTool {
             }
             entries.append(file)
         }
-        guard !entries.isEmpty else {
+        return (entries, failures)
+    }
+
+    func buildAlbumFromAlbumFile(extension ext: String, defaultOutputName: String) throws -> URL {
+        let albumPath = cli.scriptDirectory.appendingPathComponent("album.txt")
+        guard fileManager.fileExists(atPath: albumPath.path) else {
+            throw AppError("Missing album file: \(albumPath.path)")
+        }
+        let text = try String(contentsOf: albumPath, encoding: .utf8)
+        let resolved = try resolveAlbumFileEntries(text, extension: ext)
+        guard !resolved.entries.isEmpty else {
             throw AppError("No valid tracks found in '\(albumPath.path)'.")
         }
         let output = try resolveOutputPath(cli.outputFile ?? defaultOutputName)
-        return try buildAlbum(from: entries, output: output)
+        let album = try buildAlbum(from: resolved.entries, output: output)
+        guard resolved.failures.isEmpty else {
+            let noun = resolved.failures.count == 1 ? "entry" : "entries"
+            throw AppError(
+                "\(resolved.failures.count) album \(noun) could not be used (album built from the remaining tracks): "
+                + resolved.failures.joined(separator: "; "))
+        }
+        return album
     }
 
     func buildAlbumFromFLACDirectory() throws -> URL {
-        let flacs = try sortNatural(files(in: cli.srcDir, matchingExtensions: ["flac"]))
+        let flacs = try flacAlbumCandidates()
         if flacs.isEmpty {
             throw AppError("No .flac files found in '\(cli.srcDir.path)'.")
         }

@@ -1082,7 +1082,7 @@ extension ConverterTool {
     }
 
     func stepMaster() throws {
-        let files = try audioLoudnessCandidates()
+        let files = try audioMasterCandidates()
         guard !files.isEmpty else {
             throw AppError("No supported audio media files (.flac, .wav, .mp3, .m4a, .mp4) found in '\(cli.srcDir.path)'.")
         }

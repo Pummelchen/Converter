@@ -1,0 +1,68 @@
+Test Case '-[converterTests.PipelineIntegrationTests testAlbumBuildAcceptsNonStandardRIFFWavInputs]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testAlbumBuildAcceptsNonStandardRIFFWavInputs]' passed (1.883 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testAlbumBuildFromAlbumFileCreatesVerifiedRF64Wave]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testAlbumBuildFromAlbumFileCreatesVerifiedRF64Wave]' passed (1.938 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testAlbumFileFailsClosedOnMissingTracksUnlessContinueOnError]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testAlbumFileFailsClosedOnMissingTracksUnlessContinueOnError]' passed (2.210 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testAlbumPipelineSortsMixedAudioNormalizesAndContinuesFullRun]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testAlbumPipelineSortsMixedAudioNormalizesAndContinuesFullRun]' passed (13.291 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testAlbumRunKeepsOutputFileForTheAlbumWAVOnly]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testAlbumRunKeepsOutputFileForTheAlbumWAVOnly]' passed (10.050 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testFadeCutProcessesMP3WAVAndFLACWithShortenedDuration]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testFadeCutProcessesMP3WAVAndFLACWithShortenedDuration]' passed (9.005 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testFadeCutRejectsCutThatRemovesEntireSource]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testFadeCutRejectsCutThatRemovesEntireSource]' passed (0.406 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testFadeOutDoesNotEnforceDeliveryQCPolicy]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testFadeOutDoesNotEnforceDeliveryQCPolicy]' passed (3.204 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testFadeOutProducesTruncatedSameFormatAudioOutput]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testFadeOutProducesTruncatedSameFormatAudioOutput]' passed (3.350 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testFadeOutRejectsRangeBeyondSourceDuration]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testFadeOutRejectsRangeBeyondSourceDuration]' passed (0.409 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testFullAudioPreparationPreservesMP3SourceLoudnessEvenIfMasteringConfigIsEnabled]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testFullAudioPreparationPreservesMP3SourceLoudnessEvenIfMasteringConfigIsEnabled]' passed (3.528 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testMasterCanonicalWAVFallsBackWhenTwoPassMeasurementIsOutOfRange]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testMasterCanonicalWAVFallsBackWhenTwoPassMeasurementIsOutOfRange]' passed (4.085 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testMasterCanonicalWAVRemediatesOutOfPolicyLoudness]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testMasterCanonicalWAVRemediatesOutOfPolicyLoudness]' passed (4.589 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testMasterCommandProducesMasteredOutputsWithinPolicy]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testMasterCommandProducesMasteredOutputsWithinPolicy]' passed (4.922 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testMP3CleanDoesNotEnforceDeliveryQCOnStreamCopyCleanup]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testMP3CleanDoesNotEnforceDeliveryQCOnStreamCopyCleanup]' passed (2.066 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testMP3CleanIsAStreamCopyThatPreservesTheAudio]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testMP3CleanIsAStreamCopyThatPreservesTheAudio]' passed (1.599 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testMP3CleanRemovesArtworkAndExtraStreams]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testMP3CleanRemovesArtworkAndExtraStreams]' passed (2.024 seconds).
+	 Executed 17 tests, with 0 failures (0 unexpected) in 68.560 (68.562) seconds
+Test Case '-[converterTests.converterTests testAlbumActionParsesAndSortsNaturallyIgnoringExtension]' started.
+Test Case '-[converterTests.converterTests testAlbumActionParsesAndSortsNaturallyIgnoringExtension]' passed (0.002 seconds).
+Test Case '-[converterTests.converterTests testAlbumCandidatesCollapseSameStemFamiliesAndSkipDerivedOutputs]' started.
+Test Case '-[converterTests.converterTests testAlbumCandidatesCollapseSameStemFamiliesAndSkipDerivedOutputs]' passed (0.002 seconds).
+Test Case '-[converterTests.converterTests testAlbumFileFlagRejectionNamesAlbumTxtAndDirectoryCommands]' started.
+Test Case '-[converterTests.converterTests testAlbumFileFlagRejectionNamesAlbumTxtAndDirectoryCommands]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testFadeActionsUseDefaultNormalCurve]' started.
+Test Case '-[converterTests.converterTests testFadeActionsUseDefaultNormalCurve]' passed (0.001 seconds).
+Test Case '-[converterTests.converterTests testFadeCutParsesCutAndFadeDurations]' started.
+Test Case '-[converterTests.converterTests testFadeCutParsesCutAndFadeDurations]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testFadeCutRejectsMissingArguments]' started.
+Test Case '-[converterTests.converterTests testFadeCutRejectsMissingArguments]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testFadeFLACAliasNoLongerFallsThroughToFullRun]' started.
+Test Case '-[converterTests.converterTests testFadeFLACAliasNoLongerFallsThroughToFullRun]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testFadeOutParsesFlexibleTimeArguments]' started.
+Test Case '-[converterTests.converterTests testFadeOutParsesFlexibleTimeArguments]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testFadeOutRejectsMissingArguments]' started.
+Test Case '-[converterTests.converterTests testFadeOutRejectsMissingArguments]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testFadeOutRejectsTooManyArguments]' started.
+Test Case '-[converterTests.converterTests testFadeOutRejectsTooManyArguments]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testFlexibleTimecodeParsingAcceptsSupportedFormsAndRejectsInvalidBounds]' started.
+Test Case '-[converterTests.converterTests testFlexibleTimecodeParsingAcceptsSupportedFormsAndRejectsInvalidBounds]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testFullRunSourceImagesRejectTwoLandscapeMasters]' started.
+Test Case '-[converterTests.converterTests testFullRunSourceImagesRejectTwoLandscapeMasters]' passed (0.271 seconds).
+Test Case '-[converterTests.converterTests testHelpTextDistinguishesAlbumTxtAndDirectoryAlbumBuilds]' started.
+Test Case '-[converterTests.converterTests testHelpTextDistinguishesAlbumTxtAndDirectoryAlbumBuilds]' passed (0.001 seconds).
+Test Case '-[converterTests.converterTests testMasterAndFLACAlbumCandidatesSkipDerivedOutputs]' started.
+Test Case '-[converterTests.converterTests testMasterAndFLACAlbumCandidatesSkipDerivedOutputs]' passed (0.002 seconds).
+Test Case '-[converterTests.converterTests testTimecodeRejectsAbsurdDurationsAndFFmpegNumberNeverTraps]' started.
+Test Case '-[converterTests.converterTests testTimecodeRejectsAbsurdDurationsAndFFmpegNumberNeverTraps]' passed (0.002 seconds).
+	 Executed 15 tests, with 0 failures (0 unexpected) in 0.283 (0.284) seconds
+	 Executed 32 tests, with 0 failures (0 unexpected) in 68.843 (68.846) seconds
+	 Executed 32 tests, with 0 failures (0 unexpected) in 68.843 (68.854) seconds

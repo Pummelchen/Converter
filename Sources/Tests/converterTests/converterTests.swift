@@ -1578,6 +1578,42 @@ final class converterTests: XCTestCase {
         await semaphore.signal()
     }
 
+    // audit #0048 / #0049: -master and -flactoalbum must skip what the pipeline itself produced.
+    func testMasterAndFLACAlbumCandidatesSkipDerivedOutputs() throws {
+        let temp = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+        let tool = try makeTool(tempDirectory: temp)
+        let names = [
+            "song.flac", "song_mastered.flac", "song_loudness_m12LUFS.flac", "song_RF64.flac", "02.flac", "02_bass.flac"
+        ]
+        for name in names {
+            try Data().write(to: temp.appendingPathComponent(name))
+        }
+        XCTAssertEqual(try tool.audioMasterCandidates().map(\.basename).sorted(),
+                       ["02.flac", "02_bass.flac", "song.flac", "song_RF64.flac"])
+        XCTAssertEqual(try tool.flacAlbumCandidates().map(\.basename), ["02.flac", "song.flac"])
+    }
+
+    // audit #0016: with the default shared directory an album run saw every same-stem
+    // conversion (01.flac + 01.wav + 01.mp3) as three tracks, and the pipeline's own
+    // _mastered / _silence_ / _noise_ outputs as more tracks.
+    func testAlbumCandidatesCollapseSameStemFamiliesAndSkipDerivedOutputs() throws {
+        let temp = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+        let tool = try makeTool(tempDirectory: temp)
+        let names = [
+            "01.flac", "01.wav", "01.mp3", "02.mp3", "02_mastered.mp3", "03_noise_30s.flac", "04_silence_10s.wav", "05.wav"
+        ]
+        for name in names {
+            try Data().write(to: temp.appendingPathComponent(name))
+        }
+        XCTAssertEqual(try tool.albumAudioCandidates().map(\.basename), ["01.flac", "02.mp3", "05.wav"])
+    }
+
     // audit #0011: the Homebrew bootstrap must only ever execute the exact installer it was
     // reviewed against: pinned to a commit, verified by SHA-256 before a single line runs.
     func testHomebrewInstallerIsPinnedAndIntegrityChecked() throws {

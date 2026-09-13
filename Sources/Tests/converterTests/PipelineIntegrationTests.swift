@@ -2148,22 +2148,40 @@ final class PipelineIntegrationTests: XCTestCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("empty_graphic.jpg").path))
     }
 
-    func testAlbumFileSkipsMissingTracksAndKeepsListedOrder() throws {
+    // audit #0017: a listed track that cannot be found is an error, not a warning — a typo in
+    // album.txt used to publish a shorter album with exit 0. Under --continue-on-error the
+    // album is still built from what resolves, and the run ends with the failure summary.
+    func testAlbumFileFailsClosedOnMissingTracksUnlessContinueOnError() throws {
         let workspace = try IntegrationWorkspace()
         try workspace.requireCommands(["ffmpeg", "ffprobe"])
 
         _ = try workspace.createAudio(name: "track01", ext: "wav")
         _ = try workspace.createAudio(name: "track02", ext: "wav", frequency: 554)
         try workspace.writeAlbum(["track01", "missing_track", "track02"])
+        let albumOutput = workspace.output.appendingPathComponent("album.rf64.wav")
 
-        let tool = try workspace.makeTool(arguments: ["-wavtoalbum"])
-        let album = try tool.buildAlbumFromAlbumFile(extension: "wav", defaultOutputName: "album.rf64.wav")
-        try tool.verifyWAVStandard(album)
+        let strict = try workspace.makeTool(arguments: ["-wavtoalbum"])
+        let albumName = "album.rf64.wav"
+        XCTAssertThrowsError(
+            try strict.buildAlbumFromAlbumFile(extension: "wav", defaultOutputName: albumName)
+        ) { error in
+            XCTAssertTrue("\(error)".contains("missing_track"), "\(error)")
+        }
+        XCTAssertFalse(FileManager.default.fileExists(atPath: albumOutput.path), "no album on a failed entry")
 
+        let lenient = try workspace.makeTool(arguments: ["-wavtoalbum", "--continue-on-error"])
+        XCTAssertThrowsError(
+            try lenient.buildAlbumFromAlbumFile(extension: "wav", defaultOutputName: albumName)
+        ) { error in
+            XCTAssertTrue("\(error)".contains("missing_track"), "\(error)")
+            XCTAssertTrue("\(error)".contains("1 album entr"), "\(error)")
+        }
+        try lenient.verifyWAVStandard(albumOutput)
         let track01 = workspace.output.appendingPathComponent("track01.wav")
         let track02 = workspace.output.appendingPathComponent("track02.wav")
-        let expectedSeconds = (try tool.mediaDuration(track01) ?? 0) + (try tool.mediaDuration(track02) ?? 0) + Double(tool.config.albumSilenceSecs)
-        try tool.verifyDuration(album, expectedSeconds: expectedSeconds, label: "album wav", tolerance: 0.5)
+        let expectedSeconds = (try lenient.mediaDuration(track01) ?? 0) + (try lenient.mediaDuration(track02) ?? 0)
+            + Double(lenient.config.albumSilenceSecs)
+        try lenient.verifyDuration(albumOutput, expectedSeconds: expectedSeconds, label: "album wav", tolerance: 0.5)
     }
 
     // audit #0007: a 44.1 kHz MP3 is not a standard deliverable, so the run must build 1.mp3 from

@@ -1,0 +1,44 @@
+Building for debugging...
+[0/5] Write sources
+[1/5] Write swift-version--58304C5D6DBC2206.txt
+[3/7] Compiling converterTests PipelineIntegrationTests.swift
+[4/7] Emitting module converterTests
+[5/7] Compiling converterTests IntegrationTestSupport.swift
+[6/7] Compiling converterTests converterTests.swift
+[7/9] Emitting module converterPackageTests
+[7/9] Write Objects.LinkFileList
+[8/9] Linking converterPackageTests
+Build complete! (5.38s)
+Test Suite 'Selected tests' started at 2026-09-13 18:45:04.051.
+Test Suite 'converterPackageTests.xctest' started at 2026-09-13 18:45:04.057.
+Test Suite 'PipelineIntegrationTests' started at 2026-09-13 18:45:04.057.
+Test Case '-[converterTests.PipelineIntegrationTests testAlbumFileFailsClosedOnMissingTracksUnlessContinueOnError]' started.
+[2026-09-13 18:45:04] [converterTests] [WARN] Missing track, skipping: /var/folders/gd/71hcflq91rj3skfxfh5ldccc0000gn/T/converter-tests.713641DD-9A0E-4FF7-8073-41790FE1F02B/Output/missing_track.wav
+[2026-09-13 18:45:05] [converterTests] [INFO] Created album WAV: /var/folders/gd/71hcflq91rj3skfxfh5ldccc0000gn/T/converter-tests.713641DD-9A0E-4FF7-8073-41790FE1F02B/Output/album.rf64.wav
+/Users/andreborchert/Library/CloudStorage/Dropbox/Coding/Converter/Sources/Tests/converterTests/PipelineIntegrationTests.swift:2164: error: -[converterTests.PipelineIntegrationTests testAlbumFileFailsClosedOnMissingTracksUnlessContinueOnError] : XCTAssertThrowsError failed: did not throw an error
+/Users/andreborchert/Library/CloudStorage/Dropbox/Coding/Converter/Sources/Tests/converterTests/PipelineIntegrationTests.swift:2167: error: -[converterTests.PipelineIntegrationTests testAlbumFileFailsClosedOnMissingTracksUnlessContinueOnError] : XCTAssertFalse failed - no album may be published on a failed entry
+[2026-09-13 18:45:05] [converterTests] [WARN] Missing track, skipping: /var/folders/gd/71hcflq91rj3skfxfh5ldccc0000gn/T/converter-tests.713641DD-9A0E-4FF7-8073-41790FE1F02B/Output/missing_track.wav
+[2026-09-13 18:45:06] [converterTests] [INFO] Created album WAV: /var/folders/gd/71hcflq91rj3skfxfh5ldccc0000gn/T/converter-tests.713641DD-9A0E-4FF7-8073-41790FE1F02B/Output/album.rf64.wav
+/Users/andreborchert/Library/CloudStorage/Dropbox/Coding/Converter/Sources/Tests/converterTests/PipelineIntegrationTests.swift:2170: error: -[converterTests.PipelineIntegrationTests testAlbumFileFailsClosedOnMissingTracksUnlessContinueOnError] : XCTAssertThrowsError failed: did not throw an error
+Test Case '-[converterTests.PipelineIntegrationTests testAlbumFileFailsClosedOnMissingTracksUnlessContinueOnError]' failed (3.407 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testMP3CleanIsAStreamCopyThatPreservesTheAudio]' started.
+[2026-09-13 18:45:09] [converterTests] [INFO] Cleaned MP3 metadata: tagged_441.mp3
+/Users/andreborchert/Library/CloudStorage/Dropbox/Coding/Converter/Sources/Tests/converterTests/PipelineIntegrationTests.swift:2195: error: -[converterTests.PipelineIntegrationTests testMP3CleanIsAStreamCopyThatPreservesTheAudio] : XCTAssertEqual failed: ("Optional("48000")") is not equal to ("Optional("44100")") - a clean must not resample
+/Users/andreborchert/Library/CloudStorage/Dropbox/Coding/Converter/Sources/converter/ValidationPipeline.swift:1065: error: -[converterTests.PipelineIntegrationTests testMP3CleanIsAStreamCopyThatPreservesTheAudio] : failed: caught error: "Canonical PCM mismatch for Cleaned MP3: src='/var/folders/gd/71hcflq91rj3skfxfh5ldccc0000gn/T/converter-tests.B2479348-2999-497E-9FEE-E0CC9817955A/tagged_441_reference.mp3' out='/var/folders/gd/71hcflq91rj3skfxfh5ldccc0000gn/T/converter-tests.B2479348-2999-497E-9FEE-E0CC9817955A/Output/tagged_441.mp3' out_of_tolerance_samples=1 max_delta=783 allowed_out_of_tolerance=0 allowed_delta=0 sample_rate=44100 channels=2 canonical=pcm_s24le"
+Test Case '-[converterTests.PipelineIntegrationTests testMP3CleanIsAStreamCopyThatPreservesTheAudio]' failed (2.251 seconds).
+Test Suite 'PipelineIntegrationTests' failed at 2026-09-13 18:45:09.715.
+	 Executed 2 tests, with 5 failures (1 unexpected) in 5.658 (5.658) seconds
+Test Suite 'converterTests' started at 2026-09-13 18:45:09.715.
+Test Case '-[converterTests.converterTests testAlbumCandidatesCollapseSameStemFamiliesAndSkipDerivedOutputs]' started.
+/Users/andreborchert/Library/CloudStorage/Dropbox/Coding/Converter/Sources/Tests/converterTests/converterTests.swift:1593: error: -[converterTests.converterTests testAlbumCandidatesCollapseSameStemFamiliesAndSkipDerivedOutputs] : XCTAssertEqual failed: ("["01.flac", "01.wav", "01.mp3", "02.mp3", "02_mastered.mp3", "03_noise_30s.flac", "04_silence_10s.wav", "05.wav"]") is not equal to ("["01.flac", "02.mp3", "05.wav"]")
+Test Case '-[converterTests.converterTests testAlbumCandidatesCollapseSameStemFamiliesAndSkipDerivedOutputs]' failed (0.003 seconds).
+Test Suite 'converterTests' failed at 2026-09-13 18:45:09.718.
+	 Executed 1 test, with 1 failure (0 unexpected) in 0.003 (0.003) seconds
+Test Suite 'converterPackageTests.xctest' failed at 2026-09-13 18:45:09.718.
+	 Executed 3 tests, with 6 failures (1 unexpected) in 5.661 (5.661) seconds
+Test Suite 'Selected tests' failed at 2026-09-13 18:45:09.718.
+	 Executed 3 tests, with 6 failures (1 unexpected) in 5.661 (5.667) seconds
+􀟈  Test run started.
+􀄵  Testing Library Version: 1902
+􀄵  Target Platform: arm64e-apple-macos14.0
+􁁛  Test run with 0 tests in 0 suites passed after 0.001 seconds.

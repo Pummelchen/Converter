@@ -320,20 +320,7 @@ func parseFlexibleTimecode(_ rawValue: String, label: String) throws -> Double {
     }
 
     func parseComponent(_ component: Substring, allowFraction: Bool) throws -> Double {
-        let text = String(component)
-        guard !text.isEmpty else {
-            throw AppError("Invalid \(label) '\(rawValue)'. Empty time component.")
-        }
-        if allowFraction {
-            guard let parsed = Double(text), parsed >= 0 else {
-                throw AppError("Invalid \(label) '\(rawValue)'.")
-            }
-            return parsed
-        }
-        guard let parsed = Int(text), parsed >= 0 else {
-            throw AppError("Invalid \(label) '\(rawValue)'.")
-        }
-        return Double(parsed)
+        try parseTimecodeComponent(component, allowFraction: allowFraction, label: label, rawValue: rawValue)
     }
 
     let seconds: Double
@@ -366,6 +353,23 @@ func parseFlexibleTimecode(_ rawValue: String, label: String) throws -> Double {
         throw AppError("Invalid \(label) '\(rawValue)'. Durations above 366 days are not supported.")
     }
     return seconds
+}
+
+private func parseTimecodeComponent(_ component: Substring, allowFraction: Bool, label: String, rawValue: String) throws -> Double {
+    let text = String(component)
+    guard !text.isEmpty else {
+        throw AppError("Invalid \(label) '\(rawValue)'. Empty time component.")
+    }
+    if allowFraction {
+        guard let parsed = Double(text), parsed >= 0 else {
+            throw AppError("Invalid \(label) '\(rawValue)'.")
+        }
+        return parsed
+    }
+    guard let parsed = Int(text), parsed >= 0 else {
+        throw AppError("Invalid \(label) '\(rawValue)'.")
+    }
+    return Double(parsed)
 }
 
 func formatCommand(_ executable: String, _ arguments: [String]) -> String {
