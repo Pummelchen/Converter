@@ -589,7 +589,9 @@ final class converterTests: XCTestCase {
         let tool = try makeTool(tempDirectory: tempDirectory)
         XCTAssertEqual(try tool.resolveFullAudio().lastPathComponent, "1_source.flac")
         XCTAssertFalse(FileManager.default.fileExists(atPath: tempDirectory.appendingPathComponent("song.flac").path))
-        XCTAssertTrue(FileManager.default.fileExists(atPath: tempDirectory.appendingPathComponent("song.wav").path))
+        // The rest of the family moves with the source (audit #0022), so a rerun sees one family.
+        XCTAssertFalse(FileManager.default.fileExists(atPath: tempDirectory.appendingPathComponent("song.wav").path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: tempDirectory.appendingPathComponent("1_source.wav").path))
     }
 
     // A full run writes its image deliverables next to the source, so rerunning in the same
@@ -829,11 +831,13 @@ final class converterTests: XCTestCase {
         try Data().write(to: temp.appendingPathComponent("Mirage.mp3"))
         XCTAssertEqual(try tool.resolveFullAudio().basename, "1_source.mp3")
 
-        // Two unrelated stems: name both, and do not count the companion among them.
+        // Two unrelated stems: name both, and do not count the companion among them (it moved
+        // with its source to 1_source_RF64.wav, audit #0022).
+        XCTAssertTrue(FileManager.default.fileExists(atPath: temp.appendingPathComponent("1_source_RF64.wav").path))
         try Data().write(to: temp.appendingPathComponent("Other.wav"))
         XCTAssertThrowsError(try tool.resolveFullAudio()) { error in
             let message = "\(error)"
-            XCTAssertTrue(message.contains("but found 3"), message)
+            XCTAssertTrue(message.contains("but found 2"), message)
             XCTAssertTrue(message.contains("1_source.mp3"), message)
             XCTAssertTrue(message.contains("Other.wav"), message)
         }
@@ -1576,6 +1580,29 @@ final class converterTests: XCTestCase {
         try await semaphore.wait()
         await semaphore.signal()
         await semaphore.signal()
+    }
+
+    // audit #0022: the whole discovered family moves with the source, so a rerun resolves the
+    // same origin: same-stem conversions become 1_source.<ext> siblings and archival companions
+    // become 1_source_RF64/_BW64 companions of it. A source that fails preflight keeps its name.
+    func testFullRunRenamesTheWholeSourceFamilyAndKeepsRerunsStable() throws {
+        let temp = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+        let tool = try makeTool(tempDirectory: temp)
+        func exists(_ name: String) -> Bool { FileManager.default.fileExists(atPath: temp.path + "/" + name) }
+
+        for name in ["song.flac", "song.wav", "song_RF64.flac", "song_BW64.wav"] {
+            try Data().write(to: temp.appendingPathComponent(name))
+        }
+        XCTAssertEqual(try tool.resolveFullAudio().basename, "1_source.flac")
+        XCTAssertTrue(exists("1_source.wav"), "same-stem sibling must move with the source")
+        XCTAssertTrue(exists("1_source_RF64.flac") && exists("1_source_BW64.wav"), "companions move with the source")
+        XCTAssertFalse(exists("song.wav") || exists("song_RF64.flac"))
+        // Second run in the same folder: the renamed family still resolves to the origin.
+        XCTAssertEqual(try tool.resolveFullAudio().basename, "1_source.flac")
+        XCTAssertTrue(tool.isExternalArchivalAudioVariant(temp.appendingPathComponent("1_source_RF64.flac")))
     }
 
     // audit #0048 / #0049: -master and -flactoalbum must skip what the pipeline itself produced.

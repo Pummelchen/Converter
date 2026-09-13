@@ -2,13 +2,13 @@
 
 Session: `2026-09-13` · branch `audit/2026-09-13` · baseline commit `4bb136a`
 
-**known-total:99 done:20 open:79 blocked:0 new-this-session:99**
+**known-total:100 done:20 open:80 blocked:0 new-this-session:100**
 
 | status | count |
 |---|---|
 | START | 76 |
 | PROGRESS | 1 |
-| TEST | 2 |
+| TEST | 3 |
 | AUDIT | 0 |
 | DONE | 20 |
 | BLOCKED | 0 |
@@ -25,7 +25,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 | #0019 | S1 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:1316-1340 | ensureStandardMP3Output publishes without duration/loudness verification and re-encodes an already-standard MP3 | bug | TEST | 3da33d1 |
 | #0020 | S1 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:492-530,487-490 | -bass can clip the 24-bit staging WAV; nothing verifies true peak/clipping before publish | incomplete | START |  |
 | #0021 | S1 | converter/VideoPipeline+AudioPipeline | Sources/converter/VideoPipeline.swift:159-171; AudioPipeline.swift:1070-1082 | Encoder ladders fall through on encoder-independent failures (publish, ALAC/duration/loudness verify) and the padded-MP4 ladder reports only the last rung | logic | START |  |
-| #0022 | S1 | converter/Actions | Sources/converter/Actions.swift:209-218 | normalizedFullRunSource renames only the winning family member and orphans siblings/companions, breaking reruns; silent fallback when 1.<ext> exists | logic | START |  |
+| #0022 | S1 | converter/Actions | Sources/converter/Actions.swift:209-218 | normalizedFullRunSource renames only the winning family member and orphans siblings/companions, breaking reruns; silent fallback when 1.<ext> exists | logic | TEST |  |
 | #0024 | S1 | converter/Actions | Sources/converter/Actions.swift:717-723,677-686,709 | -aipix/-run_pix/-pngtojpg re-ingest portrait stills and overwrite them with landscape renders | bug | TEST | 55aa10e |
 | #0026 | S1 | BW64Bridge | Sources/BW64Bridge/bw64_bridge.cpp:178-197 | Disk-write failures undetectable; bridge self-validates against the ds64 size it wrote | bug | START |  |
 | #0027 | S1 | repo/docs | SECURITY.md:1-21 | SECURITY.md is the unedited GitHub template with fictitious versions | placeholder | START |  |
@@ -45,7 +45,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 
 _none_
 
-## Open S2 / S3 (58)
+## Open S2 / S3 (59)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
@@ -107,6 +107,7 @@ _none_
 | #0096 | S3 | converterTests | Sources/Tests/converterTests/converterTests.swift:108-115 | SchedulerProfile tested via its summary string | test | START |  |
 | #0097 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:1902-1911 | -doctor has only a no-throw happy path | test | START |  |
 | #0098 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:529,534 | Exact ffmpeg bass filter string pinned without a stated reason | test | START |  |
+| #0100 | S3 | converter/Actions | Sources/converter/Actions.swift (normalizedFullRunSource / resolveFullAudio) | Full-run source is renamed before preflight; a corrupt source loses its original name in the error | logic | START |  |
 
 ## Done (20)
 
@@ -392,7 +393,7 @@ _none_
 - **evidence-before:** AUDIT/findings/L2-video-image-actions-cli.md X-6; L2-audio.md A-6; L6-tests.md T-8
 - **notes:** One shared ladder helper; all rungs reported; encoder-independent stop.
 
-### #0022 · S1 · START · normalizedFullRunSource renames only the winning family member and orphans siblings/companions, breaking reruns; silent fallback when 1.<ext> exists
+### #0022 · S1 · TEST · normalizedFullRunSource renames only the winning family member and orphans siblings/companions, breaking reruns; silent fallback when 1.<ext> exists
 
 - **project/module:** converter/Actions
 - **file:line:** Sources/converter/Actions.swift:209-218
@@ -400,6 +401,8 @@ _none_
 - **host-used:** local
 - **discovered-by:** reviewer X-3; tests T-23
 - **evidence-before:** AUDIT/findings/L2-video-image-actions-cli.md X-3; L6-tests.md T-23
+- **fix-summary:** Whole family renamed (siblings and _RF64/_BW64 companions) with existence check and rollback; rerun resolves 1_source.<ext>. Preflight-order sub-point split out as #0100.
+- **evidence-after:** AUDIT/evidence/0022-before.log (rerun: found 2: 1_source.flac, song.wav); 0022-after.log: 7 tests pass; swiftlint 535/56. Full suite: next batch run.
 - **notes:** Rename whole family after preflight; error instead of silent fallback.
 
 ### #0023 · S1 · DONE · Non-standard WAV source is rewritten in place; no bit-exact original survives
@@ -1130,4 +1133,14 @@ _none_
 - **evidence-after:** swift build --build-tests -Xswiftc -warnings-as-errors: Build complete, 0 diagnostics. Targeted tests pass (AUDIT/evidence/0099-after.log). Full suite (AUDIT/evidence/0010-0014-fullsuite.txt): 170 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** 9343977
 - **notes:** Phase E requires zero warnings across all targets.
+
+### #0100 · S3 · START · Full-run source is renamed before preflight; a corrupt source loses its original name in the error
+
+- **project/module:** converter/Actions
+- **file:line:** Sources/converter/Actions.swift (normalizedFullRunSource / resolveFullAudio)
+- **category:** logic
+- **host-used:** local
+- **discovered-by:** reviewer X-3 (sub-point), split out of #0022
+- **evidence-before:** resolveFullAudio renames the family, then fullAudioPreparation preflights; a file that fails preflight is reported under its new 1_source name. Cosmetic: no data is lost, the file is intact under the new name.
+- **notes:** Not folded into #0022 because the naming unit tests use empty placeholder files and would all need real media if preflight moved ahead of the rename; needs its own design (probe-only preflight of the chosen file before renaming).
 

@@ -367,13 +367,13 @@
       "location": "Sources/converter/Actions.swift:209-218",
       "title": "normalizedFullRunSource renames only the winning family member and orphans siblings/companions, breaking reruns; silent fallback when 1.<ext> exists",
       "category": "logic",
-      "status": "START",
+      "status": "TEST",
       "host": "local",
       "discovered_by": "reviewer X-3; tests T-23",
       "session": "2026-09-13",
       "evidence_before": "AUDIT/findings/L2-video-image-actions-cli.md X-3; L6-tests.md T-23",
-      "fix_summary": "",
-      "evidence_after": "",
+      "fix_summary": "Whole family renamed (siblings and _RF64/_BW64 companions) with existence check and rollback; rerun resolves 1_source.<ext>. Preflight-order sub-point split out as #0100.",
+      "evidence_after": "AUDIT/evidence/0022-before.log (rerun: found 2: 1_source.flac, song.wav); 0022-after.log: 7 tests pass; swiftlint 535/56. Full suite: next batch run.",
       "commit": "",
       "notes": "Rename whole family after preflight; error instead of silent fallback."
     },
@@ -1685,6 +1685,23 @@
       "evidence_after": "swift build --build-tests -Xswiftc -warnings-as-errors: Build complete, 0 diagnostics. Targeted tests pass (AUDIT/evidence/0099-after.log). Full suite (AUDIT/evidence/0010-0014-fullsuite.txt): 170 executed, 0 failures, 0 compiler warnings.",
       "commit": "9343977",
       "notes": "Phase E requires zero warnings across all targets."
+    },
+    {
+      "id": "#0100",
+      "severity": "S3",
+      "module": "converter/Actions",
+      "location": "Sources/converter/Actions.swift (normalizedFullRunSource / resolveFullAudio)",
+      "title": "Full-run source is renamed before preflight; a corrupt source loses its original name in the error",
+      "category": "logic",
+      "status": "START",
+      "host": "local",
+      "discovered_by": "reviewer X-3 (sub-point), split out of #0022",
+      "session": "2026-09-13",
+      "evidence_before": "resolveFullAudio renames the family, then fullAudioPreparation preflights; a file that fails preflight is reported under its new 1_source name. Cosmetic: no data is lost, the file is intact under the new name.",
+      "fix_summary": "",
+      "evidence_after": "",
+      "commit": "",
+      "notes": "Not folded into #0022 because the naming unit tests use empty placeholder files and would all need real media if preflight moved ahead of the rename; needs its own design (probe-only preflight of the chosen file before renaming)."
     }
   ]
 }

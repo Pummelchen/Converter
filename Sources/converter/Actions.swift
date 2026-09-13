@@ -236,18 +236,52 @@ extension ConverterTool {
     private func normalizedFullRunSource(_ source: URL) throws -> URL {
         let releaseStem = Self.fullRunReleaseName + Self.fullRunSourceSuffix
         guard source.stem != releaseStem else { return source }
-        let renamed = source.deletingLastPathComponent()
-            .appendingPathComponent(releaseStem)
-            .appendingPathExtension(source.pathExtension.lowercasedASCII)
-        guard !fileManager.fileExists(atPath: renamed.path) else {
+        let directory = source.deletingLastPathComponent()
+        let originStem = source.stem
+        let audioExtensions = ["flac", "wav", "mp3"]
+        let neighbours = try files(in: directory, matchingExtensions: audioExtensions)
+
+        // The whole discovered family moves with the source: same-stem conversions become
+        // `1_source.<ext>` siblings and `_RF64` / `_BW64` companions become companions of
+        // `1_source`. Leaving them under the old stem made the next run see two families.
+        var moves: [(from: URL, to: URL)] = []
+        func plan(_ file: URL, stem: String) {
+            let target = directory.appendingPathComponent(stem)
+                .appendingPathExtension(file.pathExtension.lowercasedASCII)
+            moves.append((file, target))
+        }
+        plan(source, stem: releaseStem)
+        for sibling in neighbours where sibling.stem == originStem && sibling != source {
+            plan(sibling, stem: releaseStem)
+        }
+        for companion in neighbours {
+            for suffix in ["_RF64", "_BW64"] where companion.stem == originStem + suffix {
+                plan(companion, stem: releaseStem + suffix)
+            }
+        }
+        for move in moves where fileManager.fileExists(atPath: move.to.path) {
             throw AppError(
-                "Full pipeline cannot rename \(source.basename) to \(renamed.basename): that file already exists in "
-                + "'\(source.deletingLastPathComponent().path)'. Clear the previous release before running again."
+                "Full pipeline cannot rename \(move.from.basename) to \(move.to.basename): "
+                + "that file already exists in '\(directory.path)'. Clear the previous release before running again."
             )
         }
-        try fileManager.moveItem(at: source, to: renamed)
-        logger.info("Source audio renamed: \(source.basename) -> \(renamed.basename)")
-        return renamed
+        var completed: [(from: URL, to: URL)] = []
+        do {
+            for move in moves {
+                try fileManager.moveItem(at: move.from, to: move.to)
+                completed.append(move)
+                logger.info("Source audio renamed: \(move.from.basename) -> \(move.to.basename)")
+            }
+        } catch {
+            // Best-effort rollback so a half-renamed family never remains behind.
+            for move in completed.reversed() {
+                try? fileManager.moveItem(at: move.to, to: move.from)
+            }
+            throw AppError(
+                "Full pipeline could not rename the source family in '\(directory.path)'.", underlying: error)
+        }
+        return directory.appendingPathComponent(releaseStem)
+            .appendingPathExtension(source.pathExtension.lowercasedASCII)
     }
 
     func isNamedFullRunImage(_ file: URL) -> Bool {
