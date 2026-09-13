@@ -157,7 +157,12 @@ struct ProjectConfig {
                     value.removeLast()
                 }
                 if !supportedKeys.contains(key) {
-                    logger.debug("Ignoring unknown config key: \(key)")
+                    // A misspelled key is the one config mistake that fails silently: the setting it was
+                    // meant to change keeps its default and every output still looks plausible. A debug
+                    // line is invisible in a normal run, so this is a warning naming key and file. It is
+                    // not an error because the wiki promises unknown keys are skipped, and a config.txt
+                    // shared with a newer converter may legitimately carry keys this build does not know.
+                    logger.warn("Ignoring unknown config key '\(key)' in \(url.path)")
                     continue
                 }
                 values[key] = value

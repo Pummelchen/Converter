@@ -1,3 +1,4 @@
+import Synchronization
 import XCTest
 @testable import converter
 
@@ -1028,6 +1029,86 @@ final class converterTests: XCTestCase {
             XCTAssertTrue(error.localizedDescription.contains("AUDIO_QC_TARGET_LUFS"))
             XCTAssertTrue(error.localizedDescription.contains("between -70 and -5"))
         }
+    }
+
+    // Logger writes straight to file descriptor 2 and has no injectable sink, so the only way to
+    // observe a log line without adding a production hook is to point fd 2 at a pipe around the
+    // call. A background reader drains the pipe so a chatty body cannot block on a full buffer.
+    private func captureStandardError(_ body: () throws -> Void) throws -> String {
+        let pipe = Pipe()
+        let savedStandardError = dup(STDERR_FILENO)
+        XCTAssertNotEqual(savedStandardError, -1)
+        XCTAssertNotEqual(dup2(pipe.fileHandleForWriting.fileDescriptor, STDERR_FILENO), -1)
+        let captured = Mutex(Data())
+        let drained = DispatchGroup()
+        drained.enter()
+        DispatchQueue.global().async {
+            let data = pipe.fileHandleForReading.readDataToEndOfFile()
+            captured.withLock { $0 = data }
+            drained.leave()
+        }
+        let outcome = Result { try body() }
+        dup2(savedStandardError, STDERR_FILENO)
+        close(savedStandardError)
+        // Closing the last writer is what lets the reader see end-of-file.
+        try pipe.fileHandleForWriting.close()
+        drained.wait()
+        try outcome.get()
+        return String(bytes: captured.withLock { $0 }, encoding: .utf8) ?? ""
+    }
+
+    private func loadConfig(from workspace: IntegrationWorkspace) throws -> ProjectConfig {
+        let options = try CLIOptions.parse(
+            arguments: ["-help"],
+            environment: [:],
+            scriptDirectory: workspace.root,
+            scriptName: "converter"
+        )
+        return try ProjectConfig.load(
+            from: workspace.configFile,
+            environment: [:],
+            cli: options,
+            logger: Logger(scriptName: "converterTests", debugEnabled: false)
+        )
+    }
+
+    // audit #0046: a misspelled key such as AUDIO_QC_TARGET_LUF was dropped with a debug-level line
+    // that no normal run shows, so the setting silently kept its default while every output looked
+    // plausible. Unknown keys must be reported at WARN level naming both the key and the file.
+    func testUnknownConfigKeyIsReportedAtWarnLevelNamingKeyAndFile() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.overwriteConfig(IntegrationWorkspace.defaultConfig + "\nAUDIO_QC_TARGET_LUF=-14\n")
+
+        var loaded: ProjectConfig?
+        let standardError = try captureStandardError {
+            loaded = try loadConfig(from: workspace)
+        }
+
+        XCTAssertEqual(loaded?.audioQCTargetLUFS, -12, "the typo must not change the real key")
+        let lines = standardError.split(whereSeparator: \.isNewline).map(String.init)
+        let warnings = lines.filter { $0.contains("AUDIO_QC_TARGET_LUF") }
+        XCTAssertEqual(warnings.count, 1, "expected one line naming the unknown key, got: \(lines)")
+        XCTAssertTrue(warnings.first?.contains("[WARN]") == true, "unknown key must be a warning: \(warnings)")
+        XCTAssertTrue(warnings.first?.contains(workspace.configFile.path) == true, "must name the file: \(warnings)")
+    }
+
+    // audit #0046: editors that save config.txt with a UTF-8 byte-order mark must not turn the first
+    // line into an unknown "\u{FEFF}KEY". Foundation's UTF-8 decoding drops the mark, so the first key
+    // applies; this pins that so a change of file reader cannot silently lose the first setting.
+    func testConfigFileStartingWithUTF8BOMAppliesItsFirstKey() throws {
+        let workspace = try IntegrationWorkspace()
+        let byteOrderMark = Data([0xEF, 0xBB, 0xBF])
+        try (byteOrderMark + Data("AUDIO_QC_TARGET_LUFS=-14\nMASTERING_TARGET_LUFS=-16\n".utf8))
+            .write(to: workspace.configFile)
+
+        var loaded: ProjectConfig?
+        let standardError = try captureStandardError {
+            loaded = try loadConfig(from: workspace)
+        }
+
+        XCTAssertEqual(loaded?.audioQCTargetLUFS, -14, "the key after the BOM must apply")
+        XCTAssertEqual(loaded?.masteringTargetLUFS, -16)
+        XCTAssertFalse(standardError.contains("[WARN]"), "no line may be reported as unknown: \(standardError)")
     }
 
     func testMatrixInitializationDoesNotRequireProjectOutputDirectory() throws {
