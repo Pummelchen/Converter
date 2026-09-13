@@ -96,3 +96,9 @@ Auto-install is **off by default**; a missing formula produces an error telling 
 - `config.txt` — quality, render, loudness and profile settings ([reference](https://github.com/Pummelchen/Converter/wiki/Configuration))
 - `album.txt` — track order for `-wavtoalbum` / `-mp3toalbum`
 - `converter` — prebuilt Apple Silicon release binary
+
+## Third-party code
+
+`Sources/ThirdParty/libbw64/` vendors [libbw64](https://github.com/ebu/libbw64) 0.10.0 by the EBU,
+licensed under the Apache License 2.0 (see `Sources/ThirdParty/libbw64/LICENSE` and `UPSTREAM.md`).
+It is compiled into the `converter` binary, which therefore carries that notice.

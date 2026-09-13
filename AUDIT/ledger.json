@@ -469,7 +469,7 @@
       "location": "README.md:94; Sources/ThirdParty/libbw64",
       "title": "No third-party attribution/provenance for vendored Apache-2.0 libbw64",
       "category": "deps",
-      "status": "START",
+      "status": "TEST",
       "host": "local",
       "discovered_by": "reviewer B-3",
       "session": "2026-09-13",

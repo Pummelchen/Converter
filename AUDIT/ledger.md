@@ -6,9 +6,9 @@ Session: `2026-09-13` · branch `audit/2026-09-13` · baseline commit `4bb136a`
 
 | status | count |
 |---|---|
-| START | 72 |
+| START | 71 |
 | PROGRESS | 1 |
-| TEST | 2 |
+| TEST | 3 |
 | AUDIT | 0 |
 | DONE | 24 |
 | BLOCKED | 1 |
@@ -25,7 +25,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 | #0020 | S1 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:492-530,487-490 | -bass can clip the 24-bit staging WAV; nothing verifies true peak/clipping before publish | incomplete | TEST | ed9bc61 |
 | #0021 | S1 | converter/VideoPipeline+AudioPipeline | Sources/converter/VideoPipeline.swift:159-171; AudioPipeline.swift:1070-1082 | Encoder ladders fall through on encoder-independent failures (publish, ALAC/duration/loudness verify) and the padded-MP4 ladder reports only the last rung | logic | TEST | 8298dd8 |
 | #0026 | S1 | BW64Bridge | Sources/BW64Bridge/bw64_bridge.cpp:178-197 | Disk-write failures undetectable; bridge self-validates against the ds64 size it wrote | bug | START |  |
-| #0028 | S1 | repo/docs | README.md:94; Sources/ThirdParty/libbw64 | No third-party attribution/provenance for vendored Apache-2.0 libbw64 | deps | START |  |
+| #0028 | S1 | repo/docs | README.md:94; Sources/ThirdParty/libbw64 | No third-party attribution/provenance for vendored Apache-2.0 libbw64 | deps | TEST |  |
 | #0030 | S1 | repo/docs | README.md:25,59; Sources/converter/CLI.swift:461-481,664-665; CONTRIBUTING.md:59; wiki Home/Full-Run-Contract | README, CLI help, CONTRIBUTING and wiki contradict actual behaviour (source rename, audio alteration, portrait input, --keep-full-name, 58 s, auto-install wording) | docs | START |  |
 | #0031 | S1 | converterTests | Sources/Tests/converterTests/IntegrationTestSupport.swift:25,133-143 | Integration workspace inherits OUTPUT_DIR/SRC_DIR/OUT_DIR/CONFIG_FILE/DEBUG from the host shell | test | START |  |
 | #0032 | S1 | converterTests | Sources/converter/PipelineCore.swift:487-505 | publishTemp restore-on-failure branch has no test | test | START |  |
@@ -473,7 +473,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **evidence-after:** grep -c 'Use this section' SECURITY.md = 0 (was 2); no fictitious versions remain. Docs-only change, no test impact.
 - **commit sha:** a4203f8
 
-### #0028 · S1 · START · No third-party attribution/provenance for vendored Apache-2.0 libbw64
+### #0028 · S1 · TEST · No third-party attribution/provenance for vendored Apache-2.0 libbw64
 
 - **project/module:** repo/docs
 - **file:line:** README.md:94; Sources/ThirdParty/libbw64
