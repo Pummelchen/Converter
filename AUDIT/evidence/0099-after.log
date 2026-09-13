@@ -1,0 +1,7 @@
+Test Case '-[converterTests.PipelineIntegrationTests testMasterCommandProducesMasteredOutputsWithinPolicy]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testMasterCommandProducesMasteredOutputsWithinPolicy]' passed (4.724 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testRunHandlesLargeStderrWithoutDeadlock]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testRunHandlesLargeStderrWithoutDeadlock]' passed (0.312 seconds).
+	 Executed 2 tests, with 0 failures (0 unexpected) in 5.036 (5.036) seconds
+	 Executed 2 tests, with 0 failures (0 unexpected) in 5.036 (5.036) seconds
+	 Executed 2 tests, with 0 failures (0 unexpected) in 5.036 (5.043) seconds

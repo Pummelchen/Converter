@@ -6,9 +6,9 @@ Session: `2026-09-13` · branch `audit/2026-09-13` · baseline commit `4bb136a`
 
 | status | count |
 |---|---|
-| START | 90 |
+| START | 89 |
 | PROGRESS | 1 |
-| TEST | 0 |
+| TEST | 1 |
 | AUDIT | 0 |
 | DONE | 8 |
 | BLOCKED | 0 |
@@ -118,7 +118,7 @@ _none_
 | #0096 | S3 | converterTests | Sources/Tests/converterTests/converterTests.swift:108-115 | SchedulerProfile tested via its summary string | test | START |  |
 | #0097 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:1902-1911 | -doctor has only a no-throw happy path | test | START |  |
 | #0098 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:529,534 | Exact ffmpeg bass filter string pinned without a stated reason | test | START |  |
-| #0099 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:34,1967 | Test target compiles with two warnings (bare 'Error' existential, unused 'wav' binding) | style | START |  |
+| #0099 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:34,1967 | Test target compiles with two warnings (bare 'Error' existential, unused 'wav' binding) | style | TEST |  |
 
 ## Done (8)
 
@@ -1075,7 +1075,7 @@ _none_
 - **discovered-by:** reviewer T-29
 - **evidence-before:** AUDIT/findings/L6-tests.md T-29
 
-### #0099 · S3 · START · Test target compiles with two warnings (bare 'Error' existential, unused 'wav' binding)
+### #0099 · S3 · TEST · Test target compiles with two warnings (bare 'Error' existential, unused 'wav' binding)
 
 - **project/module:** converterTests
 - **file:line:** Sources/Tests/converterTests/PipelineIntegrationTests.swift:34,1967
@@ -1083,5 +1083,7 @@ _none_
 - **host-used:** local
 - **discovered-by:** Phase C suite log review (#0008)
 - **evidence-before:** swift test log (AUDIT/evidence/0008-fullsuite log source) shows: PipelineIntegrationTests.swift:34 'use of protocol Error as a type must be written any Error'; :1967 'initialization of immutable value wav was never used'. Present in the baseline test log too (4 matching lines); the §3 baseline only built the product target with -warnings-as-errors.
+- **fix-summary:** PipelineIntegrationTests.swift: ResultBox<Result<ProcessResult, any Error>>; unused `let wav` binding in testMasterCommandProducesMasteredOutputsWithinPolicy replaced by `_ =`.
+- **evidence-after:** swift build --build-tests -Xswiftc -warnings-as-errors: Build complete, 0 diagnostics. Targeted tests pass (AUDIT/evidence/0099-after.log). Full suite: covered by the next suite run.
 - **notes:** Phase E requires zero warnings across all targets.
 

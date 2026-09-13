@@ -1676,13 +1676,13 @@
       "location": "Sources/Tests/converterTests/PipelineIntegrationTests.swift:34,1967",
       "title": "Test target compiles with two warnings (bare 'Error' existential, unused 'wav' binding)",
       "category": "style",
-      "status": "START",
+      "status": "TEST",
       "host": "local",
       "discovered_by": "Phase C suite log review (#0008)",
       "session": "2026-09-13",
       "evidence_before": "swift test log (AUDIT/evidence/0008-fullsuite log source) shows: PipelineIntegrationTests.swift:34 'use of protocol Error as a type must be written any Error'; :1967 'initialization of immutable value wav was never used'. Present in the baseline test log too (4 matching lines); the \u00a73 baseline only built the product target with -warnings-as-errors.",
-      "fix_summary": "",
-      "evidence_after": "",
+      "fix_summary": "PipelineIntegrationTests.swift: ResultBox<Result<ProcessResult, any Error>>; unused `let wav` binding in testMasterCommandProducesMasteredOutputsWithinPolicy replaced by `_ =`.",
+      "evidence_after": "swift build --build-tests -Xswiftc -warnings-as-errors: Build complete, 0 diagnostics. Targeted tests pass (AUDIT/evidence/0099-after.log). Full suite: covered by the next suite run.",
       "commit": "",
       "notes": "Phase E requires zero warnings across all targets."
     }

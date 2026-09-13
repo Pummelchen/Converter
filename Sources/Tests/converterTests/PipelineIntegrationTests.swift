@@ -31,7 +31,7 @@ final class PipelineIntegrationTests: XCTestCase {
         let workspace = try IntegrationWorkspace()
         let runner = workspace.runner()
         let semaphore = DispatchSemaphore(value: 0)
-        let outcome = ResultBox<Result<ProcessResult, Error>>()
+        let outcome = ResultBox<Result<ProcessResult, any Error>>()
 
         DispatchQueue.global(qos: .userInitiated).async {
             let result = Result { () throws -> ProcessResult in
@@ -1989,7 +1989,7 @@ final class PipelineIntegrationTests: XCTestCase {
             IntegrationWorkspace.defaultConfig +
                 "\nMASTERING_TARGET_LUFS=-40\n"
         )
-        let wav = try workspace.createAudio(name: "needs_master", ext: "wav", duration: 4.5)
+        _ = try workspace.createAudio(name: "needs_master", ext: "wav", duration: 4.5)
         let tool = try workspace.makeTool(arguments: ["-master"])
 
         try tool.stepMaster()
