@@ -1184,14 +1184,14 @@
       "location": "Sources/Tests/converterTests/converterTests.swift:737-749",
       "title": "LoudnormArgument clamping untested at the exact bounds",
       "category": "test",
-      "status": "START",
+      "status": "TEST",
       "host": "local",
       "discovered_by": "reviewer T-19",
       "session": "2026-09-13",
       "evidence_before": "AUDIT/findings/L6-tests.md T-19",
-      "fix_summary": "",
-      "evidence_after": "",
-      "commit": "",
+      "fix_summary": "LoudnormArgument clamps tested at the exact bounds (-70, -5, -9, 0, 1, 50), rounding edges, '-0.00', a -120..120 sweep and non-finite inputs.",
+      "evidence_after": "AUDIT/evidence/0070-before.log (bounds moved inward by 0.01: 27 failures), 0070-after.log; swiftlint 531/55. Full suite pending",
+      "commit": "e33815c",
       "notes": ""
     },
     {

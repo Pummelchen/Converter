@@ -6,9 +6,9 @@ Session: `2026-09-13` · branch `audit/2026-09-13` · baseline commit `4bb136a`
 
 | status | count |
 |---|---|
-| START | 56 |
+| START | 55 |
 | PROGRESS | 1 |
-| TEST | 7 |
+| TEST | 8 |
 | AUDIT | 0 |
 | DONE | 35 |
 | BLOCKED | 1 |
@@ -64,7 +64,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 | #0067 | S2 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:473-491 | Fade-out 'does not enforce delivery QC' test never proves the fixture is out of policy | test | START |  |
 | #0068 | S2 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:1933-1948 | Mastering fallback test cannot observe which path ran | test | START |  |
 | #0069 | S2 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:387-392 | Bare XCTAssertThrowsError on garbage MP3 accepts any error | test | START |  |
-| #0070 | S2 | converterTests | Sources/Tests/converterTests/converterTests.swift:737-749 | LoudnormArgument clamping untested at the exact bounds | test | START |  |
+| #0070 | S2 | converterTests | Sources/Tests/converterTests/converterTests.swift:737-749 | LoudnormArgument clamping untested at the exact bounds | test | TEST | e33815c |
 | #0071 | S2 | converter/Config+tests | Sources/converter/Config.swift:319-452 | Config validation gaps (ranges, empty strings, zero byte targets, CRC chunk bound, negative message) and only 3 keys tested | test | TEST | 87c940b |
 | #0072 | S2 | converter/VideoPipeline+tests | Sources/converter/VideoPipeline.swift:284-300,456-458; Actions.swift:875-876 | Short-cap boundary untested and duration thresholds inconsistent between short paths | test | START |  |
 | #0073 | S2 | converter (lint) | AUDIT/baseline/swiftlint-by-rule-4bb136a.txt | swiftlint baseline 533 (56 error-level): fix the actionable rules; structural rules deferred with rationale | style | START |  |
@@ -913,7 +913,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **discovered-by:** reviewer T-17
 - **evidence-before:** AUDIT/findings/L6-tests.md T-17
 
-### #0070 · S2 · START · LoudnormArgument clamping untested at the exact bounds
+### #0070 · S2 · TEST · LoudnormArgument clamping untested at the exact bounds
 
 - **project/module:** converterTests
 - **file:line:** Sources/Tests/converterTests/converterTests.swift:737-749
@@ -921,6 +921,9 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **host-used:** local
 - **discovered-by:** reviewer T-19
 - **evidence-before:** AUDIT/findings/L6-tests.md T-19
+- **fix-summary:** LoudnormArgument clamps tested at the exact bounds (-70, -5, -9, 0, 1, 50), rounding edges, '-0.00', a -120..120 sweep and non-finite inputs.
+- **evidence-after:** AUDIT/evidence/0070-before.log (bounds moved inward by 0.01: 27 failures), 0070-after.log; swiftlint 531/55. Full suite pending
+- **commit sha:** e33815c
 
 ### #0071 · S2 · TEST · Config validation gaps (ranges, empty strings, zero byte targets, CRC chunk bound, negative message) and only 3 keys tested
 
