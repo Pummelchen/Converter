@@ -374,7 +374,7 @@
       "evidence_before": "AUDIT/findings/L2-video-image-actions-cli.md X-3; L6-tests.md T-23",
       "fix_summary": "Whole family renamed (siblings and _RF64/_BW64 companions) with existence check and rollback; rerun resolves 1_source.<ext>. Preflight-order sub-point split out as #0100.",
       "evidence_after": "AUDIT/evidence/0022-before.log (rerun: found 2: 1_source.flac, song.wav); 0022-after.log: 7 tests pass; swiftlint 535/56. Full suite: next batch run.",
-      "commit": "",
+      "commit": "7a3f7b7",
       "notes": "Rename whole family after preflight; error instead of silent fallback."
     },
     {
