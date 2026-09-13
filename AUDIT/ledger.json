@@ -1065,14 +1065,14 @@
       "location": "Sources/Tests/converterTests/converterTests.swift:128-140; Config.swift:400; VideoPipeline.swift:269",
       "title": "SHORT_MP4_CLIP_SECONDS validated with Double() but consumed via parseFlexibleTimecode; test sets a value validate() rejects",
       "category": "test",
-      "status": "START",
+      "status": "TEST",
       "host": "local",
       "discovered_by": "reviewer T-11, V-12",
       "session": "2026-09-13",
       "evidence_before": "AUDIT/findings/L6-tests.md T-11; L2-validation-config.md V-12",
-      "fix_summary": "",
-      "evidence_after": "",
-      "commit": "",
+      "fix_summary": "validate() parses SHORT_MP4_CLIP_SECONDS with parseFlexibleTimecode (the consumer), so '58', '0:58', '1:30' are accepted consistently and 0 / malformed / 1e300 are rejected naming the key; the short-duration test loads '0:30' through ProjectConfig.load.",
+      "evidence_after": "AUDIT/evidence/0063-before.log, 0063-after.log; swiftlint 533/56. Full suite pending",
+      "commit": "17816b6",
       "notes": ""
     },
     {

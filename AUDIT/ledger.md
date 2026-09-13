@@ -6,9 +6,9 @@ Session: `2026-09-13` · branch `audit/2026-09-13` · baseline commit `4bb136a`
 
 | status | count |
 |---|---|
-| START | 58 |
+| START | 57 |
 | PROGRESS | 1 |
-| TEST | 5 |
+| TEST | 6 |
 | AUDIT | 0 |
 | DONE | 35 |
 | BLOCKED | 1 |
@@ -57,7 +57,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 | #0060 | S2 | repo | album.txt; Sources/converter/AudioPipeline.swift:2063 | Personal track list committed as the production album.txt | placeholder | START |  |
 | #0061 | S2 | BW64Bridge | Sources/BW64Bridge/bw64_bridge.cpp:125-141,161 | Bridge does not bound channels; libbw64 uint16 blockAlignment wraps to heap overflow (unreachable via config today) | unsafe | START |  |
 | #0062 | S2 | BW64Bridge/Package | Sources/Package.swift:35-37; ThirdParty/libbw64/bw64/reader.hpp:220,225,227 | Strict C++ flags (-Wall -Wextra -Werror) fail on three benign sign-compare warnings in vendored libbw64 | deps | START |  |
-| #0063 | S2 | converterTests+Config | Sources/Tests/converterTests/converterTests.swift:128-140; Config.swift:400; VideoPipeline.swift:269 | SHORT_MP4_CLIP_SECONDS validated with Double() but consumed via parseFlexibleTimecode; test sets a value validate() rejects | test | START |  |
+| #0063 | S2 | converterTests+Config | Sources/Tests/converterTests/converterTests.swift:128-140; Config.swift:400; VideoPipeline.swift:269 | SHORT_MP4_CLIP_SECONDS validated with Double() but consumed via parseFlexibleTimecode; test sets a value validate() rejects | test | TEST | 17816b6 |
 | #0064 | S2 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:1860-1900 | Scheduler-limit test can pass vacuously | test | START |  |
 | #0065 | S2 | converterTests | Sources/Tests/converterTests/converterTests.swift:1473-1550 | AsyncSemaphore tests rely on sleeps for ordering and hang instead of failing on a leaked permit | test | START |  |
 | #0066 | S2 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:1627-1637,1738-1748 | Full-pipeline tests require hevc_videotoolbox; fail on hosts without HW HEVC | test | START |  |
@@ -847,7 +847,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **evidence-before:** AUDIT/baseline.md build table; AUDIT/findings/L0-L3-bridge-repo.md B-9
 - **notes:** Decision: document a minimal vendored patch (explicit casts + tellg<0 check) in PATCHES.md, or compile vendored headers as system headers; keep -Werror on first-party C++.
 
-### #0063 · S2 · START · SHORT_MP4_CLIP_SECONDS validated with Double() but consumed via parseFlexibleTimecode; test sets a value validate() rejects
+### #0063 · S2 · TEST · SHORT_MP4_CLIP_SECONDS validated with Double() but consumed via parseFlexibleTimecode; test sets a value validate() rejects
 
 - **project/module:** converterTests+Config
 - **file:line:** Sources/Tests/converterTests/converterTests.swift:128-140; Config.swift:400; VideoPipeline.swift:269
@@ -855,6 +855,9 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **host-used:** local
 - **discovered-by:** reviewer T-11, V-12
 - **evidence-before:** AUDIT/findings/L6-tests.md T-11; L2-validation-config.md V-12
+- **fix-summary:** validate() parses SHORT_MP4_CLIP_SECONDS with parseFlexibleTimecode (the consumer), so '58', '0:58', '1:30' are accepted consistently and 0 / malformed / 1e300 are rejected naming the key; the short-duration test loads '0:30' through ProjectConfig.load.
+- **evidence-after:** AUDIT/evidence/0063-before.log, 0063-after.log; swiftlint 533/56. Full suite pending
+- **commit sha:** 17816b6
 
 ### #0064 · S2 · START · Scheduler-limit test can pass vacuously
 
