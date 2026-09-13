@@ -776,14 +776,14 @@
       "location": "Sources/converter/Config.swift:159-161",
       "title": "Unknown config keys dropped at debug level only; BOM not stripped",
       "category": "incomplete",
-      "status": "START",
+      "status": "TEST",
       "host": "local",
       "discovered_by": "reviewer V-7; tests T-20",
       "session": "2026-09-13",
       "evidence_before": "AUDIT/findings/L2-validation-config.md V-7",
-      "fix_summary": "",
-      "evidence_after": "",
-      "commit": "",
+      "fix_summary": "Unknown config.txt keys are logged at WARN naming key and file (kept as skip, per the wiki contract); a UTF-8 BOM is already stripped by Foundation's String(contentsOf:) \u2014 pinned by test, no production strip needed.",
+      "evidence_after": "AUDIT/evidence/0046-before.log (no WARN line before), 0046-after.log (7 config tests pass); swiftlint 533/56. Full suite pending",
+      "commit": "7455803",
       "notes": ""
     },
     {
