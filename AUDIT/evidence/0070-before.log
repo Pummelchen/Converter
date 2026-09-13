@@ -1,0 +1,62 @@
+Building for debugging...
+[0/6] Write sources
+[2/6] Write swift-version--58304C5D6DBC2206.txt
+[4/8] Compiling converter Support.swift
+[5/8] Emitting module converter
+[5/10] Write Objects.LinkFileList
+[6/10] Linking converter
+[7/10] Applying converter
+[9/12] Compiling converterTests converterTests.swift
+[10/12] Emitting module converterTests
+[10/12] Write Objects.LinkFileList
+[11/12] Linking converterPackageTests
+Build complete! (3.01s)
+Test Suite 'Selected tests' started at 2026-09-13 23:22:51.815.
+Test Suite 'converterPackageTests.xctest' started at 2026-09-13 23:22:51.815.
+Test Suite 'converterTests' started at 2026-09-13 23:22:51.815.
+Test Case '-[converterTests.converterTests testLoudnormArgumentClampsAreInclusiveAtTheExactBounds]' started.
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:898: error: -[converterTests.converterTests testLoudnormArgumentClampsAreInclusiveAtTheExactBounds] : XCTAssertEqual failed: ("-69.99") is not equal to ("-70.00")
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:899: error: -[converterTests.converterTests testLoudnormArgumentClampsAreInclusiveAtTheExactBounds] : XCTAssertEqual failed: ("-5.01") is not equal to ("-5.00")
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:900: error: -[converterTests.converterTests testLoudnormArgumentClampsAreInclusiveAtTheExactBounds] : XCTAssertEqual failed: ("-8.99") is not equal to ("-9.00")
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:901: error: -[converterTests.converterTests testLoudnormArgumentClampsAreInclusiveAtTheExactBounds] : XCTAssertEqual failed: ("-0.01") is not equal to ("0.00")
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:902: error: -[converterTests.converterTests testLoudnormArgumentClampsAreInclusiveAtTheExactBounds] : XCTAssertEqual failed: ("1.01") is not equal to ("1.00")
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:903: error: -[converterTests.converterTests testLoudnormArgumentClampsAreInclusiveAtTheExactBounds] : XCTAssertEqual failed: ("49.99") is not equal to ("50.00")
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:905: error: -[converterTests.converterTests testLoudnormArgumentClampsAreInclusiveAtTheExactBounds] : XCTAssertEqual failed: ("-69.99") is not equal to ("-70.00")
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:907: error: -[converterTests.converterTests testLoudnormArgumentClampsAreInclusiveAtTheExactBounds] : XCTAssertEqual failed: ("-5.01") is not equal to ("-5.00")
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:909: error: -[converterTests.converterTests testLoudnormArgumentClampsAreInclusiveAtTheExactBounds] : XCTAssertEqual failed: ("-8.99") is not equal to ("-9.00")
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:911: error: -[converterTests.converterTests testLoudnormArgumentClampsAreInclusiveAtTheExactBounds] : XCTAssertEqual failed: ("-0.01") is not equal to ("0.00")
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:913: error: -[converterTests.converterTests testLoudnormArgumentClampsAreInclusiveAtTheExactBounds] : XCTAssertEqual failed: ("1.01") is not equal to ("1.00")
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:915: error: -[converterTests.converterTests testLoudnormArgumentClampsAreInclusiveAtTheExactBounds] : XCTAssertEqual failed: ("49.99") is not equal to ("50.00")
+Test Case '-[converterTests.converterTests testLoudnormArgumentClampsAreInclusiveAtTheExactBounds]' failed (0.066 seconds).
+Test Case '-[converterTests.converterTests testLoudnormArgumentRoundingNeverLeavesTheAcceptedRange]' started.
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:925: error: -[converterTests.converterTests testLoudnormArgumentRoundingNeverLeavesTheAcceptedRange] : XCTAssertEqual failed: ("-69.99") is not equal to ("-70.00")
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:926: error: -[converterTests.converterTests testLoudnormArgumentRoundingNeverLeavesTheAcceptedRange] : XCTAssertEqual failed: ("-5.01") is not equal to ("-5.00")
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:929: error: -[converterTests.converterTests testLoudnormArgumentRoundingNeverLeavesTheAcceptedRange] : XCTAssertEqual failed: ("-8.99") is not equal to ("-9.00")
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:931: error: -[converterTests.converterTests testLoudnormArgumentRoundingNeverLeavesTheAcceptedRange] : XCTAssertEqual failed: ("-0.01") is not equal to ("-0.00")
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:932: error: -[converterTests.converterTests testLoudnormArgumentRoundingNeverLeavesTheAcceptedRange] : XCTAssertEqual failed: ("Optional(-0.01)") is not equal to ("Optional(0.0)")
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:933: error: -[converterTests.converterTests testLoudnormArgumentRoundingNeverLeavesTheAcceptedRange] : XCTAssertEqual failed: ("1.01") is not equal to ("1.00")
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:934: error: -[converterTests.converterTests testLoudnormArgumentRoundingNeverLeavesTheAcceptedRange] : XCTAssertEqual failed: ("49.99") is not equal to ("50.00")
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:947: error: -[converterTests.converterTests testLoudnormArgumentRoundingNeverLeavesTheAcceptedRange] : XCTAssertEqual failed: ("-69.99") is not equal to ("-70.00")
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:948: error: -[converterTests.converterTests testLoudnormArgumentRoundingNeverLeavesTheAcceptedRange] : XCTAssertEqual failed: ("-0.01") is not equal to ("0.00")
+Test Case '-[converterTests.converterTests testLoudnormArgumentRoundingNeverLeavesTheAcceptedRange]' failed (0.319 seconds).
+Test Case '-[converterTests.converterTests testLoudnormArgumentsStayInsideFFmpegsAcceptedRanges]' started.
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:879: error: -[converterTests.converterTests testLoudnormArgumentsStayInsideFFmpegsAcceptedRanges] : XCTAssertEqual failed: ("-0.01") is not equal to ("0.00")
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:881: error: -[converterTests.converterTests testLoudnormArgumentsStayInsideFFmpegsAcceptedRanges] : XCTAssertEqual failed: ("-8.99") is not equal to ("-9.00")
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:883: error: -[converterTests.converterTests testLoudnormArgumentsStayInsideFFmpegsAcceptedRanges] : XCTAssertEqual failed: ("-5.01") is not equal to ("-5.00")
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:885: error: -[converterTests.converterTests testLoudnormArgumentsStayInsideFFmpegsAcceptedRanges] : XCTAssertEqual failed: ("-69.99") is not equal to ("-70.00")
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:887: error: -[converterTests.converterTests testLoudnormArgumentsStayInsideFFmpegsAcceptedRanges] : XCTAssertEqual failed: ("1.01") is not equal to ("1.00")
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:889: error: -[converterTests.converterTests testLoudnormArgumentsStayInsideFFmpegsAcceptedRanges] : XCTAssertEqual failed: ("49.99") is not equal to ("50.00")
+Test Case '-[converterTests.converterTests testLoudnormArgumentsStayInsideFFmpegsAcceptedRanges]' failed (0.001 seconds).
+Test Suite 'converterTests' failed at 2026-09-13 23:22:52.202.
+	 Executed 3 tests, with 27 failures (0 unexpected) in 0.386 (0.386) seconds
+Test Suite 'converterPackageTests.xctest' failed at 2026-09-13 23:22:52.202.
+	 Executed 3 tests, with 27 failures (0 unexpected) in 0.386 (0.386) seconds
+Test Suite 'Selected tests' failed at 2026-09-13 23:22:52.202.
+	 Executed 3 tests, with 27 failures (0 unexpected) in 0.386 (0.387) seconds
+◇ Test run started.
+↳ Testing Library Version: 1902
+↳ Target Platform: arm64e-apple-macos14.0
+✔ Test run with 0 tests in 0 suites passed after 0.001 seconds.
+
+# audit #0070 note: test-only task. For this run every LoudnormArgument clamp bound in Support.swift was moved inward by
+# one hundredth (I -69.99..-5.01, TP -8.99..-0.01, LRA 1.01..49.99) to show the new exact-bound tests fail; then restored.

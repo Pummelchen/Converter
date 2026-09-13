@@ -889,6 +889,65 @@ final class converterTests: XCTestCase {
         XCTAssertEqual(LoudnormArgument.loudnessRange(80), "50.00")
     }
 
+    // audit #0070: the clamps were only tested well past their bounds. ffmpeg's loudnorm accepts
+    // I -70..-5, TP -9..0 and LRA 1..50 inclusive, so the exact bound must pass through unchanged and a
+    // value one hundredth outside must land on the bound, while one hundredth inside stays put. A bound
+    // that drifted inward or an exclusive comparison would otherwise surface much later as loudnorm's
+    // unrelated-looking "Result too large" failure.
+    func testLoudnormArgumentClampsAreInclusiveAtTheExactBounds() throws {
+        XCTAssertEqual(LoudnormArgument.integrated(-70), "-70.00")
+        XCTAssertEqual(LoudnormArgument.integrated(-5), "-5.00")
+        XCTAssertEqual(LoudnormArgument.truePeak(-9), "-9.00")
+        XCTAssertEqual(LoudnormArgument.truePeak(0), "0.00")
+        XCTAssertEqual(LoudnormArgument.loudnessRange(1), "1.00")
+        XCTAssertEqual(LoudnormArgument.loudnessRange(50), "50.00")
+
+        XCTAssertEqual(LoudnormArgument.integrated(-70.01), "-70.00")
+        XCTAssertEqual(LoudnormArgument.integrated(-69.99), "-69.99")
+        XCTAssertEqual(LoudnormArgument.integrated(-4.99), "-5.00")
+        XCTAssertEqual(LoudnormArgument.integrated(-5.01), "-5.01")
+        XCTAssertEqual(LoudnormArgument.truePeak(-9.01), "-9.00")
+        XCTAssertEqual(LoudnormArgument.truePeak(-8.99), "-8.99")
+        XCTAssertEqual(LoudnormArgument.truePeak(0.01), "0.00")
+        XCTAssertEqual(LoudnormArgument.truePeak(-0.01), "-0.01")
+        XCTAssertEqual(LoudnormArgument.loudnessRange(0.99), "1.00")
+        XCTAssertEqual(LoudnormArgument.loudnessRange(1.01), "1.01")
+        XCTAssertEqual(LoudnormArgument.loudnessRange(50.01), "50.00")
+        XCTAssertEqual(LoudnormArgument.loudnessRange(49.99), "49.99")
+    }
+
+    // audit #0070: the "%.2f" formatting rounds at the third decimal. A value just inside a bound may
+    // round onto the bound (still accepted) but must never round past it, half-way cases must round
+    // the way ffmpeg's own parser will read them back, and a tiny negative true peak may print as
+    // "-0.00" only because ffmpeg reads that as 0. Every formatted value must parse back inside the
+    // accepted range, whatever the input.
+    func testLoudnormArgumentRoundingNeverLeavesTheAcceptedRange() throws {
+        XCTAssertEqual(LoudnormArgument.integrated(-69.996), "-70.00")
+        XCTAssertEqual(LoudnormArgument.integrated(-5.004), "-5.00")
+        XCTAssertEqual(LoudnormArgument.integrated(-12.344), "-12.34")
+        XCTAssertEqual(LoudnormArgument.integrated(-12.346), "-12.35")
+        XCTAssertEqual(LoudnormArgument.truePeak(-8.996), "-9.00")
+        XCTAssertEqual(LoudnormArgument.truePeak(-0.996), "-1.00")
+        XCTAssertEqual(LoudnormArgument.truePeak(-0.004), "-0.00")
+        XCTAssertEqual(Double(LoudnormArgument.truePeak(-0.004)), 0)
+        XCTAssertEqual(LoudnormArgument.loudnessRange(1.004), "1.00")
+        XCTAssertEqual(LoudnormArgument.loudnessRange(49.996), "50.00")
+
+        // Inputs sweep from far below to far above every bound in a step that is not a multiple of
+        // 0.01, so both clamping and rounding are exercised at arbitrary third-decimal positions.
+        for value in stride(from: -120.0, through: 120.0, by: 0.037) {
+            let integrated = try XCTUnwrap(Double(LoudnormArgument.integrated(value)))
+            XCTAssertTrue((-70 ... -5).contains(integrated), "I=\(integrated) for \(value)")
+            let truePeak = try XCTUnwrap(Double(LoudnormArgument.truePeak(value)))
+            XCTAssertTrue((-9 ... 0).contains(truePeak), "TP=\(truePeak) for \(value)")
+            let loudnessRange = try XCTUnwrap(Double(LoudnormArgument.loudnessRange(value)))
+            XCTAssertTrue((1 ... 50).contains(loudnessRange), "LRA=\(loudnessRange) for \(value)")
+        }
+        // Non-finite policy values must still produce an argument inside the range.
+        XCTAssertEqual(LoudnormArgument.integrated(-.infinity), "-70.00")
+        XCTAssertEqual(LoudnormArgument.truePeak(.infinity), "0.00")
+    }
+
     // Black-and-white artwork comes back out of the PNG coder as a grayscale frame, so a
     // deliverable rendered from a bilevel master identified as "gray" where the pipeline had
     // asked for sRGB and the run aborted on correct output. A genuinely foreign space still
