@@ -79,4 +79,8 @@ Full table: `AUDIT/baseline/coverage-local-4bb136a.txt`.
 
 ## Sanitizer runs (test suite under `swift test --sanitize=…`, separate scratch paths)
 
-Filled in by the sanitizer ledger entry once the three runs complete; see `AUDIT/ledger.md`.
+| Sanitizer | Tree | Result | Sanitizer reports |
+|---|---|---|---|
+| AddressSanitizer (+LeakSanitizer) | `4bb136a` | 159 executed, 0 failures, 770.0 s | **0** (`AUDIT/baseline/sanitizer-address-4bb136a.txt`) |
+| UndefinedBehaviorSanitizer | `4bb136a` | 159 executed, 0 failures, 704.3 s | **0** (`AUDIT/baseline/sanitizer-undefined-4bb136a.txt`) |
+| ThreadSanitizer | working tree after #0007 (first attempt on `4bb136a` was killed at 13:31 by a pkill aimed at another suite) | 162 executed, 0 failures, 768.9 s | **0** (`AUDIT/baseline/sanitizer-thread-post-0007.txt`) |

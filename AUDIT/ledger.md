@@ -2,27 +2,25 @@
 
 Session: `2026-09-13` · branch `audit/2026-09-13` · baseline commit `4bb136a`
 
-**known-total:98 done:3 open:95 blocked:0 new-this-session:98**
+**known-total:98 done:6 open:92 blocked:0 new-this-session:98**
 
 | status | count |
 |---|---|
-| START | 93 |
-| PROGRESS | 2 |
+| START | 91 |
+| PROGRESS | 1 |
 | TEST | 0 |
 | AUDIT | 0 |
-| DONE | 3 |
+| DONE | 6 |
 | BLOCKED | 0 |
 
 Status gates: START (reproduced/proven + expected behaviour written) → PROGRESS (diff) → TEST (failing-before/passing-after test pasted, full suite green, no new warnings) → AUDIT (cold re-read, all scanners re-run, no baseline regression, no new placeholder) → DONE (committed atomically). BLOCKED needs reason + what was tried + ≥2 options for a human.
 
-## Open S0 / S1 (35)
+## Open S0 / S1 (32)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
 | #0006 | S0 | repo | node1 (fresh clone) | Phase E: independent verification from a fresh clone on node1 | test | START |  |
-| #0007 | S0 | converter/Actions | Sources/converter/Actions.swift:563-569 | -full with an MP3 source overwrites the user's source file with its own transcode | bug | START |  |
 | #0008 | S0 | converter/VideoPipeline | Sources/converter/VideoPipeline.swift:314; Sources/converter/AudioPipeline.swift:1986 | -album --output-file publishes the main MP4 over the album WAV | bug | START |  |
-| #0004 | S1 | converter/BW64Bridge | Sources/ | Phase A: sanitizer baseline — test suite under ASan, UBSan, TSan | test | PROGRESS |  |
 | #0005 | S1 | repo | wiki | Create and maintain the wiki audit tracker page mirroring the ledger (§9) | docs | PROGRESS |  |
 | #0009 | S1 | converter/ProcessRunner | Sources/converter/ProcessRunner.swift:139-152; DependencyBootstrap.swift:145-153 | Process timeout sends SIGTERM only; a child ignoring it (or a grandchild holding the pipe) hangs the run forever | bug | START |  |
 | #0010 | S1 | converter/Support | Sources/converter/Support.swift:218,295; CLI.swift:325-329 | Int(Double) traps on large-but-finite user durations (-silence 1e300 etc.) | bug | START |  |
@@ -38,7 +36,6 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 | #0020 | S1 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:492-530,487-490 | -bass can clip the 24-bit staging WAV; nothing verifies true peak/clipping before publish | incomplete | START |  |
 | #0021 | S1 | converter/VideoPipeline+AudioPipeline | Sources/converter/VideoPipeline.swift:159-171; AudioPipeline.swift:1070-1082 | Encoder ladders fall through on encoder-independent failures (publish, ALAC/duration/loudness verify) and the padded-MP4 ladder reports only the last rung | logic | START |  |
 | #0022 | S1 | converter/Actions | Sources/converter/Actions.swift:209-218 | normalizedFullRunSource renames only the winning family member and orphans siblings/companions, breaking reruns; silent fallback when 1.<ext> exists | logic | START |  |
-| #0023 | S1 | converter/Actions | Sources/converter/Actions.swift:576-600 | Non-standard WAV source is rewritten in place; no bit-exact original survives | unsafe | START |  |
 | #0024 | S1 | converter/Actions | Sources/converter/Actions.swift:717-723,677-686,709 | -aipix/-run_pix/-pngtojpg re-ingest portrait stills and overwrite them with landscape renders | bug | START |  |
 | #0025 | S1 | converter/CLI | Sources/converter/CLI.swift:271-279 | Unknown --options and stray positionals are silently accepted | bug | START |  |
 | #0026 | S1 | BW64Bridge | Sources/BW64Bridge/bw64_bridge.cpp:178-197 | Disk-write failures undetectable; bridge self-validates against the ds64 size it wrote | bug | START |  |
@@ -124,10 +121,13 @@ _none_
 | #0097 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:1902-1911 | -doctor has only a no-throw happy path | test | START |  |
 | #0098 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:529,534 | Exact ffmpeg bass filter string pinned without a stated reason | test | START |  |
 
-## Done (3)
+## Done (6)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
+| #0007 | S0 | converter/Actions | Sources/converter/Actions.swift:563-569 | -full with an MP3 source overwrites the user's source file with its own transcode | bug | DONE | ce3addc |
+| #0004 | S1 | converter/BW64Bridge | Sources/ | Phase A: sanitizer baseline — test suite under ASan, UBSan, TSan | test | DONE | ce3addc |
+| #0023 | S1 | converter/Actions | Sources/converter/Actions.swift:576-600 | Non-standard WAV source is rewritten in place; no bit-exact original survives | unsafe | DONE | ce3addc |
 | #0001 | S2 | repo/AUDIT | AUDIT/inventory.md | Phase A: scope inventory, dependency graph, trust boundaries, blast radius | docs | DONE | 5fa6546 |
 | #0002 | S2 | repo/AUDIT | AUDIT/environment.md | Phase A: environment record and audit tooling install (§1/§1b) | docs | DONE | 5fa6546 |
 | #0003 | S2 | repo/AUDIT | AUDIT/baseline.md | Phase A: baseline metrics at 4bb136a (§3) | docs | DONE | 2184906 |
@@ -171,7 +171,7 @@ _none_
 - **evidence-after:** AUDIT/baseline.md + AUDIT/baseline/*.txt committed.
 - **commit sha:** 2184906
 
-### #0004 · S1 · PROGRESS · Phase A: sanitizer baseline — test suite under ASan, UBSan, TSan
+### #0004 · S1 · DONE · Phase A: sanitizer baseline — test suite under ASan, UBSan, TSan
 
 - **project/module:** converter/BW64Bridge
 - **file:line:** Sources/
@@ -180,6 +180,8 @@ _none_
 - **discovered-by:** §1 brief
 - **evidence-before:** No sanitizer run had ever been recorded for this repository.
 - **fix-summary:** Running swift test --sanitize=address\|undefined\|thread in separate --scratch-path dirs; results to be recorded in AUDIT/baseline.md.
+- **evidence-after:** ASan 159/159 0 reports (770 s); UBSan 159/159 0 reports (704 s); TSan 162/162 0 reports (769 s, tree after #0007 because the baseline-tree run was interrupted). Recorded in AUDIT/baseline.md.
+- **commit sha:** ce3addc
 - **notes:** Runs sequentially; each is a full build + ~9 min suite.
 
 ### #0005 · S1 · PROGRESS · Create and maintain the wiki audit tracker page mirroring the ledger (§9)
@@ -203,15 +205,18 @@ _none_
 - **evidence-before:** Not yet run. Gate for merging the audit branch to main via PR.
 - **notes:** Clean build (0 warnings, strict flags), full suite, coverage, all scanners, zero placeholders, ledger has no non-BLOCKED open task, wiki synced. Clone under ~/audit/Converter on node1, removed afterwards.
 
-### #0007 · S0 · START · -full with an MP3 source overwrites the user's source file with its own transcode
+### #0007 · S0 · DONE · -full with an MP3 source overwrites the user's source file with its own transcode
 
 - **project/module:** converter/Actions
 - **file:line:** Sources/converter/Actions.swift:563-569
 - **category:** bug
 - **host-used:** local
 - **discovered-by:** reviewer L2 video/image/actions/CLI (X-1)
-- **evidence-before:** AUDIT/findings/L2-video-image-actions-cli.md X-1: ensureStandardMP3Output throws for 44.1 kHz; fallback convertAudioToMP3(wav) targets outDir/1.mp3 == renamed source; publishTemp replaces it and drops the backup.
-- **notes:** Design: no publish path may target its own source; standard MP3 deliverable gets a distinct name. Related #0019, #0023.
+- **evidence-before:** AUDIT/findings/L2-video-image-actions-cli.md X-1: ensureStandardMP3Output throws for 44.1 kHz; fallback convertAudioToMP3(wav) targets outDir/1.mp3 == renamed source; publishTemp replaces it and drops the backup. \| Failing-before run (AUDIT/evidence/0007-before.log): testAudioConversionRefusesToWriteOverItsSource fails on preflight instead of the guard; testFullRunNeverOverwritesItsMP3Source / ...WAVSource fail: 1_source.* does not exist, source bytes were replaced.
+- **fix-summary:** Full run renames its single source to 1_source.<ext> (never 1.<ext>) and writes every deliverable under the release stem `1`; convertAudioToWAV/M4A/MP3 take an explicit outputStem and refuse (requireDistinctOutput) to publish onto their own source; fullAudioPreparation(sourceAudio:releaseStem:) never modifies the source: a non-standard WAV is converted to a distinct 1.wav (the original stays), an MP3 source is copied byte-for-byte when already standard (fullRunMP3Deliverable) or encoded from the derived WAV otherwise; family grouping strips the _source marker and ranks the preserved original first so reruns resolve the same origin; a rename onto an existing 1_source.<ext> is refused with an actionable error instead of silently falling back. ensureStandardMP3Output and normalizeWAVInPlace are no longer used by the full run.
+- **evidence-after:** AUDIT/evidence/0007-after.log (12 targeted tests pass) + AUDIT/evidence/0007-fullsuite.txt: full suite 162 executed, 0 failures, 0 compiler warnings; release build -warnings-as-errors clean; swiftlint 533/56 (== baseline); semgrep 0; TSan 0 reports on this tree.
+- **commit sha:** ce3addc
+- **notes:** Design: no publish path may target its own source; standard MP3 deliverable gets a distinct name. Related #0019, #0023. Shared root cause and one fix commit with #0023. Rejected alternative: keep 1.<ext> and only special-case the MP3 collision — leaves a standard-MP3 source ranked below its own 1.wav on rerun, so a later reuse-check failure could still overwrite it.
 
 ### #0008 · S0 · START · -album --output-file publishes the main MP4 over the album WAV
 
@@ -361,15 +366,18 @@ _none_
 - **evidence-before:** AUDIT/findings/L2-video-image-actions-cli.md X-3; L6-tests.md T-23
 - **notes:** Rename whole family after preflight; error instead of silent fallback.
 
-### #0023 · S1 · START · Non-standard WAV source is rewritten in place; no bit-exact original survives
+### #0023 · S1 · DONE · Non-standard WAV source is rewritten in place; no bit-exact original survives
 
 - **project/module:** converter/Actions
 - **file:line:** Sources/converter/Actions.swift:576-600
 - **category:** unsafe
 - **host-used:** local
 - **discovered-by:** reviewer X-4
-- **evidence-before:** AUDIT/findings/L2-video-image-actions-cli.md X-4
-- **notes:** Never modify the source. Coordinate with #0007 (same principle).
+- **evidence-before:** AUDIT/findings/L2-video-image-actions-cli.md X-4 \| Failing-before run (AUDIT/evidence/0007-before.log): testAudioConversionRefusesToWriteOverItsSource fails on preflight instead of the guard; testFullRunNeverOverwritesItsMP3Source / ...WAVSource fail: 1_source.* does not exist, source bytes were replaced.
+- **fix-summary:** Full run renames its single source to 1_source.<ext> (never 1.<ext>) and writes every deliverable under the release stem `1`; convertAudioToWAV/M4A/MP3 take an explicit outputStem and refuse (requireDistinctOutput) to publish onto their own source; fullAudioPreparation(sourceAudio:releaseStem:) never modifies the source: a non-standard WAV is converted to a distinct 1.wav (the original stays), an MP3 source is copied byte-for-byte when already standard (fullRunMP3Deliverable) or encoded from the derived WAV otherwise; family grouping strips the _source marker and ranks the preserved original first so reruns resolve the same origin; a rename onto an existing 1_source.<ext> is refused with an actionable error instead of silently falling back. ensureStandardMP3Output and normalizeWAVInPlace are no longer used by the full run.
+- **evidence-after:** AUDIT/evidence/0007-after.log (12 targeted tests pass) + AUDIT/evidence/0007-fullsuite.txt: full suite 162 executed, 0 failures, 0 compiler warnings; release build -warnings-as-errors clean; swiftlint 533/56 (== baseline); semgrep 0; TSan 0 reports on this tree.
+- **commit sha:** ce3addc
+- **notes:** Never modify the source. Coordinate with #0007 (same principle). Shared root cause and one fix commit with #0007. Rejected alternative: keep 1.<ext> and only special-case the MP3 collision — leaves a standard-MP3 source ranked below its own 1.wav on rerun, so a later reuse-check failure could still overwrite it.
 
 ### #0024 · S1 · START · -aipix/-run_pix/-pngtojpg re-ingest portrait stills and overwrite them with landscape renders
 

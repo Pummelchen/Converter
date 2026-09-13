@@ -19,10 +19,34 @@ extension ConverterTool {
         let originStem = String(stem.dropLast(suffix.count))
         guard !originStem.isEmpty else { return false }
         let directory = file.deletingLastPathComponent()
-        return ["flac", "wav", "mp3"].contains { ext in
-            let sibling = directory.appendingPathComponent(originStem).appendingPathExtension(ext)
-            return fileManager.fileExists(atPath: sibling.path)
+        // The companion sits beside its origin: either the source under its release name
+        // (`1_source.flac`) or a same-stem deliverable derived from it (`1.wav`).
+        let originStems = [originStem, originStem + Self.fullRunSourceSuffix]
+        return originStems.contains { candidateStem in
+            ["flac", "wav", "mp3"].contains { ext in
+                let sibling = directory.appendingPathComponent(candidateStem).appendingPathExtension(ext)
+                return fileManager.fileExists(atPath: sibling.path)
+            }
         }
+    }
+
+    // A full run names its release `1`. The single source audio is renamed to `1_source.<ext>`
+    // and every deliverable is written under the `1` stem, so no deliverable can ever share a
+    // path with the source, and a rerun finds its origin without guessing.
+    static let fullRunReleaseName = "1"
+    static let fullRunSourceSuffix = "_source"
+
+    // The release stem a source names: `1_source.flac` -> `1`, `album.wav` -> `album`.
+    func fullRunReleaseStem(for source: URL) -> String {
+        let stem = source.stem
+        if stem.hasSuffix(Self.fullRunSourceSuffix), stem.count > Self.fullRunSourceSuffix.count {
+            return String(stem.dropLast(Self.fullRunSourceSuffix.count))
+        }
+        return stem
+    }
+
+    func isFullRunSourceAudio(_ file: URL) -> Bool {
+        file.stem.hasSuffix(Self.fullRunSourceSuffix) && file.stem.count > Self.fullRunSourceSuffix.count
     }
 
     // When a rerun sees same-stem derived audio files, prefer the highest-quality source family member.
@@ -31,12 +55,15 @@ extension ConverterTool {
             .filter { !isExternalArchivalAudioVariant($0) }
         return rankedFamily(
             candidates,
+            groupKey: { self.fullRunReleaseStem(for: $0) },
             rank: { file in
+                // The preserved original always outranks anything derived from it.
+                let sourceRank = self.isFullRunSourceAudio(file) ? 0 : 10
                 switch file.pathExtension.lowercasedASCII {
-                case "flac": return 0
-                case "wav": return 1
-                case "mp3": return 2
-                default: return 9
+                case "flac": return sourceRank + 0
+                case "wav": return sourceRank + 1
+                case "mp3": return sourceRank + 2
+                default: return sourceRank + 9
                 }
             },
             warnMessage: "Full pipeline found multiple same-stem audio files; auto-selecting "
@@ -199,19 +226,25 @@ extension ConverterTool {
     }
 
     // A full run takes exactly one audio file, and its stem names all 29 deliverables. Whatever
-    // that file arrives as, the release is named `1`, so the run is renamed to `1.<ext>` up front:
-    // an incoming `Mirage_bass_80Hz_4dB_RF64.flac` would otherwise stamp its own archival suffix
-    // onto every output, down to an archival companion called `..._RF64_RF64.flac`.
+    // that file arrives as, the release is named `1`, so the source is renamed to `1_source.<ext>`
+    // up front: an incoming `Mirage_bass_80Hz_4dB_RF64.flac` would otherwise stamp its own
+    // archival suffix onto every output, down to an archival companion called `..._RF64_RF64.flac`.
     //
-    // Renaming rather than just deriving the prefix keeps a rerun stable: the second pass finds
-    // `1.flac` beside its own `1.wav` / `1.mp3` deliverables, collapses that same-stem family to
-    // the FLAC, and skips `1_RF64.flac` as the companion it is.
+    // The `_source` marker keeps the source and the deliverables apart: `1.wav` / `1.mp3` are
+    // always this pipeline's outputs and `1_source.<ext>` is always the untouched original, so
+    // no deliverable can be written over the source and a rerun resolves the same origin.
     private func normalizedFullRunSource(_ source: URL) throws -> URL {
-        guard source.stem != "1" else { return source }
+        let releaseStem = Self.fullRunReleaseName + Self.fullRunSourceSuffix
+        guard source.stem != releaseStem else { return source }
         let renamed = source.deletingLastPathComponent()
-            .appendingPathComponent("1")
+            .appendingPathComponent(releaseStem)
             .appendingPathExtension(source.pathExtension.lowercasedASCII)
-        guard !fileManager.fileExists(atPath: renamed.path) else { return source }
+        guard !fileManager.fileExists(atPath: renamed.path) else {
+            throw AppError(
+                "Full pipeline cannot rename \(source.basename) to \(renamed.basename): that file already exists in "
+                + "'\(source.deletingLastPathComponent().path)'. Clear the previous release before running again."
+            )
+        }
         try fileManager.moveItem(at: source, to: renamed)
         logger.info("Source audio renamed: \(source.basename) -> \(renamed.basename)")
         return renamed
@@ -536,75 +569,55 @@ extension ConverterTool {
         return ImageArtifacts(eightK: sourcePNG, fourK: fourK, threeK: threeK, twoK: twoK, nft8K: nft.nft8K)
     }
 
-    func fullAudioPreparation(sourceAudio: URL) async throws -> AudioArtifacts {
+    // Every deliverable is written under `releaseStem`; the source is only ever read. For the
+    // archival companions the highest-quality reachable source is used: the FLAC or WAV original
+    // itself (bit-exact FLAC), or the internal WAV decoded from an MP3.
+    func fullAudioPreparation(sourceAudio: URL, releaseStem: String) async throws -> AudioArtifacts {
         let ext = sourceAudio.pathExtension.lowercasedASCII
         switch ext {
         case "flac":
             try preflightFLACInput(sourceAudio)
             logger.info("Full step: external RF64/BW64 audio deliverables")
             async let archivalTask: Void = withAudioPermit {
-                try self.generateExternalArchivalVariants(baseName: sourceAudio.stem, highQualitySource: sourceAudio)
+                try self.generateExternalArchivalVariants(baseName: releaseStem, highQualitySource: sourceAudio)
             }
-            let wav = try await withAudioPermit { try self.convertAudioToWAV(sourceAudio) }
+            let wav = try await withAudioPermit { try self.convertAudioToWAV(sourceAudio, outputStem: releaseStem) }
             _ = try await archivalTask
-            async let m4aTask: URL = withAudioPermit { try self.convertAudioToM4A(wav) }
-            async let mp3Task: URL = withAudioPermit { try self.convertAudioToMP3(wav) }
-            let artifacts = AudioArtifacts(source: sourceAudio, wav: wav, m4a: try await m4aTask, mp3: try await mp3Task)
-            return artifacts
+            async let m4aTask: URL = withAudioPermit { try self.convertAudioToM4A(wav, outputStem: releaseStem) }
+            async let mp3Task: URL = withAudioPermit { try self.convertAudioToMP3(wav, outputStem: releaseStem) }
+            return AudioArtifacts(source: sourceAudio, wav: wav, m4a: try await m4aTask, mp3: try await mp3Task)
         case "mp3":
             try preflightMP3Input(sourceAudio)
-            let wav = try await withAudioPermit { try self.convertAudioToWAV(sourceAudio) }
+            let wav = try await withAudioPermit { try self.convertAudioToWAV(sourceAudio, outputStem: releaseStem) }
             logger.info("Full step: external RF64/BW64 audio deliverables")
             async let archivalTask: Void = withAudioPermit {
-                try self.generateExternalArchivalVariants(baseName: sourceAudio.stem, highQualitySource: wav)
+                try self.generateExternalArchivalVariants(baseName: releaseStem, highQualitySource: wav)
             }
             _ = try await archivalTask
-            async let m4aTask: URL = withAudioPermit { try self.convertAudioToM4A(wav) }
-            let mp3: URL
-            do {
-                mp3 = try ensureStandardMP3Output(from: sourceAudio)
-            } catch {
-                self.logger.info("Full step: rebuild MP3 to configured standard")
-                mp3 = try await withAudioPermit { try self.convertAudioToMP3(wav) }
+            async let m4aTask: URL = withAudioPermit { try self.convertAudioToM4A(wav, outputStem: releaseStem) }
+            async let mp3Task: URL = withAudioPermit {
+                try self.fullRunMP3Deliverable(source: sourceAudio, internalWAV: wav, outputStem: releaseStem)
             }
-            let artifacts = AudioArtifacts(source: sourceAudio, wav: wav, m4a: try await m4aTask, mp3: mp3)
-            return artifacts
+            return AudioArtifacts(source: sourceAudio, wav: wav, m4a: try await m4aTask, mp3: try await mp3Task)
         case "wav":
             try preflightWAVInput(sourceAudio)
-            var archivalSource = sourceAudio
-            var needsNormalization = false
-            do {
-                try verifyWAVStandard(sourceAudio, requireAudible: true, qcPolicy: nil)
-            } catch {
-                needsNormalization = true
-                let preservedSource = try makeTemp(in: cli.outDir, stem: "\(sourceAudio.stem).archival-source", ext: ".wav")
-                try copyFileIntoTemp(sourceAudio, temp: preservedSource)
-                archivalSource = preservedSource
-            }
-            defer {
-                if archivalSource != sourceAudio {
-                    do {
-                        try fileManager.removeItem(at: archivalSource)
-                    } catch {
-                        logger.warn("Failed to remove archival temp \(archivalSource.basename): \(error.localizedDescription)")
-                    }
-                    state.unregister(tempFile: archivalSource)
-                }
-            }
-            let archivalSourceURL = archivalSource
             logger.info("Full step: external RF64/BW64 audio deliverables")
             async let archivalTask: Void = withAudioPermit {
-                try self.generateExternalArchivalVariants(baseName: sourceAudio.stem, highQualitySource: archivalSourceURL)
+                try self.generateExternalArchivalVariants(baseName: releaseStem, highQualitySource: sourceAudio)
             }
-            if needsNormalization {
-                try normalizeWAVInPlace(sourceAudio)
+            let wav: URL
+            if sourceAudio.stem == releaseStem {
+                // The source already carries the release name (an album WAV this pipeline built),
+                // so it must be the standard WAV itself; nothing may be written onto it.
+                try preflightWAVStandardInput(sourceAudio)
+                wav = sourceAudio
+            } else {
+                wav = try await withAudioPermit { try self.convertAudioToWAV(sourceAudio, outputStem: releaseStem) }
             }
-            try preflightWAVStandardInput(sourceAudio)
             _ = try await archivalTask
-            async let m4aTask: URL = withAudioPermit { try self.convertAudioToM4A(sourceAudio) }
-            async let mp3Task: URL = withAudioPermit { try self.convertAudioToMP3(sourceAudio) }
-            let artifacts = AudioArtifacts(source: sourceAudio, wav: sourceAudio, m4a: try await m4aTask, mp3: try await mp3Task)
-            return artifacts
+            async let m4aTask: URL = withAudioPermit { try self.convertAudioToM4A(wav, outputStem: releaseStem) }
+            async let mp3Task: URL = withAudioPermit { try self.convertAudioToMP3(wav, outputStem: releaseStem) }
+            return AudioArtifacts(source: sourceAudio, wav: wav, m4a: try await m4aTask, mp3: try await mp3Task)
         default:
             throw AppError("Unsupported audio source kind: \(ext)")
         }
@@ -612,8 +625,9 @@ extension ConverterTool {
 
     func runFullProductionPipeline(sourceAudio audio: URL) async throws {
         // Every generated file — images included — carries the release name.
-        async let imageArtifactsTask = fullRunImageArtifacts(deliveryPrefix: audio.stem)
-        async let audioArtifactsTask = fullAudioPreparation(sourceAudio: audio)
+        let releaseStem = fullRunReleaseStem(for: audio)
+        async let imageArtifactsTask = fullRunImageArtifacts(deliveryPrefix: releaseStem)
+        async let audioArtifactsTask = fullAudioPreparation(sourceAudio: audio, releaseStem: releaseStem)
 
         let imageArtifacts = try await imageArtifactsTask
         let audioArtifacts = try await audioArtifactsTask
@@ -634,7 +648,7 @@ extension ConverterTool {
             // high-quality scaler, instead of separately inside each ffmpeg render — and the
             // still and its video are guaranteed to show the identical frame.
             logger.info("Full step: portrait short stills")
-            let stillPrefix = audio.stem
+            let stillPrefix = releaseStem
             let fittedStills = try await withImagePermit {
                 try self.portraitShortStills(from: shortImage, mode: .fit, prefix: stillPrefix)
             }

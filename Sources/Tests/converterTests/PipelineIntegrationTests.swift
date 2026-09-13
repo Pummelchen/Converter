@@ -1382,17 +1382,20 @@ final class PipelineIntegrationTests: XCTestCase {
         let reference = try workspace.copy(riff, as: "wav_source_reference", ext: "wav")
         let tool = try workspace.makeTool(arguments: ["-full"])
 
-        let artifacts = try await tool.fullAudioPreparation(sourceAudio: riff)
+        // The full run always hands over a release stem distinct from the source's own stem.
+        let artifacts = try await tool.fullAudioPreparation(sourceAudio: riff, releaseStem: "wav_release")
 
         XCTAssertEqual(try tool.audioField(artifacts.wav, "sample_rate"), String(tool.config.wavSampleRate))
+        XCTAssertEqual(artifacts.wav.lastPathComponent, "wav_release.wav")
+        XCTAssertEqual(try tool.crc32(for: riff), try tool.crc32(for: reference), "the source must stay untouched")
 
-        let rf64FLAC = workspace.output.appendingPathComponent("wav_source_RF64.flac")
+        let rf64FLAC = workspace.output.appendingPathComponent("wav_release_RF64.flac")
         XCTAssertEqual(try tool.audioField(rf64FLAC, "sample_rate"), "44100")
         try tool.verifyCanonicalPCMSampleEquivalence(source: reference, output: rf64FLAC, sampleRate: 44_100, channels: 2, label: "External FLAC", format: .s24le)
 
         // BW64 is a WAV-only container, so no FLAC counterpart may be emitted.
         XCTAssertFalse(
-            FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("wav_source_BW64.flac").path),
+            FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("wav_release_BW64.flac").path),
             "BW64 has no FLAC container variant; emitting one would duplicate the RF64 FLAC byte-for-byte."
         )
     }
@@ -1408,8 +1411,9 @@ final class PipelineIntegrationTests: XCTestCase {
         let mp3 = try workspace.createAudio(name: "master_me", ext: "mp3", duration: 4.5)
         let tool = try workspace.makeTool(arguments: ["-full"])
 
-        let artifacts = try await tool.fullAudioPreparation(sourceAudio: mp3)
+        let artifacts = try await tool.fullAudioPreparation(sourceAudio: mp3, releaseStem: "master_release")
         let rebuiltMP3 = try XCTUnwrap(artifacts.mp3)
+        XCTAssertEqual(rebuiltMP3.lastPathComponent, "master_release.mp3")
 
         try tool.verifyMP3Standard(rebuiltMP3, qcPolicy: nil)
         try tool.verifySourceLoudnessPreserved(source: mp3, output: rebuiltMP3)
@@ -1556,8 +1560,10 @@ final class PipelineIntegrationTests: XCTestCase {
         XCTAssertFalse(allOutputs.contains { $0.lastPathComponent.contains(tool.runToken) }, "Run-scoped temp files leaked into Output.")
 
         // Every generated file — images included — carries the release stem. The run renames its
-        // single source audio to `1` first, so that is the stem, not the incoming filename.
-        XCTAssertTrue(FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("1.mp3").path))
+        // single source audio to `1_source` first, so `1` is the stem, not the incoming filename,
+        // and the untouched original sits beside the deliverables.
+        XCTAssertTrue(FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("1_source.mp3").path))
+        XCTAssertEqual(try tool.crc32(for: workspace.output.appendingPathComponent("1_source.mp3")), try tool.crc32(for: sourceMP3Reference))
         XCTAssertFalse(FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("track.mp3").path))
         let prefix = "1"
         let base = "1"
@@ -1679,7 +1685,7 @@ final class PipelineIntegrationTests: XCTestCase {
         XCTAssertGreaterThan(fullSongDuration, shortDuration + 20)
 
         // The run renamed its source, so compare against the file it actually consumed.
-        let renamedSource = workspace.output.appendingPathComponent("1.mp3")
+        let renamedSource = workspace.output.appendingPathComponent("1_source.mp3")
         try tool.verifySourceLoudnessPreserved(source: renamedSource, output: fullSongShortOutput)
         try tool.verifySourceLoudnessPreserved(source: renamedSource, output: shortOutput)
     }
@@ -1699,7 +1705,7 @@ final class PipelineIntegrationTests: XCTestCase {
 
         // The run renames its source audio to `1`, so that names the release here too.
         let base = "1"
-        XCTAssertTrue(FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("1.flac").path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("1_source.flac").path))
         XCTAssertFalse(FileManager.default.fileExists(
             atPath: workspace.output.appendingPathComponent("463406_B_PH.flac").path))
         let mainOutput = workspace.output.appendingPathComponent("\(base)_8K").appendingPathExtension("mp4")
@@ -1757,7 +1763,7 @@ final class PipelineIntegrationTests: XCTestCase {
             colorSpace: tool.config.videoColorSpace,
             colorRange: tool.config.videoColorRange
         )
-        let renamedSource = workspace.output.appendingPathComponent("1.flac")
+        let renamedSource = workspace.output.appendingPathComponent("1_source.flac")
         try tool.verifySourceLoudnessPreserved(source: renamedSource, output: mainOutput)
         try tool.verifySourceLoudnessPreserved(source: renamedSource, output: shortOutput)
         let shortFrame = try workspace.extractFirstVideoFrame(from: shortOutput, name: "full_vertical_short_frame")
@@ -2114,5 +2120,60 @@ final class PipelineIntegrationTests: XCTestCase {
         let track02 = workspace.output.appendingPathComponent("track02.wav")
         let expectedSeconds = (try tool.mediaDuration(track01) ?? 0) + (try tool.mediaDuration(track02) ?? 0) + Double(tool.config.albumSilenceSecs)
         try tool.verifyDuration(album, expectedSeconds: expectedSeconds, label: "album wav", tolerance: 0.5)
+    }
+
+    // audit #0007: a 44.1 kHz MP3 is not a standard deliverable, so the run must build 1.mp3 from
+    // it — without ever writing onto the source. The source is preserved byte-for-byte under the
+    // release's `_source` name.
+    func testFullRunNeverOverwritesItsMP3Source() async throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe", "magick"])
+        _ = try workspace.createImage(name: "art", ext: "png")
+        let sourceMP3 = try workspace.createAudio(name: "track", ext: "mp3", sampleRate: 44_100)
+        let reference = workspace.root.appendingPathComponent("track_reference.mp3")
+        try FileManager.default.copyItem(at: sourceMP3, to: reference)
+
+        let tool = try workspace.makeTool(arguments: ["-full"])
+        defer { tool.cleanupTemps() }
+        try tool.initializeForExecution()
+        try await tool.stepFull()
+
+        let preserved = workspace.output.appendingPathComponent("1_source.mp3")
+        let deliverable = workspace.output.appendingPathComponent("1.mp3")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: preserved.path), "source must survive as 1_source.mp3")
+        XCTAssertEqual(try tool.crc32(for: preserved), try tool.crc32(for: reference), "source bytes must be untouched")
+        try tool.verifyMP3Standard(deliverable, qcPolicy: nil)
+        try tool.verifySourceLoudnessPreserved(source: reference, output: deliverable)
+        XCTAssertFalse(FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("track.mp3").path))
+    }
+
+    // audit #0023: a plain 16-bit/44.1 kHz RIFF WAV used to be normalised in place, destroying the
+    // only original. The original must survive untouched and the archival FLAC must be bit-exact
+    // against it.
+    func testFullRunNeverOverwritesItsWAVSource() async throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe", "magick"])
+        _ = try workspace.createImage(name: "art", ext: "png")
+        let sourceWAV = try workspace.createPlainRIFFWAV(name: "track")
+        let reference = workspace.root.appendingPathComponent("track_reference.wav")
+        try FileManager.default.copyItem(at: sourceWAV, to: reference)
+
+        let tool = try workspace.makeTool(arguments: ["-full"])
+        defer { tool.cleanupTemps() }
+        try tool.initializeForExecution()
+        try await tool.stepFull()
+
+        let preserved = workspace.output.appendingPathComponent("1_source.wav")
+        let deliverable = workspace.output.appendingPathComponent("1.wav")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: preserved.path), "source must survive as 1_source.wav")
+        XCTAssertEqual(try tool.crc32(for: preserved), try tool.crc32(for: reference), "source bytes must be untouched")
+        try tool.verifyWAVStandard(deliverable, qcPolicy: nil)
+        try tool.verifyCanonicalPCMSampleEquivalence(
+            source: preserved,
+            output: workspace.output.appendingPathComponent("1_RF64.flac"),
+            label: "External FLAC",
+            format: .s24le
+        )
+        XCTAssertFalse(FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("track.wav").path))
     }
 }

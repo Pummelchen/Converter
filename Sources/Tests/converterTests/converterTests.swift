@@ -587,7 +587,7 @@ final class converterTests: XCTestCase {
 
         // The family collapses to the FLAC, which the run then renames to the release stem.
         let tool = try makeTool(tempDirectory: tempDirectory)
-        XCTAssertEqual(try tool.resolveFullAudio().lastPathComponent, "1.flac")
+        XCTAssertEqual(try tool.resolveFullAudio().lastPathComponent, "1_source.flac")
         XCTAssertFalse(FileManager.default.fileExists(atPath: tempDirectory.appendingPathComponent("song.flac").path))
         XCTAssertTrue(FileManager.default.fileExists(atPath: tempDirectory.appendingPathComponent("song.wav").path))
     }
@@ -792,8 +792,8 @@ final class converterTests: XCTestCase {
         let lone = try touch("Mirage_bass_80Hz_4dB_RF64.flac")
         XCTAssertFalse(tool.isExternalArchivalAudioVariant(lone))
         // Resolving it also renames it, so ask again on a fresh copy of the name.
-        XCTAssertEqual(try tool.resolveFullAudio().basename, "1.flac")
-        try FileManager.default.moveItem(at: temp.appendingPathComponent("1.flac"), to: lone)
+        XCTAssertEqual(try tool.resolveFullAudio().basename, "1_source.flac")
+        try FileManager.default.moveItem(at: temp.appendingPathComponent("1_source.flac"), to: lone)
 
         // Once the source it was derived from is present, the same name is a companion.
         _ = try touch("Mirage_bass_80Hz_4dB.flac")
@@ -827,21 +827,22 @@ final class converterTests: XCTestCase {
         try Data().write(to: temp.appendingPathComponent("Mirage_RF64.wav"))
         try FileManager.default.removeItem(at: temp.appendingPathComponent("Mirage.flac"))
         try Data().write(to: temp.appendingPathComponent("Mirage.mp3"))
-        XCTAssertEqual(try tool.resolveFullAudio().basename, "1.mp3")
+        XCTAssertEqual(try tool.resolveFullAudio().basename, "1_source.mp3")
 
         // Two unrelated stems: name both, and do not count the companion among them.
         try Data().write(to: temp.appendingPathComponent("Other.wav"))
         XCTAssertThrowsError(try tool.resolveFullAudio()) { error in
             let message = "\(error)"
             XCTAssertTrue(message.contains("but found 3"), message)
-            XCTAssertTrue(message.contains("1.mp3"), message)
+            XCTAssertTrue(message.contains("1_source.mp3"), message)
             XCTAssertTrue(message.contains("Other.wav"), message)
         }
     }
 
-    // The source stem names all 29 deliverables, so the run normalises whatever arrives to `1`
-    // rather than letting an incoming name stamp itself onto every output.
-    func testFullRunRenamesItsSourceAudioToOne() throws {
+    // The release stem names all 29 deliverables, so the run normalises whatever arrives to
+    // `1_source.<ext>`: the release is `1`, the untouched original carries the `_source` marker,
+    // and no deliverable can ever be written over it. (audit #0007 / #0023)
+    func testFullRunRenamesItsSourceAudioToOneSource() throws {
         let temp = FileManager.default.temporaryDirectory
             .appendingPathComponent(UUID().uuidString, isDirectory: true)
         try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
@@ -849,17 +850,45 @@ final class converterTests: XCTestCase {
         let tool = try makeTool(tempDirectory: temp)
 
         try Data().write(to: temp.appendingPathComponent("Mirage_bass_80Hz_4dB_RF64.flac"))
-        XCTAssertEqual(try tool.resolveFullAudio().basename, "1.flac")
-        XCTAssertTrue(FileManager.default.fileExists(atPath: temp.appendingPathComponent("1.flac").path))
+        XCTAssertEqual(try tool.resolveFullAudio().basename, "1_source.flac")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: temp.appendingPathComponent("1_source.flac").path))
         XCTAssertFalse(FileManager.default.fileExists(
             atPath: temp.appendingPathComponent("Mirage_bass_80Hz_4dB_RF64.flac").path))
+        XCTAssertEqual(tool.fullRunReleaseStem(for: temp.appendingPathComponent("1_source.flac")), "1")
 
-        // A rerun sees `1.flac` beside its own deliverables and leaves the name alone.
+        // A rerun sees `1_source.flac` beside its own deliverables and resolves the same origin:
+        // the preserved source outranks every derived family member.
         try Data().write(to: temp.appendingPathComponent("1.wav"))
         try Data().write(to: temp.appendingPathComponent("1.mp3"))
         try Data().write(to: temp.appendingPathComponent("1_RF64.flac"))
         try Data().write(to: temp.appendingPathComponent("1_BW64.wav"))
-        XCTAssertEqual(try tool.resolveFullAudio().basename, "1.flac")
+        XCTAssertEqual(try tool.resolveFullAudio().basename, "1_source.flac")
+
+        // A new source dropped beside an old release is refused rather than renamed onto it.
+        try FileManager.default.removeItem(at: temp.appendingPathComponent("1.wav"))
+        try FileManager.default.removeItem(at: temp.appendingPathComponent("1.mp3"))
+        try FileManager.default.removeItem(at: temp.appendingPathComponent("1_RF64.flac"))
+        try FileManager.default.removeItem(at: temp.appendingPathComponent("1_BW64.wav"))
+        try Data().write(to: temp.appendingPathComponent("Next.flac"))
+        XCTAssertThrowsError(try tool.resolveFullAudio()) { error in
+            let message = "\(error)"
+            XCTAssertTrue(message.contains("but found 2"), message)
+            XCTAssertTrue(message.contains("1_source.flac"), message)
+            XCTAssertTrue(message.contains("Next.flac"), message)
+        }
+        try FileManager.default.removeItem(at: temp.appendingPathComponent("1_source.flac"))
+        try Data().write(to: temp.appendingPathComponent("1_source.flac"))
+        try FileManager.default.removeItem(at: temp.appendingPathComponent("Next.flac"))
+        try Data().write(to: temp.appendingPathComponent("Next.mp3"))
+        // Same family key would be needed for a collapse; distinct stems still error out, and a
+        // lone new file whose release name is taken is refused explicitly.
+        try FileManager.default.removeItem(at: temp.appendingPathComponent("1_source.flac"))
+        try Data().write(to: temp.appendingPathComponent("1_source.mp3"))
+        XCTAssertThrowsError(try tool.resolveFullAudio()) { error in
+            XCTAssertTrue("\(error)".contains("but found 2"), "\(error)")
+        }
+        XCTAssertTrue(FileManager.default.fileExists(atPath: temp.appendingPathComponent("Next.mp3").path),
+                      "a refused rename must leave the new source untouched")
     }
 
     func testParserRejectsDeprecatedInputOverrideFlags() throws {
@@ -1547,6 +1576,23 @@ final class converterTests: XCTestCase {
         try await semaphore.wait()
         await semaphore.signal()
         await semaphore.signal()
+    }
+
+    // audit #0007: a conversion must never publish onto the file it reads from. With the default
+    // shared SRC_DIR/OUT_DIR the full run's MP3 deliverable used to land on the renamed source.
+    func testAudioConversionRefusesToWriteOverItsSource() throws {
+        let temp = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+        let tool = try makeTool(tempDirectory: temp)
+        let source = temp.appendingPathComponent("1.mp3")
+        try Data("not-an-mp3".utf8).write(to: source)
+
+        XCTAssertThrowsError(try tool.convertAudioToMP3(source)) { error in
+            XCTAssertTrue("\(error)".contains("its own source"), "\(error)")
+        }
+        XCTAssertEqual(try Data(contentsOf: source), Data("not-an-mp3".utf8), "source bytes must be untouched")
     }
 }
 

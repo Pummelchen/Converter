@@ -170,25 +170,26 @@ final class IntegrationWorkspace {
     }
 
     // Audio fixtures are generated directly with ffmpeg so tests do not depend on converter output to build input data.
-    func createAudio(name: String, ext: String, duration: Double = 1.2, frequency: Int = 440) throws -> URL {
+    func createAudio(name: String, ext: String, duration: Double = 1.2, frequency: Int = 440, sampleRate: Int = 48_000) throws -> URL {
         let target = output.appendingPathComponent(name).appendingPathExtension(ext)
+        let rate = String(sampleRate)
         var args = [
             "-hide_banner", "-nostdin", "-v", "error", "-y",
             "-f", "lavfi",
-            "-i", "sine=frequency=\(frequency):duration=\(String(format: "%.3f", duration)):sample_rate=48000",
+            "-i", "sine=frequency=\(frequency):duration=\(String(format: "%.3f", duration)):sample_rate=\(rate)",
             "-ac", "2"
         ]
         switch ext.lowercased() {
         case "wav":
-            args += ["-c:a", "pcm_f32le", "-ar", "48000", "-f", "wav", "-rf64", "always", "-write_bext", "1", target.path]
+            args += ["-c:a", "pcm_f32le", "-ar", rate, "-f", "wav", "-rf64", "always", "-write_bext", "1", target.path]
         case "flac":
-            args += ["-c:a", "flac", "-compression_level", "5", "-ar", "48000", target.path]
+            args += ["-c:a", "flac", "-compression_level", "5", "-ar", rate, target.path]
         case "mp3":
-            args += ["-c:a", "libmp3lame", "-b:a", "192k", "-ar", "48000", target.path]
+            args += ["-c:a", "libmp3lame", "-b:a", "192k", "-ar", rate, target.path]
         case "m4a":
-            args += ["-c:a", "aac", "-b:a", "192k", "-ar", "48000", target.path]
+            args += ["-c:a", "aac", "-b:a", "192k", "-ar", rate, target.path]
         case "aac":
-            args += ["-c:a", "aac", "-b:a", "192k", "-ar", "48000", "-f", "adts", target.path]
+            args += ["-c:a", "aac", "-b:a", "192k", "-ar", rate, "-f", "adts", target.path]
         default:
             throw AppError("Unsupported test audio extension: \(ext)")
         }

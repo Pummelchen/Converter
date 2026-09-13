@@ -1313,6 +1313,51 @@ extension ConverterTool {
         }
     }
 
+    // The full run's MP3 deliverable. A source that already meets the MP3 standard is copied
+    // byte-for-byte (no second lossy generation); anything else is encoded from the internal
+    // WAV that the run has already derived from it. Neither path can touch the source file.
+    func fullRunMP3Deliverable(source: URL, internalWAV: URL, outputStem: String) throws -> URL {
+        let output = cli.outDir.appendingPathComponent(outputStem).appendingPathExtension("mp3")
+        try requireDistinctOutput(output, from: source)
+        // The caller has already preflighted the source; only the standard check decides the path.
+        // A standard mismatch is an AppError with the reason; anything else propagates.
+        let sourceIsStandard: Bool
+        do {
+            try verifyMP3Standard(source, qcPolicy: nil)
+            sourceIsStandard = true
+        } catch let mismatch as AppError {
+            logger.info("Full step: MP3 source is not the delivery standard (\(mismatch.message)); encoding \(output.basename)")
+            sourceIsStandard = false
+        }
+        guard sourceIsStandard else {
+            return try convertAudioToMP3(internalWAV, outputStem: outputStem)
+        }
+        if canReuseOutput(output, verifier: {
+            try verifyMP3Standard(output, qcPolicy: nil)
+            try verifyDurationMatch(source: source, output: output)
+            try verifySourceLoudnessPreserved(source: source, output: output)
+        }) {
+            logger.info("Skip existing MP3: \(output.basename)")
+            return output
+        }
+        let temp = try makeTemp(in: cli.outDir, stem: outputStem, ext: ".mp3")
+        do {
+            try copyFileIntoTemp(source, temp: temp)
+            try verifyMP3Standard(temp, qcPolicy: nil)
+            try verifyDurationMatch(source: source, output: temp)
+            guard try crc32(for: temp) == crc32(for: source) else {
+                throw AppError("MP3 copy does not match its source: \(source.path)")
+            }
+            try publishTemp(temp, to: output)
+            logger.info("Copied standard MP3: \(output.basename)")
+            return output
+        } catch {
+            try? fileManager.removeItem(at: temp)
+            state.unregister(tempFile: temp)
+            throw error
+        }
+    }
+
     func ensureStandardMP3Output(from source: URL) throws -> URL {
         let output = cli.outDir.appendingPathComponent(source.lastPathComponent)
         if source.standardizedFileURL == output.standardizedFileURL {
@@ -1395,9 +1440,20 @@ extension ConverterTool {
     }
 
     // Convert any supported audio source into the project WAV standard.
-    func convertAudioToWAV(_ source: URL) throws -> URL {
+    // A deliverable is written under `outputStem` (default: the source's own stem) and may never
+    // share a path with the file it is derived from: publishing onto the source would destroy
+    // the only original. The guard runs before any probe so it holds even for unreadable input.
+    func requireDistinctOutput(_ output: URL, from source: URL) throws {
+        if output.standardizedFileURL.path == source.standardizedFileURL.path {
+            throw AppError("Refusing to write \(output.basename) over its own source \(source.path); the source must stay untouched.")
+        }
+    }
+
+    func convertAudioToWAV(_ source: URL, outputStem: String? = nil) throws -> URL {
+        let stem = outputStem ?? source.stem
+        let output = cli.outDir.appendingPathComponent(stem).appendingPathExtension("wav")
+        try requireDistinctOutput(output, from: source)
         try preflightAudioSourceForTranscode(source)
-        let output = cli.outDir.appendingPathComponent(source.stem).appendingPathExtension("wav")
         if canReuseOutput(output, verifier: {
             try verifyWAVStandard(output, qcPolicy: nil)
             try verifyDurationMatch(source: source, output: output)
@@ -1419,7 +1475,7 @@ extension ConverterTool {
                 throw AppError("Low free space for \(source.basename): avail=\(free) need~\(need)")
             }
         }
-        let temp = try makeTemp(in: cli.outDir, stem: source.stem, ext: ".wav")
+        let temp = try makeTemp(in: cli.outDir, stem: stem, ext: ".wav")
         do {
             _ = try runner.run("ffmpeg", [
                 "-hide_banner", "-nostdin", "-v", "error", "-y",
@@ -1452,10 +1508,12 @@ extension ConverterTool {
         }
     }
 
-    func convertAudioToM4A(_ source: URL) throws -> URL {
+    func convertAudioToM4A(_ source: URL, outputStem: String? = nil) throws -> URL {
+        let stem = outputStem ?? source.stem
+        let output = cli.outDir.appendingPathComponent(stem).appendingPathExtension("m4a")
+        try requireDistinctOutput(output, from: source)
         try preflightAudioSourceForTranscode(source)
         try requireFFmpegEncoder(alacEncoderName)
-        let output = cli.outDir.appendingPathComponent(source.stem).appendingPathExtension("m4a")
         if canReuseOutput(output, verifier: {
             try verifyM4AFile(output, sampleRate: config.m4aSampleRate, channels: config.m4aChannels, qcPolicy: nil)
             try verifyDurationMatch(source: source, output: output)
@@ -1464,9 +1522,9 @@ extension ConverterTool {
             logger.info("Skip existing M4A: \(output.basename)")
             return output
         }
-        let sourceWAV = try makeInternalWAV(from: source, in: cli.outDir, stem: "\(source.stem).m4a.source")
+        let sourceWAV = try makeInternalWAV(from: source, in: cli.outDir, stem: "\(stem).m4a.source")
         defer { discardTempFile(sourceWAV) }
-        let temp = try makeTemp(in: cli.outDir, stem: source.stem, ext: ".m4a")
+        let temp = try makeTemp(in: cli.outDir, stem: stem, ext: ".m4a")
         do {
             try encodeInternalWAVToM4A(sourceWAV, output: temp, qcPolicy: nil)
             try verifyM4AFile(temp, sampleRate: config.m4aSampleRate, channels: config.m4aChannels, qcPolicy: nil)
@@ -1483,10 +1541,12 @@ extension ConverterTool {
     }
 
     // Convert any supported audio source into project-standard MP3.
-    func convertAudioToMP3(_ source: URL) throws -> URL {
+    func convertAudioToMP3(_ source: URL, outputStem: String? = nil) throws -> URL {
+        let stem = outputStem ?? source.stem
+        let output = cli.outDir.appendingPathComponent(stem).appendingPathExtension("mp3")
+        try requireDistinctOutput(output, from: source)
         try preflightAudioSourceForTranscode(source)
         try requireFFmpegEncoder("libmp3lame")
-        let output = cli.outDir.appendingPathComponent(source.stem).appendingPathExtension("mp3")
         if canReuseOutput(output, verifier: {
             try verifyMP3Standard(output, qcPolicy: nil)
             try verifyDurationMatch(source: source, output: output)
@@ -1495,9 +1555,9 @@ extension ConverterTool {
             logger.info("Skip existing MP3: \(output.basename)")
             return output
         }
-        let sourceWAV = try makeInternalWAV(from: source, in: cli.outDir, stem: "\(source.stem).mp3.source")
+        let sourceWAV = try makeInternalWAV(from: source, in: cli.outDir, stem: "\(stem).mp3.source")
         defer { discardTempFile(sourceWAV) }
-        let temp = try makeTemp(in: cli.outDir, stem: source.stem, ext: ".mp3")
+        let temp = try makeTemp(in: cli.outDir, stem: stem, ext: ".mp3")
         do {
             try encodeInternalWAVToMP3(sourceWAV, output: temp, qcPolicy: nil)
             try verifyMP3Standard(temp, qcPolicy: nil)
