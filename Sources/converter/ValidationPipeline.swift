@@ -32,6 +32,68 @@ extension ConverterTool {
         return try audioQCResult(for: temp, policy: policy)
     }
 
+    // astats level values: "-inf" is a real measurement (digital silence), not a missing one.
+    func parseAstatsLevelDB(_ value: String?) -> Double? {
+        guard let value else { return nil }
+        let trimmed = value.trimmed
+        if trimmed == "-inf" {
+            return -.infinity
+        }
+        return Double(trimmed)
+    }
+
+    // The astats-derived half of a QC measurement, fail-closed: a report that is missing a
+    // channel block or a key throws instead of degrading every ceiling to "pass". A silent
+    // channel next to a live one is infinite imbalance, not zero.
+    func audioQCAstatsMetrics(from stderr: String, expectedChannels: Int, file: URL) throws -> AstatsDerivedMetrics {
+        let astats = parseAstatsReport(from: stderr)
+        func incomplete(_ what: String) -> AppError {
+            AppError("Audio QC analysis for \(file.path) produced an incomplete astats report: \(what).")
+        }
+        guard astats.channelMetrics.count == expectedChannels else {
+            throw incomplete("\(astats.channelMetrics.count) channel block(s) for \(expectedChannels) channel(s)")
+        }
+        var rmsLevels: [Double] = []
+        var dcOffsets: [Double] = []
+        for (index, channel) in astats.channelMetrics.enumerated() {
+            guard let level = parseAstatsLevelDB(channel["RMS level dB"]) else {
+                throw incomplete("channel \(index + 1) has no RMS level dB")
+            }
+            guard let offset = Double(channel["DC offset"] ?? ""), offset.isFinite else {
+                throw incomplete("channel \(index + 1) has no DC offset")
+            }
+            rmsLevels.append(level)
+            dcOffsets.append(abs(offset))
+        }
+        guard let peakLevel = parseAstatsLevelDB(astats.overallMetrics["Peak level dB"]) else {
+            throw incomplete("no overall Peak level dB")
+        }
+        let rawPeakCount = astats.overallMetrics["Peak count"] ?? ""
+        guard let peakCountValue = Double(rawPeakCount), let peakCount = Int(exactly: peakCountValue.rounded()), peakCount >= 0 else {
+            throw incomplete("unparsable Peak count '\(rawPeakCount)'")
+        }
+        let stereoImbalance: Double
+        if rmsLevels.count >= 2 {
+            let left = rmsLevels[0], right = rmsLevels[1]
+            if left.isFinite && right.isFinite {
+                stereoImbalance = abs(left - right)
+            } else if left.isFinite || right.isFinite {
+                stereoImbalance = .infinity
+            } else {
+                // Both channels silent: no imbalance between them; audibility is judged separately.
+                stereoImbalance = 0
+            }
+        } else {
+            stereoImbalance = 0
+        }
+        return AstatsDerivedMetrics(
+            dcOffset: dcOffsets.max() ?? 0,
+            stereoImbalanceDB: stereoImbalance,
+            peakLevelDBFS: peakLevel.isFinite ? peakLevel : nil,
+            clippedSamples: peakLevel >= 0 ? peakCount : 0
+        )
+    }
+
     func verifyAudibleAudioTrack(_ file: URL) throws -> Bool {
         let fingerprint = try fileProbeFingerprint(file)
         return try probeCache.cachedAudibleResult(key: fingerprint) {
@@ -89,14 +151,15 @@ extension ConverterTool {
                 ],
                 allowedExitCodes: [0]
             )
-            let astats = parseAstatsReport(from: analysisResult.stderr)
-            let channelRMS = astats.channelMetrics.compactMap { parseAudioDB($0["RMS level dB"]) }
-            let channelDC = astats.channelMetrics.compactMap { Double($0["DC offset"] ?? "") }
-            let peakLevelDBFS = parseAudioDB(astats.overallMetrics["Peak level dB"])
-            let peakCount = Int(Double(astats.overallMetrics["Peak count"] ?? "0") ?? 0)
-            let clippedSamples = (peakLevelDBFS ?? -Double.infinity) >= 0 ? peakCount : 0
-            let stereoImbalance = channelRMS.count >= 2 ? abs(channelRMS[0] - channelRMS[1]) : 0
-            let dcOffset = channelDC.map(abs).max() ?? abs(Double(astats.overallMetrics["DC offset"] ?? "") ?? 0)
+            let derived = try audioQCAstatsMetrics(
+                from: analysisResult.stderr,
+                expectedChannels: try requireAudioChannels(file),
+                file: file
+            )
+            let peakLevelDBFS = derived.peakLevelDBFS
+            let clippedSamples = derived.clippedSamples
+            let stereoImbalance = derived.stereoImbalanceDB
+            let dcOffset = derived.dcOffset
             let maxVolumeLine = analysisResult.stderr
                 .split(whereSeparator: \.isNewline)
                 .map(String.init)

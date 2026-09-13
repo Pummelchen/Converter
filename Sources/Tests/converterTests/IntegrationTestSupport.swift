@@ -282,6 +282,20 @@ final class IntegrationWorkspace {
         return target
     }
 
+    // Stereo file whose right channel is digitally silent: the worst possible balance.
+    func createOneChannelSilentAudio(name: String, duration: Double = 1.2) throws -> URL {
+        let target = output.appendingPathComponent(name).appendingPathExtension("wav")
+        _ = try runner().run("ffmpeg", [
+            "-hide_banner", "-nostdin", "-v", "error", "-y",
+            "-f", "lavfi",
+            "-i", "sine=frequency=440:duration=\(String(format: "%.3f", duration)):sample_rate=48000",
+            "-filter_complex", "[0:a]pan=stereo|c0=c0|c1=0*c0[a]",
+            "-map", "[a]",
+            "-c:a", "pcm_s24le", "-ar", "48000", "-f", "wav", "-rf64", "always", target.path
+        ])
+        return target
+    }
+
     func createStereoImbalancedAudio(name: String, ext: String, duration: Double = 1.2) throws -> URL {
         let target = output.appendingPathComponent(name).appendingPathExtension(ext)
         var args = [

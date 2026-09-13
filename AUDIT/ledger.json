@@ -214,14 +214,14 @@
       "location": "Sources/converter/ValidationPipeline.swift:93,98",
       "title": "Stereo-imbalance check fail-open when one channel is digitally silent (-inf RMS dropped)",
       "category": "bug",
-      "status": "TEST",
+      "status": "DONE",
       "host": "local",
       "discovered_by": "reviewer validation V-1",
       "session": "2026-09-13",
       "evidence_before": "AUDIT/findings/L2-validation-config.md V-1 | AUDIT/evidence/0012-0013-before.log: a stereo WAV with a digitally silent right channel passed a 0.1 dB imbalance ceiling with no issues (imbalance reported 0).",
       "fix_summary": "parseAstatsLevelDB maps '-inf' to -infinity; audioQCAstatsMetrics reports infinite stereo imbalance when exactly one channel is silent (both silent \u2192 0, audibility judged separately).",
       "evidence_after": "AUDIT/evidence/0010-0014-after.log: 39 targeted tests pass (timecode/ffmpegNumber, loudnorm braces, astats fail-closed + silent channel, existing QC/loudness/imbalance/fade/silence/noise tests). swiftlint 526/56, semgrep 0. Full suite (AUDIT/evidence/0010-0014-fullsuite.txt): 170 executed, 0 failures, 0 compiler warnings.",
-      "commit": "",
+      "commit": "3f118e5",
       "notes": " Batched full-suite run shared with #0010/#0012/#0013/#0014/#0099 (one atomic commit per task)."
     },
     {
@@ -231,14 +231,14 @@
       "location": "Sources/converter/ValidationPipeline.swift:92-99,111-121,96",
       "title": "astats-derived QC metrics fail-open on missing/unparseable report; Int(Double) trap on Peak count",
       "category": "bug",
-      "status": "TEST",
+      "status": "DONE",
       "host": "local",
       "discovered_by": "reviewer V-2, V-13",
       "session": "2026-09-13",
       "evidence_before": "AUDIT/findings/L2-validation-config.md V-2, V-13 | Statically proven (reviewer V-2/V-13): parseAstatsReport never throws and every derived metric defaulted to 0; Int(Double(nan)) traps. Pure-function test cannot compile before the extraction; behavioural sibling is #0013.",
       "fix_summary": "New audioQCAstatsMetrics(from:expectedChannels:file:) (AstatsDerivedMetrics) fails closed: channel-block count must equal the probed channel count, every channel needs RMS level dB and DC offset, overall Peak level dB and Peak count must be present and numeric (Int(exactly:) \u2014 no trap on nan); audioQCResult uses it.",
       "evidence_after": "AUDIT/evidence/0010-0014-after.log: 39 targeted tests pass (timecode/ffmpegNumber, loudnorm braces, astats fail-closed + silent channel, existing QC/loudness/imbalance/fade/silence/noise tests). swiftlint 526/56, semgrep 0. Full suite (AUDIT/evidence/0010-0014-fullsuite.txt): 170 executed, 0 failures, 0 compiler warnings.",
-      "commit": "",
+      "commit": "3f118e5",
       "notes": "Throw on incomplete astats; Int(exactly:). Batched full-suite run shared with #0010/#0012/#0013/#0014/#0099 (one atomic commit per task)."
     },
     {
@@ -1676,14 +1676,14 @@
       "location": "Sources/Tests/converterTests/PipelineIntegrationTests.swift:34,1967",
       "title": "Test target compiles with two warnings (bare 'Error' existential, unused 'wav' binding)",
       "category": "style",
-      "status": "TEST",
+      "status": "DONE",
       "host": "local",
       "discovered_by": "Phase C suite log review (#0008)",
       "session": "2026-09-13",
       "evidence_before": "swift test log (AUDIT/evidence/0008-fullsuite log source) shows: PipelineIntegrationTests.swift:34 'use of protocol Error as a type must be written any Error'; :1967 'initialization of immutable value wav was never used'. Present in the baseline test log too (4 matching lines); the \u00a73 baseline only built the product target with -warnings-as-errors.",
       "fix_summary": "PipelineIntegrationTests.swift: ResultBox<Result<ProcessResult, any Error>>; unused `let wav` binding in testMasterCommandProducesMasteredOutputsWithinPolicy replaced by `_ =`.",
       "evidence_after": "swift build --build-tests -Xswiftc -warnings-as-errors: Build complete, 0 diagnostics. Targeted tests pass (AUDIT/evidence/0099-after.log). Full suite (AUDIT/evidence/0010-0014-fullsuite.txt): 170 executed, 0 failures, 0 compiler warnings.",
-      "commit": "",
+      "commit": "3f118e5",
       "notes": "Phase E requires zero warnings across all targets."
     }
   ]

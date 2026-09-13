@@ -1278,6 +1278,21 @@ final class PipelineIntegrationTests: XCTestCase {
         try tool.verifyWAVStandard(wav)
     }
 
+    // audit #0013: astats reports "-inf" RMS for a silent channel; that channel used to be
+    // dropped from the comparison, so a dead channel scored as perfect balance.
+    func testSilentChannelIsReportedAsStereoImbalance() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe"])
+        let input = try workspace.createOneChannelSilentAudio(name: "one_channel_silent")
+        let tool = try workspace.makeTool(arguments: ["-loudscan"])
+        let policy = AudioQCPolicy(
+            name: "balance-only", targetLUFS: -12, lufsTolerance: 99, maxTruePeakDBTP: 0, maxLoudnessRange: 50,
+            maxDCOffset: 1, maxStereoImbalanceDB: 0.1, maxClippedSamples: 1_000_000, minimumAnalysisSeconds: 0.1)
+        let result = try tool.audioQCResult(for: input, policy: policy)
+        XCTAssertFalse(result.passed, "a dead channel must fail the balance ceiling: \(result.issues)")
+        XCTAssertTrue(result.issues.contains { $0.contains("stereo imbalance") }, "\(result.issues)")
+    }
+
     func testRejectsStereoImbalancedOutputWhenPolicyIsStrict() throws {
         let workspace = try IntegrationWorkspace()
         try workspace.overwriteConfig(

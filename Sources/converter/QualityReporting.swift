@@ -27,6 +27,13 @@ struct AudioQCMetrics: Sendable {
     let analysisLimited: Bool
 }
 
+struct AstatsDerivedMetrics: Sendable {
+    let dcOffset: Double
+    let stereoImbalanceDB: Double
+    let peakLevelDBFS: Double?
+    let clippedSamples: Int
+}
+
 struct AudioQCResult: Sendable {
     // The policy is carried by value rather than mirrored field-by-field; the copies
     // were written on every QC run and never read back.

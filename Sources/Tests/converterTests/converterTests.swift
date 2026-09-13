@@ -1578,6 +1578,41 @@ final class converterTests: XCTestCase {
         await semaphore.signal()
     }
 
+    // audit #0014: an astats report that is missing pieces used to degrade every derived
+    // ceiling to "pass"; it must fail closed. audit #0013: "-inf" RMS is a measurement.
+    func testAstatsMetricsFailClosedAndTreatSilentChannelAsInfiniteImbalance() throws {
+        let tool = try makeParserTool()
+        let file = URL(fileURLWithPath: "/tmp/qc.wav")
+        let complete = """
+        [Parsed_astats_0 @ 0x1] Channel: 1
+        [Parsed_astats_0 @ 0x1] DC offset: -0.000100
+        [Parsed_astats_0 @ 0x1] RMS level dB: -20.000000
+        [Parsed_astats_0 @ 0x1] Channel: 2
+        [Parsed_astats_0 @ 0x1] DC offset: 0.000200
+        [Parsed_astats_0 @ 0x1] RMS level dB: -inf
+        [Parsed_astats_0 @ 0x1] Overall
+        [Parsed_astats_0 @ 0x1] DC offset: 0.000200
+        [Parsed_astats_0 @ 0x1] Peak level dB: 0.000000
+        [Parsed_astats_0 @ 0x1] Peak count: 12
+        """
+        let metrics = try tool.audioQCAstatsMetrics(from: complete, expectedChannels: 2, file: file)
+        XCTAssertEqual(metrics.stereoImbalanceDB, .infinity)
+        XCTAssertEqual(metrics.dcOffset, 0.0002, accuracy: 1e-9)
+        XCTAssertEqual(metrics.clippedSamples, 12)
+        XCTAssertEqual(metrics.peakLevelDBFS, 0)
+
+        XCTAssertThrowsError(try tool.audioQCAstatsMetrics(from: "", expectedChannels: 2, file: file)) { error in
+            XCTAssertTrue("\(error)".contains("incomplete astats report"), "\(error)")
+        }
+        XCTAssertThrowsError(try tool.audioQCAstatsMetrics(from: complete, expectedChannels: 1, file: file))
+        let nanCount = complete.replacingOccurrences(of: "Peak count: 12", with: "Peak count: nan")
+        XCTAssertThrowsError(try tool.audioQCAstatsMetrics(from: nanCount, expectedChannels: 2, file: file)) { error in
+            XCTAssertTrue("\(error)".contains("Peak count"), "\(error)")
+        }
+        let noRMS = complete.replacingOccurrences(of: "[Parsed_astats_0 @ 0x1] RMS level dB: -20.000000\n", with: "")
+        XCTAssertThrowsError(try tool.audioQCAstatsMetrics(from: noRMS, expectedChannels: 2, file: file))
+    }
+
     // audit #0010: an absurd but finite duration reached Int(Double) and trapped the process
     // instead of being rejected as input.
     func testTimecodeRejectsAbsurdDurationsAndFFmpegNumberNeverTraps() throws {
