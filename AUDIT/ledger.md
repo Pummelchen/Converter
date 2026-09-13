@@ -6,9 +6,9 @@ Session: `2026-09-13` · branch `audit/2026-09-13` · baseline commit `4bb136a`
 
 | status | count |
 |---|---|
-| START | 51 |
+| START | 50 |
 | PROGRESS | 1 |
-| TEST | 3 |
+| TEST | 4 |
 | AUDIT | 0 |
 | DONE | 44 |
 | BLOCKED | 1 |
@@ -67,7 +67,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 | #0078 | S3 | converter/PipelineCore | Sources/converter/PipelineCore.swift:372-379 | ensureWritableDirectory accepts a regular file at OUT_DIR | logic | START |  |
 | #0079 | S3 | converter/ProcessRunner | Sources/converter/ProcessRunner.swift:156-160 | Signal deaths reported as ordinary exit codes | incomplete | START |  |
 | #0080 | S3 | converter/PipelineCore | Sources/converter/PipelineCore.swift:323-344,271 | Orphan-temp detection keys on local PID only; synced directories across hosts | logic | START |  |
-| #0081 | S3 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:203-210 | LUFS rebase widens the tolerance symmetrically | logic | START |  |
+| #0081 | S3 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:203-210 | LUFS rebase widens the tolerance symmetrically | logic | TEST | bccf942 |
 | #0083 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:905 | Noise seed is Int.random; reruns not reproducible | logic | START |  |
 | #0084 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:53-77 | Derived-media predicates use the first _silence_/_noise_ occurrence | logic | START |  |
 | #0085 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:1850-1854 | Track-number parse uses Unicode isNumber and can overflow | logic | START |  |
@@ -1030,7 +1030,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **discovered-by:** reviewer C-13
 - **evidence-before:** AUDIT/findings/L2-core-runtime.md C-13
 
-### #0081 · S3 · START · LUFS rebase widens the tolerance symmetrically
+### #0081 · S3 · TEST · LUFS rebase widens the tolerance symmetrically
 
 - **project/module:** converter/ValidationPipeline
 - **file:line:** Sources/converter/ValidationPipeline.swift:203-210
@@ -1038,6 +1038,9 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **host-used:** local
 - **discovered-by:** reviewer V-9
 - **evidence-before:** AUDIT/findings/L2-validation-config.md V-9
+- **fix-summary:** AudioQCPolicy gains minimumLUFSOverride/maximumLUFSOverride; loudnessPreservingQCPolicy moves only the breached LUFS bound (measured -/+ 0.1) and QC issue text names the real window.
+- **evidence-after:** AUDIT/evidence/0081-before.log (max rebased to +1.35, loud render passed), 0081-after.log (only the breached bound moves; neighbours pass); swiftlint 533/56. Full suite pending
+- **commit sha:** bccf942
 
 ### #0082 · S3 · DONE · PREFLIGHT_SECONDS, DURATION_TOLERANCE_SEC, CRC_CHUNK_BYTES supported but undocumented
 

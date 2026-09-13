@@ -1371,14 +1371,14 @@
       "location": "Sources/converter/ValidationPipeline.swift:203-210",
       "title": "LUFS rebase widens the tolerance symmetrically",
       "category": "logic",
-      "status": "START",
+      "status": "TEST",
       "host": "local",
       "discovered_by": "reviewer V-9",
       "session": "2026-09-13",
       "evidence_before": "AUDIT/findings/L2-validation-config.md V-9",
-      "fix_summary": "",
-      "evidence_after": "",
-      "commit": "",
+      "fix_summary": "AudioQCPolicy gains minimumLUFSOverride/maximumLUFSOverride; loudnessPreservingQCPolicy moves only the breached LUFS bound (measured -/+ 0.1) and QC issue text names the real window.",
+      "evidence_after": "AUDIT/evidence/0081-before.log (max rebased to +1.35, loud render passed), 0081-after.log (only the breached bound moves; neighbours pass); swiftlint 533/56. Full suite pending",
+      "commit": "bccf942",
       "notes": ""
     },
     {
