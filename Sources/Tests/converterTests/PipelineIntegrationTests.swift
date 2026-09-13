@@ -2540,4 +2540,112 @@ final class PipelineIntegrationTests: XCTestCase {
         XCTAssertEqual(tool.config.profileName, "youtube_master")
         XCTAssertEqual(tool.config.audioQCTargetLUFS, -12)
     }
+
+    // audit #0035: --continue-on-error batch semantics. a.wav / b.wav (garbage) / c.wav are
+    // discovered in that order (localizedStandardCompare), so the middle file is the one that fails.
+    private struct GarbageMiddleBatch {
+        let first: URL
+        let broken: URL
+        let last: URL
+    }
+
+    private func makeBatchWithGarbageMiddleFile(_ workspace: IntegrationWorkspace) throws -> GarbageMiddleBatch {
+        GarbageMiddleBatch(
+            first: try workspace.createAudio(name: "a", ext: "wav", duration: 1.0),
+            broken: try workspace.writeGarbageFile(name: "b", ext: "wav"),
+            last: try workspace.createAudio(name: "c", ext: "wav", duration: 1.0, frequency: 660)
+        )
+    }
+
+    private func outputExists(_ name: String, in workspace: IntegrationWorkspace) -> Bool {
+        FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent(name).path)
+    }
+
+    // audit #0035: with --continue-on-error, processBatch must keep going past the broken file,
+    // convert every remaining file, and still fail at the end with the "<n> operation(s) failed." summary.
+    func testWAVToMP3ContinueOnErrorConvertsRemainingFilesThenSummarizes() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe"])
+        _ = try makeBatchWithGarbageMiddleFile(workspace)
+        let tool = try workspace.makeTool(arguments: ["-wavtomp3", "--continue-on-error"])
+
+        XCTAssertThrowsError(try tool.stepWAVToMP3()) { error in
+            XCTAssertEqual(error.localizedDescription, "1 operation(s) failed.")
+        }
+
+        XCTAssertTrue(outputExists("a.mp3", in: workspace), "a.mp3 must be produced before the failure")
+        XCTAssertTrue(outputExists("c.mp3", in: workspace), "c.mp3 must be produced after the failure")
+        XCTAssertFalse(outputExists("b.mp3", in: workspace), "garbage b.wav must not yield b.mp3")
+        XCTAssertNoThrow(try tool.verifyMP3Standard(workspace.output.appendingPathComponent("a.mp3"), qcPolicy: nil))
+        XCTAssertNoThrow(try tool.verifyMP3Standard(workspace.output.appendingPathComponent("c.mp3"), qcPolicy: nil))
+    }
+
+    // audit #0035: without --continue-on-error the first failure must abort the batch: the original
+    // error propagates (no summary) and files after the broken one are never processed.
+    func testWAVToMP3StopsAtFirstFailureWithoutContinueOnError() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe"])
+        _ = try makeBatchWithGarbageMiddleFile(workspace)
+        let tool = try workspace.makeTool(arguments: ["-wavtomp3"])
+
+        XCTAssertThrowsError(try tool.stepWAVToMP3()) { error in
+            let message = error.localizedDescription
+            XCTAssertFalse(message.contains("operation(s) failed"), "fail-fast must rethrow the original: \(message)")
+            XCTAssertTrue(message.contains("b.wav"), "the original error must name the broken file: \(message)")
+        }
+
+        XCTAssertTrue(outputExists("a.mp3", in: workspace), "a.mp3 must be produced before the failure")
+        XCTAssertNoThrow(try tool.verifyMP3Standard(workspace.output.appendingPathComponent("a.mp3"), qcPolicy: nil))
+        XCTAssertFalse(outputExists("b.mp3", in: workspace), "garbage b.wav must not yield b.mp3")
+        XCTAssertFalse(outputExists("c.mp3", in: workspace), "c.wav must not run after b.wav failed (fail-fast)")
+    }
+
+    // audit #0035: stepLoudness has its own loop and summary. With --continue-on-error it must finish
+    // the remaining files and report "Loudness normalize failed for 1/3 file(s): b.wav: ...".
+    func testLoudnessContinueOnErrorNormalizesRemainingFilesThenSummarizes() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe"])
+        let batch = try makeBatchWithGarbageMiddleFile(workspace)
+        let tool = try workspace.makeTool(arguments: ["-loudness", "--continue-on-error"])
+        let policy = tool.loudnessPolicy(targetLUFS: -12)
+
+        XCTAssertThrowsError(try tool.stepLoudness()) { error in
+            let message = error.localizedDescription
+            let expectedPrefix = "Loudness normalize failed for 1/3 file(s): b.wav: "
+            XCTAssertTrue(message.hasPrefix(expectedPrefix), "unexpected summary: \(message)")
+            XCTAssertFalse(message.contains("a.wav"), "a.wav succeeded and must not be listed: \(message)")
+            XCTAssertFalse(message.contains("c.wav"), "c.wav succeeded and must not be listed: \(message)")
+        }
+
+        let firstOut = workspace.output.appendingPathComponent("a_loudness_m12LUFS.wav")
+        let lastOut = workspace.output.appendingPathComponent("c_loudness_m12LUFS.wav")
+        XCTAssertTrue(outputExists("a_loudness_m12LUFS.wav", in: workspace), "a.wav must be normalized first")
+        XCTAssertTrue(outputExists("c_loudness_m12LUFS.wav", in: workspace), "c.wav must be normalized after b")
+        XCTAssertFalse(outputExists("b_loudness_m12LUFS.wav", in: workspace), "garbage b.wav must not yield output")
+        XCTAssertNoThrow(try tool.verifyLoudnessOutput(firstOut, source: batch.first, policy: policy))
+        XCTAssertNoThrow(try tool.verifyLoudnessOutput(lastOut, source: batch.last, policy: policy))
+    }
+
+    // audit #0035: without --continue-on-error stepLoudness must stop at b.wav with the per-file
+    // message (no "n/total" summary) and leave c.wav untouched.
+    func testLoudnessStopsAtFirstFailureWithoutContinueOnError() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe"])
+        let batch = try makeBatchWithGarbageMiddleFile(workspace)
+        let tool = try workspace.makeTool(arguments: ["-loudness"])
+        let policy = tool.loudnessPolicy(targetLUFS: -12)
+
+        XCTAssertThrowsError(try tool.stepLoudness()) { error in
+            let message = error.localizedDescription
+            let expectedPrefix = "Loudness normalize failed for b.wav: "
+            XCTAssertTrue(message.hasPrefix(expectedPrefix), "unexpected per-file error: \(message)")
+            XCTAssertFalse(message.contains("file(s)"), "fail-fast must not emit the batch summary: \(message)")
+        }
+
+        let firstOut = workspace.output.appendingPathComponent("a_loudness_m12LUFS.wav")
+        XCTAssertTrue(outputExists("a_loudness_m12LUFS.wav", in: workspace), "a.wav must be normalized first")
+        XCTAssertNoThrow(try tool.verifyLoudnessOutput(firstOut, source: batch.first, policy: policy))
+        XCTAssertFalse(outputExists("b_loudness_m12LUFS.wav", in: workspace), "garbage b.wav must not yield output")
+        XCTAssertFalse(outputExists("c_loudness_m12LUFS.wav", in: workspace), "c.wav must not run after b failed")
+    }
 }

@@ -6,9 +6,9 @@ Session: `2026-09-13` · branch `audit/2026-09-13` · baseline commit `4bb136a`
 
 | status | count |
 |---|---|
-| START | 65 |
+| START | 64 |
 | PROGRESS | 1 |
-| TEST | 5 |
+| TEST | 6 |
 | AUDIT | 0 |
 | DONE | 28 |
 | BLOCKED | 1 |
@@ -27,7 +27,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 | #0032 | S1 | converterTests | Sources/converter/PipelineCore.swift:487-505 | publishTemp restore-on-failure branch has no test | test | TEST | f4d018d |
 | #0033 | S1 | converterTests | Sources/converter/PipelineCore.swift:551-561 | requireDirectChild never tested with .., symlinks, absolute paths | test | TEST | 1682212 |
 | #0034 | S1 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:63-81 | PipeCapture cap test never reaches the 64 MiB cap | test | TEST | 2185827 |
-| #0035 | S1 | converterTests | Sources/converter/Actions.swift:126-154 | --continue-on-error batch semantics and summary untested | test | START |  |
+| #0035 | S1 | converterTests | Sources/converter/Actions.swift:126-154 | --continue-on-error batch semantics and summary untested | test | TEST |  |
 | #0036 | S1 | converterTests | Sources/converter/PipelineCore.swift:842-856 | -clean has no test guarding 'never deletes user files' | test | START |  |
 | #0037 | S1 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:1138-1167 | loudnessPreservingQCPolicy has no direct test; 'hot' fixture is not hot | test | START |  |
 | #0038 | S1 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:126-146 | Orphan temp cleanup untested against a live foreign PID | test | START |  |
@@ -561,7 +561,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **evidence-after:** AUDIT/evidence/0034-before.log (cap mutated to 65 MiB: 5 failures), 0034-after.log (3 pass); swiftlint 533/56. Full suite pending
 - **commit sha:** 2185827
 
-### #0035 · S1 · START · --continue-on-error batch semantics and summary untested
+### #0035 · S1 · TEST · --continue-on-error batch semantics and summary untested
 
 - **project/module:** converterTests
 - **file:line:** Sources/converter/Actions.swift:126-154
@@ -569,6 +569,8 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **host-used:** local
 - **discovered-by:** reviewer T-6
 - **evidence-before:** AUDIT/findings/L6-tests.md T-6
+- **fix-summary:** Four integration tests (a valid / b garbage / c valid) for -wavtomp3 via processBatch and -loudness: with --continue-on-error a and c are produced and the summary is thrown; without it the per-file error propagates and c is never produced.
+- **evidence-after:** AUDIT/evidence/0035-before.log (guards inverted: 4/4 fail), 0035-after.log (4 pass); swiftlint 533/56. Full suite pending
 
 ### #0036 · S1 · START · -clean has no test guarding 'never deletes user files'
 
