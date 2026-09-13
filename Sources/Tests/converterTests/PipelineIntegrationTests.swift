@@ -1253,6 +1253,65 @@ final class PipelineIntegrationTests: XCTestCase {
         try tool.verifyDuration(shortVideo, expectedSeconds: 1.0, label: "portrait short mp4")
     }
 
+    // audit #0015: clipped samples are a per-sample count, so the source and the render only
+    // compare when both are measured at the same sample rate. The source clip used to be
+    // measured on the 96 kHz staging decode while the render is judged at its own 48 kHz: a
+    // 96 kHz source reported 13x the render's clipped samples (ceiling far too loose), and a
+    // hot MP3 reported fewer than its render (spurious failure). The rebased ceiling must equal
+    // what the same segment measures once decoded the way the render's audio is decoded.
+    func testClippedSampleCeilingIsRebasedInTheRenderDomain() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe"])
+        try workspace.overwriteConfig(IntegrationWorkspace.defaultConfig + "\nAUDIO_QC_MAX_CLIPPED_SAMPLES=0\n")
+        let source = try workspace.createClippedAudio(name: "clipped96k", sampleRate: 96_000, duration: 6.0)
+        let tool = try workspace.makeTool(arguments: ["-short"])
+
+        // The render's audio: the leading 2 s through the internal WAV standard, then 48 kHz.
+        let renderDomain = workspace.output.appendingPathComponent("render_domain.wav")
+        let staged = try tool.makeInternalWAV(
+            from: source, in: workspace.output, stem: "clipped96k.staged", duration: 2.0
+        )
+        _ = try workspace.runner().run("ffmpeg", [
+            "-hide_banner", "-nostdin", "-v", "error", "-y",
+            "-i", staged.path, "-map", "0:a:0", "-ac", "2", "-ar", "48000", "-c:a", "pcm_s24le",
+            "-f", "wav", "-rf64", "always", renderDomain.path
+        ])
+        let expected = try tool.audioQCResult(for: renderDomain, policy: tool.config.deliveryAudioQCPolicy)
+            .metrics.clippedSamples
+        XCTAssertGreaterThan(expected, 0, "fixture must actually clip")
+
+        let policy = try tool.loudnessPreservingQCPolicy(
+            tool.config.deliveryAudioQCPolicy, source: source, limitDuration: 2.0, sampleRate: 48_000
+        )
+
+        XCTAssertEqual(policy.maxClippedSamples, expected)
+        XCTAssertTrue(policy.name.hasSuffix("-source-relative"))
+    }
+
+    // The user-visible half of #0015. An MP3 decodes to float, so a hot master peaks above
+    // 0 dBFS on a handful of samples (here 21 across the file, 0.4 dB over); the 24-bit render
+    // clips every one of those crests to full scale and measures tens of thousands. Measured
+    // raw, the source set a ceiling of 21 and the faithful render failed QC — on a path where
+    // only -master / -loudness may alter the audio. The clip cap covers the whole file so the
+    // comparison takes the whole-source path; the overshoot is small enough that clipping it
+    // moves the loudness by 0.1 dB, which is what a real hot master looks like.
+    func testShortFromHotMP3IsNotRejectedForClippedSamplesItInherits() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe", "magick"])
+        try workspace.overwriteConfig(
+            IntegrationWorkspace.defaultConfig + "\nAUDIO_QC_MAX_CLIPPED_SAMPLES=0\nSHORT_MP4_CLIP_SECONDS=6\n"
+        )
+        _ = try workspace.createImage(name: "poster", ext: "png", width: 320, height: 180)
+        let source = try workspace.createHotAudio(name: "hot_master", ext: "mp3", duration: 6.0, gainDB: 21.5)
+        let tool = try workspace.makeTool(arguments: ["-short"])
+
+        try tool.stepShort()
+
+        let shortVideo = workspace.output.appendingPathComponent("hot_master_8K_Short.mp4")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: shortVideo.path))
+        try tool.verifySourceLoudnessPreserved(source: source, output: shortVideo, toleranceDB: 1.0)
+    }
+
     func testNFTToShortPreservesSourceLoudnessOnLandscapePath() throws {
         let workspace = try IntegrationWorkspace()
         try workspace.requireCommands(["ffmpeg", "ffprobe", "magick"])

@@ -353,7 +353,9 @@ extension ConverterTool {
             pixelFormat: config.videoMP4PixelFormat,
             fallbackVerifyCodec: config.videoMP4VerifyCodec,
             audioSampleRate: config.videoMP4AudioSampleRate,
-            audioQCPolicy: try audioQCPolicy.map { try loudnessPreservingQCPolicy($0, source: audioFile) },
+            audioQCPolicy: try audioQCPolicy.map {
+                try loudnessPreservingQCPolicy($0, source: audioFile, sampleRate: config.videoMP4AudioSampleRate)
+            },
             loudnessSource: audioFile,
             durationCheck: { try self.verifyDurationMatch(source: audioFile, output: $0) }
         )
@@ -395,6 +397,16 @@ extension ConverterTool {
         )
     }
 
+    // Every short — landscape crop, portrait fit, centre cut, full-song — delivers audio at
+    // the short MP4 rate, so its source is judged in that domain (#0015).
+    private func shortRenderQCPolicy(
+        _ policy: AudioQCPolicy, source: URL, limitDuration: Double
+    ) throws -> AudioQCPolicy {
+        try loudnessPreservingQCPolicy(
+            policy, source: source, limitDuration: limitDuration, sampleRate: config.shortMP4AudioSampleRate
+        )
+    }
+
     func shortenMP4(_ input: URL, audioQCPolicy: AudioQCPolicy?) throws -> URL {
         try preflightMP4Input(input, requireAudio: true, requireAudibleAudio: true)
         try requireFFmpegEncoder(alacEncoderName)
@@ -407,7 +419,7 @@ extension ConverterTool {
             pixelFormat: config.shortMP4PixelFormat,
             fallbackVerifyCodec: config.shortMP4VerifyCodec,
             audioSampleRate: config.shortMP4AudioSampleRate,
-            audioQCPolicy: try audioQCPolicy.map { try loudnessPreservingQCPolicy($0, source: input, limitDuration: shortDuration) },
+            audioQCPolicy: try audioQCPolicy.map { try shortRenderQCPolicy($0, source: input, limitDuration: shortDuration) },
             loudnessSource: input,
             durationCheck: { try self.verifyShortMP4Duration($0, source: input) }
         )
@@ -485,7 +497,7 @@ extension ConverterTool {
             pixelFormat: config.shortMP4PixelFormat,
             fallbackVerifyCodec: config.shortMP4VerifyCodec,
             audioSampleRate: config.shortMP4AudioSampleRate,
-            audioQCPolicy: try audioQCPolicy.map { try loudnessPreservingQCPolicy($0, source: audioFile, limitDuration: shortDuration) },
+            audioQCPolicy: try audioQCPolicy.map { try shortRenderQCPolicy($0, source: audioFile, limitDuration: shortDuration) },
             loudnessSource: audioFile,
             durationCheck: {
                 try self.verifyDuration($0, expectedSeconds: shortDuration, label: verificationLabel, tolerance: 0.5)

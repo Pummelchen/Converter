@@ -221,6 +221,42 @@ extension ConverterTool {
         }
     }
 
+    // The segment of `source` a render will contain, decoded the way the render's own audio
+    // is decoded: through the internal WAV standard first (the same staging step every video
+    // render performs), then to the delivery sample rate. Loudness and peaks survive a change
+    // of sample rate; a per-sample count does not. Clipped samples are counted at full scale,
+    // and how many samples sit at full scale depends on the rate the signal was quantised at —
+    // a 48 kHz master's 2 s clip measured on the 96 kHz staging decode reports 3.7x the clipped
+    // samples of its 48 kHz render, and a hot MP3 measured raw (float, peaking above 0 dBFS on
+    // a few samples) reports a tiny fraction of what its 24-bit render clips to full scale.
+    // Decoding through the render's chain makes the count identical, so the rebased ceiling
+    // can demand exactly what the source contributes and still catch clipping the render adds.
+    func renderDomainQCResult(
+        for source: URL, policy: AudioQCPolicy, limitDuration: Double?, sampleRate: Int
+    ) throws -> AudioQCResult {
+        let staged = try makeInternalWAV(
+            from: source, in: cli.outDir, stem: "\(source.stem).qc-stage", duration: limitDuration
+        )
+        defer { discardTempFile(staged) }
+        guard sampleRate != config.wavSampleRate else {
+            return try audioQCResult(for: staged, policy: policy)
+        }
+        let delivered = try makeTemp(in: cli.outDir, stem: "\(source.stem).qc-delivery", ext: ".wav")
+        defer { discardTempFile(delivered) }
+        _ = try runner.run("ffmpeg", [
+            "-hide_banner", "-nostdin", "-v", "error", "-y",
+            "-i", staged.path,
+            "-map", "0:a:0",
+            "-ac", String(config.wavChannels),
+            "-ar", String(sampleRate),
+            "-c:a", config.wavCodec,
+            "-f", "wav",
+            "-rf64", "always",
+            delivered.path
+        ])
+        return try audioQCResult(for: delivered, policy: policy)
+    }
+
     // Every ceiling in a delivery QC policy measures a property the render inherits from its
     // source: true peak, stereo balance, DC offset, loudness range, clipping, level. On the
     // preserve-loudness paths the render is a faithful copy, so when the source already
@@ -238,10 +274,20 @@ extension ConverterTool {
     // contains — a track whose intro is 2.09 dB wide but whose average is 0.31 dB would be
     // judged against the average and fail.
     //
+    // `sampleRate` is the render's delivery rate: the source is measured after the same
+    // decode the render's audio goes through, so the clipped-sample count — the one ceiling
+    // that is a per-sample tally rather than a level — compares like with like (#0015).
+    //
     // Allowances only cover measurement rounding; the pipeline itself is transparent here
-    // (source, WAV, M4A and the 8K MP4 all report the same true peak to 0.01 dB).
-    func loudnessPreservingQCPolicy(_ policy: AudioQCPolicy, source: URL, limitDuration: Double? = nil) throws -> AudioQCPolicy {
-        let metrics = try audioQCResultForComparison(source, policy: policy, limitDuration: limitDuration).metrics
+    // (source, WAV, M4A and the 8K MP4 all report the same true peak to 0.01 dB). The clipped
+    // ceiling carries no allowance at all: the render is the same decode, so any excess is
+    // clipping the render introduced.
+    func loudnessPreservingQCPolicy(
+        _ policy: AudioQCPolicy, source: URL, limitDuration: Double? = nil, sampleRate: Int
+    ) throws -> AudioQCPolicy {
+        let metrics = try renderDomainQCResult(
+            for: source, policy: policy, limitDuration: limitDuration, sampleRate: sampleRate
+        ).metrics
         var relaxations: [String] = []
 
         func rebase(_ limit: Double, measured: Double?, allowance: Double, label: String, unit: String) -> Double {

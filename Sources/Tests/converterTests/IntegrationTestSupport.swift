@@ -263,6 +263,24 @@ final class IntegrationWorkspace {
         return target
     }
 
+    // Hard-clipped 24-bit fixture. ffmpeg's sine sits near -21 dBFS, so +24 dB drives it 3 dB
+    // past full scale and the s24 quantisation turns every crest into a run of full-scale
+    // samples. The sample rate is the point of the fixture.
+    func createClippedAudio(
+        name: String, sampleRate: Int, duration: Double = 6.0, frequency: Int = 440
+    ) throws -> URL {
+        let target = output.appendingPathComponent(name).appendingPathExtension("wav")
+        _ = try runner().run("ffmpeg", [
+            "-hide_banner", "-nostdin", "-v", "error", "-y",
+            "-f", "lavfi",
+            "-i", "sine=frequency=\(frequency):duration=\(String(format: "%.3f", duration)):sample_rate=\(sampleRate)",
+            "-ac", "2",
+            "-af", "volume=24dB",
+            "-c:a", "pcm_s24le", "-ar", String(sampleRate), "-f", "wav", "-rf64", "always", target.path
+        ])
+        return target
+    }
+
     func createVideoMP4(name: String, duration: Double, width: Int = 320, height: Int = 180, frequency: Int = 440) throws -> URL {
         let target = output.appendingPathComponent(name).appendingPathExtension("mp4")
         _ = try runner().run("ffmpeg", [
