@@ -425,7 +425,7 @@
       "evidence_before": "AUDIT/findings/L2-video-image-actions-cli.md X-7; L6-tests.md T-21 | AUDIT/evidence/0025-before.log: `-full --overwite`, `-full --continue-on-eror`, `-loudness --sharpnes 2`, `-short -verbose`, `-full 45`, `-doctor x`, `-flactomp3 song.flac` all parsed without error.",
       "fix_summary": "CLI: a dash-prefixed argument that is not a known option and not a number is an 'Unknown option' error; positional values are accepted only by actions that read them (-bass, -loudness, -fade, -fadecut, -fadeout, -noise, -silence, -visualsubs), every other action rejects stray words with an actionable message.",
       "evidence_after": "AUDIT/evidence/0011-0025-after.log: testUnknownOptionsAndStrayPositionalsAreRejected + existing parser/flag tests (38) pass. Full suite (AUDIT/evidence/0011-0025-fullsuite.txt): 172 executed, 0 failures, 0 compiler warnings; swiftlint 532/56 after wrapping.",
-      "commit": "pending-this-commit",
+      "commit": "58a6826",
       "notes": ""
     },
     {
