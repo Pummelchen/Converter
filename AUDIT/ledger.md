@@ -25,7 +25,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 | #0030 | S1 | repo/docs | README.md:25,59; Sources/converter/CLI.swift:461-481,664-665; CONTRIBUTING.md:59; wiki Home/Full-Run-Contract | README, CLI help, CONTRIBUTING and wiki contradict actual behaviour (source rename, audio alteration, portrait input, --keep-full-name, 58 s, auto-install wording) | docs | START |  |
 | #0031 | S1 | converterTests | Sources/Tests/converterTests/IntegrationTestSupport.swift:25,133-143 | Integration workspace inherits OUTPUT_DIR/SRC_DIR/OUT_DIR/CONFIG_FILE/DEBUG from the host shell | test | START |  |
 | #0032 | S1 | converterTests | Sources/converter/PipelineCore.swift:487-505 | publishTemp restore-on-failure branch has no test | test | START |  |
-| #0033 | S1 | converterTests | Sources/converter/PipelineCore.swift:551-561 | requireDirectChild never tested with .., symlinks, absolute paths | test | TEST |  |
+| #0033 | S1 | converterTests | Sources/converter/PipelineCore.swift:551-561 | requireDirectChild never tested with .., symlinks, absolute paths | test | TEST | 1682212 |
 | #0034 | S1 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:63-81 | PipeCapture cap test never reaches the 64 MiB cap | test | START |  |
 | #0035 | S1 | converterTests | Sources/converter/Actions.swift:126-154 | --continue-on-error batch semantics and summary untested | test | START |  |
 | #0036 | S1 | converterTests | Sources/converter/PipelineCore.swift:842-856 | -clean has no test guarding 'never deletes user files' | test | START |  |
@@ -541,6 +541,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **evidence-before:** AUDIT/findings/L6-tests.md T-3
 - **fix-summary:** Three unit tests cover requireDirectChild via resolveOutputPath and resolveExplicitPath: relative escapes, subfolders, symlinked subfolder escaping OUT_DIR, absolute paths inside/outside, OUT_DIR itself a symlink (both spellings accepted). No containment hole found.
 - **evidence-after:** AUDIT/evidence/0033-before.log (guard removed: 6 failures; symlink resolution removed: 3 failures), 0033-after.log (3 pass); swiftlint 533/56. Full suite pending
+- **commit sha:** 1682212
 
 ### #0034 · S1 · START · PipeCapture cap test never reaches the 64 MiB cap
 
