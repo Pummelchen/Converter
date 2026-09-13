@@ -408,7 +408,7 @@
       "evidence_before": "AUDIT/findings/L2-video-image-actions-cli.md X-5",
       "fix_summary": "sourceImageFiles(matchingExtensions:) filters isPortraitShortStill; used by stepAIPix, stepRunPix, stepPNGToJPG.",
       "evidence_after": "AUDIT/evidence/0024-before.log: stepAIPix rewrote art_Short_8K.png to 320x180 (crc changed); 0024-after.log: 7 targeted tests pass; swiftlint 535/56. Full suite: next batch run.",
-      "commit": "",
+      "commit": "55aa10e",
       "notes": "Single isFullRunDerivedImage predicate in every batch discovery."
     },
     {
