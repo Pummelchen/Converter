@@ -742,14 +742,14 @@
       "location": "Sources/converter/Config.swift:203-205",
       "title": "archive profile is a no-op placeholder",
       "category": "placeholder",
-      "status": "START",
+      "status": "TEST",
       "host": "local",
       "discovered_by": "reviewer V-5",
       "session": "2026-09-13",
       "evidence_before": "AUDIT/findings/L2-validation-config.md V-5",
-      "fix_summary": "",
-      "evidence_after": "",
-      "commit": "",
+      "fix_summary": "The no-op archive profile is removed from RunProfile, the CLI help profile list and config.txt; PROFILE=archive / --profile archive fail with the usual 'must be one of' message. Wiki Configuration still lists it (docs sync #0030).",
+      "evidence_after": "AUDIT/evidence/0044-before.log, 0044-after.log (rejection + help-text test pass); swiftlint 533/56. Full suite pending",
+      "commit": "fa443f1",
       "notes": ""
     },
     {

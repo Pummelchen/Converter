@@ -6,9 +6,9 @@ Session: `2026-09-13` · branch `audit/2026-09-13` · baseline commit `4bb136a`
 
 | status | count |
 |---|---|
-| START | 60 |
+| START | 59 |
 | PROGRESS | 1 |
-| TEST | 3 |
+| TEST | 4 |
 | AUDIT | 0 |
 | DONE | 35 |
 | BLOCKED | 1 |
@@ -40,7 +40,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 | #0041 | S2 | converter/DependencyBootstrap | Sources/converter/DependencyBootstrap.swift:216-248 | Installer subprocesses have no timeout and discard diagnostics | incomplete | START |  |
 | #0042 | S2 | converter/ProcessRunner | Sources/converter/ProcessRunner.swift:112-124 | Child stdin inherited from the terminal | unsafe | START |  |
 | #0043 | S2 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:683-691,1013-1028 | containsChunk is a 64 KiB substring scan, not a RIFF chunk walk | unsafe | START |  |
-| #0044 | S2 | converter/Config | Sources/converter/Config.swift:203-205 | archive profile is a no-op placeholder | placeholder | START |  |
+| #0044 | S2 | converter/Config | Sources/converter/Config.swift:203-205 | archive profile is a no-op placeholder | placeholder | TEST | fa443f1 |
 | #0045 | S2 | converter/Config | Sources/converter/Config.swift:197-200 | youtube_short overlay puts a known-failing encoder first at the default portrait size | logic | START |  |
 | #0046 | S2 | converter/Config | Sources/converter/Config.swift:159-161 | Unknown config keys dropped at debug level only; BOM not stripped | incomplete | TEST | 7455803 |
 | #0047 | S2 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:16-32,59-63 | Source clip re-rendered and re-analysed for every short variant | perf | START |  |
@@ -655,7 +655,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **evidence-before:** AUDIT/findings/L2-validation-config.md V-4; L6-tests.md T-18
 - **notes:** Bounds-checked chunk walker; boundary tests for header/PCM parsers.
 
-### #0044 · S2 · START · archive profile is a no-op placeholder
+### #0044 · S2 · TEST · archive profile is a no-op placeholder
 
 - **project/module:** converter/Config
 - **file:line:** Sources/converter/Config.swift:203-205
@@ -663,6 +663,9 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **host-used:** local
 - **discovered-by:** reviewer V-5
 - **evidence-before:** AUDIT/findings/L2-validation-config.md V-5
+- **fix-summary:** The no-op archive profile is removed from RunProfile, the CLI help profile list and config.txt; PROFILE=archive / --profile archive fail with the usual 'must be one of' message. Wiki Configuration still lists it (docs sync #0030).
+- **evidence-after:** AUDIT/evidence/0044-before.log, 0044-after.log (rejection + help-text test pass); swiftlint 533/56. Full suite pending
+- **commit sha:** fa443f1
 
 ### #0045 · S2 · START · youtube_short overlay puts a known-failing encoder first at the default portrait size
 
