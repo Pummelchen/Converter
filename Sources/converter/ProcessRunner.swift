@@ -145,6 +145,10 @@ final class ProcessRunner: Sendable {
         process.currentDirectoryURL = currentDirectory
         process.environment = environment.merging(extraEnvironment) { _, new in new }
         process.qualityOfService = .userInitiated
+        // No child may read the terminal. An ffmpeg without -nostdin, a magick that asks a
+        // question or an `open` waiting for a keypress would otherwise block the whole run
+        // on a prompt nobody sees, or swallow keystrokes meant for the shell.
+        process.standardInput = FileHandle.nullDevice
 
         let stdoutPipe = Pipe()
         let stderrPipe = Pipe()

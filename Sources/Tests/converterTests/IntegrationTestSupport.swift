@@ -483,6 +483,41 @@ final class IntegrationWorkspace {
     }
 }
 
+// audit #0042: a directory of executable shell stubs that is placed first in PATH, so a test can
+// shadow ffmpeg, brew or any other tool with scripted behaviour without touching the real ones.
+// The bootstrap always appends the well-known Homebrew and system directories to PATH, so only a
+// stub that comes first can hide the real tool installed on the machine.
+final class FakeToolDirectory {
+    let url: URL
+
+    init() throws {
+        url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("converter-fake-tools-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+    }
+
+    deinit {
+        try? FileManager.default.removeItem(at: url)
+    }
+
+    // `body` is the script after the `#!/bin/sh` line; the stub receives the real arguments.
+    @discardableResult
+    func add(_ name: String, body: String) throws -> URL {
+        let stub = url.appendingPathComponent(name)
+        try "#!/bin/sh\n\(body)\n".write(to: stub, atomically: true, encoding: .utf8)
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: stub.path)
+        return stub
+    }
+
+    // The inherited PATH stays behind the stub directory so `awk`, `sed` and `sh` still resolve.
+    func environment(inheriting base: [String: String] = ProcessInfo.processInfo.environment) -> [String: String] {
+        var environment = IntegrationWorkspace.sanitizedEnvironment(base)
+        let inheritedPath = base["PATH"].map { ":" + $0 } ?? ""
+        environment["PATH"] = url.path + inheritedPath
+        return environment
+    }
+}
+
 final class ResultBox<Value>: @unchecked Sendable {
     private let lock = NSLock()
     private var value: Value?

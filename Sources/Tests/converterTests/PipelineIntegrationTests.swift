@@ -164,6 +164,21 @@ final class PipelineIntegrationTests: XCTestCase {
         XCTAssertLessThan(Date().timeIntervalSince(start), 15, "timeout must not block on a pipe held by a grandchild")
     }
 
+    // audit #0042: children inherited the parent's stdin, so protection against a tool waiting
+    // on the terminal relied on every ffmpeg call site remembering -nostdin, and magick, ffprobe
+    // and `open` had no protection at all. With stdin closed the `read` sees EOF at once; before
+    // the fix it blocked on the terminal until the timeout fired.
+    func testRunGivesChildrenNoStdin() throws {
+        let workspace = try IntegrationWorkspace()
+        let runner = workspace.runner()
+        let start = Date()
+
+        let result = try runner.run("/bin/sh", ["-c", "read x; echo \"got:$x\""], timeoutSeconds: 3)
+
+        XCTAssertEqual(result.stdout.trimmed, "got:", "read must hit EOF immediately and leave x empty")
+        XCTAssertLessThan(Date().timeIntervalSince(start), 2, "the child must not wait on the terminal")
+    }
+
     // audit #0024: the batch image actions must never re-ingest the full run's portrait stills.
     // -aipix on a 4320x7680 `_Short_8K.png` used to rewrite it as a letterboxed landscape 8K.
     func testImageBatchActionsSkipPortraitShortStills() async throws {

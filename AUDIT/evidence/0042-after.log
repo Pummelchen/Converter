@@ -1,0 +1,28 @@
+# audit #0042 AFTER: fix applied. Same held-open stdin pipe on the xctest bundle as the before run (sleep 5 keeps it open longer than the tests need).
+Test Case '-[converterTests.PipelineIntegrationTests testRunGivesChildrenNoStdin]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testRunGivesChildrenNoStdin]' passed (0.069 seconds).
+	 Executed 1 test, with 0 failures (0 unexpected) in 0.069 (0.069) seconds
+	 Executed 1 test, with 0 failures (0 unexpected) in 0.069 (0.069) seconds
+	 Executed 1 test, with 0 failures (0 unexpected) in 0.069 (0.070) seconds
+Test Case '-[converterTests.converterTests testDependencyProbeGivesToolsNoStdin]' started.
+Test Case '-[converterTests.converterTests testDependencyProbeGivesToolsNoStdin]' passed (0.731 seconds).
+	 Executed 1 test, with 0 failures (0 unexpected) in 0.731 (0.731) seconds
+	 Executed 1 test, with 0 failures (0 unexpected) in 0.731 (0.731) seconds
+	 Executed 1 test, with 0 failures (0 unexpected) in 0.731 (0.732) seconds
+
+# neighbouring ProcessRunner and bootstrap tests via swift test --filter 'testRun|testDependency'
+Test Case '-[converterTests.PipelineIntegrationTests testRunCapsCapturedOutputAt64MiBOnBothStreams]' passed (7.678 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testRunCapturedOutputCapBoundaryKeepsExactCapAndDropsOneByteOver]' passed (6.303 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testRunDrainsLargeChildOutputWithoutDeadlock]' passed (0.213 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testRunGivesChildrenNoStdin]' passed (0.070 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testRunHandlesLargeStderrWithoutDeadlock]' passed (0.391 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testRunHandlesRepeatedLaunchesWithoutPipeHandleExhaustion]' passed (26.764 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testRunTimeoutDoesNotWaitForGrandchildHoldingThePipe]' passed (1.071 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testRunTimeoutEscalatesToSIGKILLWhenChildIgnoresSIGTERM]' passed (8.100 seconds).
+	 Executed 8 tests, with 0 failures (0 unexpected) in 50.589 (50.590) seconds
+Test Case '-[converterTests.converterTests testDependencyBootstrapEnrichesPathWithHomebrewLocations]' passed (0.001 seconds).
+Test Case '-[converterTests.converterTests testDependencyManifestMatchesCurrentRuntimeTools]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testDependencyProbeGivesToolsNoStdin]' passed (0.473 seconds).
+	 Executed 3 tests, with 0 failures (0 unexpected) in 0.475 (0.475) seconds
+	 Executed 11 tests, with 0 failures (0 unexpected) in 51.064 (51.066) seconds
+	 Executed 11 tests, with 0 failures (0 unexpected) in 51.064 (51.066) seconds

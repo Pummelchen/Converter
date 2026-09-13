@@ -113,6 +113,9 @@ enum DependencyBootstrapper {
         process.executableURL = url
         process.arguments = ["-version"]
         process.qualityOfService = .utility
+        // A probe that inherits the terminal can sit on a read until the watchdog fires and
+        // then be misreported as broken; it gets the same closed stdin as every other child.
+        process.standardInput = FileHandle.nullDevice
         let outputPipe = Pipe()
         process.standardOutput = outputPipe
         process.standardError = outputPipe

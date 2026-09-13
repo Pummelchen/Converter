@@ -67,6 +67,26 @@ final class converterTests: XCTestCase {
         XCTAssertTrue(path.hasPrefix("/usr/bin:/bin"))
     }
 
+    // audit #0042: the functional probe (`tool -version`) inherited stdin too. A tool that reads
+    // the terminal blocked until the 10 s probe watchdog fired and was then reported as broken,
+    // which on an auto-install machine triggers a pointless reinstall. Every stub here reads
+    // stdin first; with stdin closed all three probes finish at once and nothing is "missing".
+    func testDependencyProbeGivesToolsNoStdin() throws {
+        let stubs = try FakeToolDirectory()
+        for name in ["ffmpeg", "ffprobe", "magick"] {
+            try stubs.add(name, body: "read x; exit 0")
+        }
+        var environment = stubs.environment()
+        let logger = Logger(scriptName: "converterTests", debugEnabled: false)
+        let start = Date()
+
+        XCTAssertNoThrow(
+            try DependencyBootstrapper.ensureRuntimeDependencies(
+                environment: &environment, logger: logger, action: .full)
+        )
+        XCTAssertLessThan(Date().timeIntervalSince(start), 5, "a probe must not wait on the terminal")
+    }
+
     func testHelpListAndMatrixSkipRuntimeDependencyBootstrap() throws {
         XCTAssertFalse(Action.help.requiresRuntimeDependencyBootstrap)
         XCTAssertFalse(Action.list.requiresRuntimeDependencyBootstrap)
