@@ -1,0 +1,22 @@
+Test Case '-[converterTests.PipelineIntegrationTests testDoctorPassesOnHealthyWorkspace]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testDoctorPassesOnHealthyWorkspace]' passed (0.696 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testRunDrainsLargeChildOutputWithoutDeadlock]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testRunDrainsLargeChildOutputWithoutDeadlock]' passed (0.150 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testRunHandlesLargeStderrWithoutDeadlock]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testRunHandlesLargeStderrWithoutDeadlock]' passed (0.309 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testRunHandlesRepeatedLaunchesWithoutPipeHandleExhaustion]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testRunHandlesRepeatedLaunchesWithoutPipeHandleExhaustion]' passed (28.881 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testRunTimeoutDoesNotWaitForGrandchildHoldingThePipe]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testRunTimeoutDoesNotWaitForGrandchildHoldingThePipe]' passed (1.039 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testRunTimeoutEscalatesToSIGKILLWhenChildIgnoresSIGTERM]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testRunTimeoutEscalatesToSIGKILLWhenChildIgnoresSIGTERM]' passed (8.100 seconds).
+	 Executed 6 tests, with 0 failures (0 unexpected) in 39.175 (39.176) seconds
+Test Case '-[converterTests.converterTests testDependencyBootstrapEnrichesPathWithHomebrewLocations]' started.
+Test Case '-[converterTests.converterTests testDependencyBootstrapEnrichesPathWithHomebrewLocations]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testDependencyManifestMatchesCurrentRuntimeTools]' started.
+Test Case '-[converterTests.converterTests testDependencyManifestMatchesCurrentRuntimeTools]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testHelpListAndMatrixSkipRuntimeDependencyBootstrap]' started.
+Test Case '-[converterTests.converterTests testHelpListAndMatrixSkipRuntimeDependencyBootstrap]' passed (0.000 seconds).
+	 Executed 3 tests, with 0 failures (0 unexpected) in 0.001 (0.001) seconds
+	 Executed 9 tests, with 0 failures (0 unexpected) in 39.176 (39.178) seconds
+	 Executed 9 tests, with 0 failures (0 unexpected) in 39.176 (39.184) seconds

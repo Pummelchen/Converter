@@ -1,0 +1,43 @@
+Building for debugging...
+[0/5] Write sources
+[1/5] Write swift-version--58304C5D6DBC2206.txt
+[3/5] Compiling converterTests PipelineIntegrationTests.swift
+/Users/andreborchert/Library/CloudStorage/Dropbox/Coding/Converter/Sources/Tests/converterTests/PipelineIntegrationTests.swift:34:55: warning: use of protocol 'Error' as a type must be written 'any Error'; this will be an error in a future Swift language mode [#ExistentialAny]
+  32 |         let runner = workspace.runner()
+  33 |         let semaphore = DispatchSemaphore(value: 0)
+  34 |         let outcome = ResultBox<Result<ProcessResult, Error>>()
+     |                                                       `- warning: use of protocol 'Error' as a type must be written 'any Error'; this will be an error in a future Swift language mode [#ExistentialAny]
+  35 | 
+  36 |         DispatchQueue.global(qos: .userInitiated).async {
+
+/Users/andreborchert/Library/CloudStorage/Dropbox/Coding/Converter/Sources/Tests/converterTests/PipelineIntegrationTests.swift:1992:13: warning: initialization of immutable value 'wav' was never used; consider replacing with assignment to '_' or removing it [#no-usage]
+1990 |                 "\nMASTERING_TARGET_LUFS=-40\n"
+1991 |         )
+1992 |         let wav = try workspace.createAudio(name: "needs_master", ext: "wav", duration: 4.5)
+     |             `- warning: initialization of immutable value 'wav' was never used; consider replacing with assignment to '_' or removing it [#no-usage]
+1993 |         let tool = try workspace.makeTool(arguments: ["-master"])
+1994 | 
+
+[#ExistentialAny]: <https://docs.swift.org/compiler/documentation/diagnostics/existential-any>
+[4/5] Emitting module converterTests
+[4/6] Write Objects.LinkFileList
+[5/6] Linking converterPackageTests
+Build complete! (1.69s)
+Test Suite 'Selected tests' started at 2026-09-13 14:00:22.747.
+Test Suite 'converterPackageTests.xctest' started at 2026-09-13 14:00:22.754.
+Test Suite 'PipelineIntegrationTests' started at 2026-09-13 14:00:22.754.
+Test Case '-[converterTests.PipelineIntegrationTests testRunTimeoutDoesNotWaitForGrandchildHoldingThePipe]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testRunTimeoutDoesNotWaitForGrandchildHoldingThePipe]' passed (1.029 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testRunTimeoutEscalatesToSIGKILLWhenChildIgnoresSIGTERM]' started.
+/Users/andreborchert/Library/CloudStorage/Dropbox/Coding/Converter/Sources/Tests/converterTests/PipelineIntegrationTests.swift:93: error: -[converterTests.PipelineIntegrationTests testRunTimeoutEscalatesToSIGKILLWhenChildIgnoresSIGTERM] : XCTAssertLessThan failed: ("60.069196939468384") is not less than ("15.0") - timeout must not wait for the child's natural exit
+Test Case '-[converterTests.PipelineIntegrationTests testRunTimeoutEscalatesToSIGKILLWhenChildIgnoresSIGTERM]' failed (60.150 seconds).
+Test Suite 'PipelineIntegrationTests' failed at 2026-09-13 14:01:23.934.
+	 Executed 2 tests, with 1 failure (0 unexpected) in 61.180 (61.180) seconds
+Test Suite 'converterPackageTests.xctest' failed at 2026-09-13 14:01:23.934.
+	 Executed 2 tests, with 1 failure (0 unexpected) in 61.180 (61.180) seconds
+Test Suite 'Selected tests' failed at 2026-09-13 14:01:23.934.
+	 Executed 2 tests, with 1 failure (0 unexpected) in 61.180 (61.187) seconds
+􀟈  Test run started.
+􀄵  Testing Library Version: 1902
+􀄵  Target Platform: arm64e-apple-macos14.0
+􁁛  Test run with 0 tests in 0 suites passed after 0.001 seconds.

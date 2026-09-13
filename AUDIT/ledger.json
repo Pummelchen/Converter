@@ -146,15 +146,15 @@
       "location": "Sources/converter/ProcessRunner.swift:139-152; DependencyBootstrap.swift:145-153",
       "title": "Process timeout sends SIGTERM only; a child ignoring it (or a grandchild holding the pipe) hangs the run forever",
       "category": "bug",
-      "status": "START",
+      "status": "DONE",
       "host": "local",
       "discovered_by": "reviewer core C-1; tests T-4",
       "session": "2026-09-13",
-      "evidence_before": "AUDIT/findings/L2-core-runtime.md C-1; L6-tests.md T-4",
-      "fix_summary": "",
-      "evidence_after": "",
-      "commit": "",
-      "notes": "Escalate to SIGKILL after grace; close pipe read ends on timeout; same in isFunctionalTool."
+      "evidence_before": "AUDIT/findings/L2-core-runtime.md C-1; L6-tests.md T-4 | AUDIT/evidence/0009-before.log: testRunTimeoutEscalatesToSIGKILLWhenChildIgnoresSIGTERM took 60.07 s (child's natural exit) with timeoutSeconds: 1. The grandchild-holds-the-pipe scenario (sh -c 'sleep 60 & wait') was NOT reproducible: it returned in 1.0 s before the fix; the test is kept as a regression guard.",
+      "fix_summary": "ProcessRunner.terminateWithEscalation: SIGTERM, then SIGKILL after a 5 s grace if the child is still running (pid re-checked). PipeCapture appends output under its lock as it arrives and offers a bounded wait, so the timeout path reports the captured stderr tail after at most 2 s instead of blocking on pipe EOF. DependencyBootstrap.isFunctionalTool uses the same escalation and a bounded drain wait.",
+      "evidence_after": "AUDIT/evidence/0009-after.log: escalation test now 8.1 s (1 s timeout + 5 s grace + drain); 9 targeted tests pass. Full suite 166/166 (0009-fullsuite.txt). swiftlint 526/56, semgrep 0.",
+      "commit": "73b6b87",
+      "notes": "Escalate to SIGKILL after grace; close pipe read ends on timeout; same in isFunctionalTool. Residual, documented: a capture thread stays blocked on read() until a grandchild that inherited the pipe exits; the run itself no longer waits for it (bounded drain), so this cannot stall a run."
     },
     {
       "id": "#0010",
@@ -1668,6 +1668,23 @@
       "evidence_after": "",
       "commit": "",
       "notes": ""
+    },
+    {
+      "id": "#0099",
+      "severity": "S3",
+      "module": "converterTests",
+      "location": "Sources/Tests/converterTests/PipelineIntegrationTests.swift:34,1967",
+      "title": "Test target compiles with two warnings (bare 'Error' existential, unused 'wav' binding)",
+      "category": "style",
+      "status": "START",
+      "host": "local",
+      "discovered_by": "Phase C suite log review (#0008)",
+      "session": "2026-09-13",
+      "evidence_before": "swift test log (AUDIT/evidence/0008-fullsuite log source) shows: PipelineIntegrationTests.swift:34 'use of protocol Error as a type must be written any Error'; :1967 'initialization of immutable value wav was never used'. Present in the baseline test log too (4 matching lines); the \u00a73 baseline only built the product target with -warnings-as-errors.",
+      "fix_summary": "",
+      "evidence_after": "",
+      "commit": "",
+      "notes": "Phase E requires zero warnings across all targets."
     }
   ]
 }

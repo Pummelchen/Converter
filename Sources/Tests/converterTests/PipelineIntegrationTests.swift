@@ -80,6 +80,31 @@ final class PipelineIntegrationTests: XCTestCase {
         XCTAssertEqual(result.exitCode, 0)
     }
 
+    // audit #0009: a child that ignores SIGTERM must still be reaped once the timeout fires.
+    // Before the fix the watchdog only sent SIGTERM and waitUntilExit blocked for the child's
+    // natural lifetime (here 60 s; for a wedged ffmpeg, forever).
+    func testRunTimeoutEscalatesToSIGKILLWhenChildIgnoresSIGTERM() throws {
+        let workspace = try IntegrationWorkspace()
+        let runner = workspace.runner()
+        let start = Date()
+        XCTAssertThrowsError(try runner.run("/bin/sh", ["-c", "trap '' TERM; sleep 60"], timeoutSeconds: 1)) { error in
+            XCTAssertTrue("\(error)".contains("timed out"), "\(error)")
+        }
+        XCTAssertLessThan(Date().timeIntervalSince(start), 15, "timeout must not wait for the child's natural exit")
+    }
+
+    // audit #0009: a grandchild that inherited the pipe must not keep the timed-out run blocked
+    // on EOF. The shell exits on SIGTERM; its backgrounded sleep keeps stdout open for 60 s.
+    func testRunTimeoutDoesNotWaitForGrandchildHoldingThePipe() throws {
+        let workspace = try IntegrationWorkspace()
+        let runner = workspace.runner()
+        let start = Date()
+        XCTAssertThrowsError(try runner.run("/bin/sh", ["-c", "sleep 60 & wait"], timeoutSeconds: 1)) { error in
+            XCTAssertTrue("\(error)".contains("timed out"), "\(error)")
+        }
+        XCTAssertLessThan(Date().timeIntervalSince(start), 15, "timeout must not block on a pipe held by a grandchild")
+    }
+
     // The stills must show exactly what the shorts show: the fitted one pads with black, the
     // centre cut fills the frame. Verified on pixels, not on the command that produced them.
     func testPortraitShortStillsMatchTheirRenderFraming() throws {

@@ -143,14 +143,14 @@ enum DependencyBootstrapper {
 
         let timedOut = TimeoutFlag()
         let watchdog = DispatchWorkItem { [weak process, timedOut] in
-            guard let process, process.isRunning else { return }
-            timedOut.set()
-            process.terminate()
+            guard let process else { return }
+            ProcessRunner.terminateWithEscalation(process, flag: timedOut, qos: .utility)
         }
         DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + toolProbeTimeoutSeconds, execute: watchdog)
         process.waitUntilExit()
         watchdog.cancel()
-        drained.wait()
+        // Bounded: a probe that spawned something holding the pipe must not stall startup.
+        _ = drained.wait(timeout: .now() + toolProbeTimeoutSeconds)
 
         return !timedOut.isSet && process.terminationStatus == 0
     }

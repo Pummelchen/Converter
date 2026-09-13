@@ -23,27 +23,39 @@ private final class PipeCapture: @unchecked Sendable {
                 closeHandle(handle)
                 self.group.leave()
             }
-            var captured = Data()
             var exceededCap = false
             while let chunk = try? handle.read(upToCount: 65_536), !chunk.isEmpty {
                 if exceededCap {
                     continue
                 }
-                let remaining = Self.maxCapturedBytes - captured.count
-                if chunk.count > remaining {
-                    captured.append(chunk.prefix(max(0, remaining)))
-                    exceededCap = true
-                } else {
-                    captured.append(chunk)
+                // Appended as it arrives, so a timed-out run can report what the child said so
+                // far without waiting for a pipe that a grandchild may still hold open.
+                self.data.withLock { captured in
+                    let remaining = Self.maxCapturedBytes - captured.count
+                    if chunk.count > remaining {
+                        captured.append(chunk.prefix(max(0, remaining)))
+                        exceededCap = true
+                    } else {
+                        captured.append(chunk)
+                    }
                 }
             }
-            self.data.withLock { $0 = captured }
         }
     }
 
     func waitString() -> String {
         group.wait()
-        return String(data: data.withLock({ $0 }), encoding: .utf8) ?? ""
+        return snapshot()
+    }
+
+    // Bounded wait for the timeout path: returns whatever has been captured by the deadline.
+    func waitString(until deadline: DispatchTime) -> String {
+        _ = group.wait(timeout: deadline)
+        return snapshot()
+    }
+
+    private func snapshot() -> String {
+        String(data: data.withLock({ $0 }), encoding: .utf8) ?? ""
     }
 }
 
@@ -72,6 +84,24 @@ final class TimeoutFlag: Sendable {
 final class ProcessRunner: Sendable {
     // Bounds every external command so a hung tool cannot stall a run forever.
     static let defaultTimeoutSeconds: TimeInterval = 1800
+    // After the timeout a child gets SIGTERM and this long to exit before SIGKILL.
+    static let killGraceSeconds: TimeInterval = 5
+    // How long the timeout path collects the child's last output before giving up on the pipe.
+    static let timeoutDrainSeconds: TimeInterval = 2
+
+    // SIGTERM first so a well-behaved tool can clean up; SIGKILL when it does not. A child that
+    // traps or ignores SIGTERM (or is stuck in uninterruptible I/O) used to keep waitUntilExit
+    // blocked for its natural lifetime, which for a wedged encoder is forever.
+    static func terminateWithEscalation(_ process: Process, flag: TimeoutFlag, qos: DispatchQoS.QoSClass) {
+        guard process.isRunning else { return }
+        flag.set()
+        let pid = process.processIdentifier
+        process.terminate()
+        DispatchQueue.global(qos: qos).asyncAfter(deadline: .now() + killGraceSeconds) { [weak process] in
+            guard let process, process.isRunning, process.processIdentifier == pid else { return }
+            kill(pid, SIGKILL)
+        }
+    }
 
     private let logger: Logger
     private let environment: [String: String]
@@ -137,18 +167,21 @@ final class ProcessRunner: Sendable {
         let timeout = timeoutSeconds ?? Self.defaultTimeoutSeconds
         let timeoutFlag = TimeoutFlag()
         let watchdog = DispatchWorkItem { [weak process, timeoutFlag] in
-            guard let process, process.isRunning else { return }
-            timeoutFlag.set()
-            process.terminate()
+            guard let process else { return }
+            Self.terminateWithEscalation(process, flag: timeoutFlag, qos: .userInitiated)
         }
         DispatchQueue.global(qos: .userInitiated).asyncAfter(deadline: .now() + timeout, execute: watchdog)
         process.waitUntilExit()
         watchdog.cancel()
 
         if timeoutFlag.isSet {
-            _ = stdoutCapture.waitString()
-            _ = stderrCapture.waitString()
-            throw AppError("Command timed out after \(Int(timeout)) seconds: \(formatCommand(executableURL.path, arguments))")
+            // The child is dead (or being killed); do not block on pipe EOF, which a grandchild
+            // that inherited the pipe could postpone. Report the tail captured so far.
+            let deadline = DispatchTime.now() + Self.timeoutDrainSeconds
+            _ = stdoutCapture.waitString(until: deadline)
+            let stderrTail = stderrCapture.waitString(until: deadline).lastNonEmptyLine
+            let detail = stderrTail.map { " | \($0)" } ?? ""
+            throw AppError("Command timed out after \(Int(timeout)) seconds: \(formatCommand(executableURL.path, arguments))\(detail)")
         }
 
         let stdout = stdoutCapture.waitString()

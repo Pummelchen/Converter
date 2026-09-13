@@ -2,7 +2,7 @@
 
 Session: `2026-09-13` · branch `audit/2026-09-13` · baseline commit `4bb136a`
 
-**known-total:98 done:7 open:91 blocked:0 new-this-session:98**
+**known-total:99 done:8 open:91 blocked:0 new-this-session:99**
 
 | status | count |
 |---|---|
@@ -10,18 +10,17 @@ Session: `2026-09-13` · branch `audit/2026-09-13` · baseline commit `4bb136a`
 | PROGRESS | 1 |
 | TEST | 0 |
 | AUDIT | 0 |
-| DONE | 7 |
+| DONE | 8 |
 | BLOCKED | 0 |
 
 Status gates: START (reproduced/proven + expected behaviour written) → PROGRESS (diff) → TEST (failing-before/passing-after test pasted, full suite green, no new warnings) → AUDIT (cold re-read, all scanners re-run, no baseline regression, no new placeholder) → DONE (committed atomically). BLOCKED needs reason + what was tried + ≥2 options for a human.
 
-## Open S0 / S1 (31)
+## Open S0 / S1 (30)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
 | #0006 | S0 | repo | node1 (fresh clone) | Phase E: independent verification from a fresh clone on node1 | test | START |  |
 | #0005 | S1 | repo | wiki | Create and maintain the wiki audit tracker page mirroring the ledger (§9) | docs | PROGRESS |  |
-| #0009 | S1 | converter/ProcessRunner | Sources/converter/ProcessRunner.swift:139-152; DependencyBootstrap.swift:145-153 | Process timeout sends SIGTERM only; a child ignoring it (or a grandchild holding the pipe) hangs the run forever | bug | START |  |
 | #0010 | S1 | converter/Support | Sources/converter/Support.swift:218,295; CLI.swift:325-329 | Int(Double) traps on large-but-finite user durations (-silence 1e300 etc.) | bug | START |  |
 | #0011 | S1 | converter/DependencyBootstrap | Sources/converter/DependencyBootstrap.swift:164-176 | Homebrew installer fetched from unpinned HEAD URL, piped to bash, no integrity check, no pipefail | unsafe | START |  |
 | #0012 | S1 | converter/PipelineCore | Sources/converter/PipelineCore.swift:711-714 | parseLoudnormJSON slices from the first '{' in stderr; metadata containing '{' breaks QC on valid files | bug | START |  |
@@ -55,7 +54,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 
 _none_
 
-## Open S2 / S3 (60)
+## Open S2 / S3 (61)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
@@ -119,14 +118,16 @@ _none_
 | #0096 | S3 | converterTests | Sources/Tests/converterTests/converterTests.swift:108-115 | SchedulerProfile tested via its summary string | test | START |  |
 | #0097 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:1902-1911 | -doctor has only a no-throw happy path | test | START |  |
 | #0098 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:529,534 | Exact ffmpeg bass filter string pinned without a stated reason | test | START |  |
+| #0099 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:34,1967 | Test target compiles with two warnings (bare 'Error' existential, unused 'wav' binding) | style | START |  |
 
-## Done (7)
+## Done (8)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
 | #0007 | S0 | converter/Actions | Sources/converter/Actions.swift:563-569 | -full with an MP3 source overwrites the user's source file with its own transcode | bug | DONE | ce3addc |
 | #0008 | S0 | converter/VideoPipeline | Sources/converter/VideoPipeline.swift:314; Sources/converter/AudioPipeline.swift:1986 | -album --output-file publishes the main MP4 over the album WAV | bug | DONE | a881e33 |
 | #0004 | S1 | converter/BW64Bridge | Sources/ | Phase A: sanitizer baseline — test suite under ASan, UBSan, TSan | test | DONE | ce3addc |
+| #0009 | S1 | converter/ProcessRunner | Sources/converter/ProcessRunner.swift:139-152; DependencyBootstrap.swift:145-153 | Process timeout sends SIGTERM only; a child ignoring it (or a grandchild holding the pipe) hangs the run forever | bug | DONE | 73b6b87 |
 | #0023 | S1 | converter/Actions | Sources/converter/Actions.swift:576-600 | Non-standard WAV source is rewritten in place; no bit-exact original survives | unsafe | DONE | ce3addc |
 | #0001 | S2 | repo/AUDIT | AUDIT/inventory.md | Phase A: scope inventory, dependency graph, trust boundaries, blast radius | docs | DONE | 5fa6546 |
 | #0002 | S2 | repo/AUDIT | AUDIT/environment.md | Phase A: environment record and audit tooling install (§1/§1b) | docs | DONE | 5fa6546 |
@@ -231,15 +232,18 @@ _none_
 - **commit sha:** a881e33
 - **notes:** --output-file must bind to exactly one output per action.
 
-### #0009 · S1 · START · Process timeout sends SIGTERM only; a child ignoring it (or a grandchild holding the pipe) hangs the run forever
+### #0009 · S1 · DONE · Process timeout sends SIGTERM only; a child ignoring it (or a grandchild holding the pipe) hangs the run forever
 
 - **project/module:** converter/ProcessRunner
 - **file:line:** Sources/converter/ProcessRunner.swift:139-152; DependencyBootstrap.swift:145-153
 - **category:** bug
 - **host-used:** local
 - **discovered-by:** reviewer core C-1; tests T-4
-- **evidence-before:** AUDIT/findings/L2-core-runtime.md C-1; L6-tests.md T-4
-- **notes:** Escalate to SIGKILL after grace; close pipe read ends on timeout; same in isFunctionalTool.
+- **evidence-before:** AUDIT/findings/L2-core-runtime.md C-1; L6-tests.md T-4 \| AUDIT/evidence/0009-before.log: testRunTimeoutEscalatesToSIGKILLWhenChildIgnoresSIGTERM took 60.07 s (child's natural exit) with timeoutSeconds: 1. The grandchild-holds-the-pipe scenario (sh -c 'sleep 60 & wait') was NOT reproducible: it returned in 1.0 s before the fix; the test is kept as a regression guard.
+- **fix-summary:** ProcessRunner.terminateWithEscalation: SIGTERM, then SIGKILL after a 5 s grace if the child is still running (pid re-checked). PipeCapture appends output under its lock as it arrives and offers a bounded wait, so the timeout path reports the captured stderr tail after at most 2 s instead of blocking on pipe EOF. DependencyBootstrap.isFunctionalTool uses the same escalation and a bounded drain wait.
+- **evidence-after:** AUDIT/evidence/0009-after.log: escalation test now 8.1 s (1 s timeout + 5 s grace + drain); 9 targeted tests pass. Full suite 166/166 (0009-fullsuite.txt). swiftlint 526/56, semgrep 0.
+- **commit sha:** 73b6b87
+- **notes:** Escalate to SIGKILL after grace; close pipe read ends on timeout; same in isFunctionalTool. Residual, documented: a capture thread stays blocked on read() until a grandchild that inherited the pipe exits; the run itself no longer waits for it (bounded drain), so this cannot stall a run.
 
 ### #0010 · S1 · START · Int(Double) traps on large-but-finite user durations (-silence 1e300 etc.)
 
@@ -1070,4 +1074,14 @@ _none_
 - **host-used:** local
 - **discovered-by:** reviewer T-29
 - **evidence-before:** AUDIT/findings/L6-tests.md T-29
+
+### #0099 · S3 · START · Test target compiles with two warnings (bare 'Error' existential, unused 'wav' binding)
+
+- **project/module:** converterTests
+- **file:line:** Sources/Tests/converterTests/PipelineIntegrationTests.swift:34,1967
+- **category:** style
+- **host-used:** local
+- **discovered-by:** Phase C suite log review (#0008)
+- **evidence-before:** swift test log (AUDIT/evidence/0008-fullsuite log source) shows: PipelineIntegrationTests.swift:34 'use of protocol Error as a type must be written any Error'; :1967 'initialization of immutable value wav was never used'. Present in the baseline test log too (4 matching lines); the §3 baseline only built the product target with -warnings-as-errors.
+- **notes:** Phase E requires zero warnings across all targets.
 
