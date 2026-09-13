@@ -444,7 +444,8 @@ final class PipelineIntegrationTests: XCTestCase {
 
         XCTAssertNoThrow(try tool.requireVideoStream(taggedMP3), "Fixture should contain attached artwork before cleaning.")
         try tool.cleanMP3(taggedMP3)
-        try tool.verifyMP3Standard(taggedMP3, qcPolicy: tool.config.deliveryAudioQCPolicy)
+        // Stream copy: the 192 kbps fixture keeps its own bitrate; only structure and QC are checked.
+        try tool.verifyMP3File(taggedMP3, qcPolicy: tool.config.deliveryAudioQCPolicy)
         XCTAssertThrowsError(try tool.requireVideoStream(taggedMP3))
     }
 
@@ -460,9 +461,11 @@ final class PipelineIntegrationTests: XCTestCase {
 
         XCTAssertNoThrow(try tool.requireVideoStream(taggedMP3), "Fixture should contain attached artwork before cleaning.")
         XCTAssertNoThrow(try tool.cleanMP3(taggedMP3))
-        try tool.verifyMP3Standard(taggedMP3, qcPolicy: nil)
+        // A clean is a stream copy: structurally valid MP3, artwork gone, delivery QC not applied
+        // (the fixture is deliberately over the true-peak ceiling and must stay that way).
+        try tool.verifyMP3File(taggedMP3, requireAudible: false, requireNoVideo: true, qcPolicy: nil)
         XCTAssertThrowsError(try tool.requireVideoStream(taggedMP3))
-        XCTAssertThrowsError(try tool.verifyMP3Standard(taggedMP3, qcPolicy: tool.config.deliveryAudioQCPolicy))
+        XCTAssertThrowsError(try tool.verifyMP3File(taggedMP3, qcPolicy: tool.config.deliveryAudioQCPolicy))
     }
 
     func testFadeOutProducesTruncatedSameFormatAudioOutput() throws {
@@ -2182,6 +2185,24 @@ final class PipelineIntegrationTests: XCTestCase {
         let expectedSeconds = (try lenient.mediaDuration(track01) ?? 0) + (try lenient.mediaDuration(track02) ?? 0)
             + Double(lenient.config.albumSilenceSecs)
         try lenient.verifyDuration(albumOutput, expectedSeconds: expectedSeconds, label: "album wav", tolerance: 0.5)
+    }
+
+    // audit #0018: cleaning metadata must not touch the audio. The MPEG frames are stream-copied,
+    // so the result decodes sample-for-sample identically and keeps its own sample rate.
+    func testMP3CleanIsAStreamCopyThatPreservesTheAudio() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe", "magick"])
+        let tagged = try workspace.createMP3WithArtwork(name: "tagged_441", sampleRate: 44_100)
+        let reference = workspace.root.appendingPathComponent("tagged_441_reference.mp3")
+        try FileManager.default.copyItem(at: tagged, to: reference)
+        let tool = try workspace.makeTool(arguments: ["-mp3clean"])
+
+        XCTAssertNoThrow(try tool.requireVideoStream(tagged), "fixture must carry artwork before cleaning")
+        try tool.cleanMP3(tagged)
+        XCTAssertThrowsError(try tool.requireVideoStream(tagged), "artwork stream must be gone")
+        XCTAssertEqual(try tool.audioField(tagged, "sample_rate"), "44100", "a clean must not resample")
+        try tool.verifyCanonicalPCMSampleEquivalence(
+            source: reference, output: tagged, sampleRate: 44_100, channels: 2, label: "Cleaned MP3", format: .s24le)
     }
 
     // audit #0007: a 44.1 kHz MP3 is not a standard deliverable, so the run must build 1.mp3 from

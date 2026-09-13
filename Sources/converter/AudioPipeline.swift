@@ -1632,20 +1632,33 @@ extension ConverterTool {
         }
     }
 
+    // Metadata cleanup is a stream copy: the MPEG audio frames are carried over untouched
+    // (no decode, no second lossy generation, no resampling) and the result is proven
+    // sample-identical to the source before it replaces it. Only tags, artwork, chapters
+    // and junk streams go.
     func cleanMP3(_ source: URL) throws {
         try preflightMP3Input(source, requireAudible: false, requireNoVideo: false)
-        let sourceWAV = try makeInternalWAV(
-            from: source,
-            in: source.deletingLastPathComponent(),
-            stem: "\(source.stem).notags.source",
-            requireAudible: false
-        )
-        defer { discardTempFile(sourceWAV) }
+        let sampleRate = try requireAudioSampleRate(source)
+        let channels = try requireAudioChannels(source)
         let temp = try makeTemp(in: source.deletingLastPathComponent(), stem: "\(source.stem).notags", ext: ".mp3")
         do {
-            try encodeInternalWAVToMP3(sourceWAV, output: temp, requireAudible: false, qcPolicy: nil)
+            _ = try runner.run("ffmpeg", [
+                "-hide_banner", "-nostdin", "-v", "error", "-y",
+                "-i", source.path,
+                "-map", "0:a:0",
+                "-c:a", "copy",
+                "-map_metadata", "-1",
+                "-map_chapters", "-1",
+                "-vn", "-sn", "-dn",
+                "-id3v2_version", "0",
+                "-f", "mp3",
+                temp.path
+            ])
             try verifyMP3File(temp, requireAudible: false, requireNoVideo: true, qcPolicy: nil)
             try verifyDurationMatch(source: source, output: temp)
+            try verifyCanonicalPCMSampleEquivalence(
+                source: source, output: temp, sampleRate: sampleRate, channels: channels,
+                label: "Cleaned MP3", format: .s24le)
             try publishTemp(temp, to: source)
             logger.info("Cleaned MP3 metadata: \(source.basename)")
         } catch {

@@ -321,8 +321,11 @@ final class IntegrationWorkspace {
         return target
     }
 
-    func createMP3WithArtwork(name: String, duration: Double = 1.2, frequency: Int = 440) throws -> URL {
-        let audio = try createAudio(name: "\(name)_audio", ext: "mp3", duration: duration, frequency: frequency)
+    func createMP3WithArtwork(
+        name: String, duration: Double = 1.2, frequency: Int = 440, sampleRate: Int = 48_000
+    ) throws -> URL {
+        let audio = try createAudio(
+            name: "\(name)_audio", ext: "mp3", duration: duration, frequency: frequency, sampleRate: sampleRate)
         let cover = try createImage(name: "\(name)_cover", ext: "png", width: 320, height: 320)
         let target = output.appendingPathComponent(name).appendingPathExtension("mp3")
         _ = try runner().run("ffmpeg", [
