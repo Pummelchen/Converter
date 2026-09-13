@@ -197,14 +197,14 @@
       "location": "Sources/converter/PipelineCore.swift:711-714",
       "title": "parseLoudnormJSON slices from the first '{' in stderr; metadata containing '{' breaks QC on valid files",
       "category": "bug",
-      "status": "TEST",
+      "status": "DONE",
       "host": "local",
       "discovered_by": "reviewer C-4",
       "session": "2026-09-13",
       "evidence_before": "AUDIT/findings/L2-core-runtime.md C-4 | AUDIT/evidence/0012-013-before.log: stderr with 'title : Song {Remix}' metadata before a valid loudnorm block failed with 'Audio loudness probe JSON parsing failed.'",
       "fix_summary": "parseLoudnormJSON locates the loudnorm object from its closing brace backwards to the matching opening brace (depth counted) instead of from the first '{' in the log.",
       "evidence_after": "AUDIT/evidence/0010-0014-after.log: 39 targeted tests pass (timecode/ffmpegNumber, loudnorm braces, astats fail-closed + silent channel, existing QC/loudness/imbalance/fade/silence/noise tests). swiftlint 526/56, semgrep 0. Full suite (AUDIT/evidence/0010-0014-fullsuite.txt): 170 executed, 0 failures, 0 compiler warnings.",
-      "commit": "",
+      "commit": "8920f31",
       "notes": "Locate the loudnorm block from the end with brace matching. Batched full-suite run shared with #0010/#0012/#0013/#0014/#0099 (one atomic commit per task)."
     },
     {

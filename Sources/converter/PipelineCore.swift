@@ -708,7 +708,31 @@ final class ConverterTool: Sendable {
     }
 
     func parseLoudnormJSON(from stderr: String) throws -> LoudnormMeasurement {
-        guard let start = stderr.firstIndex(of: "{"), let end = stderr.lastIndex(of: "}") else {
+        // loudnorm prints its summary object last; at `-v info` ffmpeg has already dumped the
+        // input metadata above it, and a tag such as `title : Song {Remix}` contains braces.
+        // So the object is located from its closing brace backwards to the matching opener,
+        // never from the first `{` in the log.
+        guard let end = stderr.lastIndex(of: "}") else {
+            throw AppError("Audio loudness probe did not return JSON output.")
+        }
+        var depth = 0
+        var start: String.Index?
+        var cursor = end
+        while true {
+            let character = stderr[cursor]
+            if character == "}" {
+                depth += 1
+            } else if character == "{" {
+                depth -= 1
+                if depth == 0 {
+                    start = cursor
+                    break
+                }
+            }
+            guard cursor > stderr.startIndex else { break }
+            cursor = stderr.index(before: cursor)
+        }
+        guard let start else {
             throw AppError("Audio loudness probe did not return JSON output.")
         }
         let jsonText = String(stderr[start ... end])

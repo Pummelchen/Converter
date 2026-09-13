@@ -2,27 +2,26 @@
 
 Session: `2026-09-13` · branch `audit/2026-09-13` · baseline commit `4bb136a`
 
-**known-total:99 done:9 open:90 blocked:0 new-this-session:99**
+**known-total:99 done:10 open:89 blocked:0 new-this-session:99**
 
 | status | count |
 |---|---|
 | START | 85 |
 | PROGRESS | 1 |
-| TEST | 4 |
+| TEST | 3 |
 | AUDIT | 0 |
-| DONE | 9 |
+| DONE | 10 |
 | BLOCKED | 0 |
 
 Status gates: START (reproduced/proven + expected behaviour written) → PROGRESS (diff) → TEST (failing-before/passing-after test pasted, full suite green, no new warnings) → AUDIT (cold re-read, all scanners re-run, no baseline regression, no new placeholder) → DONE (committed atomically). BLOCKED needs reason + what was tried + ≥2 options for a human.
 
-## Open S0 / S1 (29)
+## Open S0 / S1 (28)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
 | #0006 | S0 | repo | node1 (fresh clone) | Phase E: independent verification from a fresh clone on node1 | test | START |  |
 | #0005 | S1 | repo | wiki | Create and maintain the wiki audit tracker page mirroring the ledger (§9) | docs | PROGRESS |  |
 | #0011 | S1 | converter/DependencyBootstrap | Sources/converter/DependencyBootstrap.swift:164-176 | Homebrew installer fetched from unpinned HEAD URL, piped to bash, no integrity check, no pipefail | unsafe | START |  |
-| #0012 | S1 | converter/PipelineCore | Sources/converter/PipelineCore.swift:711-714 | parseLoudnormJSON slices from the first '{' in stderr; metadata containing '{' breaks QC on valid files | bug | TEST |  |
 | #0013 | S1 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:93,98 | Stereo-imbalance check fail-open when one channel is digitally silent (-inf RMS dropped) | bug | TEST |  |
 | #0014 | S1 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:92-99,111-121,96 | astats-derived QC metrics fail-open on missing/unparseable report; Int(Double) trap on Peak count | bug | TEST |  |
 | #0015 | S1 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:18-32,97,197-201 | Clipped-samples rebase is not sample-rate invariant (source clip measured at 96 kHz, render at its own rate) | logic | START |  |
@@ -119,7 +118,7 @@ _none_
 | #0098 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:529,534 | Exact ffmpeg bass filter string pinned without a stated reason | test | START |  |
 | #0099 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:34,1967 | Test target compiles with two warnings (bare 'Error' existential, unused 'wav' binding) | style | TEST |  |
 
-## Done (9)
+## Done (10)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
@@ -128,6 +127,7 @@ _none_
 | #0004 | S1 | converter/BW64Bridge | Sources/ | Phase A: sanitizer baseline — test suite under ASan, UBSan, TSan | test | DONE | ce3addc |
 | #0009 | S1 | converter/ProcessRunner | Sources/converter/ProcessRunner.swift:139-152; DependencyBootstrap.swift:145-153 | Process timeout sends SIGTERM only; a child ignoring it (or a grandchild holding the pipe) hangs the run forever | bug | DONE | 73b6b87 |
 | #0010 | S1 | converter/Support | Sources/converter/Support.swift:218,295; CLI.swift:325-329 | Int(Double) traps on large-but-finite user durations (-silence 1e300 etc.) | bug | DONE | 78c00b6 |
+| #0012 | S1 | converter/PipelineCore | Sources/converter/PipelineCore.swift:711-714 | parseLoudnormJSON slices from the first '{' in stderr; metadata containing '{' breaks QC on valid files | bug | DONE | 8920f31 |
 | #0023 | S1 | converter/Actions | Sources/converter/Actions.swift:576-600 | Non-standard WAV source is rewritten in place; no bit-exact original survives | unsafe | DONE | ce3addc |
 | #0001 | S2 | repo/AUDIT | AUDIT/inventory.md | Phase A: scope inventory, dependency graph, trust boundaries, blast radius | docs | DONE | 5fa6546 |
 | #0002 | S2 | repo/AUDIT | AUDIT/environment.md | Phase A: environment record and audit tooling install (§1/§1b) | docs | DONE | 5fa6546 |
@@ -268,7 +268,7 @@ _none_
 - **evidence-before:** AUDIT/findings/L2-core-runtime.md C-3
 - **notes:** Opt-in path only. Decision: pin + SHA-256 verify, or remove self-install and keep brew install only; document rejected alternative.
 
-### #0012 · S1 · TEST · parseLoudnormJSON slices from the first '{' in stderr; metadata containing '{' breaks QC on valid files
+### #0012 · S1 · DONE · parseLoudnormJSON slices from the first '{' in stderr; metadata containing '{' breaks QC on valid files
 
 - **project/module:** converter/PipelineCore
 - **file:line:** Sources/converter/PipelineCore.swift:711-714
@@ -278,6 +278,7 @@ _none_
 - **evidence-before:** AUDIT/findings/L2-core-runtime.md C-4 \| AUDIT/evidence/0012-013-before.log: stderr with 'title : Song {Remix}' metadata before a valid loudnorm block failed with 'Audio loudness probe JSON parsing failed.'
 - **fix-summary:** parseLoudnormJSON locates the loudnorm object from its closing brace backwards to the matching opening brace (depth counted) instead of from the first '{' in the log.
 - **evidence-after:** AUDIT/evidence/0010-0014-after.log: 39 targeted tests pass (timecode/ffmpegNumber, loudnorm braces, astats fail-closed + silent channel, existing QC/loudness/imbalance/fade/silence/noise tests). swiftlint 526/56, semgrep 0. Full suite (AUDIT/evidence/0010-0014-fullsuite.txt): 170 executed, 0 failures, 0 compiler warnings.
+- **commit sha:** 8920f31
 - **notes:** Locate the loudnorm block from the end with brace matching. Batched full-suite run shared with #0010/#0012/#0013/#0014/#0099 (one atomic commit per task).
 
 ### #0013 · S1 · TEST · Stereo-imbalance check fail-open when one channel is digitally silent (-inf RMS dropped)

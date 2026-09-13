@@ -1590,6 +1590,30 @@ final class converterTests: XCTestCase {
         XCTAssertEqual(SilenceSpec(seconds: 1e300).delayMilliseconds, Int.max, "unrepresentable delays saturate instead of trapping")
     }
 
+    // audit #0012: ffmpeg prints input metadata at -v info before the loudnorm summary, so a
+    // tag containing a brace used to corrupt the JSON slice and fail QC on a valid file.
+    func testLoudnormJSONParsingIgnoresBracesInInputMetadata() throws {
+        let tool = try makeParserTool()
+        let stderr = """
+        Input #0, mp3, from 'song.mp3':
+          Metadata:
+            title           : Song {Remix}
+            comment         : {mixed} by {someone}
+        [Parsed_loudnorm_0 @ 0x2]\u{0020}
+        {
+        \t"input_i" : "-14.20",
+        \t"input_tp" : "-0.80",
+        \t"input_lra" : "6.10",
+        \t"input_thresh" : "-24.30",
+        \t"output_i" : "-12.00",
+        \t"target_offset" : "0.05"
+        }
+        """
+        let measurement = try tool.parseLoudnormJSON(from: stderr)
+        XCTAssertEqual(measurement.inputI, "-14.20")
+        XCTAssertEqual(measurement.inputTp, "-0.80")
+    }
+
     // audit #0008: --output-file names exactly one output, so only single-output actions may
     // take it. A full run produces ~29 files and used to hand the same override to both the
     // album WAV and the main MP4 render, which then published the video over the WAV.
