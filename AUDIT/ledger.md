@@ -6,9 +6,9 @@ Session: `2026-09-13` · branch `audit/2026-09-13` · baseline commit `4bb136a`
 
 | status | count |
 |---|---|
-| START | 63 |
+| START | 62 |
 | PROGRESS | 1 |
-| TEST | 7 |
+| TEST | 8 |
 | AUDIT | 0 |
 | DONE | 28 |
 | BLOCKED | 1 |
@@ -30,7 +30,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 | #0035 | S1 | converterTests | Sources/converter/Actions.swift:126-154 | --continue-on-error batch semantics and summary untested | test | TEST | 7a94113 |
 | #0036 | S1 | converterTests | Sources/converter/PipelineCore.swift:842-856 | -clean has no test guarding 'never deletes user files' | test | TEST | 03bfa6d |
 | #0037 | S1 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:1138-1167 | loudnessPreservingQCPolicy has no direct test; 'hot' fixture is not hot | test | START |  |
-| #0038 | S1 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:126-146 | Orphan temp cleanup untested against a live foreign PID | test | START |  |
+| #0038 | S1 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:126-146 | Orphan temp cleanup untested against a live foreign PID | test | TEST |  |
 
 ## Blocked (1)
 
@@ -594,7 +594,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **discovered-by:** reviewer T-9
 - **evidence-before:** AUDIT/findings/L6-tests.md T-9
 
-### #0038 · S1 · START · Orphan temp cleanup untested against a live foreign PID
+### #0038 · S1 · TEST · Orphan temp cleanup untested against a live foreign PID
 
 - **project/module:** converterTests
 - **file:line:** Sources/Tests/converterTests/PipelineIntegrationTests.swift:126-146
@@ -602,6 +602,8 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **host-used:** local
 - **discovered-by:** reviewer T-10
 - **evidence-before:** AUDIT/findings/L6-tests.md T-10
+- **fix-summary:** Two integration tests with a real child process cover every branch of isOrphanedConverterTempFile and processExists: own PID, parent, PID 1 (EPERM), live child (kept), exited child (swept), malformed and prefix-less names (kept).
+- **evidence-after:** AUDIT/evidence/0038-before.log (processExists forced false: 9 failures), 0038-after.log (3 pass); swiftlint 533/56. Full suite pending
 
 ### #0039 · S2 · START · AsyncSemaphore grants permits to already-cancelled tasks
 

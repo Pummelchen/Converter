@@ -294,6 +294,101 @@ final class PipelineIntegrationTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: foreignTemp.path))
     }
 
+    // audit #0038: the orphan sweep used to be tested only against the dead PID 999999. It must keep
+    // every temp whose owner is alive: this process (getpid), the parent (getppid), launchd (PID 1,
+    // where kill(1, 0) fails with EPERM for a non-root user and must count as "exists"), and a
+    // spawned child while it runs. A file with a malformed PID or without the prefix is never touched.
+    func testCleanupOrphansRetainsTempFilesOfLiveProcessesAndUnparsableNames() throws {
+        let workspace = try IntegrationWorkspace()
+        let tool = try workspace.makeTool(arguments: ["-full"])
+        let child = Process()
+        child.executableURL = URL(fileURLWithPath: "/bin/sleep")
+        child.arguments = ["30"]
+        try child.run()
+        defer {
+            if child.isRunning {
+                child.terminate()
+                child.waitUntilExit()
+            }
+        }
+        XCTAssertTrue(child.isRunning, "the sleep child must be alive while the sweep runs")
+
+        func temp(_ name: String) throws -> URL {
+            let url = workspace.output.appendingPathComponent(name)
+            try Data(name.utf8).write(to: url)
+            return url
+        }
+        let selfTemp = try temp(".converter-tmp.\(getpid()).mainmp4.libx264.1.mp4")
+        let parentTemp = try temp(".converter-tmp.\(getppid()).mainmp4.libx264.2.mp4")
+        let launchdTemp = try temp(".converter-tmp.1.mainmp4.libx264.3.mp4")
+        let childTemp = try temp(".converter-tmp.\(child.processIdentifier).mainmp4.libx264.4.mp4")
+        let notAPIDTemp = try temp(".converter-tmp.notapid.x")
+        let bareTemp = try temp(".converter-tmp.")
+        let unprefixedTemp = try temp("converter-tmp.999999.mainmp4.libx264.5.mp4")
+        let deadTemp = try temp(".converter-tmp.999999.mainmp4.libx264.6.mp4")
+
+        XCTAssertFalse(tool.isOrphanedConverterTempFile(selfTemp))
+        XCTAssertFalse(tool.isOrphanedConverterTempFile(parentTemp))
+        XCTAssertFalse(tool.isOrphanedConverterTempFile(launchdTemp))
+        XCTAssertFalse(tool.isOrphanedConverterTempFile(childTemp))
+        XCTAssertFalse(tool.isOrphanedConverterTempFile(notAPIDTemp))
+        XCTAssertFalse(tool.isOrphanedConverterTempFile(bareTemp))
+        XCTAssertFalse(tool.isOrphanedConverterTempFile(unprefixedTemp))
+        XCTAssertTrue(tool.isOrphanedConverterTempFile(deadTemp))
+
+        tool.cleanupOrphanedConverterTempFiles()
+
+        let fileManager = FileManager.default
+        XCTAssertTrue(fileManager.fileExists(atPath: selfTemp.path), "temp of this process must survive")
+        XCTAssertTrue(fileManager.fileExists(atPath: parentTemp.path), "temp of the live parent process must survive")
+        XCTAssertTrue(fileManager.fileExists(atPath: launchdTemp.path), "temp of PID 1 (EPERM) must survive")
+        XCTAssertTrue(fileManager.fileExists(atPath: childTemp.path), "temp of the running child must survive")
+        XCTAssertTrue(fileManager.fileExists(atPath: notAPIDTemp.path), "temp with a non-numeric PID must survive")
+        XCTAssertTrue(fileManager.fileExists(atPath: bareTemp.path), "temp with an empty PID must survive")
+        XCTAssertTrue(fileManager.fileExists(atPath: unprefixedTemp.path), "file without the prefix must survive")
+        XCTAssertFalse(fileManager.fileExists(atPath: deadTemp.path), "temp of the dead PID 999999 must be removed")
+        XCTAssertEqual(try String(contentsOf: selfTemp, encoding: .utf8), selfTemp.lastPathComponent)
+        XCTAssertEqual(try String(contentsOf: childTemp, encoding: .utf8), childTemp.lastPathComponent)
+    }
+
+    // audit #0038: once the owning child has exited and been reaped its temp becomes an orphan and
+    // the very next sweep must remove it, while the temps of still-live processes stay untouched.
+    func testCleanupOrphansRemovesTempFileOnceOwningChildHasExited() throws {
+        let workspace = try IntegrationWorkspace()
+        let tool = try workspace.makeTool(arguments: ["-full"])
+        let child = Process()
+        child.executableURL = URL(fileURLWithPath: "/bin/sleep")
+        child.arguments = ["30"]
+        try child.run()
+        defer {
+            if child.isRunning {
+                child.terminate()
+                child.waitUntilExit()
+            }
+        }
+        let childPID = child.processIdentifier
+        let childTemp = workspace.output.appendingPathComponent(".converter-tmp.\(childPID).mainmp4.libx264.1.mp4")
+        let selfTemp = workspace.output.appendingPathComponent(".converter-tmp.\(getpid()).mainmp4.libx264.2.mp4")
+        try Data("child-temp".utf8).write(to: childTemp)
+        try Data("self-temp".utf8).write(to: selfTemp)
+
+        tool.cleanupOrphanedConverterTempFiles()
+        XCTAssertTrue(FileManager.default.fileExists(atPath: childTemp.path), "temp must survive while the child runs")
+        XCTAssertTrue(tool.processExists(childPID))
+
+        child.terminate()
+        child.waitUntilExit()
+        XCTAssertFalse(child.isRunning)
+        XCTAssertFalse(tool.processExists(childPID), "a terminated and reaped child must no longer exist")
+        XCTAssertTrue(tool.isOrphanedConverterTempFile(childTemp))
+
+        tool.cleanupOrphanedConverterTempFiles()
+        let fileManager = FileManager.default
+        XCTAssertFalse(fileManager.fileExists(atPath: childTemp.path), "temp of the exited child must be removed")
+        XCTAssertTrue(fileManager.fileExists(atPath: selfTemp.path), "temp of this process must survive the sweep")
+        XCTAssertEqual(try String(contentsOf: selfTemp, encoding: .utf8), "self-temp")
+    }
+
     func testPublishTempReplacesExistingDestination() throws {
         let workspace = try IntegrationWorkspace()
         let tool = try workspace.makeTool(arguments: ["-full"])
