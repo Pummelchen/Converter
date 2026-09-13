@@ -1388,14 +1388,14 @@
       "location": "config.txt; wiki Configuration",
       "title": "PREFLIGHT_SECONDS, DURATION_TOLERANCE_SEC, CRC_CHUNK_BYTES supported but undocumented",
       "category": "docs",
-      "status": "START",
+      "status": "TEST",
       "host": "local",
       "discovered_by": "reviewer V-14, B-13",
       "session": "2026-09-13",
       "evidence_before": "AUDIT/findings/L2-validation-config.md V-14",
-      "fix_summary": "",
-      "evidence_after": "",
-      "commit": "",
+      "fix_summary": "config.txt documents PREFLIGHT_SECONDS, DURATION_TOLERANCE_SEC and CRC_CHUNK_BYTES with defaults; test asserts config.txt keys == ProjectConfig.supportedKeys and shipped values == defaults. Wiki Configuration page pending (#0030).",
+      "evidence_after": "AUDIT/evidence/0082-before.log, 0082-after.log; swiftlint 531/55. Full suite pending",
+      "commit": "bbf40ef",
       "notes": "Add a test asserting config.txt keys == supportedKeys."
     },
     {

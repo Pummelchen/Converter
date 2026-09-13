@@ -6,9 +6,9 @@ Session: `2026-09-13` · branch `audit/2026-09-13` · baseline commit `4bb136a`
 
 | status | count |
 |---|---|
-| START | 55 |
+| START | 54 |
 | PROGRESS | 1 |
-| TEST | 8 |
+| TEST | 9 |
 | AUDIT | 0 |
 | DONE | 35 |
 | BLOCKED | 1 |
@@ -76,7 +76,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 | #0079 | S3 | converter/ProcessRunner | Sources/converter/ProcessRunner.swift:156-160 | Signal deaths reported as ordinary exit codes | incomplete | START |  |
 | #0080 | S3 | converter/PipelineCore | Sources/converter/PipelineCore.swift:323-344,271 | Orphan-temp detection keys on local PID only; synced directories across hosts | logic | START |  |
 | #0081 | S3 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:203-210 | LUFS rebase widens the tolerance symmetrically | logic | START |  |
-| #0082 | S3 | repo/docs | config.txt; wiki Configuration | PREFLIGHT_SECONDS, DURATION_TOLERANCE_SEC, CRC_CHUNK_BYTES supported but undocumented | docs | START |  |
+| #0082 | S3 | repo/docs | config.txt; wiki Configuration | PREFLIGHT_SECONDS, DURATION_TOLERANCE_SEC, CRC_CHUNK_BYTES supported but undocumented | docs | TEST | bbf40ef |
 | #0083 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:905 | Noise seed is Int.random; reruns not reproducible | logic | START |  |
 | #0084 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:53-77 | Derived-media predicates use the first _silence_/_noise_ occurrence | logic | START |  |
 | #0085 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:1850-1854 | Track-number parse uses Unicode isNumber and can overflow | logic | START |  |
@@ -1030,7 +1030,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **discovered-by:** reviewer V-9
 - **evidence-before:** AUDIT/findings/L2-validation-config.md V-9
 
-### #0082 · S3 · START · PREFLIGHT_SECONDS, DURATION_TOLERANCE_SEC, CRC_CHUNK_BYTES supported but undocumented
+### #0082 · S3 · TEST · PREFLIGHT_SECONDS, DURATION_TOLERANCE_SEC, CRC_CHUNK_BYTES supported but undocumented
 
 - **project/module:** repo/docs
 - **file:line:** config.txt; wiki Configuration
@@ -1038,6 +1038,9 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **host-used:** local
 - **discovered-by:** reviewer V-14, B-13
 - **evidence-before:** AUDIT/findings/L2-validation-config.md V-14
+- **fix-summary:** config.txt documents PREFLIGHT_SECONDS, DURATION_TOLERANCE_SEC and CRC_CHUNK_BYTES with defaults; test asserts config.txt keys == ProjectConfig.supportedKeys and shipped values == defaults. Wiki Configuration page pending (#0030).
+- **evidence-after:** AUDIT/evidence/0082-before.log, 0082-after.log; swiftlint 531/55. Full suite pending
+- **commit sha:** bbf40ef
 - **notes:** Add a test asserting config.txt keys == supportedKeys.
 
 ### #0083 · S3 · START · Noise seed is Int.random; reruns not reproducible
