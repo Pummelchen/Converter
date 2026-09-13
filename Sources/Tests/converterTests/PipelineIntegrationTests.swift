@@ -1490,8 +1490,14 @@ final class PipelineIntegrationTests: XCTestCase {
         )
 
         _ = try workspace.createImage(name: "Vertical_8K", ext: "png", width: 90, height: 160)
-        let sourceMP3 = try workspace.createAudio(name: "hot_song", ext: "mp3", duration: 6.0)
+        let sourceMP3 = try workspace.createHotAudio(name: "hot_song", ext: "mp3", duration: 6.0, gainDB: 21)
         let tool = try workspace.makeTool(arguments: ["-nfttoshort"])
+        // audit #0037: this fixture used to be a plain -21 dBFS sine that never breached -1 dBTP, so
+        // the source-relative rebase this test exists to cover never fired. Prove the source is hot
+        // before rendering.
+        let sourceResult = try tool.audioQCResult(for: sourceMP3, policy: tool.config.deliveryAudioQCPolicy)
+        let sourceTruePeak = try XCTUnwrap(sourceResult.metrics.truePeakDBTP)
+        XCTAssertGreaterThan(sourceTruePeak, -1, "hot_song must breach AUDIO_QC_MAX_TRUE_PEAK_DBTP=-1")
 
         XCTAssertNoThrow(try tool.stepNFTToShort())
 
@@ -1510,6 +1516,112 @@ final class PipelineIntegrationTests: XCTestCase {
             colorRange: tool.config.videoColorRange
         )
         try tool.verifySourceLoudnessPreserved(source: sourceMP3, output: shortVideo, toleranceDB: 2.0)
+    }
+
+    // audit #0037: loudnessPreservingQCPolicy had no direct test of the rebase itself. A hot
+    // source that breaches only the true-peak ceiling must get exactly that ceiling rebased to
+    // what it measures plus the 0.1 dB rounding allowance and the "-source-relative" name, with
+    // every other ceiling carried over from the configured policy untouched.
+    func testLoudnessPreservingQCPolicyRebasesOnlyTheBreachedTruePeakCeiling() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe"])
+        try workspace.overwriteConfig(IntegrationWorkspace.defaultConfig + "\nAUDIO_QC_MAX_TRUE_PEAK_DBTP=-1\n")
+        let source = try workspace.createHotAudio(name: "hot48k", ext: "wav", duration: 6.0, gainDB: 20.5)
+        let tool = try workspace.makeTool(arguments: ["-short"])
+        let policy = tool.config.deliveryAudioQCPolicy
+        XCTAssertEqual(policy.maxTruePeakDBTP, -1)
+
+        let sourceResult = try tool.audioQCResult(for: source, policy: policy)
+        let measured = try XCTUnwrap(sourceResult.metrics.truePeakDBTP)
+        XCTAssertGreaterThan(measured, -1, "fixture must breach the true-peak ceiling")
+        XCTAssertEqual(sourceResult.metrics.clippedSamples, 0, "fixture must breach nothing but the true peak")
+
+        let rebased = try tool.loudnessPreservingQCPolicy(policy, source: source, sampleRate: 48_000)
+
+        XCTAssertEqual(rebased.name, "delivery-source-relative")
+        XCTAssertEqual(rebased.maxTruePeakDBTP, measured + 0.1, accuracy: 0.01)
+        XCTAssertEqual(rebased.targetLUFS, policy.targetLUFS)
+        XCTAssertEqual(rebased.lufsTolerance, policy.lufsTolerance)
+        XCTAssertEqual(rebased.maxLoudnessRange, policy.maxLoudnessRange)
+        XCTAssertEqual(rebased.maxDCOffset, policy.maxDCOffset)
+        XCTAssertEqual(rebased.maxStereoImbalanceDB, policy.maxStereoImbalanceDB)
+        XCTAssertEqual(rebased.maxClippedSamples, policy.maxClippedSamples)
+        XCTAssertEqual(rebased.minimumAnalysisSeconds, policy.minimumAnalysisSeconds)
+    }
+
+    // audit #0037: a source that respects every ceiling must come back as the very policy it was
+    // given — same name, no widened tolerance — so a clean render is still held to the configured
+    // absolute limits rather than to whatever its source happened to measure.
+    func testLoudnessPreservingQCPolicyReturnsTheInputPolicyForACleanSource() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe"])
+        try workspace.overwriteConfig(IntegrationWorkspace.defaultConfig + "\nAUDIO_QC_MAX_TRUE_PEAK_DBTP=-1\n")
+        let source = try workspace.createAudio(name: "clean48k", ext: "wav", duration: 6.0)
+        let tool = try workspace.makeTool(arguments: ["-short"])
+        let policy = tool.config.deliveryAudioQCPolicy
+
+        let sourceResult = try tool.audioQCResult(for: source, policy: policy)
+        let measured = try XCTUnwrap(sourceResult.metrics.truePeakDBTP)
+        XCTAssertLessThan(measured, -1, "fixture must respect the true-peak ceiling")
+        XCTAssertTrue(sourceResult.passed, "fixture must respect every ceiling: \(sourceResult.issues)")
+
+        let result = try tool.loudnessPreservingQCPolicy(policy, source: source, sampleRate: 48_000)
+
+        XCTAssertEqual(result, policy)
+        XCTAssertEqual(result.name, "delivery")
+    }
+
+    // audit #0037: `limitDuration` must select exactly the leading seconds of the source — the
+    // segment a short inherits — never the whole track. The fixture is quiet for its first 1.5 s
+    // and hot (about -0.6 dBTP) afterwards: measured to 1 s it respects -1 dBTP and the policy
+    // comes back untouched; measured to 2 s or in full, the hot material sits inside the window
+    // and the true-peak ceiling is rebased on it.
+    func testLoudnessPreservingQCPolicyMeasuresOnlyTheLeadingLimitDurationSeconds() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe"])
+        try workspace.overwriteConfig(IntegrationWorkspace.defaultConfig + "\nAUDIO_QC_MAX_TRUE_PEAK_DBTP=-1\n")
+        let source = workspace.output.appendingPathComponent("quiet_then_hot.wav")
+        _ = try workspace.runner().run("ffmpeg", [
+            "-hide_banner", "-nostdin", "-v", "error", "-y",
+            "-f", "lavfi",
+            "-i", "sine=frequency=440:duration=6.0:sample_rate=48000",
+            "-ac", "2",
+            "-af", "volume=20.5dB:enable='gte(t,1.5)'",
+            "-c:a", "pcm_f32le", "-ar", "48000", "-f", "wav", "-rf64", "always", source.path
+        ])
+        let tool = try workspace.makeTool(arguments: ["-short"])
+        let policy = tool.config.deliveryAudioQCPolicy
+
+        func renderDomainTruePeak(limitDuration: Double?) throws -> Double {
+            let result = try tool.renderDomainQCResult(
+                for: source, policy: policy, limitDuration: limitDuration, sampleRate: 48_000
+            )
+            return try XCTUnwrap(result.metrics.truePeakDBTP)
+        }
+        let leadingSecond = try renderDomainTruePeak(limitDuration: 1.0)
+        let leadingTwoSeconds = try renderDomainTruePeak(limitDuration: 2.0)
+        let wholeFile = try renderDomainTruePeak(limitDuration: nil)
+        XCTAssertLessThan(leadingSecond, -1, "the leading second must respect the ceiling")
+        XCTAssertGreaterThan(leadingTwoSeconds, -1, "the second second must breach the ceiling")
+        XCTAssertEqual(leadingTwoSeconds, wholeFile, accuracy: 0.01)
+
+        let limited = try tool.loudnessPreservingQCPolicy(
+            policy, source: source, limitDuration: 1.0, sampleRate: 48_000
+        )
+        XCTAssertEqual(limited, policy, "a 1 s short inherits only quiet material")
+        XCTAssertEqual(limited.name, "delivery")
+
+        let overlapping = try tool.loudnessPreservingQCPolicy(
+            policy, source: source, limitDuration: 2.0, sampleRate: 48_000
+        )
+        XCTAssertEqual(overlapping.name, "delivery-source-relative")
+        XCTAssertEqual(overlapping.maxTruePeakDBTP, leadingTwoSeconds + 0.1, accuracy: 0.01)
+
+        let full = try tool.loudnessPreservingQCPolicy(
+            policy, source: source, limitDuration: nil, sampleRate: 48_000
+        )
+        XCTAssertEqual(full.name, "delivery-source-relative")
+        XCTAssertEqual(full.maxTruePeakDBTP, wholeFile + 0.1, accuracy: 0.01)
     }
 
     func testNFTToShortComparesAgainstTrimmedSourceSegmentLoudness() throws {

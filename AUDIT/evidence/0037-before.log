@@ -1,0 +1,39 @@
+[0/1] Planning build
+Building for debugging...
+[0/4] Write swift-version--58304C5D6DBC2206.txt
+Build complete! (0.13s)
+Test Suite 'Selected tests' started at 2026-09-13 23:08:27.397.
+Test Suite 'converterPackageTests.xctest' started at 2026-09-13 23:08:27.398.
+Test Suite 'PipelineIntegrationTests' started at 2026-09-13 23:08:27.398.
+Test Case '-[converterTests.PipelineIntegrationTests testLoudnessPreservingQCPolicyMeasuresOnlyTheLeadingLimitDurationSeconds]' started.
+/Users/node4/Downloads/Converter-wt/0037/Sources/Tests/converterTests/PipelineIntegrationTests.swift:1463: error: -[converterTests.PipelineIntegrationTests testLoudnessPreservingQCPolicyMeasuresOnlyTheLeadingLimitDurationSeconds] : XCTAssertEqual failed: ("delivery") is not equal to ("delivery-source-relative")
+/Users/node4/Downloads/Converter-wt/0037/Sources/Tests/converterTests/PipelineIntegrationTests.swift:1464: error: -[converterTests.PipelineIntegrationTests testLoudnessPreservingQCPolicyMeasuresOnlyTheLeadingLimitDurationSeconds] : XCTAssertEqualWithAccuracy failed: ("-1.0") is not equal to ("-0.47") +/- ("0.01")
+/Users/node4/Downloads/Converter-wt/0037/Sources/Tests/converterTests/PipelineIntegrationTests.swift:1469: error: -[converterTests.PipelineIntegrationTests testLoudnessPreservingQCPolicyMeasuresOnlyTheLeadingLimitDurationSeconds] : XCTAssertEqual failed: ("delivery") is not equal to ("delivery-source-relative")
+/Users/node4/Downloads/Converter-wt/0037/Sources/Tests/converterTests/PipelineIntegrationTests.swift:1470: error: -[converterTests.PipelineIntegrationTests testLoudnessPreservingQCPolicyMeasuresOnlyTheLeadingLimitDurationSeconds] : XCTAssertEqualWithAccuracy failed: ("-1.0") is not equal to ("-0.47") +/- ("0.01")
+Test Case '-[converterTests.PipelineIntegrationTests testLoudnessPreservingQCPolicyMeasuresOnlyTheLeadingLimitDurationSeconds]' failed (6.160 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testLoudnessPreservingQCPolicyRebasesOnlyTheBreachedTruePeakCeiling]' started.
+/Users/node4/Downloads/Converter-wt/0037/Sources/Tests/converterTests/PipelineIntegrationTests.swift:1387: error: -[converterTests.PipelineIntegrationTests testLoudnessPreservingQCPolicyRebasesOnlyTheBreachedTruePeakCeiling] : XCTAssertEqual failed: ("delivery") is not equal to ("delivery-source-relative")
+/Users/node4/Downloads/Converter-wt/0037/Sources/Tests/converterTests/PipelineIntegrationTests.swift:1388: error: -[converterTests.PipelineIntegrationTests testLoudnessPreservingQCPolicyRebasesOnlyTheBreachedTruePeakCeiling] : XCTAssertEqualWithAccuracy failed: ("-1.0") is not equal to ("-0.47") +/- ("0.01")
+Test Case '-[converterTests.PipelineIntegrationTests testLoudnessPreservingQCPolicyRebasesOnlyTheBreachedTruePeakCeiling]' failed (1.552 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testLoudnessPreservingQCPolicyReturnsTheInputPolicyForACleanSource]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testLoudnessPreservingQCPolicyReturnsTheInputPolicyForACleanSource]' passed (1.547 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testNFTToShortPreservesSourceLoudnessOnPortraitPath]' started.
+[2026-09-13 23:08:37] [converterTests] [INFO] NFT -> Short source audio: hot_song.mp3
+[2026-09-13 23:08:37] [converterTests] [INFO] NFT -> Short source image: Vertical_8K.png
+[2026-09-13 23:08:38] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-13 23:08:40] [converterTests] [WARN] portrait short MP4 encoder failed (libx264): Audio QC failed for /var/folders/k5/fzyk9mb96rqbc6_vnxv5mh3h0000gn/T/converter-tests.775EDF82-BA5A-4B8D-B488-A17B312020BD/Output/.converter-tmp.67616.7f1f070c-b727-4714-ae17-a49d413080d9.portraitshort_libx264.6D070562-41D9-43B4-AC6A-01DD948A88E4.mp4: true peak -0.34 dBTP exceeds max -1.00
+[2026-09-13 23:08:40] [converterTests] [WARN] portrait short MP4: skipping remaining encoders — this failure is not encoder-related.
+/Users/node4/Downloads/Converter-wt/0037/Sources/Tests/converterTests/PipelineIntegrationTests.swift:1348: error: -[converterTests.PipelineIntegrationTests testNFTToShortPreservesSourceLoudnessOnPortraitPath] : XCTAssertNoThrow failed: threw error "All portrait short MP4 encoders failed. libx264: Audio QC failed for /var/folders/k5/fzyk9mb96rqbc6_vnxv5mh3h0000gn/T/converter-tests.775EDF82-BA5A-4B8D-B488-A17B312020BD/Output/.converter-tmp.67616.7f1f070c-b727-4714-ae17-a49d413080d9.portraitshort_libx264.6D070562-41D9-43B4-AC6A-01DD948A88E4.mp4: true peak -0.34 dBTP exceeds max -1.00"
+/Users/node4/Downloads/Converter-wt/0037/Sources/Tests/converterTests/PipelineIntegrationTests.swift:1351: error: -[converterTests.PipelineIntegrationTests testNFTToShortPreservesSourceLoudnessOnPortraitPath] : XCTAssertTrue failed
+/Users/node4/Downloads/Converter-wt/0037/Sources/converter/ValidationPipeline.swift:729: error: -[converterTests.PipelineIntegrationTests testNFTToShortPreservesSourceLoudnessOnPortraitPath] : failed: caught error: "Video output missing: /var/folders/k5/fzyk9mb96rqbc6_vnxv5mh3h0000gn/T/converter-tests.775EDF82-BA5A-4B8D-B488-A17B312020BD/Output/hot_song_8K_Short.mp4"
+Test Case '-[converterTests.PipelineIntegrationTests testNFTToShortPreservesSourceLoudnessOnPortraitPath]' failed (4.118 seconds).
+Test Suite 'PipelineIntegrationTests' failed at 2026-09-13 23:08:40.775.
+	 Executed 4 tests, with 9 failures (1 unexpected) in 13.377 (13.377) seconds
+Test Suite 'converterPackageTests.xctest' failed at 2026-09-13 23:08:40.775.
+	 Executed 4 tests, with 9 failures (1 unexpected) in 13.377 (13.377) seconds
+Test Suite 'Selected tests' failed at 2026-09-13 23:08:40.775.
+	 Executed 4 tests, with 9 failures (1 unexpected) in 13.377 (13.378) seconds
+◇ Test run started.
+↳ Testing Library Version: 1902
+↳ Target Platform: arm64e-apple-macos14.0
+✔ Test run with 0 tests in 0 suites passed after 0.001 seconds.

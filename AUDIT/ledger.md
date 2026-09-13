@@ -6,9 +6,9 @@ Session: `2026-09-13` · branch `audit/2026-09-13` · baseline commit `4bb136a`
 
 | status | count |
 |---|---|
-| START | 62 |
+| START | 61 |
 | PROGRESS | 1 |
-| TEST | 8 |
+| TEST | 9 |
 | AUDIT | 0 |
 | DONE | 28 |
 | BLOCKED | 1 |
@@ -29,7 +29,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 | #0034 | S1 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:63-81 | PipeCapture cap test never reaches the 64 MiB cap | test | TEST | 2185827 |
 | #0035 | S1 | converterTests | Sources/converter/Actions.swift:126-154 | --continue-on-error batch semantics and summary untested | test | TEST | 7a94113 |
 | #0036 | S1 | converterTests | Sources/converter/PipelineCore.swift:842-856 | -clean has no test guarding 'never deletes user files' | test | TEST | 03bfa6d |
-| #0037 | S1 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:1138-1167 | loudnessPreservingQCPolicy has no direct test; 'hot' fixture is not hot | test | START |  |
+| #0037 | S1 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:1138-1167 | loudnessPreservingQCPolicy has no direct test; 'hot' fixture is not hot | test | TEST |  |
 | #0038 | S1 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:126-146 | Orphan temp cleanup untested against a live foreign PID | test | TEST | a53673a |
 
 ## Blocked (1)
@@ -585,7 +585,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **evidence-after:** AUDIT/evidence/0036-before.log (guard dropped: 4 failures), 0036-after.log (2 pass); swiftlint 533/56. Full suite pending
 - **commit sha:** 03bfa6d
 
-### #0037 · S1 · START · loudnessPreservingQCPolicy has no direct test; 'hot' fixture is not hot
+### #0037 · S1 · TEST · loudnessPreservingQCPolicy has no direct test; 'hot' fixture is not hot
 
 - **project/module:** converterTests
 - **file:line:** Sources/Tests/converterTests/PipelineIntegrationTests.swift:1138-1167
@@ -593,6 +593,8 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **host-used:** local
 - **discovered-by:** reviewer T-9
 - **evidence-before:** AUDIT/findings/L6-tests.md T-9
+- **fix-summary:** Portrait-path fixture now breaches -1 dBTP (asserted); three direct tests of loudnessPreservingQCPolicy: breached ceiling rebased to measured+0.1 with others untouched, clean source returns the input policy, limitDuration measures the leading seconds.
+- **evidence-after:** AUDIT/evidence/0037-before.log (rebase disabled: 3/4 fail), 0037-after.log (4 pass); swiftlint 533/56. Full suite pending
 
 ### #0038 · S1 · TEST · Orphan temp cleanup untested against a live foreign PID
 
