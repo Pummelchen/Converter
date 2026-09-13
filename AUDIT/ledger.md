@@ -21,7 +21,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 |---|---|---|---|---|---|---|---|
 | #0006 | S0 | repo | node1 (fresh clone) | Phase E: independent verification from a fresh clone on node1 | test | START |  |
 | #0005 | S1 | repo | wiki | Create and maintain the wiki audit tracker page mirroring the ledger (§9) | docs | PROGRESS | 0ac7242 |
-| #0015 | S1 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:18-32,97,197-201 | Clipped-samples rebase is not sample-rate invariant (source clip measured at 96 kHz, render at its own rate) | logic | TEST |  |
+| #0015 | S1 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:18-32,97,197-201 | Clipped-samples rebase is not sample-rate invariant (source clip measured at 96 kHz, render at its own rate) | logic | TEST | 3d7ee94 |
 | #0030 | S1 | repo/docs | README.md:25,59; Sources/converter/CLI.swift:461-481,664-665; CONTRIBUTING.md:59; wiki Home/Full-Run-Contract | README, CLI help, CONTRIBUTING and wiki contradict actual behaviour (source rename, audio alteration, portrait input, --keep-full-name, 58 s, auto-install wording) | docs | START |  |
 | #0031 | S1 | converterTests | Sources/Tests/converterTests/IntegrationTestSupport.swift:25,133-143 | Integration workspace inherits OUTPUT_DIR/SRC_DIR/OUT_DIR/CONFIG_FILE/DEBUG from the host shell | test | START |  |
 | #0032 | S1 | converterTests | Sources/converter/PipelineCore.swift:487-505 | publishTemp restore-on-failure branch has no test | test | START |  |
@@ -323,6 +323,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **evidence-before:** AUDIT/findings/L2-validation-config.md V-3
 - **fix-summary:** loudnessPreservingQCPolicy takes the render's delivery sample rate and measures the source through the render's own decode chain (renderDomainQCResult: internal WAV staging, then delivery rate); shorts share shortRenderQCPolicy. Clipped ceiling is exact in the render domain (identical counts verified for 44.1/48/96 kHz and MP3 sources).
 - **evidence-after:** AUDIT/evidence/0015-before.log (ceiling 94880 vs render 25280; hot MP3 short rejected), 0015-after.log (both regression tests pass; 31 Short/MP4 tests pass, 0 warnings); swiftlint 533/56. Full suite pending
+- **commit sha:** 3d7ee94
 - **notes:** Medium confidence; verify with a clipped 48 kHz fixture first.
 
 ### #0016 · S1 · DONE · -album concatenates the same track once per format and includes _mastered/_silence_/_noise_ outputs

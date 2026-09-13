@@ -255,7 +255,7 @@
       "evidence_before": "AUDIT/findings/L2-validation-config.md V-3",
       "fix_summary": "loudnessPreservingQCPolicy takes the render's delivery sample rate and measures the source through the render's own decode chain (renderDomainQCResult: internal WAV staging, then delivery rate); shorts share shortRenderQCPolicy. Clipped ceiling is exact in the render domain (identical counts verified for 44.1/48/96 kHz and MP3 sources).",
       "evidence_after": "AUDIT/evidence/0015-before.log (ceiling 94880 vs render 25280; hot MP3 short rejected), 0015-after.log (both regression tests pass; 31 Short/MP4 tests pass, 0 warnings); swiftlint 533/56. Full suite pending",
-      "commit": "",
+      "commit": "3d7ee94",
       "notes": "Medium confidence; verify with a clipped 48 kHz fixture first."
     },
     {
