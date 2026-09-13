@@ -2,33 +2,26 @@
 
 Session: `2026-09-13` · branch `audit/2026-09-13` · baseline commit `4bb136a`
 
-**known-total:100 done:28 open:71 blocked:1 new-this-session:100**
+**known-total:100 done:35 open:64 blocked:1 new-this-session:100**
 
 | status | count |
 |---|---|
 | START | 61 |
 | PROGRESS | 1 |
-| TEST | 9 |
+| TEST | 2 |
 | AUDIT | 0 |
-| DONE | 28 |
+| DONE | 35 |
 | BLOCKED | 1 |
 
 Status gates: START (reproduced/proven + expected behaviour written) → PROGRESS (diff) → TEST (failing-before/passing-after test pasted, full suite green, no new warnings) → AUDIT (cold re-read, all scanners re-run, no baseline regression, no new placeholder) → DONE (committed atomically). BLOCKED needs reason + what was tried + ≥2 options for a human.
 
-## Open S0 / S1 (12)
+## Open S0 / S1 (5)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
 | #0006 | S0 | repo | node1 (fresh clone) | Phase E: independent verification from a fresh clone on node1 | test | START |  |
 | #0005 | S1 | repo | wiki | Create and maintain the wiki audit tracker page mirroring the ledger (§9) | docs | PROGRESS | 0ac7242 |
-| #0015 | S1 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:18-32,97,197-201 | Clipped-samples rebase is not sample-rate invariant (source clip measured at 96 kHz, render at its own rate) | logic | TEST | 3d7ee94 |
 | #0030 | S1 | repo/docs | README.md:25,59; Sources/converter/CLI.swift:461-481,664-665; CONTRIBUTING.md:59; wiki Home/Full-Run-Contract | README, CLI help, CONTRIBUTING and wiki contradict actual behaviour (source rename, audio alteration, portrait input, --keep-full-name, 58 s, auto-install wording) | docs | START |  |
-| #0031 | S1 | converterTests | Sources/Tests/converterTests/IntegrationTestSupport.swift:25,133-143 | Integration workspace inherits OUTPUT_DIR/SRC_DIR/OUT_DIR/CONFIG_FILE/DEBUG from the host shell | test | TEST | d047f82 |
-| #0032 | S1 | converterTests | Sources/converter/PipelineCore.swift:487-505 | publishTemp restore-on-failure branch has no test | test | TEST | f4d018d |
-| #0033 | S1 | converterTests | Sources/converter/PipelineCore.swift:551-561 | requireDirectChild never tested with .., symlinks, absolute paths | test | TEST | 1682212 |
-| #0034 | S1 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:63-81 | PipeCapture cap test never reaches the 64 MiB cap | test | TEST | 2185827 |
-| #0035 | S1 | converterTests | Sources/converter/Actions.swift:126-154 | --continue-on-error batch semantics and summary untested | test | TEST | 7a94113 |
-| #0036 | S1 | converterTests | Sources/converter/PipelineCore.swift:842-856 | -clean has no test guarding 'never deletes user files' | test | TEST | 03bfa6d |
 | #0037 | S1 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:1138-1167 | loudnessPreservingQCPolicy has no direct test; 'hot' fixture is not hot | test | TEST | a715956 |
 | #0038 | S1 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:126-146 | Orphan temp cleanup untested against a live foreign PID | test | TEST | a53673a |
 
@@ -102,7 +95,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 | #0098 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:529,534 | Exact ffmpeg bass filter string pinned without a stated reason | test | START |  |
 | #0100 | S3 | converter/Actions | Sources/converter/Actions.swift (normalizedFullRunSource / resolveFullAudio) | Full-run source is renamed before preflight; a corrupt source loses its original name in the error | logic | START |  |
 
-## Done (28)
+## Done (35)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
@@ -115,6 +108,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 | #0012 | S1 | converter/PipelineCore | Sources/converter/PipelineCore.swift:711-714 | parseLoudnormJSON slices from the first '{' in stderr; metadata containing '{' breaks QC on valid files | bug | DONE | b8e97f9 |
 | #0013 | S1 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:93,98 | Stereo-imbalance check fail-open when one channel is digitally silent (-inf RMS dropped) | bug | DONE | 672c224 |
 | #0014 | S1 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:92-99,111-121,96 | astats-derived QC metrics fail-open on missing/unparseable report; Int(Double) trap on Peak count | bug | DONE | 672c224 |
+| #0015 | S1 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:18-32,97,197-201 | Clipped-samples rebase is not sample-rate invariant (source clip measured at 96 kHz, render at its own rate) | logic | DONE | 3d7ee94 |
 | #0016 | S1 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:1910-1913,1866-1908 | -album concatenates the same track once per format and includes _mastered/_silence_/_noise_ outputs | logic | DONE | 8fac9dc |
 | #0017 | S1 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:2076-2085 | album.txt builds silently skip missing/invalid tracks and publish a shorter album with exit 0 | bug | DONE | 8fac9dc |
 | #0018 | S1 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:1562-1583 | -mp3clean overwrites the source MP3 in place with a lossy LAME re-encode instead of a stream copy | bug | DONE | ebfaded |
@@ -128,6 +122,12 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 | #0026 | S1 | BW64Bridge | Sources/BW64Bridge/bw64_bridge.cpp:178-197 | Disk-write failures undetectable; bridge self-validates against the ds64 size it wrote | bug | DONE | f2c97eb |
 | #0027 | S1 | repo/docs | SECURITY.md:1-21 | SECURITY.md is the unedited GitHub template with fictitious versions | placeholder | DONE | a4203f8 |
 | #0028 | S1 | repo/docs | README.md:94; Sources/ThirdParty/libbw64 | No third-party attribution/provenance for vendored Apache-2.0 libbw64 | deps | DONE | a40e56a |
+| #0031 | S1 | converterTests | Sources/Tests/converterTests/IntegrationTestSupport.swift:25,133-143 | Integration workspace inherits OUTPUT_DIR/SRC_DIR/OUT_DIR/CONFIG_FILE/DEBUG from the host shell | test | DONE | d047f82 |
+| #0032 | S1 | converterTests | Sources/converter/PipelineCore.swift:487-505 | publishTemp restore-on-failure branch has no test | test | DONE | f4d018d |
+| #0033 | S1 | converterTests | Sources/converter/PipelineCore.swift:551-561 | requireDirectChild never tested with .., symlinks, absolute paths | test | DONE | 1682212 |
+| #0034 | S1 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:63-81 | PipeCapture cap test never reaches the 64 MiB cap | test | DONE | 2185827 |
+| #0035 | S1 | converterTests | Sources/converter/Actions.swift:126-154 | --continue-on-error batch semantics and summary untested | test | DONE | 7a94113 |
+| #0036 | S1 | converterTests | Sources/converter/PipelineCore.swift:842-856 | -clean has no test guarding 'never deletes user files' | test | DONE | 03bfa6d |
 | #0001 | S2 | repo/AUDIT | AUDIT/inventory.md | Phase A: scope inventory, dependency graph, trust boundaries, blast radius | docs | DONE | 5fa6546 |
 | #0002 | S2 | repo/AUDIT | AUDIT/environment.md | Phase A: environment record and audit tooling install (§1/§1b) | docs | DONE | 5fa6546 |
 | #0003 | S2 | repo/AUDIT | AUDIT/baseline.md | Phase A: baseline metrics at 4bb136a (§3) | docs | DONE | 2184906 |
@@ -313,7 +313,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **commit sha:** 672c224
 - **notes:** Throw on incomplete astats; Int(exactly:). Batched full-suite run shared with #0010/#0012/#0013/#0014/#0099 (one atomic commit per task).
 
-### #0015 · S1 · TEST · Clipped-samples rebase is not sample-rate invariant (source clip measured at 96 kHz, render at its own rate)
+### #0015 · S1 · DONE · Clipped-samples rebase is not sample-rate invariant (source clip measured at 96 kHz, render at its own rate)
 
 - **project/module:** converter/ValidationPipeline
 - **file:line:** Sources/converter/ValidationPipeline.swift:18-32,97,197-201
@@ -322,7 +322,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **discovered-by:** reviewer V-3
 - **evidence-before:** AUDIT/findings/L2-validation-config.md V-3
 - **fix-summary:** loudnessPreservingQCPolicy takes the render's delivery sample rate and measures the source through the render's own decode chain (renderDomainQCResult: internal WAV staging, then delivery rate); shorts share shortRenderQCPolicy. Clipped ceiling is exact in the render domain (identical counts verified for 44.1/48/96 kHz and MP3 sources).
-- **evidence-after:** AUDIT/evidence/0015-before.log (ceiling 94880 vs render 25280; hot MP3 short rejected), 0015-after.log (both regression tests pass; 31 Short/MP4 tests pass, 0 warnings); swiftlint 533/56. Full suite pending
+- **evidence-after:** AUDIT/evidence/0015-before.log (ceiling 94880 vs render 25280; hot MP3 short rejected), 0015-after.log (both regression tests pass; 31 Short/MP4 tests pass, 0 warnings); swiftlint 533/56. Full suite (AUDIT/evidence/0015-0031-0036-fullsuite.txt): 198 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** 3d7ee94
 - **notes:** Medium confidence; verify with a clipped 48 kHz fixture first.
 
@@ -513,7 +513,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **evidence-before:** AUDIT/findings/L0-L3-bridge-repo.md B-4,B-14; L2-video-image-actions-cli.md X-15
 - **notes:** Do after the behavioural fixes so docs describe the final state.
 
-### #0031 · S1 · TEST · Integration workspace inherits OUTPUT_DIR/SRC_DIR/OUT_DIR/CONFIG_FILE/DEBUG from the host shell
+### #0031 · S1 · DONE · Integration workspace inherits OUTPUT_DIR/SRC_DIR/OUT_DIR/CONFIG_FILE/DEBUG from the host shell
 
 - **project/module:** converterTests
 - **file:line:** Sources/Tests/converterTests/IntegrationTestSupport.swift:25,133-143
@@ -522,10 +522,10 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **discovered-by:** reviewer tests T-1
 - **evidence-before:** AUDIT/findings/L6-tests.md T-1
 - **fix-summary:** Test helpers strip OUTPUT_DIR/SRC_DIR/OUT_DIR/CONFIG_FILE/DEBUG and all ProjectConfig.supportedKeys from the inherited environment; IntegrationWorkspace.makeTool always passes --output-dir and --config; IntegrationWorkspace(inheritedEnvironment:) lets tests inject a poisoned environment. Matrix test uses the sanitised environment too.
-- **evidence-after:** AUDIT/evidence/0031-before.log (17 failures with unsanitised helpers), 0031-after.log (2 new tests + 14-test and 12-test slices pass); swiftlint 533/56. Full suite pending
+- **evidence-after:** AUDIT/evidence/0031-before.log (17 failures with unsanitised helpers), 0031-after.log (2 new tests + 14-test and 12-test slices pass); swiftlint 533/56. Full suite (AUDIT/evidence/0015-0031-0036-fullsuite.txt): 198 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** d047f82
 
-### #0032 · S1 · TEST · publishTemp restore-on-failure branch has no test
+### #0032 · S1 · DONE · publishTemp restore-on-failure branch has no test
 
 - **project/module:** converterTests
 - **file:line:** Sources/converter/PipelineCore.swift:487-505
@@ -534,10 +534,10 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **discovered-by:** reviewer T-2
 - **evidence-before:** AUDIT/findings/L6-tests.md T-2
 - **fix-summary:** Two unit tests: temp removed after makeTemp (backup made, second move fails) restores the previous version, leaves no backup, rethrows the original error, unregisters the temp; immutable destination (first rename fails) leaves destination and temp intact. Restore-fails branch documented as unreachable without a hook.
-- **evidence-after:** AUDIT/evidence/0032-before.log (restore no-op: previous version lost), 0032-after.log (3 pass); swiftlint 533/56. Full suite pending
+- **evidence-after:** AUDIT/evidence/0032-before.log (restore no-op: previous version lost), 0032-after.log (3 pass); swiftlint 533/56. Full suite (AUDIT/evidence/0015-0031-0036-fullsuite.txt): 198 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** f4d018d
 
-### #0033 · S1 · TEST · requireDirectChild never tested with .., symlinks, absolute paths
+### #0033 · S1 · DONE · requireDirectChild never tested with .., symlinks, absolute paths
 
 - **project/module:** converterTests
 - **file:line:** Sources/converter/PipelineCore.swift:551-561
@@ -546,10 +546,10 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **discovered-by:** reviewer T-3
 - **evidence-before:** AUDIT/findings/L6-tests.md T-3
 - **fix-summary:** Three unit tests cover requireDirectChild via resolveOutputPath and resolveExplicitPath: relative escapes, subfolders, symlinked subfolder escaping OUT_DIR, absolute paths inside/outside, OUT_DIR itself a symlink (both spellings accepted). No containment hole found.
-- **evidence-after:** AUDIT/evidence/0033-before.log (guard removed: 6 failures; symlink resolution removed: 3 failures), 0033-after.log (3 pass); swiftlint 533/56. Full suite pending
+- **evidence-after:** AUDIT/evidence/0033-before.log (guard removed: 6 failures; symlink resolution removed: 3 failures), 0033-after.log (3 pass); swiftlint 533/56. Full suite (AUDIT/evidence/0015-0031-0036-fullsuite.txt): 198 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** 1682212
 
-### #0034 · S1 · TEST · PipeCapture cap test never reaches the 64 MiB cap
+### #0034 · S1 · DONE · PipeCapture cap test never reaches the 64 MiB cap
 
 - **project/module:** converterTests
 - **file:line:** Sources/Tests/converterTests/PipelineIntegrationTests.swift:63-81
@@ -558,10 +558,10 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **discovered-by:** reviewer T-5
 - **evidence-before:** AUDIT/findings/L6-tests.md T-5
 - **fix-summary:** Integration tests cross the 64 MiB capture cap on stdout and stderr (exact size, right byte, exit 0, bounded time) and pin the boundary (exactly-cap kept whole, one byte over trimmed).
-- **evidence-after:** AUDIT/evidence/0034-before.log (cap mutated to 65 MiB: 5 failures), 0034-after.log (3 pass); swiftlint 533/56. Full suite pending
+- **evidence-after:** AUDIT/evidence/0034-before.log (cap mutated to 65 MiB: 5 failures), 0034-after.log (3 pass); swiftlint 533/56. Full suite (AUDIT/evidence/0015-0031-0036-fullsuite.txt): 198 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** 2185827
 
-### #0035 · S1 · TEST · --continue-on-error batch semantics and summary untested
+### #0035 · S1 · DONE · --continue-on-error batch semantics and summary untested
 
 - **project/module:** converterTests
 - **file:line:** Sources/converter/Actions.swift:126-154
@@ -570,10 +570,10 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **discovered-by:** reviewer T-6
 - **evidence-before:** AUDIT/findings/L6-tests.md T-6
 - **fix-summary:** Four integration tests (a valid / b garbage / c valid) for -wavtomp3 via processBatch and -loudness: with --continue-on-error a and c are produced and the summary is thrown; without it the per-file error propagates and c is never produced.
-- **evidence-after:** AUDIT/evidence/0035-before.log (guards inverted: 4/4 fail), 0035-after.log (4 pass); swiftlint 533/56. Full suite pending
+- **evidence-after:** AUDIT/evidence/0035-before.log (guards inverted: 4/4 fail), 0035-after.log (4 pass); swiftlint 533/56. Full suite (AUDIT/evidence/0015-0031-0036-fullsuite.txt): 198 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** 7a94113
 
-### #0036 · S1 · TEST · -clean has no test guarding 'never deletes user files'
+### #0036 · S1 · DONE · -clean has no test guarding 'never deletes user files'
 
 - **project/module:** converterTests
 - **file:line:** Sources/converter/PipelineCore.swift:842-856
@@ -582,7 +582,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **discovered-by:** reviewer T-7
 - **evidence-before:** AUDIT/findings/L6-tests.md T-7
 - **fix-summary:** Unit tests pin cleanTransients() (exact surviving listing, byte-identical user files) and the -clean entry point including publish-backup recovery and orphan-temp cleanup.
-- **evidence-after:** AUDIT/evidence/0036-before.log (guard dropped: 4 failures), 0036-after.log (2 pass); swiftlint 533/56. Full suite pending
+- **evidence-after:** AUDIT/evidence/0036-before.log (guard dropped: 4 failures), 0036-after.log (2 pass); swiftlint 533/56. Full suite (AUDIT/evidence/0015-0031-0036-fullsuite.txt): 198 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** 03bfa6d
 
 ### #0037 · S1 · TEST · loudnessPreservingQCPolicy has no direct test; 'hot' fixture is not hot
