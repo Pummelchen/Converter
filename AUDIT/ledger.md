@@ -20,7 +20,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
 | #0006 | S0 | repo | node1 (fresh clone) | Phase E: independent verification from a fresh clone on node1 | test | START |  |
-| #0005 | S1 | repo | wiki | Create and maintain the wiki audit tracker page mirroring the ledger (§9) | docs | PROGRESS |  |
+| #0005 | S1 | repo | wiki | Create and maintain the wiki audit tracker page mirroring the ledger (§9) | docs | PROGRESS | 0ac7242 |
 | #0011 | S1 | converter/DependencyBootstrap | Sources/converter/DependencyBootstrap.swift:164-176 | Homebrew installer fetched from unpinned HEAD URL, piped to bash, no integrity check, no pipefail | unsafe | START |  |
 | #0015 | S1 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:18-32,97,197-201 | Clipped-samples rebase is not sample-rate invariant (source clip measured at 96 kHz, render at its own rate) | logic | START |  |
 | #0016 | S1 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:1910-1913,1866-1908 | -album concatenates the same track once per format and includes _mastered/_silence_/_noise_ outputs | logic | START |  |
@@ -119,19 +119,19 @@ _none_
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
-| #0007 | S0 | converter/Actions | Sources/converter/Actions.swift:563-569 | -full with an MP3 source overwrites the user's source file with its own transcode | bug | DONE | ce3addc |
-| #0008 | S0 | converter/VideoPipeline | Sources/converter/VideoPipeline.swift:314; Sources/converter/AudioPipeline.swift:1986 | -album --output-file publishes the main MP4 over the album WAV | bug | DONE | a881e33 |
+| #0007 | S0 | converter/Actions | Sources/converter/Actions.swift:563-569 | -full with an MP3 source overwrites the user's source file with its own transcode | bug | DONE | e71f9dc |
+| #0008 | S0 | converter/VideoPipeline | Sources/converter/VideoPipeline.swift:314; Sources/converter/AudioPipeline.swift:1986 | -album --output-file publishes the main MP4 over the album WAV | bug | DONE | a83b7b5 |
 | #0004 | S1 | converter/BW64Bridge | Sources/ | Phase A: sanitizer baseline — test suite under ASan, UBSan, TSan | test | DONE | ce3addc |
-| #0009 | S1 | converter/ProcessRunner | Sources/converter/ProcessRunner.swift:139-152; DependencyBootstrap.swift:145-153 | Process timeout sends SIGTERM only; a child ignoring it (or a grandchild holding the pipe) hangs the run forever | bug | DONE | 73b6b87 |
-| #0010 | S1 | converter/Support | Sources/converter/Support.swift:218,295; CLI.swift:325-329 | Int(Double) traps on large-but-finite user durations (-silence 1e300 etc.) | bug | DONE | 78c00b6 |
-| #0012 | S1 | converter/PipelineCore | Sources/converter/PipelineCore.swift:711-714 | parseLoudnormJSON slices from the first '{' in stderr; metadata containing '{' breaks QC on valid files | bug | DONE | 8920f31 |
-| #0013 | S1 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:93,98 | Stereo-imbalance check fail-open when one channel is digitally silent (-inf RMS dropped) | bug | DONE | 3f118e5 |
-| #0014 | S1 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:92-99,111-121,96 | astats-derived QC metrics fail-open on missing/unparseable report; Int(Double) trap on Peak count | bug | DONE | 3f118e5 |
-| #0023 | S1 | converter/Actions | Sources/converter/Actions.swift:576-600 | Non-standard WAV source is rewritten in place; no bit-exact original survives | unsafe | DONE | ce3addc |
+| #0009 | S1 | converter/ProcessRunner | Sources/converter/ProcessRunner.swift:139-152; DependencyBootstrap.swift:145-153 | Process timeout sends SIGTERM only; a child ignoring it (or a grandchild holding the pipe) hangs the run forever | bug | DONE | 69d6f14 |
+| #0010 | S1 | converter/Support | Sources/converter/Support.swift:218,295; CLI.swift:325-329 | Int(Double) traps on large-but-finite user durations (-silence 1e300 etc.) | bug | DONE | e89447a |
+| #0012 | S1 | converter/PipelineCore | Sources/converter/PipelineCore.swift:711-714 | parseLoudnormJSON slices from the first '{' in stderr; metadata containing '{' breaks QC on valid files | bug | DONE | b8e97f9 |
+| #0013 | S1 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:93,98 | Stereo-imbalance check fail-open when one channel is digitally silent (-inf RMS dropped) | bug | DONE | 672c224 |
+| #0014 | S1 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:92-99,111-121,96 | astats-derived QC metrics fail-open on missing/unparseable report; Int(Double) trap on Peak count | bug | DONE | 672c224 |
+| #0023 | S1 | converter/Actions | Sources/converter/Actions.swift:576-600 | Non-standard WAV source is rewritten in place; no bit-exact original survives | unsafe | DONE | e71f9dc |
 | #0001 | S2 | repo/AUDIT | AUDIT/inventory.md | Phase A: scope inventory, dependency graph, trust boundaries, blast radius | docs | DONE | 5fa6546 |
 | #0002 | S2 | repo/AUDIT | AUDIT/environment.md | Phase A: environment record and audit tooling install (§1/§1b) | docs | DONE | 5fa6546 |
 | #0003 | S2 | repo/AUDIT | AUDIT/baseline.md | Phase A: baseline metrics at 4bb136a (§3) | docs | DONE | 2184906 |
-| #0099 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:34,1967 | Test target compiles with two warnings (bare 'Error' existential, unused 'wav' binding) | style | DONE | 3f118e5 |
+| #0099 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:34,1967 | Test target compiles with two warnings (bare 'Error' existential, unused 'wav' binding) | style | DONE | 9343977 |
 
 ## Full records
 
@@ -194,6 +194,7 @@ _none_
 - **discovered-by:** §9 brief
 - **evidence-before:** Wiki has 8 usage pages and no task/bug tracker page (grep for tracker/roadmap/backlog: none).
 - **fix-summary:** Audit-Tracker page created (wiki commit 6573cda), linked from _Sidebar, generated by AUDIT/tools/render_wiki.py; re-published at every milestone.
+- **commit sha:** 0ac7242
 - **notes:** Page name: Audit-Tracker; linked from _Sidebar; updated at every milestone; ledger wins on conflict.
 
 ### #0006 · S0 · START · Phase E: independent verification from a fresh clone on node1
@@ -216,7 +217,7 @@ _none_
 - **evidence-before:** AUDIT/findings/L2-video-image-actions-cli.md X-1: ensureStandardMP3Output throws for 44.1 kHz; fallback convertAudioToMP3(wav) targets outDir/1.mp3 == renamed source; publishTemp replaces it and drops the backup. \| Failing-before run (AUDIT/evidence/0007-before.log): testAudioConversionRefusesToWriteOverItsSource fails on preflight instead of the guard; testFullRunNeverOverwritesItsMP3Source / ...WAVSource fail: 1_source.* does not exist, source bytes were replaced.
 - **fix-summary:** Full run renames its single source to 1_source.<ext> (never 1.<ext>) and writes every deliverable under the release stem `1`; convertAudioToWAV/M4A/MP3 take an explicit outputStem and refuse (requireDistinctOutput) to publish onto their own source; fullAudioPreparation(sourceAudio:releaseStem:) never modifies the source: a non-standard WAV is converted to a distinct 1.wav (the original stays), an MP3 source is copied byte-for-byte when already standard (fullRunMP3Deliverable) or encoded from the derived WAV otherwise; family grouping strips the _source marker and ranks the preserved original first so reruns resolve the same origin; a rename onto an existing 1_source.<ext> is refused with an actionable error instead of silently falling back. ensureStandardMP3Output and normalizeWAVInPlace are no longer used by the full run.
 - **evidence-after:** AUDIT/evidence/0007-after.log (12 targeted tests pass) + AUDIT/evidence/0007-fullsuite.txt: full suite 162 executed, 0 failures, 0 compiler warnings; release build -warnings-as-errors clean; swiftlint 533/56 (== baseline); semgrep 0; TSan 0 reports on this tree.
-- **commit sha:** ce3addc
+- **commit sha:** e71f9dc
 - **notes:** Design: no publish path may target its own source; standard MP3 deliverable gets a distinct name. Related #0019, #0023. Shared root cause and one fix commit with #0023. Rejected alternative: keep 1.<ext> and only special-case the MP3 collision — leaves a standard-MP3 source ranked below its own 1.wav on rerun, so a later reuse-check failure could still overwrite it.
 
 ### #0008 · S0 · DONE · -album --output-file publishes the main MP4 over the album WAV
@@ -229,7 +230,7 @@ _none_
 - **evidence-before:** AUDIT/findings/L2-video-image-actions-cli.md X-2: album build and renderM4AToMP4 both resolve cli.outputFile in one run; MP4 reuse check fails on the WAV, render publishes over it. \| AUDIT/evidence/0008-before.log: -album --output-file MyAlbum.wav ends with MyAlbum.wav having format 'isom' (the MP4); parser accepted --output-file for -full/-run/-short/-flactomp3.
 - **fix-summary:** --output-file is accepted only by single-output actions (-m4atomp4, -album, -wavtoalbum, -mp3toalbum, -flactoalbum, -visualsubs); every other action rejects it at parse time with the list of actions that accept it. renderM4AToMP4 takes an explicit outputOverride that only stepM4AToMP4 passes; the full and album runs always name the main MP4 <stem>_8K.mp4, so an album run's --output-file binds to the album WAV alone.
 - **evidence-after:** AUDIT/evidence/0008-after.log: 11 targeted tests pass (2 new + album/visualsubs/m4atomp4 regressions). swiftlint 526/56 (baseline 533/56; 9 over-long lines I introduced were wrapped, pre-existing lines left untouched), semgrep 0. Full suite (AUDIT/evidence/0008-fullsuite.txt): 164 executed, 0 failures, 0 compiler warnings.
-- **commit sha:** a881e33
+- **commit sha:** a83b7b5
 - **notes:** --output-file must bind to exactly one output per action.
 
 ### #0009 · S1 · DONE · Process timeout sends SIGTERM only; a child ignoring it (or a grandchild holding the pipe) hangs the run forever
@@ -242,7 +243,7 @@ _none_
 - **evidence-before:** AUDIT/findings/L2-core-runtime.md C-1; L6-tests.md T-4 \| AUDIT/evidence/0009-before.log: testRunTimeoutEscalatesToSIGKILLWhenChildIgnoresSIGTERM took 60.07 s (child's natural exit) with timeoutSeconds: 1. The grandchild-holds-the-pipe scenario (sh -c 'sleep 60 & wait') was NOT reproducible: it returned in 1.0 s before the fix; the test is kept as a regression guard.
 - **fix-summary:** ProcessRunner.terminateWithEscalation: SIGTERM, then SIGKILL after a 5 s grace if the child is still running (pid re-checked). PipeCapture appends output under its lock as it arrives and offers a bounded wait, so the timeout path reports the captured stderr tail after at most 2 s instead of blocking on pipe EOF. DependencyBootstrap.isFunctionalTool uses the same escalation and a bounded drain wait.
 - **evidence-after:** AUDIT/evidence/0009-after.log: escalation test now 8.1 s (1 s timeout + 5 s grace + drain); 9 targeted tests pass. Full suite 166/166 (0009-fullsuite.txt). swiftlint 526/56, semgrep 0.
-- **commit sha:** 73b6b87
+- **commit sha:** 69d6f14
 - **notes:** Escalate to SIGKILL after grace; close pipe read ends on timeout; same in isFunctionalTool. Residual, documented: a capture thread stays blocked on read() until a grandchild that inherited the pipe exits; the run itself no longer waits for it (bounded drain), so this cannot stall a run.
 
 ### #0010 · S1 · DONE · Int(Double) traps on large-but-finite user durations (-silence 1e300 etc.)
@@ -255,7 +256,7 @@ _none_
 - **evidence-before:** AUDIT/findings/L2-core-runtime.md C-2 \| AUDIT/evidence/0010-before.log: parseFlexibleTimecode('1e300') did not throw and ffmpegNumber(1e300) trapped the xctest process ('Double value cannot be converted to Int', signal 5).
 - **fix-summary:** parseFlexibleTimecode rejects durations above 366 days (maximumTimecodeSeconds) with an explicit message; ffmpegNumber uses Int(exactly:) and falls through to fixed-point formatting for anything else; SilenceSpec.delayMilliseconds saturates to Int.max instead of trapping.
 - **evidence-after:** AUDIT/evidence/0010-0014-after.log: 39 targeted tests pass (timecode/ffmpegNumber, loudnorm braces, astats fail-closed + silent channel, existing QC/loudness/imbalance/fade/silence/noise tests). swiftlint 526/56, semgrep 0. Full suite (AUDIT/evidence/0010-0014-fullsuite.txt): 170 executed, 0 failures, 0 compiler warnings.
-- **commit sha:** 78c00b6
+- **commit sha:** e89447a
 - **notes:** Int(exactly:) plus an upper bound in parseFlexibleTimecode. Batched full-suite run shared with #0010/#0012/#0013/#0014/#0099 (one atomic commit per task).
 
 ### #0011 · S1 · START · Homebrew installer fetched from unpinned HEAD URL, piped to bash, no integrity check, no pipefail
@@ -278,7 +279,7 @@ _none_
 - **evidence-before:** AUDIT/findings/L2-core-runtime.md C-4 \| AUDIT/evidence/0012-013-before.log: stderr with 'title : Song {Remix}' metadata before a valid loudnorm block failed with 'Audio loudness probe JSON parsing failed.'
 - **fix-summary:** parseLoudnormJSON locates the loudnorm object from its closing brace backwards to the matching opening brace (depth counted) instead of from the first '{' in the log.
 - **evidence-after:** AUDIT/evidence/0010-0014-after.log: 39 targeted tests pass (timecode/ffmpegNumber, loudnorm braces, astats fail-closed + silent channel, existing QC/loudness/imbalance/fade/silence/noise tests). swiftlint 526/56, semgrep 0. Full suite (AUDIT/evidence/0010-0014-fullsuite.txt): 170 executed, 0 failures, 0 compiler warnings.
-- **commit sha:** 8920f31
+- **commit sha:** b8e97f9
 - **notes:** Locate the loudnorm block from the end with brace matching. Batched full-suite run shared with #0010/#0012/#0013/#0014/#0099 (one atomic commit per task).
 
 ### #0013 · S1 · DONE · Stereo-imbalance check fail-open when one channel is digitally silent (-inf RMS dropped)
@@ -291,7 +292,7 @@ _none_
 - **evidence-before:** AUDIT/findings/L2-validation-config.md V-1 \| AUDIT/evidence/0012-0013-before.log: a stereo WAV with a digitally silent right channel passed a 0.1 dB imbalance ceiling with no issues (imbalance reported 0).
 - **fix-summary:** parseAstatsLevelDB maps '-inf' to -infinity; audioQCAstatsMetrics reports infinite stereo imbalance when exactly one channel is silent (both silent → 0, audibility judged separately).
 - **evidence-after:** AUDIT/evidence/0010-0014-after.log: 39 targeted tests pass (timecode/ffmpegNumber, loudnorm braces, astats fail-closed + silent channel, existing QC/loudness/imbalance/fade/silence/noise tests). swiftlint 526/56, semgrep 0. Full suite (AUDIT/evidence/0010-0014-fullsuite.txt): 170 executed, 0 failures, 0 compiler warnings.
-- **commit sha:** 3f118e5
+- **commit sha:** 672c224
 - **notes:**  Batched full-suite run shared with #0010/#0012/#0013/#0014/#0099 (one atomic commit per task).
 
 ### #0014 · S1 · DONE · astats-derived QC metrics fail-open on missing/unparseable report; Int(Double) trap on Peak count
@@ -304,7 +305,7 @@ _none_
 - **evidence-before:** AUDIT/findings/L2-validation-config.md V-2, V-13 \| Statically proven (reviewer V-2/V-13): parseAstatsReport never throws and every derived metric defaulted to 0; Int(Double(nan)) traps. Pure-function test cannot compile before the extraction; behavioural sibling is #0013.
 - **fix-summary:** New audioQCAstatsMetrics(from:expectedChannels:file:) (AstatsDerivedMetrics) fails closed: channel-block count must equal the probed channel count, every channel needs RMS level dB and DC offset, overall Peak level dB and Peak count must be present and numeric (Int(exactly:) — no trap on nan); audioQCResult uses it.
 - **evidence-after:** AUDIT/evidence/0010-0014-after.log: 39 targeted tests pass (timecode/ffmpegNumber, loudnorm braces, astats fail-closed + silent channel, existing QC/loudness/imbalance/fade/silence/noise tests). swiftlint 526/56, semgrep 0. Full suite (AUDIT/evidence/0010-0014-fullsuite.txt): 170 executed, 0 failures, 0 compiler warnings.
-- **commit sha:** 3f118e5
+- **commit sha:** 672c224
 - **notes:** Throw on incomplete astats; Int(exactly:). Batched full-suite run shared with #0010/#0012/#0013/#0014/#0099 (one atomic commit per task).
 
 ### #0015 · S1 · START · Clipped-samples rebase is not sample-rate invariant (source clip measured at 96 kHz, render at its own rate)
@@ -396,7 +397,7 @@ _none_
 - **evidence-before:** AUDIT/findings/L2-video-image-actions-cli.md X-4 \| Failing-before run (AUDIT/evidence/0007-before.log): testAudioConversionRefusesToWriteOverItsSource fails on preflight instead of the guard; testFullRunNeverOverwritesItsMP3Source / ...WAVSource fail: 1_source.* does not exist, source bytes were replaced.
 - **fix-summary:** Full run renames its single source to 1_source.<ext> (never 1.<ext>) and writes every deliverable under the release stem `1`; convertAudioToWAV/M4A/MP3 take an explicit outputStem and refuse (requireDistinctOutput) to publish onto their own source; fullAudioPreparation(sourceAudio:releaseStem:) never modifies the source: a non-standard WAV is converted to a distinct 1.wav (the original stays), an MP3 source is copied byte-for-byte when already standard (fullRunMP3Deliverable) or encoded from the derived WAV otherwise; family grouping strips the _source marker and ranks the preserved original first so reruns resolve the same origin; a rename onto an existing 1_source.<ext> is refused with an actionable error instead of silently falling back. ensureStandardMP3Output and normalizeWAVInPlace are no longer used by the full run.
 - **evidence-after:** AUDIT/evidence/0007-after.log (12 targeted tests pass) + AUDIT/evidence/0007-fullsuite.txt: full suite 162 executed, 0 failures, 0 compiler warnings; release build -warnings-as-errors clean; swiftlint 533/56 (== baseline); semgrep 0; TSan 0 reports on this tree.
-- **commit sha:** ce3addc
+- **commit sha:** e71f9dc
 - **notes:** Never modify the source. Coordinate with #0007 (same principle). Shared root cause and one fix commit with #0007. Rejected alternative: keep 1.<ext> and only special-case the MP3 collision — leaves a standard-MP3 source ranked below its own 1.wav on rerun, so a later reuse-check failure could still overwrite it.
 
 ### #0024 · S1 · START · -aipix/-run_pix/-pngtojpg re-ingest portrait stills and overwrite them with landscape renders
@@ -1098,6 +1099,6 @@ _none_
 - **evidence-before:** swift test log (AUDIT/evidence/0008-fullsuite log source) shows: PipelineIntegrationTests.swift:34 'use of protocol Error as a type must be written any Error'; :1967 'initialization of immutable value wav was never used'. Present in the baseline test log too (4 matching lines); the §3 baseline only built the product target with -warnings-as-errors.
 - **fix-summary:** PipelineIntegrationTests.swift: ResultBox<Result<ProcessResult, any Error>>; unused `let wav` binding in testMasterCommandProducesMasteredOutputsWithinPolicy replaced by `_ =`.
 - **evidence-after:** swift build --build-tests -Xswiftc -warnings-as-errors: Build complete, 0 diagnostics. Targeted tests pass (AUDIT/evidence/0099-after.log). Full suite (AUDIT/evidence/0010-0014-fullsuite.txt): 170 executed, 0 failures, 0 compiler warnings.
-- **commit sha:** 3f118e5
+- **commit sha:** 9343977
 - **notes:** Phase E requires zero warnings across all targets.
 
