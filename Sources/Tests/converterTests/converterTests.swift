@@ -1843,6 +1843,133 @@ final class converterTests: XCTestCase {
         }
         XCTAssertEqual(try Data(contentsOf: source), Data("not-an-mp3".utf8), "source bytes must be untouched")
     }
+
+    // audit #0033: requireDirectChild was only tested with a plain subfolder. It is the whole
+    // containment check for --output-file and explicit inputs, so every escape shape must be
+    // pinned: "..", a subfolder, a symlinked subfolder pointing elsewhere, and "link/..".
+    func testRequireDirectChildRejectsRelativeEscapesSubfoldersAndSymlinkedSubfolders() throws {
+        let temp = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+        let outDir = temp.appendingPathComponent("out", isDirectory: true)
+        let other = temp.appendingPathComponent("other", isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: outDir.appendingPathComponent("sub"), withIntermediateDirectories: true
+        )
+        try FileManager.default.createDirectory(at: other, withIntermediateDirectories: true)
+        // out/escape -> other: a symlink inside outDir whose target lives outside it.
+        try FileManager.default.createSymbolicLink(
+            at: outDir.appendingPathComponent("escape"), withDestinationURL: other
+        )
+        let tool = try makeTool(tempDirectory: outDir)
+
+        let expected = "must stay directly in '\(outDir.path)'"
+        let rejected = ["../x.wav", "sub/x.wav", "escape/x.wav", "sub/../x.wav", "escape/../x.wav", "sub/./x.wav"]
+        for relative in rejected {
+            XCTAssertThrowsError(try tool.resolveOutputPath(relative), relative) { error in
+                XCTAssertTrue("\(error)".contains("Output path \(expected)"), "\(relative): \(error)")
+            }
+            XCTAssertThrowsError(try tool.resolveExplicitPath(relative, baseDirectory: outDir), relative) { error in
+                XCTAssertTrue("\(error)".contains("Input path \(expected)"), "\(relative): \(error)")
+            }
+            XCTAssertThrowsError(
+                try tool.requireDirectChild(outDir.appendingPathComponent(relative), of: outDir, label: "Probe"),
+                relative
+            ) { error in
+                XCTAssertTrue("\(error)".contains("Probe \(expected)"), "\(relative): \(error)")
+            }
+        }
+
+        // A plain file name is the only relative form that is accepted, and it resolves under outDir.
+        XCTAssertEqual(try tool.resolveOutputPath("x.wav").path, outDir.appendingPathComponent("x.wav").path)
+        XCTAssertEqual(
+            try tool.resolveExplicitPath("x.wav", baseDirectory: outDir).path,
+            outDir.appendingPathComponent("x.wav").path
+        )
+    }
+
+    // audit #0033: --output-file and explicit inputs accept absolute paths, which bypass the
+    // outDir prefix entirely; only an absolute path whose parent IS outDir may pass, and the
+    // comparison must survive the /var -> /private/var symlink on both sides.
+    func testRequireDirectChildHandlesAbsolutePathsInsideAndOutsideOutDir() throws {
+        let temp = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+        let outDir = temp.appendingPathComponent("out", isDirectory: true)
+        let other = temp.appendingPathComponent("other", isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: outDir.appendingPathComponent("sub"), withIntermediateDirectories: true
+        )
+        try FileManager.default.createDirectory(at: other, withIntermediateDirectories: true)
+        let tool = try makeTool(tempDirectory: outDir)
+        let expected = "must stay directly in '\(outDir.path)'"
+
+        let rejected = [
+            other.appendingPathComponent("x.wav").path,
+            temp.appendingPathComponent("x.wav").path,
+            outDir.appendingPathComponent("sub/x.wav").path,
+            outDir.appendingPathComponent("sub/../x.wav").path,
+            "/tmp/x.wav"
+        ]
+        for absolute in rejected {
+            XCTAssertTrue(absolute.hasPrefix("/"))
+            XCTAssertThrowsError(try tool.resolveOutputPath(absolute), absolute) { error in
+                XCTAssertTrue("\(error)".contains("Output path \(expected)"), "\(absolute): \(error)")
+            }
+            XCTAssertThrowsError(try tool.resolveExplicitPath(absolute, baseDirectory: outDir), absolute) { error in
+                XCTAssertTrue("\(error)".contains("Input path \(expected)"), "\(absolute): \(error)")
+            }
+        }
+
+        // Directly inside outDir: accepted verbatim (not re-rooted under outDir).
+        let inside = outDir.appendingPathComponent("x.wav").path
+        XCTAssertEqual(try tool.resolveOutputPath(inside).path, inside)
+        XCTAssertEqual(try tool.resolveExplicitPath(inside, baseDirectory: outDir).path, inside)
+
+        // The same file spelled through the fully resolved (symlink-free) directory is also accepted,
+        // even though cli.outDir keeps the unresolved spelling.
+        let resolvedInside = outDir.resolvingSymlinksInPath().appendingPathComponent("x.wav").path
+        XCTAssertEqual(try tool.resolveOutputPath(resolvedInside).path, resolvedInside)
+        XCTAssertEqual(try tool.resolveExplicitPath(resolvedInside, baseDirectory: outDir).path, resolvedInside)
+    }
+
+    // audit #0033: when outDir itself is a symlink, a direct child must be accepted whether the
+    // caller spells it through the link or through the real directory (resolution on both sides),
+    // while "real/../x" and siblings of the link target stay rejected.
+    func testRequireDirectChildResolvesSymlinkedOutDirOnBothSides() throws {
+        let temp = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+        let real = temp.appendingPathComponent("real", isDirectory: true)
+        let link = temp.appendingPathComponent("link", isDirectory: true)
+        try FileManager.default.createDirectory(at: real, withIntermediateDirectories: true)
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: real)
+        let tool = try makeTool(tempDirectory: link)
+        XCTAssertEqual(tool.cli.outDir.path, link.path, "the tool must keep the symlinked spelling")
+
+        // Relative name, absolute through the link, absolute through the real directory: all accepted.
+        XCTAssertEqual(try tool.resolveOutputPath("x.wav").path, link.appendingPathComponent("x.wav").path)
+        let viaLink = link.appendingPathComponent("x.wav").path
+        XCTAssertEqual(try tool.resolveOutputPath(viaLink).path, viaLink)
+        let viaReal = real.appendingPathComponent("x.wav").path
+        XCTAssertEqual(try tool.resolveOutputPath(viaReal).path, viaReal)
+        XCTAssertEqual(try tool.resolveExplicitPath(viaReal, baseDirectory: link).path, viaReal)
+        // The mirror image: the base is the real directory and the caller spells it through the link.
+        XCTAssertEqual(try tool.resolveExplicitPath(viaLink, baseDirectory: real).path, viaLink)
+
+        let expected = "must stay directly in '\(link.path)'"
+        let rejected = [
+            real.appendingPathComponent("../x.wav").path,
+            link.appendingPathComponent("../x.wav").path,
+            temp.appendingPathComponent("x.wav").path,
+            "../real/x.wav"
+        ]
+        for candidate in rejected {
+            XCTAssertThrowsError(try tool.resolveOutputPath(candidate), candidate) { error in
+                XCTAssertTrue("\(error)".contains("Output path \(expected)"), "\(candidate): \(error)")
+            }
+        }
+    }
 }
 
 private actor PermitPeakTracker {
