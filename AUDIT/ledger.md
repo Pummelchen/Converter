@@ -6,9 +6,9 @@ Session: `2026-09-13` · branch `audit/2026-09-13` · baseline commit `4bb136a`
 
 | status | count |
 |---|---|
-| START | 52 |
+| START | 51 |
 | PROGRESS | 1 |
-| TEST | 2 |
+| TEST | 3 |
 | AUDIT | 0 |
 | DONE | 44 |
 | BLOCKED | 1 |
@@ -41,7 +41,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 | #0047 | S2 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:16-32,59-63 | Source clip re-rendered and re-analysed for every short variant | perf | TEST | c238583 |
 | #0050 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:327-336,367-387,591-600 | Loudness fallback publishes any true-peak breach with a misleading 'closest-safe' label | logic | START |  |
 | #0051 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:992,1170,1029,508 | Redundant padding verification, uncached ffmpeg -filters, per-file ladder resolution | perf | START |  |
-| #0052 | S2 | converter/ImagePipeline | Sources/converter/ValidationPipeline.swift:391 (preflightImageInput call sites) | Full-decode image preflight of the same master repeated ~10x per run | perf | START |  |
+| #0052 | S2 | converter/ImagePipeline | Sources/converter/ValidationPipeline.swift:391 (preflightImageInput call sites) | Full-decode image preflight of the same master repeated ~10x per run | perf | TEST | fbefda6 |
 | #0053 | S2 | converter/Support | Sources/converter/Support.swift:308 | M:SS timecode parsing drops empty components; empty-component guard unreachable | logic | START |  |
 | #0054 | S2 | converter/Actions | Sources/converter/Actions.swift:1254 | -mp4toshort re-ingests the pipeline's own _Short_CenterCut/_FullSong outputs | bug | START |  |
 | #0055 | S2 | converter/ImagePipeline | Sources/converter/ImagePipeline.swift:329-336 | Fitted portrait still double-sharpens derived masters and user Vertical_8K.png | logic | START |  |
@@ -750,7 +750,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **discovered-by:** reviewer A-10
 - **evidence-before:** AUDIT/findings/L2-audio.md A-10
 
-### #0052 · S2 · START · Full-decode image preflight of the same master repeated ~10x per run
+### #0052 · S2 · TEST · Full-decode image preflight of the same master repeated ~10x per run
 
 - **project/module:** converter/ImagePipeline
 - **file:line:** Sources/converter/ValidationPipeline.swift:391 (preflightImageInput call sites)
@@ -758,6 +758,9 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **host-used:** local
 - **discovered-by:** reviewer X-13
 - **evidence-before:** AUDIT/findings/L2-video-image-actions-cli.md X-13
+- **fix-summary:** ProbeCache.verifyImageDecodeOnce remembers fingerprints whose full decode succeeded (failures are not remembered); preflightImageInput decodes each file version once.
+- **evidence-after:** AUDIT/evidence/0052-before.log (4 decodes for 4 preflights), 0052-after.log (1; rewritten file re-decoded once); swiftlint 533/56. Full suite pending
+- **commit sha:** fbefda6
 
 ### #0053 · S2 · START · M:SS timecode parsing drops empty components; empty-component guard unreachable
 

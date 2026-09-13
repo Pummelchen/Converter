@@ -878,14 +878,14 @@
       "location": "Sources/converter/ValidationPipeline.swift:391 (preflightImageInput call sites)",
       "title": "Full-decode image preflight of the same master repeated ~10x per run",
       "category": "perf",
-      "status": "START",
+      "status": "TEST",
       "host": "local",
       "discovered_by": "reviewer X-13",
       "session": "2026-09-13",
       "evidence_before": "AUDIT/findings/L2-video-image-actions-cli.md X-13",
-      "fix_summary": "",
-      "evidence_after": "",
-      "commit": "",
+      "fix_summary": "ProbeCache.verifyImageDecodeOnce remembers fingerprints whose full decode succeeded (failures are not remembered); preflightImageInput decodes each file version once.",
+      "evidence_after": "AUDIT/evidence/0052-before.log (4 decodes for 4 preflights), 0052-after.log (1; rewritten file re-decoded once); swiftlint 533/56. Full suite pending",
+      "commit": "fbefda6",
       "notes": ""
     },
     {
