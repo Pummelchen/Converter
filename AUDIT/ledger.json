@@ -340,7 +340,7 @@
       "evidence_before": "AUDIT/findings/L2-audio.md A-5",
       "fix_summary": "verifyBassHeadroom: processed vs source clipped-sample count under a headroom-only policy; fails with an actionable message.",
       "evidence_after": "AUDIT/evidence/0020-before.log; 0020-after.log: 8 bass tests pass; swiftlint 535/56. Full suite: next batch run.",
-      "commit": "",
+      "commit": "ed9bc61",
       "notes": ""
     },
     {
