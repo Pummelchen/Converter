@@ -6,6 +6,16 @@
 # Supported: youtube_master, youtube_short, fast_preview
 PROFILE=youtube_master
 
+# Runtime checks shared by every command.
+# PREFLIGHT_SECONDS: how many seconds of each source audio are decoded up front to prove the file is
+#   readable before any output is written.
+# DURATION_TOLERANCE_SEC: largest difference in seconds allowed between a source and its rendered
+#   output (or a requested clip length) by the post-render duration verification.
+# CRC_CHUNK_BYTES: read size for the CRC-32 hash pass (1 to 67108864); each chunk is held in memory.
+PREFLIGHT_SECONDS=2
+DURATION_TOLERANCE_SEC=2
+CRC_CHUNK_BYTES=8388608
+
 # WAV standard (used for WAV creation/normalization/validation)
 WAV_SAMPLE_RATE=96000
 WAV_CODEC=pcm_s24le

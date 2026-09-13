@@ -1454,6 +1454,34 @@ final class converterTests: XCTestCase {
         XCTAssertFalse(standardError.contains("[WARN]"), standardError)
     }
 
+    // audit #0082: PREFLIGHT_SECONDS, DURATION_TOLERANCE_SEC and CRC_CHUNK_BYTES were supported but
+    // absent from the shipped config.txt, so nothing told a user they exist. Every supported key must be
+    // present there with the built-in default, which together with the subset check above makes the
+    // two key sets equal.
+    func testEverySupportedConfigKeyIsDocumentedInRepositoryConfigWithItsDefault() throws {
+        let configURL = IntegrationWorkspace.projectRoot.appendingPathComponent("config.txt")
+        let keys = try Self.configKeys(in: configURL)
+        XCTAssertEqual(ProjectConfig.supportedKeys.subtracting(keys), [], "supported keys missing from config.txt")
+        XCTAssertEqual(keys, ProjectConfig.supportedKeys)
+
+        let options = try CLIOptions.parse(
+            arguments: ["-help"],
+            environment: [:],
+            scriptDirectory: IntegrationWorkspace.projectRoot,
+            scriptName: "converter"
+        )
+        let shipped = try ProjectConfig.load(
+            from: configURL,
+            environment: [:],
+            cli: options,
+            logger: Logger(scriptName: "converterTests", debugEnabled: false)
+        )
+        let builtIn = ProjectConfig()
+        XCTAssertEqual(shipped.preflightSeconds, builtIn.preflightSeconds)
+        XCTAssertEqual(shipped.durationToleranceSec, builtIn.durationToleranceSec)
+        XCTAssertEqual(shipped.crcChunkBytes, builtIn.crcChunkBytes)
+    }
+
     static func configKeys(in url: URL) throws -> Set<String> {
         let text = try String(contentsOf: url, encoding: .utf8)
         let keys = text.split(whereSeparator: \.isNewline).compactMap { rawLine -> String? in
