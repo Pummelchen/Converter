@@ -2,11 +2,11 @@
 
 Session: `2026-09-13` · branch `audit/2026-09-13` · baseline commit `4bb136a`
 
-**known-total:6 done:3 open:3 blocked:0 new-this-session:6**
+**known-total:98 done:3 open:95 blocked:0 new-this-session:98**
 
 | status | count |
 |---|---|
-| START | 1 |
+| START | 93 |
 | PROGRESS | 2 |
 | TEST | 0 |
 | AUDIT | 0 |
@@ -15,21 +15,114 @@ Session: `2026-09-13` · branch `audit/2026-09-13` · baseline commit `4bb136a`
 
 Status gates: START (reproduced/proven + expected behaviour written) → PROGRESS (diff) → TEST (failing-before/passing-after test pasted, full suite green, no new warnings) → AUDIT (cold re-read, all scanners re-run, no baseline regression, no new placeholder) → DONE (committed atomically). BLOCKED needs reason + what was tried + ≥2 options for a human.
 
-## Open S0 / S1 (3)
+## Open S0 / S1 (35)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
 | #0006 | S0 | repo | node1 (fresh clone) | Phase E: independent verification from a fresh clone on node1 | test | START |  |
+| #0007 | S0 | converter/Actions | Sources/converter/Actions.swift:563-569 | -full with an MP3 source overwrites the user's source file with its own transcode | bug | START |  |
+| #0008 | S0 | converter/VideoPipeline | Sources/converter/VideoPipeline.swift:314; Sources/converter/AudioPipeline.swift:1986 | -album --output-file publishes the main MP4 over the album WAV | bug | START |  |
 | #0004 | S1 | converter/BW64Bridge | Sources/ | Phase A: sanitizer baseline — test suite under ASan, UBSan, TSan | test | PROGRESS |  |
 | #0005 | S1 | repo | wiki | Create and maintain the wiki audit tracker page mirroring the ledger (§9) | docs | PROGRESS |  |
+| #0009 | S1 | converter/ProcessRunner | Sources/converter/ProcessRunner.swift:139-152; DependencyBootstrap.swift:145-153 | Process timeout sends SIGTERM only; a child ignoring it (or a grandchild holding the pipe) hangs the run forever | bug | START |  |
+| #0010 | S1 | converter/Support | Sources/converter/Support.swift:218,295; CLI.swift:325-329 | Int(Double) traps on large-but-finite user durations (-silence 1e300 etc.) | bug | START |  |
+| #0011 | S1 | converter/DependencyBootstrap | Sources/converter/DependencyBootstrap.swift:164-176 | Homebrew installer fetched from unpinned HEAD URL, piped to bash, no integrity check, no pipefail | unsafe | START |  |
+| #0012 | S1 | converter/PipelineCore | Sources/converter/PipelineCore.swift:711-714 | parseLoudnormJSON slices from the first '{' in stderr; metadata containing '{' breaks QC on valid files | bug | START |  |
+| #0013 | S1 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:93,98 | Stereo-imbalance check fail-open when one channel is digitally silent (-inf RMS dropped) | bug | START |  |
+| #0014 | S1 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:92-99,111-121,96 | astats-derived QC metrics fail-open on missing/unparseable report; Int(Double) trap on Peak count | bug | START |  |
+| #0015 | S1 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:18-32,97,197-201 | Clipped-samples rebase is not sample-rate invariant (source clip measured at 96 kHz, render at its own rate) | logic | START |  |
+| #0016 | S1 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:1910-1913,1866-1908 | -album concatenates the same track once per format and includes _mastered/_silence_/_noise_ outputs | logic | START |  |
+| #0017 | S1 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:2076-2085 | album.txt builds silently skip missing/invalid tracks and publish a shorter album with exit 0 | bug | START |  |
+| #0018 | S1 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:1562-1583 | -mp3clean overwrites the source MP3 in place with a lossy LAME re-encode instead of a stream copy | bug | START |  |
+| #0019 | S1 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:1316-1340 | ensureStandardMP3Output publishes without duration/loudness verification and re-encodes an already-standard MP3 | bug | START |  |
+| #0020 | S1 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:492-530,487-490 | -bass can clip the 24-bit staging WAV; nothing verifies true peak/clipping before publish | incomplete | START |  |
+| #0021 | S1 | converter/VideoPipeline+AudioPipeline | Sources/converter/VideoPipeline.swift:159-171; AudioPipeline.swift:1070-1082 | Encoder ladders fall through on encoder-independent failures (publish, ALAC/duration/loudness verify) and the padded-MP4 ladder reports only the last rung | logic | START |  |
+| #0022 | S1 | converter/Actions | Sources/converter/Actions.swift:209-218 | normalizedFullRunSource renames only the winning family member and orphans siblings/companions, breaking reruns; silent fallback when 1.<ext> exists | logic | START |  |
+| #0023 | S1 | converter/Actions | Sources/converter/Actions.swift:576-600 | Non-standard WAV source is rewritten in place; no bit-exact original survives | unsafe | START |  |
+| #0024 | S1 | converter/Actions | Sources/converter/Actions.swift:717-723,677-686,709 | -aipix/-run_pix/-pngtojpg re-ingest portrait stills and overwrite them with landscape renders | bug | START |  |
+| #0025 | S1 | converter/CLI | Sources/converter/CLI.swift:271-279 | Unknown --options and stray positionals are silently accepted | bug | START |  |
+| #0026 | S1 | BW64Bridge | Sources/BW64Bridge/bw64_bridge.cpp:178-197 | Disk-write failures undetectable; bridge self-validates against the ds64 size it wrote | bug | START |  |
+| #0027 | S1 | repo/docs | SECURITY.md:1-21 | SECURITY.md is the unedited GitHub template with fictitious versions | placeholder | START |  |
+| #0028 | S1 | repo/docs | README.md:94; Sources/ThirdParty/libbw64 | No third-party attribution/provenance for vendored Apache-2.0 libbw64 | deps | START |  |
+| #0029 | S1 | repo | LICENSE (missing) | Repository has no LICENSE file | deps | START |  |
+| #0030 | S1 | repo/docs | README.md:25,59; Sources/converter/CLI.swift:461-481,664-665; CONTRIBUTING.md:59; wiki Home/Full-Run-Contract | README, CLI help, CONTRIBUTING and wiki contradict actual behaviour (source rename, audio alteration, portrait input, --keep-full-name, 58 s, auto-install wording) | docs | START |  |
+| #0031 | S1 | converterTests | Sources/Tests/converterTests/IntegrationTestSupport.swift:25,133-143 | Integration workspace inherits OUTPUT_DIR/SRC_DIR/OUT_DIR/CONFIG_FILE/DEBUG from the host shell | test | START |  |
+| #0032 | S1 | converterTests | Sources/converter/PipelineCore.swift:487-505 | publishTemp restore-on-failure branch has no test | test | START |  |
+| #0033 | S1 | converterTests | Sources/converter/PipelineCore.swift:551-561 | requireDirectChild never tested with .., symlinks, absolute paths | test | START |  |
+| #0034 | S1 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:63-81 | PipeCapture cap test never reaches the 64 MiB cap | test | START |  |
+| #0035 | S1 | converterTests | Sources/converter/Actions.swift:126-154 | --continue-on-error batch semantics and summary untested | test | START |  |
+| #0036 | S1 | converterTests | Sources/converter/PipelineCore.swift:842-856 | -clean has no test guarding 'never deletes user files' | test | START |  |
+| #0037 | S1 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:1138-1167 | loudnessPreservingQCPolicy has no direct test; 'hot' fixture is not hot | test | START |  |
+| #0038 | S1 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:126-146 | Orphan temp cleanup untested against a live foreign PID | test | START |  |
 
 ## Blocked (0)
 
 _none_
 
-## Open S2 / S3 (0)
+## Open S2 / S3 (60)
 
-_none_
+| id | sev | module | file:line | title | category | status | commit |
+|---|---|---|---|---|---|---|---|
+| #0039 | S2 | converter/Support | Sources/converter/Support.swift:97-101,141-147 | AsyncSemaphore grants permits to already-cancelled tasks | perf | START |  |
+| #0040 | S2 | converter/ProcessRunner | Sources/converter/ProcessRunner.swift:145; Actions.swift:615-619 | Cancellation does not terminate sibling external processes after a fan-out failure | unsafe | START |  |
+| #0041 | S2 | converter/DependencyBootstrap | Sources/converter/DependencyBootstrap.swift:216-248 | Installer subprocesses have no timeout and discard diagnostics | incomplete | START |  |
+| #0042 | S2 | converter/ProcessRunner | Sources/converter/ProcessRunner.swift:112-124 | Child stdin inherited from the terminal | unsafe | START |  |
+| #0043 | S2 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:683-691,1013-1028 | containsChunk is a 64 KiB substring scan, not a RIFF chunk walk | unsafe | START |  |
+| #0044 | S2 | converter/Config | Sources/converter/Config.swift:203-205 | archive profile is a no-op placeholder | placeholder | START |  |
+| #0045 | S2 | converter/Config | Sources/converter/Config.swift:197-200 | youtube_short overlay puts a known-failing encoder first at the default portrait size | logic | START |  |
+| #0046 | S2 | converter/Config | Sources/converter/Config.swift:159-161 | Unknown config keys dropped at debug level only; BOM not stripped | incomplete | START |  |
+| #0047 | S2 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:16-32,59-63 | Source clip re-rendered and re-analysed for every short variant | perf | START |  |
+| #0048 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:94-97; Actions.swift:1071 | -master is not idempotent (re-masters its own _mastered outputs) | logic | START |  |
+| #0049 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:2104-2113 | -flactoalbum concatenates the pipeline's own derived/archival FLACs | logic | START |  |
+| #0050 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:327-336,367-387,591-600 | Loudness fallback publishes any true-peak breach with a misleading 'closest-safe' label | logic | START |  |
+| #0051 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:992,1170,1029,508 | Redundant padding verification, uncached ffmpeg -filters, per-file ladder resolution | perf | START |  |
+| #0052 | S2 | converter/ImagePipeline | Sources/converter/ValidationPipeline.swift:391 (preflightImageInput call sites) | Full-decode image preflight of the same master repeated ~10x per run | perf | START |  |
+| #0053 | S2 | converter/Support | Sources/converter/Support.swift:308 | M:SS timecode parsing drops empty components; empty-component guard unreachable | logic | START |  |
+| #0054 | S2 | converter/Actions | Sources/converter/Actions.swift:1254 | -mp4toshort re-ingests the pipeline's own _Short_CenterCut/_FullSong outputs | bug | START |  |
+| #0055 | S2 | converter/ImagePipeline | Sources/converter/ImagePipeline.swift:329-336 | Fitted portrait still double-sharpens derived masters and user Vertical_8K.png | logic | START |  |
+| #0056 | S2 | converter/VideoPipeline | Sources/converter/VideoPipeline.swift:399-404 | shortenMP4 upscales with ffmpeg's default scaler instead of the configured flags | bug | START |  |
+| #0057 | S2 | converter/Actions | Sources/converter/Actions.swift:278-286; PipelineCore.swift:646 | Orientation classification ignores EXIF orientation; square images silently treated as landscape | bug | START |  |
+| #0058 | S2 | repo | converter (binary); docs/KNOWN_GOOD_VERSIONS.md | Checked-in release binary has no verifiable provenance (no SHA-256, adhoc signature, no tag) | deps | START |  |
+| #0059 | S2 | repo/CI | .github/workflows/ci.yml:24,27-32,39-40 | CI not reproducible: unpinned action, latest-Xcode selection, unpinned brew formulae | deps | START |  |
+| #0060 | S2 | repo | album.txt; Sources/converter/AudioPipeline.swift:2063 | Personal track list committed as the production album.txt | placeholder | START |  |
+| #0061 | S2 | BW64Bridge | Sources/BW64Bridge/bw64_bridge.cpp:125-141,161 | Bridge does not bound channels; libbw64 uint16 blockAlignment wraps to heap overflow (unreachable via config today) | unsafe | START |  |
+| #0062 | S2 | BW64Bridge/Package | Sources/Package.swift:35-37; ThirdParty/libbw64/bw64/reader.hpp:220,225,227 | Strict C++ flags (-Wall -Wextra -Werror) fail on three benign sign-compare warnings in vendored libbw64 | deps | START |  |
+| #0063 | S2 | converterTests+Config | Sources/Tests/converterTests/converterTests.swift:128-140; Config.swift:400; VideoPipeline.swift:269 | SHORT_MP4_CLIP_SECONDS validated with Double() but consumed via parseFlexibleTimecode; test sets a value validate() rejects | test | START |  |
+| #0064 | S2 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:1860-1900 | Scheduler-limit test can pass vacuously | test | START |  |
+| #0065 | S2 | converterTests | Sources/Tests/converterTests/converterTests.swift:1473-1550 | AsyncSemaphore tests rely on sleeps for ordering and hang instead of failing on a leaked permit | test | START |  |
+| #0066 | S2 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:1627-1637,1738-1748 | Full-pipeline tests require hevc_videotoolbox; fail on hosts without HW HEVC | test | START |  |
+| #0067 | S2 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:473-491 | Fade-out 'does not enforce delivery QC' test never proves the fixture is out of policy | test | START |  |
+| #0068 | S2 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:1933-1948 | Mastering fallback test cannot observe which path ran | test | START |  |
+| #0069 | S2 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:387-392 | Bare XCTAssertThrowsError on garbage MP3 accepts any error | test | START |  |
+| #0070 | S2 | converterTests | Sources/Tests/converterTests/converterTests.swift:737-749 | LoudnormArgument clamping untested at the exact bounds | test | START |  |
+| #0071 | S2 | converter/Config+tests | Sources/converter/Config.swift:319-452 | Config validation gaps (ranges, empty strings, zero byte targets, CRC chunk bound, negative message) and only 3 keys tested | test | START |  |
+| #0072 | S2 | converter/VideoPipeline+tests | Sources/converter/VideoPipeline.swift:284-300,456-458; Actions.swift:875-876 | Short-cap boundary untested and duration thresholds inconsistent between short paths | test | START |  |
+| #0073 | S2 | converter (lint) | AUDIT/baseline/swiftlint-by-rule-4bb136a.txt | swiftlint baseline 533 (56 error-level): fix the actionable rules; structural rules deferred with rationale | style | START |  |
+| #0074 | S2 | converter (dead code) | Sources/converter/Actions.swift:114; ImagePipeline.swift:26-27; ProcessRunner.swift:78; ValidationPipeline.swift:857; Tests/IntegrationTestSupport.swift:32 | periphery-flagged unused declarations (6 unused, 15 assign-only) — prove reachability, then remove or retain with reason | dead | START |  |
+| #0075 | S2 | converter (dead code) | Sources/converter/PipelineCore.swift:347,357-362; Actions.swift:105-110,794-808; BW64Bridge/bw64_bridge.cpp:95; LosslessAudioPipeline.swift:9,30,173-174; AudioPipeline.swift:160-162,264,1955 | Dead branches, tautological guards, dead parameters, redundant discards | dead | START |  |
+| #0076 | S3 | converter/Support | Sources/converter/Support.swift:122-126 | cancelledBeforeSuspension can retain a marker for an already-resumed waiter | logic | START |  |
+| #0077 | S3 | converter/DependencyBootstrap | Sources/converter/DependencyBootstrap.swift:77-82 | Post-install failure message lists nothing when a tool is present but non-functional | logic | START |  |
+| #0078 | S3 | converter/PipelineCore | Sources/converter/PipelineCore.swift:372-379 | ensureWritableDirectory accepts a regular file at OUT_DIR | logic | START |  |
+| #0079 | S3 | converter/ProcessRunner | Sources/converter/ProcessRunner.swift:156-160 | Signal deaths reported as ordinary exit codes | incomplete | START |  |
+| #0080 | S3 | converter/PipelineCore | Sources/converter/PipelineCore.swift:323-344,271 | Orphan-temp detection keys on local PID only; synced directories across hosts | logic | START |  |
+| #0081 | S3 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:203-210 | LUFS rebase widens the tolerance symmetrically | logic | START |  |
+| #0082 | S3 | repo/docs | config.txt; wiki Configuration | PREFLIGHT_SECONDS, DURATION_TOLERANCE_SEC, CRC_CHUNK_BYTES supported but undocumented | docs | START |  |
+| #0083 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:905 | Noise seed is Int.random; reruns not reproducible | logic | START |  |
+| #0084 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:53-77 | Derived-media predicates use the first _silence_/_noise_ occurrence | logic | START |  |
+| #0085 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:1850-1854 | Track-number parse uses Unicode isNumber and can overflow | logic | START |  |
+| #0086 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:1378,1694-1706 | Magic bytes-per-sample and missing free-space check on the BW64 path | style | START |  |
+| #0087 | S3 | converter/CLI | Sources/converter/CLI.swift:231-260 | CLI inconsistencies: --seed 0, unbounded --sharpness, repeated action flags, option values beginning with -- | logic | START |  |
+| #0088 | S3 | converter/Config+VideoPipeline | Sources/converter/VideoPipeline.swift:230,240,244; Config.swift:393,397 | Config colour/scale-filter values spliced into the filter graph with only non-empty validation | unsafe | START |  |
+| #0089 | S3 | converter/VideoPipeline | Sources/converter/VideoPipeline.swift:334,386,467 | ALAC M4A decoded and re-encoded for every video although stream copy is bit-transparent | perf | START |  |
+| #0090 | S3 | BW64Bridge | Sources/BW64Bridge/include/bw64_bridge.h:14-22 | Easily swappable C ABI parameters (swapped paths would truncate the input) | style | START |  |
+| #0091 | S3 | repo | .gitignore:2 | Stale .converter_bw64_writer ignore entry | dead | START |  |
+| #0092 | S3 | repo/docs | docs/FORMATS.md | Maintenance commands and -fadeflac alias missing from FORMATS.md | docs | START |  |
+| #0093 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:30-50 | 10 s wall-clock budget on a 40 000-iteration shell loop | test | START |  |
+| #0094 | S3 | converterTests | Sources/Tests/converterTests/converterTests.swift:189-230,1297-1309 | Help-text tests couple to prose sentences | test | START |  |
+| #0095 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:613-619 | Progress-event count pinned to implementation | test | START |  |
+| #0096 | S3 | converterTests | Sources/Tests/converterTests/converterTests.swift:108-115 | SchedulerProfile tested via its summary string | test | START |  |
+| #0097 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:1902-1911 | -doctor has only a no-throw happy path | test | START |  |
+| #0098 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:529,534 | Exact ffmpeg bass filter string pinned without a stated reason | test | START |  |
 
 ## Done (3)
 
@@ -109,4 +202,861 @@ _none_
 - **discovered-by:** §11 brief
 - **evidence-before:** Not yet run. Gate for merging the audit branch to main via PR.
 - **notes:** Clean build (0 warnings, strict flags), full suite, coverage, all scanners, zero placeholders, ledger has no non-BLOCKED open task, wiki synced. Clone under ~/audit/Converter on node1, removed afterwards.
+
+### #0007 · S0 · START · -full with an MP3 source overwrites the user's source file with its own transcode
+
+- **project/module:** converter/Actions
+- **file:line:** Sources/converter/Actions.swift:563-569
+- **category:** bug
+- **host-used:** local
+- **discovered-by:** reviewer L2 video/image/actions/CLI (X-1)
+- **evidence-before:** AUDIT/findings/L2-video-image-actions-cli.md X-1: ensureStandardMP3Output throws for 44.1 kHz; fallback convertAudioToMP3(wav) targets outDir/1.mp3 == renamed source; publishTemp replaces it and drops the backup.
+- **notes:** Design: no publish path may target its own source; standard MP3 deliverable gets a distinct name. Related #0019, #0023.
+
+### #0008 · S0 · START · -album --output-file publishes the main MP4 over the album WAV
+
+- **project/module:** converter/VideoPipeline
+- **file:line:** Sources/converter/VideoPipeline.swift:314; Sources/converter/AudioPipeline.swift:1986
+- **category:** bug
+- **host-used:** local
+- **discovered-by:** reviewer X-2
+- **evidence-before:** AUDIT/findings/L2-video-image-actions-cli.md X-2: album build and renderM4AToMP4 both resolve cli.outputFile in one run; MP4 reuse check fails on the WAV, render publishes over it.
+- **notes:** --output-file must bind to exactly one output per action.
+
+### #0009 · S1 · START · Process timeout sends SIGTERM only; a child ignoring it (or a grandchild holding the pipe) hangs the run forever
+
+- **project/module:** converter/ProcessRunner
+- **file:line:** Sources/converter/ProcessRunner.swift:139-152; DependencyBootstrap.swift:145-153
+- **category:** bug
+- **host-used:** local
+- **discovered-by:** reviewer core C-1; tests T-4
+- **evidence-before:** AUDIT/findings/L2-core-runtime.md C-1; L6-tests.md T-4
+- **notes:** Escalate to SIGKILL after grace; close pipe read ends on timeout; same in isFunctionalTool.
+
+### #0010 · S1 · START · Int(Double) traps on large-but-finite user durations (-silence 1e300 etc.)
+
+- **project/module:** converter/Support
+- **file:line:** Sources/converter/Support.swift:218,295; CLI.swift:325-329
+- **category:** bug
+- **host-used:** local
+- **discovered-by:** reviewer C-2
+- **evidence-before:** AUDIT/findings/L2-core-runtime.md C-2
+- **notes:** Int(exactly:) plus an upper bound in parseFlexibleTimecode.
+
+### #0011 · S1 · START · Homebrew installer fetched from unpinned HEAD URL, piped to bash, no integrity check, no pipefail
+
+- **project/module:** converter/DependencyBootstrap
+- **file:line:** Sources/converter/DependencyBootstrap.swift:164-176
+- **category:** unsafe
+- **host-used:** local
+- **discovered-by:** reviewer C-3
+- **evidence-before:** AUDIT/findings/L2-core-runtime.md C-3
+- **notes:** Opt-in path only. Decision: pin + SHA-256 verify, or remove self-install and keep brew install only; document rejected alternative.
+
+### #0012 · S1 · START · parseLoudnormJSON slices from the first '{' in stderr; metadata containing '{' breaks QC on valid files
+
+- **project/module:** converter/PipelineCore
+- **file:line:** Sources/converter/PipelineCore.swift:711-714
+- **category:** bug
+- **host-used:** local
+- **discovered-by:** reviewer C-4
+- **evidence-before:** AUDIT/findings/L2-core-runtime.md C-4
+- **notes:** Locate the loudnorm block from the end with brace matching.
+
+### #0013 · S1 · START · Stereo-imbalance check fail-open when one channel is digitally silent (-inf RMS dropped)
+
+- **project/module:** converter/ValidationPipeline
+- **file:line:** Sources/converter/ValidationPipeline.swift:93,98
+- **category:** bug
+- **host-used:** local
+- **discovered-by:** reviewer validation V-1
+- **evidence-before:** AUDIT/findings/L2-validation-config.md V-1
+
+### #0014 · S1 · START · astats-derived QC metrics fail-open on missing/unparseable report; Int(Double) trap on Peak count
+
+- **project/module:** converter/ValidationPipeline
+- **file:line:** Sources/converter/ValidationPipeline.swift:92-99,111-121,96
+- **category:** bug
+- **host-used:** local
+- **discovered-by:** reviewer V-2, V-13
+- **evidence-before:** AUDIT/findings/L2-validation-config.md V-2, V-13
+- **notes:** Throw on incomplete astats; Int(exactly:).
+
+### #0015 · S1 · START · Clipped-samples rebase is not sample-rate invariant (source clip measured at 96 kHz, render at its own rate)
+
+- **project/module:** converter/ValidationPipeline
+- **file:line:** Sources/converter/ValidationPipeline.swift:18-32,97,197-201
+- **category:** logic
+- **host-used:** local
+- **discovered-by:** reviewer V-3
+- **evidence-before:** AUDIT/findings/L2-validation-config.md V-3
+- **notes:** Medium confidence; verify with a clipped 48 kHz fixture first.
+
+### #0016 · S1 · START · -album concatenates the same track once per format and includes _mastered/_silence_/_noise_ outputs
+
+- **project/module:** converter/AudioPipeline
+- **file:line:** Sources/converter/AudioPipeline.swift:1910-1913,1866-1908
+- **category:** logic
+- **host-used:** local
+- **discovered-by:** reviewer audio A-1
+- **evidence-before:** AUDIT/findings/L2-audio.md A-1
+- **notes:** Collapse by stem via rankedFamily; extend isAlbumDerivedAudio. Related #0048, #0049.
+
+### #0017 · S1 · START · album.txt builds silently skip missing/invalid tracks and publish a shorter album with exit 0
+
+- **project/module:** converter/AudioPipeline
+- **file:line:** Sources/converter/AudioPipeline.swift:2076-2085
+- **category:** bug
+- **host-used:** local
+- **discovered-by:** reviewer A-2
+- **evidence-before:** AUDIT/findings/L2-audio.md A-2
+- **notes:** Fail closed unless --continue-on-error.
+
+### #0018 · S1 · START · -mp3clean overwrites the source MP3 in place with a lossy LAME re-encode instead of a stream copy
+
+- **project/module:** converter/AudioPipeline
+- **file:line:** Sources/converter/AudioPipeline.swift:1562-1583
+- **category:** bug
+- **host-used:** local
+- **discovered-by:** reviewer A-3
+- **evidence-before:** AUDIT/findings/L2-audio.md A-3
+- **notes:** Stream copy + canonical PCM equivalence.
+
+### #0019 · S1 · START · ensureStandardMP3Output publishes without duration/loudness verification and re-encodes an already-standard MP3
+
+- **project/module:** converter/AudioPipeline
+- **file:line:** Sources/converter/AudioPipeline.swift:1316-1340
+- **category:** bug
+- **host-used:** local
+- **discovered-by:** reviewer A-4
+- **evidence-before:** AUDIT/findings/L2-audio.md A-4
+- **notes:** Copy byte-for-byte when standard; verify like convertAudioToMP3. Coordinate with #0007.
+
+### #0020 · S1 · START · -bass can clip the 24-bit staging WAV; nothing verifies true peak/clipping before publish
+
+- **project/module:** converter/AudioPipeline
+- **file:line:** Sources/converter/AudioPipeline.swift:492-530,487-490
+- **category:** incomplete
+- **host-used:** local
+- **discovered-by:** reviewer A-5
+- **evidence-before:** AUDIT/findings/L2-audio.md A-5
+
+### #0021 · S1 · START · Encoder ladders fall through on encoder-independent failures (publish, ALAC/duration/loudness verify) and the padded-MP4 ladder reports only the last rung
+
+- **project/module:** converter/VideoPipeline+AudioPipeline
+- **file:line:** Sources/converter/VideoPipeline.swift:159-171; AudioPipeline.swift:1070-1082
+- **category:** logic
+- **host-used:** local
+- **discovered-by:** reviewer X-6, A-6; tests T-8
+- **evidence-before:** AUDIT/findings/L2-video-image-actions-cli.md X-6; L2-audio.md A-6; L6-tests.md T-8
+- **notes:** One shared ladder helper; all rungs reported; encoder-independent stop.
+
+### #0022 · S1 · START · normalizedFullRunSource renames only the winning family member and orphans siblings/companions, breaking reruns; silent fallback when 1.<ext> exists
+
+- **project/module:** converter/Actions
+- **file:line:** Sources/converter/Actions.swift:209-218
+- **category:** logic
+- **host-used:** local
+- **discovered-by:** reviewer X-3; tests T-23
+- **evidence-before:** AUDIT/findings/L2-video-image-actions-cli.md X-3; L6-tests.md T-23
+- **notes:** Rename whole family after preflight; error instead of silent fallback.
+
+### #0023 · S1 · START · Non-standard WAV source is rewritten in place; no bit-exact original survives
+
+- **project/module:** converter/Actions
+- **file:line:** Sources/converter/Actions.swift:576-600
+- **category:** unsafe
+- **host-used:** local
+- **discovered-by:** reviewer X-4
+- **evidence-before:** AUDIT/findings/L2-video-image-actions-cli.md X-4
+- **notes:** Never modify the source. Coordinate with #0007 (same principle).
+
+### #0024 · S1 · START · -aipix/-run_pix/-pngtojpg re-ingest portrait stills and overwrite them with landscape renders
+
+- **project/module:** converter/Actions
+- **file:line:** Sources/converter/Actions.swift:717-723,677-686,709
+- **category:** bug
+- **host-used:** local
+- **discovered-by:** reviewer X-5
+- **evidence-before:** AUDIT/findings/L2-video-image-actions-cli.md X-5
+- **notes:** Single isFullRunDerivedImage predicate in every batch discovery.
+
+### #0025 · S1 · START · Unknown --options and stray positionals are silently accepted
+
+- **project/module:** converter/CLI
+- **file:line:** Sources/converter/CLI.swift:271-279
+- **category:** bug
+- **host-used:** local
+- **discovered-by:** reviewer X-7; tests T-21
+- **evidence-before:** AUDIT/findings/L2-video-image-actions-cli.md X-7; L6-tests.md T-21
+
+### #0026 · S1 · START · Disk-write failures undetectable; bridge self-validates against the ds64 size it wrote
+
+- **project/module:** BW64Bridge
+- **file:line:** Sources/BW64Bridge/bw64_bridge.cpp:178-197
+- **category:** bug
+- **host-used:** local
+- **discovered-by:** reviewer bridge B-1
+- **evidence-before:** AUDIT/findings/L0-L3-bridge-repo.md B-1
+- **notes:** Compare real file size to expected; check stream state; close+check in forceBW64Container.
+
+### #0027 · S1 · START · SECURITY.md is the unedited GitHub template with fictitious versions
+
+- **project/module:** repo/docs
+- **file:line:** SECURITY.md:1-21
+- **category:** placeholder
+- **host-used:** local
+- **discovered-by:** reviewer B-2
+- **evidence-before:** AUDIT/findings/L0-L3-bridge-repo.md B-2
+
+### #0028 · S1 · START · No third-party attribution/provenance for vendored Apache-2.0 libbw64
+
+- **project/module:** repo/docs
+- **file:line:** README.md:94; Sources/ThirdParty/libbw64
+- **category:** deps
+- **host-used:** local
+- **discovered-by:** reviewer B-3
+- **evidence-before:** AUDIT/findings/L0-L3-bridge-repo.md B-3
+- **notes:** UPSTREAM.md + README third-party section.
+
+### #0029 · S1 · START · Repository has no LICENSE file
+
+- **project/module:** repo
+- **file:line:** LICENSE (missing)
+- **category:** deps
+- **host-used:** local
+- **discovered-by:** reviewer B-3
+- **evidence-before:** AUDIT/findings/L0-L3-bridge-repo.md B-3
+- **notes:** License text is the owner's decision — expected BLOCKED with options.
+
+### #0030 · S1 · START · README, CLI help, CONTRIBUTING and wiki contradict actual behaviour (source rename, audio alteration, portrait input, --keep-full-name, 58 s, auto-install wording)
+
+- **project/module:** repo/docs
+- **file:line:** README.md:25,59; Sources/converter/CLI.swift:461-481,664-665; CONTRIBUTING.md:59; wiki Home/Full-Run-Contract
+- **category:** docs
+- **host-used:** local
+- **discovered-by:** reviewer B-4, X-15, B-14
+- **evidence-before:** AUDIT/findings/L0-L3-bridge-repo.md B-4,B-14; L2-video-image-actions-cli.md X-15
+- **notes:** Do after the behavioural fixes so docs describe the final state.
+
+### #0031 · S1 · START · Integration workspace inherits OUTPUT_DIR/SRC_DIR/OUT_DIR/CONFIG_FILE/DEBUG from the host shell
+
+- **project/module:** converterTests
+- **file:line:** Sources/Tests/converterTests/IntegrationTestSupport.swift:25,133-143
+- **category:** test
+- **host-used:** local
+- **discovered-by:** reviewer tests T-1
+- **evidence-before:** AUDIT/findings/L6-tests.md T-1
+
+### #0032 · S1 · START · publishTemp restore-on-failure branch has no test
+
+- **project/module:** converterTests
+- **file:line:** Sources/converter/PipelineCore.swift:487-505
+- **category:** test
+- **host-used:** local
+- **discovered-by:** reviewer T-2
+- **evidence-before:** AUDIT/findings/L6-tests.md T-2
+
+### #0033 · S1 · START · requireDirectChild never tested with .., symlinks, absolute paths
+
+- **project/module:** converterTests
+- **file:line:** Sources/converter/PipelineCore.swift:551-561
+- **category:** test
+- **host-used:** local
+- **discovered-by:** reviewer T-3
+- **evidence-before:** AUDIT/findings/L6-tests.md T-3
+
+### #0034 · S1 · START · PipeCapture cap test never reaches the 64 MiB cap
+
+- **project/module:** converterTests
+- **file:line:** Sources/Tests/converterTests/PipelineIntegrationTests.swift:63-81
+- **category:** test
+- **host-used:** local
+- **discovered-by:** reviewer T-5
+- **evidence-before:** AUDIT/findings/L6-tests.md T-5
+
+### #0035 · S1 · START · --continue-on-error batch semantics and summary untested
+
+- **project/module:** converterTests
+- **file:line:** Sources/converter/Actions.swift:126-154
+- **category:** test
+- **host-used:** local
+- **discovered-by:** reviewer T-6
+- **evidence-before:** AUDIT/findings/L6-tests.md T-6
+
+### #0036 · S1 · START · -clean has no test guarding 'never deletes user files'
+
+- **project/module:** converterTests
+- **file:line:** Sources/converter/PipelineCore.swift:842-856
+- **category:** test
+- **host-used:** local
+- **discovered-by:** reviewer T-7
+- **evidence-before:** AUDIT/findings/L6-tests.md T-7
+
+### #0037 · S1 · START · loudnessPreservingQCPolicy has no direct test; 'hot' fixture is not hot
+
+- **project/module:** converterTests
+- **file:line:** Sources/Tests/converterTests/PipelineIntegrationTests.swift:1138-1167
+- **category:** test
+- **host-used:** local
+- **discovered-by:** reviewer T-9
+- **evidence-before:** AUDIT/findings/L6-tests.md T-9
+
+### #0038 · S1 · START · Orphan temp cleanup untested against a live foreign PID
+
+- **project/module:** converterTests
+- **file:line:** Sources/Tests/converterTests/PipelineIntegrationTests.swift:126-146
+- **category:** test
+- **host-used:** local
+- **discovered-by:** reviewer T-10
+- **evidence-before:** AUDIT/findings/L6-tests.md T-10
+
+### #0039 · S2 · START · AsyncSemaphore grants permits to already-cancelled tasks
+
+- **project/module:** converter/Support
+- **file:line:** Sources/converter/Support.swift:97-101,141-147
+- **category:** perf
+- **host-used:** local
+- **discovered-by:** reviewer C-5
+- **evidence-before:** AUDIT/findings/L2-core-runtime.md C-5
+
+### #0040 · S2 · START · Cancellation does not terminate sibling external processes after a fan-out failure
+
+- **project/module:** converter/ProcessRunner
+- **file:line:** Sources/converter/ProcessRunner.swift:145; Actions.swift:615-619
+- **category:** unsafe
+- **host-used:** local
+- **discovered-by:** reviewer X-14
+- **evidence-before:** AUDIT/findings/L2-video-image-actions-cli.md X-14
+
+### #0041 · S2 · START · Installer subprocesses have no timeout and discard diagnostics
+
+- **project/module:** converter/DependencyBootstrap
+- **file:line:** Sources/converter/DependencyBootstrap.swift:216-248
+- **category:** incomplete
+- **host-used:** local
+- **discovered-by:** reviewer C-6
+- **evidence-before:** AUDIT/findings/L2-core-runtime.md C-6
+
+### #0042 · S2 · START · Child stdin inherited from the terminal
+
+- **project/module:** converter/ProcessRunner
+- **file:line:** Sources/converter/ProcessRunner.swift:112-124
+- **category:** unsafe
+- **host-used:** local
+- **discovered-by:** reviewer C-7
+- **evidence-before:** AUDIT/findings/L2-core-runtime.md C-7
+
+### #0043 · S2 · START · containsChunk is a 64 KiB substring scan, not a RIFF chunk walk
+
+- **project/module:** converter/ValidationPipeline
+- **file:line:** Sources/converter/ValidationPipeline.swift:683-691,1013-1028
+- **category:** unsafe
+- **host-used:** local
+- **discovered-by:** reviewer V-4; tests T-18
+- **evidence-before:** AUDIT/findings/L2-validation-config.md V-4; L6-tests.md T-18
+- **notes:** Bounds-checked chunk walker; boundary tests for header/PCM parsers.
+
+### #0044 · S2 · START · archive profile is a no-op placeholder
+
+- **project/module:** converter/Config
+- **file:line:** Sources/converter/Config.swift:203-205
+- **category:** placeholder
+- **host-used:** local
+- **discovered-by:** reviewer V-5
+- **evidence-before:** AUDIT/findings/L2-validation-config.md V-5
+
+### #0045 · S2 · START · youtube_short overlay puts a known-failing encoder first at the default portrait size
+
+- **project/module:** converter/Config
+- **file:line:** Sources/converter/Config.swift:197-200
+- **category:** logic
+- **host-used:** local
+- **discovered-by:** reviewer V-6
+- **evidence-before:** AUDIT/findings/L2-validation-config.md V-6
+
+### #0046 · S2 · START · Unknown config keys dropped at debug level only; BOM not stripped
+
+- **project/module:** converter/Config
+- **file:line:** Sources/converter/Config.swift:159-161
+- **category:** incomplete
+- **host-used:** local
+- **discovered-by:** reviewer V-7; tests T-20
+- **evidence-before:** AUDIT/findings/L2-validation-config.md V-7
+
+### #0047 · S2 · START · Source clip re-rendered and re-analysed for every short variant
+
+- **project/module:** converter/ValidationPipeline
+- **file:line:** Sources/converter/ValidationPipeline.swift:16-32,59-63
+- **category:** perf
+- **host-used:** local
+- **discovered-by:** reviewer V-8
+- **evidence-before:** AUDIT/findings/L2-validation-config.md V-8
+
+### #0048 · S2 · START · -master is not idempotent (re-masters its own _mastered outputs)
+
+- **project/module:** converter/AudioPipeline
+- **file:line:** Sources/converter/AudioPipeline.swift:94-97; Actions.swift:1071
+- **category:** logic
+- **host-used:** local
+- **discovered-by:** reviewer A-7
+- **evidence-before:** AUDIT/findings/L2-audio.md A-7
+
+### #0049 · S2 · START · -flactoalbum concatenates the pipeline's own derived/archival FLACs
+
+- **project/module:** converter/AudioPipeline
+- **file:line:** Sources/converter/AudioPipeline.swift:2104-2113
+- **category:** logic
+- **host-used:** local
+- **discovered-by:** reviewer A-8
+- **evidence-before:** AUDIT/findings/L2-audio.md A-8
+
+### #0050 · S2 · START · Loudness fallback publishes any true-peak breach with a misleading 'closest-safe' label
+
+- **project/module:** converter/AudioPipeline
+- **file:line:** Sources/converter/AudioPipeline.swift:327-336,367-387,591-600
+- **category:** logic
+- **host-used:** local
+- **discovered-by:** reviewer A-9
+- **evidence-before:** AUDIT/findings/L2-audio.md A-9
+
+### #0051 · S2 · START · Redundant padding verification, uncached ffmpeg -filters, per-file ladder resolution
+
+- **project/module:** converter/AudioPipeline
+- **file:line:** Sources/converter/AudioPipeline.swift:992,1170,1029,508
+- **category:** perf
+- **host-used:** local
+- **discovered-by:** reviewer A-10
+- **evidence-before:** AUDIT/findings/L2-audio.md A-10
+
+### #0052 · S2 · START · Full-decode image preflight of the same master repeated ~10x per run
+
+- **project/module:** converter/ImagePipeline
+- **file:line:** Sources/converter/ValidationPipeline.swift:391 (preflightImageInput call sites)
+- **category:** perf
+- **host-used:** local
+- **discovered-by:** reviewer X-13
+- **evidence-before:** AUDIT/findings/L2-video-image-actions-cli.md X-13
+
+### #0053 · S2 · START · M:SS timecode parsing drops empty components; empty-component guard unreachable
+
+- **project/module:** converter/Support
+- **file:line:** Sources/converter/Support.swift:308
+- **category:** logic
+- **host-used:** local
+- **discovered-by:** reviewer X-8
+- **evidence-before:** AUDIT/findings/L2-video-image-actions-cli.md X-8
+
+### #0054 · S2 · START · -mp4toshort re-ingests the pipeline's own _Short_CenterCut/_FullSong outputs
+
+- **project/module:** converter/Actions
+- **file:line:** Sources/converter/Actions.swift:1254
+- **category:** bug
+- **host-used:** local
+- **discovered-by:** reviewer X-9
+- **evidence-before:** AUDIT/findings/L2-video-image-actions-cli.md X-9
+
+### #0055 · S2 · START · Fitted portrait still double-sharpens derived masters and user Vertical_8K.png
+
+- **project/module:** converter/ImagePipeline
+- **file:line:** Sources/converter/ImagePipeline.swift:329-336
+- **category:** logic
+- **host-used:** local
+- **discovered-by:** reviewer X-10
+- **evidence-before:** AUDIT/findings/L2-video-image-actions-cli.md X-10
+
+### #0056 · S2 · START · shortenMP4 upscales with ffmpeg's default scaler instead of the configured flags
+
+- **project/module:** converter/VideoPipeline
+- **file:line:** Sources/converter/VideoPipeline.swift:399-404
+- **category:** bug
+- **host-used:** local
+- **discovered-by:** reviewer X-11
+- **evidence-before:** AUDIT/findings/L2-video-image-actions-cli.md X-11
+
+### #0057 · S2 · START · Orientation classification ignores EXIF orientation; square images silently treated as landscape
+
+- **project/module:** converter/Actions
+- **file:line:** Sources/converter/Actions.swift:278-286; PipelineCore.swift:646
+- **category:** bug
+- **host-used:** local
+- **discovered-by:** reviewer X-12
+- **evidence-before:** AUDIT/findings/L2-video-image-actions-cli.md X-12
+
+### #0058 · S2 · START · Checked-in release binary has no verifiable provenance (no SHA-256, adhoc signature, no tag)
+
+- **project/module:** repo
+- **file:line:** converter (binary); docs/KNOWN_GOOD_VERSIONS.md
+- **category:** deps
+- **host-used:** local
+- **discovered-by:** reviewer B-5
+- **evidence-before:** AUDIT/findings/L0-L3-bridge-repo.md B-5
+- **notes:** Record sha256 per rebuild; CI release build + help diff. Removal from git is a maintainer decision (deferred note).
+
+### #0059 · S2 · START · CI not reproducible: unpinned action, latest-Xcode selection, unpinned brew formulae
+
+- **project/module:** repo/CI
+- **file:line:** .github/workflows/ci.yml:24,27-32,39-40
+- **category:** deps
+- **host-used:** local
+- **discovered-by:** reviewer B-6
+- **evidence-before:** AUDIT/findings/L0-L3-bridge-repo.md B-6
+- **notes:** Pin checkout SHA, DEVELOPER_DIR, version guard.
+
+### #0060 · S2 · START · Personal track list committed as the production album.txt
+
+- **project/module:** repo
+- **file:line:** album.txt; Sources/converter/AudioPipeline.swift:2063
+- **category:** placeholder
+- **host-used:** local
+- **discovered-by:** reviewer B-7
+- **evidence-before:** AUDIT/findings/L0-L3-bridge-repo.md B-7
+- **notes:** album.example.txt + ignore album.txt + loader message.
+
+### #0061 · S2 · START · Bridge does not bound channels; libbw64 uint16 blockAlignment wraps to heap overflow (unreachable via config today)
+
+- **project/module:** BW64Bridge
+- **file:line:** Sources/BW64Bridge/bw64_bridge.cpp:125-141,161
+- **category:** unsafe
+- **host-used:** local
+- **discovered-by:** reviewer B-8
+- **evidence-before:** AUDIT/findings/L0-L3-bridge-repo.md B-8
+
+### #0062 · S2 · START · Strict C++ flags (-Wall -Wextra -Werror) fail on three benign sign-compare warnings in vendored libbw64
+
+- **project/module:** BW64Bridge/Package
+- **file:line:** Sources/Package.swift:35-37; ThirdParty/libbw64/bw64/reader.hpp:220,225,227
+- **category:** deps
+- **host-used:** local
+- **discovered-by:** baseline §3; reviewer B-9
+- **evidence-before:** AUDIT/baseline.md build table; AUDIT/findings/L0-L3-bridge-repo.md B-9
+- **notes:** Decision: document a minimal vendored patch (explicit casts + tellg<0 check) in PATCHES.md, or compile vendored headers as system headers; keep -Werror on first-party C++.
+
+### #0063 · S2 · START · SHORT_MP4_CLIP_SECONDS validated with Double() but consumed via parseFlexibleTimecode; test sets a value validate() rejects
+
+- **project/module:** converterTests+Config
+- **file:line:** Sources/Tests/converterTests/converterTests.swift:128-140; Config.swift:400; VideoPipeline.swift:269
+- **category:** test
+- **host-used:** local
+- **discovered-by:** reviewer T-11, V-12
+- **evidence-before:** AUDIT/findings/L6-tests.md T-11; L2-validation-config.md V-12
+
+### #0064 · S2 · START · Scheduler-limit test can pass vacuously
+
+- **project/module:** converterTests
+- **file:line:** Sources/Tests/converterTests/PipelineIntegrationTests.swift:1860-1900
+- **category:** test
+- **host-used:** local
+- **discovered-by:** reviewer T-12
+- **evidence-before:** AUDIT/findings/L6-tests.md T-12
+
+### #0065 · S2 · START · AsyncSemaphore tests rely on sleeps for ordering and hang instead of failing on a leaked permit
+
+- **project/module:** converterTests
+- **file:line:** Sources/Tests/converterTests/converterTests.swift:1473-1550
+- **category:** test
+- **host-used:** local
+- **discovered-by:** reviewer T-13
+- **evidence-before:** AUDIT/findings/L6-tests.md T-13
+
+### #0066 · S2 · START · Full-pipeline tests require hevc_videotoolbox; fail on hosts without HW HEVC
+
+- **project/module:** converterTests
+- **file:line:** Sources/Tests/converterTests/PipelineIntegrationTests.swift:1627-1637,1738-1748
+- **category:** test
+- **host-used:** local
+- **discovered-by:** reviewer T-14
+- **evidence-before:** AUDIT/findings/L6-tests.md T-14
+
+### #0067 · S2 · START · Fade-out 'does not enforce delivery QC' test never proves the fixture is out of policy
+
+- **project/module:** converterTests
+- **file:line:** Sources/Tests/converterTests/PipelineIntegrationTests.swift:473-491
+- **category:** test
+- **host-used:** local
+- **discovered-by:** reviewer T-15
+- **evidence-before:** AUDIT/findings/L6-tests.md T-15
+
+### #0068 · S2 · START · Mastering fallback test cannot observe which path ran
+
+- **project/module:** converterTests
+- **file:line:** Sources/Tests/converterTests/PipelineIntegrationTests.swift:1933-1948
+- **category:** test
+- **host-used:** local
+- **discovered-by:** reviewer T-16
+- **evidence-before:** AUDIT/findings/L6-tests.md T-16
+
+### #0069 · S2 · START · Bare XCTAssertThrowsError on garbage MP3 accepts any error
+
+- **project/module:** converterTests
+- **file:line:** Sources/Tests/converterTests/PipelineIntegrationTests.swift:387-392
+- **category:** test
+- **host-used:** local
+- **discovered-by:** reviewer T-17
+- **evidence-before:** AUDIT/findings/L6-tests.md T-17
+
+### #0070 · S2 · START · LoudnormArgument clamping untested at the exact bounds
+
+- **project/module:** converterTests
+- **file:line:** Sources/Tests/converterTests/converterTests.swift:737-749
+- **category:** test
+- **host-used:** local
+- **discovered-by:** reviewer T-19
+- **evidence-before:** AUDIT/findings/L6-tests.md T-19
+
+### #0071 · S2 · START · Config validation gaps (ranges, empty strings, zero byte targets, CRC chunk bound, negative message) and only 3 keys tested
+
+- **project/module:** converter/Config+tests
+- **file:line:** Sources/converter/Config.swift:319-452
+- **category:** test
+- **host-used:** local
+- **discovered-by:** reviewer T-20, V-10, V-11
+- **evidence-before:** AUDIT/findings/L6-tests.md T-20; L2-validation-config.md V-10, V-11
+- **notes:** requireRange/requireNonEmpty + table-driven tests.
+
+### #0072 · S2 · START · Short-cap boundary untested and duration thresholds inconsistent between short paths
+
+- **project/module:** converter/VideoPipeline+tests
+- **file:line:** Sources/converter/VideoPipeline.swift:284-300,456-458; Actions.swift:875-876
+- **category:** test
+- **host-used:** local
+- **discovered-by:** reviewer T-22, X-19
+- **evidence-before:** AUDIT/findings/L6-tests.md T-22; L2-video-image-actions-cli.md X-19
+
+### #0073 · S2 · START · swiftlint baseline 533 (56 error-level): fix the actionable rules; structural rules deferred with rationale
+
+- **project/module:** converter (lint)
+- **file:line:** AUDIT/baseline/swiftlint-by-rule-4bb136a.txt
+- **category:** style
+- **host-used:** local
+- **discovered-by:** baseline §3
+- **evidence-before:** AUDIT/baseline.md linters table
+- **notes:** Keep swiftlint default rules (no config that lowers strictness). Fix the actionable rules (identifier_name, for_where, syntactic_sugar, optional_data_string_conversion, large_tuple, type_name, function_parameter_count where clean, inclusive_language). Structural rules (line_length, file_length, type_body_length, function_body_length, cyclomatic_complexity) are deferred: fixing them means splitting files/functions, which the no-drive-by-refactor rule forbids inside fix commits; recorded as deferred with owner = maintainer. Total count must never exceed the 533 baseline.
+
+### #0074 · S2 · START · periphery-flagged unused declarations (6 unused, 15 assign-only) — prove reachability, then remove or retain with reason
+
+- **project/module:** converter (dead code)
+- **file:line:** Sources/converter/Actions.swift:114; ImagePipeline.swift:26-27; ProcessRunner.swift:78; ValidationPipeline.swift:857; Tests/IntegrationTestSupport.swift:32
+- **category:** dead
+- **host-used:** local
+- **discovered-by:** baseline periphery; reviewers X-16, C-10
+- **evidence-before:** AUDIT/baseline/periphery-4bb136a.txt
+- **notes:** §6: proof of non-reachability across dynamic dispatch/tests/@testable before deletion.
+
+### #0075 · S2 · START · Dead branches, tautological guards, dead parameters, redundant discards
+
+- **project/module:** converter (dead code)
+- **file:line:** Sources/converter/PipelineCore.swift:347,357-362; Actions.swift:105-110,794-808; BW64Bridge/bw64_bridge.cpp:95; LosslessAudioPipeline.swift:9,30,173-174; AudioPipeline.swift:160-162,264,1955
+- **category:** dead
+- **host-used:** local
+- **discovered-by:** reviewers C-10, X-17, B-15, A-15
+- **evidence-before:** AUDIT/findings/L2-core-runtime.md C-10; L2-video-image-actions-cli.md X-17; L0-L3-bridge-repo.md B-15; L2-audio.md A-15
+
+### #0076 · S3 · START · cancelledBeforeSuspension can retain a marker for an already-resumed waiter
+
+- **project/module:** converter/Support
+- **file:line:** Sources/converter/Support.swift:122-126
+- **category:** logic
+- **host-used:** local
+- **discovered-by:** reviewer C-8
+- **evidence-before:** AUDIT/findings/L2-core-runtime.md C-8
+
+### #0077 · S3 · START · Post-install failure message lists nothing when a tool is present but non-functional
+
+- **project/module:** converter/DependencyBootstrap
+- **file:line:** Sources/converter/DependencyBootstrap.swift:77-82
+- **category:** logic
+- **host-used:** local
+- **discovered-by:** reviewer C-9
+- **evidence-before:** AUDIT/findings/L2-core-runtime.md C-9
+
+### #0078 · S3 · START · ensureWritableDirectory accepts a regular file at OUT_DIR
+
+- **project/module:** converter/PipelineCore
+- **file:line:** Sources/converter/PipelineCore.swift:372-379
+- **category:** logic
+- **host-used:** local
+- **discovered-by:** reviewer C-11
+- **evidence-before:** AUDIT/findings/L2-core-runtime.md C-11
+
+### #0079 · S3 · START · Signal deaths reported as ordinary exit codes
+
+- **project/module:** converter/ProcessRunner
+- **file:line:** Sources/converter/ProcessRunner.swift:156-160
+- **category:** incomplete
+- **host-used:** local
+- **discovered-by:** reviewer C-12
+- **evidence-before:** AUDIT/findings/L2-core-runtime.md C-12
+
+### #0080 · S3 · START · Orphan-temp detection keys on local PID only; synced directories across hosts
+
+- **project/module:** converter/PipelineCore
+- **file:line:** Sources/converter/PipelineCore.swift:323-344,271
+- **category:** logic
+- **host-used:** local
+- **discovered-by:** reviewer C-13
+- **evidence-before:** AUDIT/findings/L2-core-runtime.md C-13
+
+### #0081 · S3 · START · LUFS rebase widens the tolerance symmetrically
+
+- **project/module:** converter/ValidationPipeline
+- **file:line:** Sources/converter/ValidationPipeline.swift:203-210
+- **category:** logic
+- **host-used:** local
+- **discovered-by:** reviewer V-9
+- **evidence-before:** AUDIT/findings/L2-validation-config.md V-9
+
+### #0082 · S3 · START · PREFLIGHT_SECONDS, DURATION_TOLERANCE_SEC, CRC_CHUNK_BYTES supported but undocumented
+
+- **project/module:** repo/docs
+- **file:line:** config.txt; wiki Configuration
+- **category:** docs
+- **host-used:** local
+- **discovered-by:** reviewer V-14, B-13
+- **evidence-before:** AUDIT/findings/L2-validation-config.md V-14
+- **notes:** Add a test asserting config.txt keys == supportedKeys.
+
+### #0083 · S3 · START · Noise seed is Int.random; reruns not reproducible
+
+- **project/module:** converter/AudioPipeline
+- **file:line:** Sources/converter/AudioPipeline.swift:905
+- **category:** logic
+- **host-used:** local
+- **discovered-by:** reviewer A-11
+- **evidence-before:** AUDIT/findings/L2-audio.md A-11
+
+### #0084 · S3 · START · Derived-media predicates use the first _silence_/_noise_ occurrence
+
+- **project/module:** converter/AudioPipeline
+- **file:line:** Sources/converter/AudioPipeline.swift:53-77
+- **category:** logic
+- **host-used:** local
+- **discovered-by:** reviewer A-12
+- **evidence-before:** AUDIT/findings/L2-audio.md A-12
+
+### #0085 · S3 · START · Track-number parse uses Unicode isNumber and can overflow
+
+- **project/module:** converter/AudioPipeline
+- **file:line:** Sources/converter/AudioPipeline.swift:1850-1854
+- **category:** logic
+- **host-used:** local
+- **discovered-by:** reviewer A-13
+- **evidence-before:** AUDIT/findings/L2-audio.md A-13
+
+### #0086 · S3 · START · Magic bytes-per-sample and missing free-space check on the BW64 path
+
+- **project/module:** converter/AudioPipeline
+- **file:line:** Sources/converter/AudioPipeline.swift:1378,1694-1706
+- **category:** style
+- **host-used:** local
+- **discovered-by:** reviewer A-14
+- **evidence-before:** AUDIT/findings/L2-audio.md A-14
+
+### #0087 · S3 · START · CLI inconsistencies: --seed 0, unbounded --sharpness, repeated action flags, option values beginning with --
+
+- **project/module:** converter/CLI
+- **file:line:** Sources/converter/CLI.swift:231-260
+- **category:** logic
+- **host-used:** local
+- **discovered-by:** reviewer X-18
+- **evidence-before:** AUDIT/findings/L2-video-image-actions-cli.md X-18
+
+### #0088 · S3 · START · Config colour/scale-filter values spliced into the filter graph with only non-empty validation
+
+- **project/module:** converter/Config+VideoPipeline
+- **file:line:** Sources/converter/VideoPipeline.swift:230,240,244; Config.swift:393,397
+- **category:** unsafe
+- **host-used:** local
+- **discovered-by:** reviewer X-20
+- **evidence-before:** AUDIT/findings/L2-video-image-actions-cli.md X-20
+
+### #0089 · S3 · START · ALAC M4A decoded and re-encoded for every video although stream copy is bit-transparent
+
+- **project/module:** converter/VideoPipeline
+- **file:line:** Sources/converter/VideoPipeline.swift:334,386,467
+- **category:** perf
+- **host-used:** local
+- **discovered-by:** reviewer X-21
+- **evidence-before:** AUDIT/findings/L2-video-image-actions-cli.md X-21
+
+### #0090 · S3 · START · Easily swappable C ABI parameters (swapped paths would truncate the input)
+
+- **project/module:** BW64Bridge
+- **file:line:** Sources/BW64Bridge/include/bw64_bridge.h:14-22
+- **category:** style
+- **host-used:** local
+- **discovered-by:** reviewer B-10; clang-tidy
+- **evidence-before:** AUDIT/findings/L0-L3-bridge-repo.md B-10
+
+### #0091 · S3 · START · Stale .converter_bw64_writer ignore entry
+
+- **project/module:** repo
+- **file:line:** .gitignore:2
+- **category:** dead
+- **host-used:** local
+- **discovered-by:** reviewer B-11
+- **evidence-before:** AUDIT/findings/L0-L3-bridge-repo.md B-11
+
+### #0092 · S3 · START · Maintenance commands and -fadeflac alias missing from FORMATS.md
+
+- **project/module:** repo/docs
+- **file:line:** docs/FORMATS.md
+- **category:** docs
+- **host-used:** local
+- **discovered-by:** reviewer B-12
+- **evidence-before:** AUDIT/findings/L0-L3-bridge-repo.md B-12
+
+### #0093 · S3 · START · 10 s wall-clock budget on a 40 000-iteration shell loop
+
+- **project/module:** converterTests
+- **file:line:** Sources/Tests/converterTests/PipelineIntegrationTests.swift:30-50
+- **category:** test
+- **host-used:** local
+- **discovered-by:** reviewer T-24
+- **evidence-before:** AUDIT/findings/L6-tests.md T-24
+
+### #0094 · S3 · START · Help-text tests couple to prose sentences
+
+- **project/module:** converterTests
+- **file:line:** Sources/Tests/converterTests/converterTests.swift:189-230,1297-1309
+- **category:** test
+- **host-used:** local
+- **discovered-by:** reviewer T-25
+- **evidence-before:** AUDIT/findings/L6-tests.md T-25
+
+### #0095 · S3 · START · Progress-event count pinned to implementation
+
+- **project/module:** converterTests
+- **file:line:** Sources/Tests/converterTests/PipelineIntegrationTests.swift:613-619
+- **category:** test
+- **host-used:** local
+- **discovered-by:** reviewer T-26
+- **evidence-before:** AUDIT/findings/L6-tests.md T-26
+
+### #0096 · S3 · START · SchedulerProfile tested via its summary string
+
+- **project/module:** converterTests
+- **file:line:** Sources/Tests/converterTests/converterTests.swift:108-115
+- **category:** test
+- **host-used:** local
+- **discovered-by:** reviewer T-27
+- **evidence-before:** AUDIT/findings/L6-tests.md T-27
+
+### #0097 · S3 · START · -doctor has only a no-throw happy path
+
+- **project/module:** converterTests
+- **file:line:** Sources/Tests/converterTests/PipelineIntegrationTests.swift:1902-1911
+- **category:** test
+- **host-used:** local
+- **discovered-by:** reviewer T-28
+- **evidence-before:** AUDIT/findings/L6-tests.md T-28
+
+### #0098 · S3 · START · Exact ffmpeg bass filter string pinned without a stated reason
+
+- **project/module:** converterTests
+- **file:line:** Sources/Tests/converterTests/PipelineIntegrationTests.swift:529,534
+- **category:** test
+- **host-used:** local
+- **discovered-by:** reviewer T-29
+- **evidence-before:** AUDIT/findings/L6-tests.md T-29
 
