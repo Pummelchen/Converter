@@ -101,3 +101,7 @@ Auto-install is **off by default**; a missing formula produces an error telling 
 - `config.txt` — quality, render, loudness and profile settings ([reference](https://github.com/Pummelchen/Converter/wiki/Configuration))
 - `album.txt` — track order for `-wavtoalbum` / `-mp3toalbum`
 - `converter` — prebuilt Apple Silicon release binary
+
+## License
+
+MIT — see [LICENSE](LICENSE).
