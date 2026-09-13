@@ -6,9 +6,9 @@ Session: `2026-09-13` · branch `audit/2026-09-13` · baseline commit `4bb136a`
 
 | status | count |
 |---|---|
-| START | 57 |
+| START | 56 |
 | PROGRESS | 1 |
-| TEST | 6 |
+| TEST | 7 |
 | AUDIT | 0 |
 | DONE | 35 |
 | BLOCKED | 1 |
@@ -65,7 +65,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 | #0068 | S2 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:1933-1948 | Mastering fallback test cannot observe which path ran | test | START |  |
 | #0069 | S2 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:387-392 | Bare XCTAssertThrowsError on garbage MP3 accepts any error | test | START |  |
 | #0070 | S2 | converterTests | Sources/Tests/converterTests/converterTests.swift:737-749 | LoudnormArgument clamping untested at the exact bounds | test | START |  |
-| #0071 | S2 | converter/Config+tests | Sources/converter/Config.swift:319-452 | Config validation gaps (ranges, empty strings, zero byte targets, CRC chunk bound, negative message) and only 3 keys tested | test | START |  |
+| #0071 | S2 | converter/Config+tests | Sources/converter/Config.swift:319-452 | Config validation gaps (ranges, empty strings, zero byte targets, CRC chunk bound, negative message) and only 3 keys tested | test | TEST | 87c940b |
 | #0072 | S2 | converter/VideoPipeline+tests | Sources/converter/VideoPipeline.swift:284-300,456-458; Actions.swift:875-876 | Short-cap boundary untested and duration thresholds inconsistent between short paths | test | START |  |
 | #0073 | S2 | converter (lint) | AUDIT/baseline/swiftlint-by-rule-4bb136a.txt | swiftlint baseline 533 (56 error-level): fix the actionable rules; structural rules deferred with rationale | style | START |  |
 | #0074 | S2 | converter (dead code) | Sources/converter/Actions.swift:114; ImagePipeline.swift:26-27; ProcessRunner.swift:78; ValidationPipeline.swift:857; Tests/IntegrationTestSupport.swift:32 | periphery-flagged unused declarations (6 unused, 15 assign-only) — prove reachability, then remove or retain with reason | dead | START |  |
@@ -922,7 +922,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **discovered-by:** reviewer T-19
 - **evidence-before:** AUDIT/findings/L6-tests.md T-19
 
-### #0071 · S2 · START · Config validation gaps (ranges, empty strings, zero byte targets, CRC chunk bound, negative message) and only 3 keys tested
+### #0071 · S2 · TEST · Config validation gaps (ranges, empty strings, zero byte targets, CRC chunk bound, negative message) and only 3 keys tested
 
 - **project/module:** converter/Config+tests
 - **file:line:** Sources/converter/Config.swift:319-452
@@ -930,6 +930,9 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **host-used:** local
 - **discovered-by:** reviewer T-20, V-10, V-11
 - **evidence-before:** AUDIT/findings/L6-tests.md T-20; L2-validation-config.md V-10, V-11
+- **fix-summary:** requireRange/requireNumericRange/requireProjectStandard helpers; rules for WAV_WRITE_BEXT, FLAC_COMPRESSION_LEVEL, PNG levels, JPEG byte targets, filter/sampling non-empty, CRF 0-51, VT quality 1-100, CRC_CHUNK_BYTES <= 64 MiB; composite standard messages split per key; parseInt says non-negative. Table-driven test of 96 invalid values, boundary acceptance test, repository config.txt loads warning-free.
+- **evidence-after:** AUDIT/evidence/0071-before.log (35 failures on reverted rules), 0071-after.log; swiftlint 531/55. Full suite pending
+- **commit sha:** 87c940b
 - **notes:** requireRange/requireNonEmpty + table-driven tests.
 
 ### #0072 · S2 · START · Short-cap boundary untested and duration thresholds inconsistent between short paths

@@ -1201,14 +1201,14 @@
       "location": "Sources/converter/Config.swift:319-452",
       "title": "Config validation gaps (ranges, empty strings, zero byte targets, CRC chunk bound, negative message) and only 3 keys tested",
       "category": "test",
-      "status": "START",
+      "status": "TEST",
       "host": "local",
       "discovered_by": "reviewer T-20, V-10, V-11",
       "session": "2026-09-13",
       "evidence_before": "AUDIT/findings/L6-tests.md T-20; L2-validation-config.md V-10, V-11",
-      "fix_summary": "",
-      "evidence_after": "",
-      "commit": "",
+      "fix_summary": "requireRange/requireNumericRange/requireProjectStandard helpers; rules for WAV_WRITE_BEXT, FLAC_COMPRESSION_LEVEL, PNG levels, JPEG byte targets, filter/sampling non-empty, CRF 0-51, VT quality 1-100, CRC_CHUNK_BYTES <= 64 MiB; composite standard messages split per key; parseInt says non-negative. Table-driven test of 96 invalid values, boundary acceptance test, repository config.txt loads warning-free.",
+      "evidence_after": "AUDIT/evidence/0071-before.log (35 failures on reverted rules), 0071-after.log; swiftlint 531/55. Full suite pending",
+      "commit": "87c940b",
       "notes": "requireRange/requireNonEmpty + table-driven tests."
     },
     {
