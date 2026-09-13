@@ -105,3 +105,7 @@ Auto-install is **off by default**; a missing formula produces an error telling 
 ## License
 
 MIT — see [LICENSE](LICENSE).
+
+## Contact
+
+Questions, bug reports and suggestions are always welcome. You can contact André Borchert by email at [0xa0b1@gmail.com](mailto:0xa0b1@gmail.com).
