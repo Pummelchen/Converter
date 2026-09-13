@@ -1,0 +1,17 @@
+Test Suite 'Selected tests' started at 2026-09-13 23:32:00.866.
+Test Suite 'converterPackageTests.xctest' started at 2026-09-13 23:32:00.867.
+Test Suite 'converterTests' started at 2026-09-13 23:32:00.867.
+Test Case '-[converterTests.converterTests testAlbumTrackSortParsesOnlyASCIIDigitPrefixes]' started.
+/Users/node4/Downloads/Converter-wt/audio/Sources/Tests/converterTests/converterTests.swift:295: error: -[converterTests.converterTests testAlbumTrackSortParsesOnlyASCIIDigitPrefixes] : XCTAssertEqual failed: ("["2 z.flac", "07 v.flac", "10 y.flac", "٣ arabic.flac"]") is not equal to ("["2 z.flac", "3½ x.flac", "07 v.flac", "10 y.flac"]")
+/Users/node4/Downloads/Converter-wt/audio/Sources/Tests/converterTests/converterTests.swift:297: error: -[converterTests.converterTests testAlbumTrackSortParsesOnlyASCIIDigitPrefixes] : XCTAssertEqual failed: ("["3½ x.flac", "untitled.flac", "1234567890123456789012345 w.flac"]") is not equal to ("["1234567890123456789012345 w.flac", "untitled.flac", "٣ arabic.flac"]")
+Test Case '-[converterTests.converterTests testAlbumTrackSortParsesOnlyASCIIDigitPrefixes]' failed (1.132 seconds).
+Test Suite 'converterTests' failed at 2026-09-13 23:32:01.999.
+	 Executed 1 test, with 2 failures (0 unexpected) in 1.132 (1.132) seconds
+Test Suite 'converterPackageTests.xctest' failed at 2026-09-13 23:32:01.999.
+	 Executed 1 test, with 2 failures (0 unexpected) in 1.132 (1.132) seconds
+Test Suite 'Selected tests' failed at 2026-09-13 23:32:01.999.
+	 Executed 1 test, with 2 failures (0 unexpected) in 1.132 (1.133) seconds
+◇ Test run started.
+↳ Testing Library Version: 1902
+↳ Target Platform: arm64e-apple-macos14.0
+✔ Test run with 0 tests in 0 suites passed after 0.001 seconds.

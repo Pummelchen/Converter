@@ -319,6 +319,31 @@ final class converterTests: XCTestCase {
         XCTAssertEqual(try tool.albumAudioCandidates().map(\.lastPathComponent), ["1 - Sun.mp3", "2 - Rain.wav", "10 - Storm.flac"])
     }
 
+    // audit #0085: the leading track number was collected with Character.isNumber, which also
+    // accepts vulgar fractions and non-ASCII digits, so "3½ x" became Int("3½") == nil and sorted
+    // as an unnumbered track after "10 y"; a run of more than 19 digits overflowed Int the same way.
+    // The prefix is now ASCII digits only and anything longer than a plausible track number is
+    // not a number at all, so a hash- or timestamp-like prefix can never reorder real tracks.
+    func testAlbumTrackSortParsesOnlyASCIIDigitPrefixes() throws {
+        let temp = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: temp, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: temp) }
+        let tool = try makeTool(tempDirectory: temp, arguments: ["-album"])
+
+        let names = [
+            "10 y.flac", "3½ x.flac", "2 z.flac", "07 v.flac",
+            "1234567890123456789012345 w.flac", "٣ arabic.flac", "untitled.flac"
+        ]
+        let sorted = tool.sortAlbumAudioTracks(names.map { temp.appendingPathComponent($0) }).map(\.lastPathComponent)
+        XCTAssertEqual(Array(sorted.prefix(4)), ["2 z.flac", "3½ x.flac", "07 v.flac", "10 y.flac"])
+        // The unnumbered tail follows the locale-aware stem comparison, which this test does not pin.
+        XCTAssertEqual(
+            Set(sorted.dropFirst(4)),
+            ["1234567890123456789012345 w.flac", "untitled.flac", "٣ arabic.flac"]
+        )
+    }
+
     func testBassParsesDefaultsAndManualValues() throws {
         let root = URL(fileURLWithPath: "/tmp/converter-test")
         let defaultOptions = try CLIOptions.parse(

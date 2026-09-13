@@ -1930,11 +1930,19 @@ extension ConverterTool {
         urls.sorted { $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending }
     }
 
+    // A stem-leading run of more digits than this is a hash, a timestamp or a typo, never a
+    // track number; treating it as unnumbered keeps it from being ordered among real tracks
+    // and keeps Int(_:) away from its overflow limit.
+    static let maxAlbumTrackNumberDigits = 9
+
     func sortAlbumAudioTracks(_ urls: [URL]) -> [URL] {
         func leadingTrackNumber(_ file: URL) -> Int? {
             let stem = file.deletingPathExtension().lastPathComponent.trimmingCharacters(in: .whitespacesAndNewlines)
-            let digits = stem.prefix { $0.isNumber }
-            guard !digits.isEmpty else {
+            // Only ASCII digits form a track number: Character.isNumber also accepts fractions
+            // such as "½" and other scripts' digits, which Int(_:) then refuses as a whole.
+            let digits = stem.prefix { $0.isASCII && $0.isWholeNumber }
+            let significantDigits = digits.drop { $0 == "0" }
+            guard !digits.isEmpty, significantDigits.count <= Self.maxAlbumTrackNumberDigits else {
                 return nil
             }
             return Int(digits)

@@ -1,0 +1,38 @@
+Building for debugging...
+[0/6] Write sources
+[2/6] Write swift-version--58304C5D6DBC2206.txt
+[4/8] Emitting module converter
+[5/8] Compiling converter AudioPipeline.swift
+[6/12] Compiling converter VideoPipeline.swift
+[7/12] Compiling converter LosslessAudioPipeline.swift
+[8/12] Compiling converter ValidationPipeline.swift
+[9/12] Compiling converter Actions.swift
+[9/14] Write Objects.LinkFileList
+[10/14] Linking converter
+[11/14] Applying converter
+[13/17] Emitting module converterTests
+[14/17] Compiling converterTests converterTests.swift
+[15/17] Compiling converterTests PipelineIntegrationTests.swift
+[15/17] Write Objects.LinkFileList
+[16/17] Linking converterPackageTests
+Build complete! (3.98s)
+Test Suite 'Selected tests' started at 2026-09-13 23:31:44.000.
+Test Suite 'converterPackageTests.xctest' started at 2026-09-13 23:31:44.001.
+Test Suite 'converterTests' started at 2026-09-13 23:31:44.001.
+Test Case '-[converterTests.converterTests testAlbumActionParsesAndSortsNaturallyIgnoringExtension]' started.
+Test Case '-[converterTests.converterTests testAlbumActionParsesAndSortsNaturallyIgnoringExtension]' passed (0.004 seconds).
+Test Case '-[converterTests.converterTests testAlbumCandidatesCollapseSameStemFamiliesAndSkipDerivedOutputs]' started.
+[2026-09-13 23:31:44] [converterTests] [WARN] Album track 01.flac has same-stem conversions beside it; ignoring 01.wav, 01.mp3.
+Test Case '-[converterTests.converterTests testAlbumCandidatesCollapseSameStemFamiliesAndSkipDerivedOutputs]' passed (0.002 seconds).
+Test Case '-[converterTests.converterTests testAlbumTrackSortParsesOnlyASCIIDigitPrefixes]' started.
+Test Case '-[converterTests.converterTests testAlbumTrackSortParsesOnlyASCIIDigitPrefixes]' passed (0.001 seconds).
+Test Suite 'converterTests' passed at 2026-09-13 23:31:44.007.
+	 Executed 3 tests, with 0 failures (0 unexpected) in 0.006 (0.007) seconds
+Test Suite 'converterPackageTests.xctest' passed at 2026-09-13 23:31:44.007.
+	 Executed 3 tests, with 0 failures (0 unexpected) in 0.006 (0.007) seconds
+Test Suite 'Selected tests' passed at 2026-09-13 23:31:44.007.
+	 Executed 3 tests, with 0 failures (0 unexpected) in 0.006 (0.007) seconds
+◇ Test run started.
+↳ Testing Library Version: 1902
+↳ Target Platform: arm64e-apple-macos14.0
+✔ Test run with 0 tests in 0 suites passed after 0.001 seconds.
