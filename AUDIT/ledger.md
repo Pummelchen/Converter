@@ -2,31 +2,28 @@
 
 Session: `2026-09-13` · branch `audit/2026-09-13` · baseline commit `4bb136a`
 
-**known-total:100 done:20 open:80 blocked:0 new-this-session:100**
+**known-total:100 done:23 open:77 blocked:0 new-this-session:100**
 
 | status | count |
 |---|---|
 | START | 76 |
 | PROGRESS | 1 |
-| TEST | 3 |
+| TEST | 0 |
 | AUDIT | 0 |
-| DONE | 20 |
+| DONE | 23 |
 | BLOCKED | 0 |
 
 Status gates: START (reproduced/proven + expected behaviour written) → PROGRESS (diff) → TEST (failing-before/passing-after test pasted, full suite green, no new warnings) → AUDIT (cold re-read, all scanners re-run, no baseline regression, no new placeholder) → DONE (committed atomically). BLOCKED needs reason + what was tried + ≥2 options for a human.
 
-## Open S0 / S1 (21)
+## Open S0 / S1 (18)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
 | #0006 | S0 | repo | node1 (fresh clone) | Phase E: independent verification from a fresh clone on node1 | test | START |  |
 | #0005 | S1 | repo | wiki | Create and maintain the wiki audit tracker page mirroring the ledger (§9) | docs | PROGRESS | 0ac7242 |
 | #0015 | S1 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:18-32,97,197-201 | Clipped-samples rebase is not sample-rate invariant (source clip measured at 96 kHz, render at its own rate) | logic | START |  |
-| #0019 | S1 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:1316-1340 | ensureStandardMP3Output publishes without duration/loudness verification and re-encodes an already-standard MP3 | bug | TEST | 3da33d1 |
 | #0020 | S1 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:492-530,487-490 | -bass can clip the 24-bit staging WAV; nothing verifies true peak/clipping before publish | incomplete | START |  |
 | #0021 | S1 | converter/VideoPipeline+AudioPipeline | Sources/converter/VideoPipeline.swift:159-171; AudioPipeline.swift:1070-1082 | Encoder ladders fall through on encoder-independent failures (publish, ALAC/duration/loudness verify) and the padded-MP4 ladder reports only the last rung | logic | START |  |
-| #0022 | S1 | converter/Actions | Sources/converter/Actions.swift:209-218 | normalizedFullRunSource renames only the winning family member and orphans siblings/companions, breaking reruns; silent fallback when 1.<ext> exists | logic | TEST | 7a3f7b7 |
-| #0024 | S1 | converter/Actions | Sources/converter/Actions.swift:717-723,677-686,709 | -aipix/-run_pix/-pngtojpg re-ingest portrait stills and overwrite them with landscape renders | bug | TEST | 55aa10e |
 | #0026 | S1 | BW64Bridge | Sources/BW64Bridge/bw64_bridge.cpp:178-197 | Disk-write failures undetectable; bridge self-validates against the ds64 size it wrote | bug | START |  |
 | #0027 | S1 | repo/docs | SECURITY.md:1-21 | SECURITY.md is the unedited GitHub template with fictitious versions | placeholder | START |  |
 | #0028 | S1 | repo/docs | README.md:94; Sources/ThirdParty/libbw64 | No third-party attribution/provenance for vendored Apache-2.0 libbw64 | deps | START |  |
@@ -109,7 +106,7 @@ _none_
 | #0098 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:529,534 | Exact ffmpeg bass filter string pinned without a stated reason | test | START |  |
 | #0100 | S3 | converter/Actions | Sources/converter/Actions.swift (normalizedFullRunSource / resolveFullAudio) | Full-run source is renamed before preflight; a corrupt source loses its original name in the error | logic | START |  |
 
-## Done (20)
+## Done (23)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
@@ -125,7 +122,10 @@ _none_
 | #0016 | S1 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:1910-1913,1866-1908 | -album concatenates the same track once per format and includes _mastered/_silence_/_noise_ outputs | logic | DONE | 8fac9dc |
 | #0017 | S1 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:2076-2085 | album.txt builds silently skip missing/invalid tracks and publish a shorter album with exit 0 | bug | DONE | 8fac9dc |
 | #0018 | S1 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:1562-1583 | -mp3clean overwrites the source MP3 in place with a lossy LAME re-encode instead of a stream copy | bug | DONE | ebfaded |
+| #0019 | S1 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:1316-1340 | ensureStandardMP3Output publishes without duration/loudness verification and re-encodes an already-standard MP3 | bug | DONE | 3da33d1 |
+| #0022 | S1 | converter/Actions | Sources/converter/Actions.swift:209-218 | normalizedFullRunSource renames only the winning family member and orphans siblings/companions, breaking reruns; silent fallback when 1.<ext> exists | logic | DONE | 7a3f7b7 |
 | #0023 | S1 | converter/Actions | Sources/converter/Actions.swift:576-600 | Non-standard WAV source is rewritten in place; no bit-exact original survives | unsafe | DONE | e71f9dc |
+| #0024 | S1 | converter/Actions | Sources/converter/Actions.swift:717-723,677-686,709 | -aipix/-run_pix/-pngtojpg re-ingest portrait stills and overwrite them with landscape renders | bug | DONE | 55aa10e |
 | #0025 | S1 | converter/CLI | Sources/converter/CLI.swift:271-279 | Unknown --options and stray positionals are silently accepted | bug | DONE | 58a6826 |
 | #0001 | S2 | repo/AUDIT | AUDIT/inventory.md | Phase A: scope inventory, dependency graph, trust boundaries, blast radius | docs | DONE | 5fa6546 |
 | #0002 | S2 | repo/AUDIT | AUDIT/environment.md | Phase A: environment record and audit tooling install (§1/§1b) | docs | DONE | 5fa6546 |
@@ -361,7 +361,7 @@ _none_
 - **commit sha:** ebfaded
 - **notes:** Stream copy + canonical PCM equivalence.
 
-### #0019 · S1 · TEST · ensureStandardMP3Output publishes without duration/loudness verification and re-encodes an already-standard MP3
+### #0019 · S1 · DONE · ensureStandardMP3Output publishes without duration/loudness verification and re-encodes an already-standard MP3
 
 - **project/module:** converter/AudioPipeline
 - **file:line:** Sources/converter/AudioPipeline.swift:1316-1340
@@ -370,7 +370,7 @@ _none_
 - **discovered-by:** reviewer A-4
 - **evidence-before:** AUDIT/findings/L2-audio.md A-4
 - **fix-summary:** ensureStandardMP3Output deleted; its verified copy path lives in fullRunMP3Deliverable (#0007).
-- **evidence-after:** Reachability proof in commit message; build with -warnings-as-errors clean. Full suite: covered by the next batch run.
+- **evidence-after:** Reachability proof in commit message; build with -warnings-as-errors clean. Full suite (AUDIT/evidence/0019-0024-fullsuite.txt): 177 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** 3da33d1
 - **notes:** Copy byte-for-byte when standard; verify like convertAudioToMP3. Coordinate with #0007.
 
@@ -393,7 +393,7 @@ _none_
 - **evidence-before:** AUDIT/findings/L2-video-image-actions-cli.md X-6; L2-audio.md A-6; L6-tests.md T-8
 - **notes:** One shared ladder helper; all rungs reported; encoder-independent stop.
 
-### #0022 · S1 · TEST · normalizedFullRunSource renames only the winning family member and orphans siblings/companions, breaking reruns; silent fallback when 1.<ext> exists
+### #0022 · S1 · DONE · normalizedFullRunSource renames only the winning family member and orphans siblings/companions, breaking reruns; silent fallback when 1.<ext> exists
 
 - **project/module:** converter/Actions
 - **file:line:** Sources/converter/Actions.swift:209-218
@@ -402,7 +402,7 @@ _none_
 - **discovered-by:** reviewer X-3; tests T-23
 - **evidence-before:** AUDIT/findings/L2-video-image-actions-cli.md X-3; L6-tests.md T-23
 - **fix-summary:** Whole family renamed (siblings and _RF64/_BW64 companions) with existence check and rollback; rerun resolves 1_source.<ext>. Preflight-order sub-point split out as #0100.
-- **evidence-after:** AUDIT/evidence/0022-before.log (rerun: found 2: 1_source.flac, song.wav); 0022-after.log: 7 tests pass; swiftlint 535/56. Full suite: next batch run.
+- **evidence-after:** AUDIT/evidence/0022-before.log (rerun: found 2: 1_source.flac, song.wav); 0022-after.log: 7 tests pass; swiftlint 535/56. Full suite (AUDIT/evidence/0019-0024-fullsuite.txt): 177 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** 7a3f7b7
 - **notes:** Rename whole family after preflight; error instead of silent fallback.
 
@@ -419,7 +419,7 @@ _none_
 - **commit sha:** e71f9dc
 - **notes:** Never modify the source. Coordinate with #0007 (same principle). Shared root cause and one fix commit with #0007. Rejected alternative: keep 1.<ext> and only special-case the MP3 collision — leaves a standard-MP3 source ranked below its own 1.wav on rerun, so a later reuse-check failure could still overwrite it.
 
-### #0024 · S1 · TEST · -aipix/-run_pix/-pngtojpg re-ingest portrait stills and overwrite them with landscape renders
+### #0024 · S1 · DONE · -aipix/-run_pix/-pngtojpg re-ingest portrait stills and overwrite them with landscape renders
 
 - **project/module:** converter/Actions
 - **file:line:** Sources/converter/Actions.swift:717-723,677-686,709
@@ -428,7 +428,7 @@ _none_
 - **discovered-by:** reviewer X-5
 - **evidence-before:** AUDIT/findings/L2-video-image-actions-cli.md X-5
 - **fix-summary:** sourceImageFiles(matchingExtensions:) filters isPortraitShortStill; used by stepAIPix, stepRunPix, stepPNGToJPG.
-- **evidence-after:** AUDIT/evidence/0024-before.log: stepAIPix rewrote art_Short_8K.png to 320x180 (crc changed); 0024-after.log: 7 targeted tests pass; swiftlint 535/56. Full suite: next batch run.
+- **evidence-after:** AUDIT/evidence/0024-before.log: stepAIPix rewrote art_Short_8K.png to 320x180 (crc changed); 0024-after.log: 7 targeted tests pass; swiftlint 535/56. Full suite (AUDIT/evidence/0019-0024-fullsuite.txt): 177 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** 55aa10e
 - **notes:** Single isFullRunDerivedImage predicate in every batch discovery.
 
