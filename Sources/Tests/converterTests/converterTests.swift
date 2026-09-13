@@ -2145,33 +2145,35 @@ final class converterTests: XCTestCase {
     // Regression: cancelling one waiter used to resume waiters[0] positionally, which
     // failed an unrelated task and left the cancelled one queued forever. Reachable
     // whenever `async let` siblings are torn down after one of them throws.
+    // audit #0065: the queue order used to rest on 80 ms sleeps, which a busy machine can
+    // reorder, and a regression that lost a permit hung the whole suite instead of failing
+    // this test. The queue is now observed through waiterCount and every await is bounded.
     func testAsyncSemaphoreCancellationResumesOnlyTheCancelledWaiter() async throws {
         let semaphore = AsyncSemaphore(value: 1)
         try await semaphore.wait()
 
         let first = Task { try await semaphore.wait() }
-        try await Task.sleep(nanoseconds: 80_000_000)
+        try await waitUntil { await semaphore.waiterCount == 1 }
         let second = Task { try await semaphore.wait() }
-        try await Task.sleep(nanoseconds: 80_000_000)
+        try await waitUntil { await semaphore.waiterCount == 2 }
 
         second.cancel()
-        try await Task.sleep(nanoseconds: 80_000_000)
+        try await waitUntil { await semaphore.waiterCount == 1 }
 
         // Releasing the held permit must hand it to the first, uncancelled waiter.
         await semaphore.signal()
-        try await first.value
+        try await expectCompletion { try await first.value }
 
-        var secondError: (any Error)?
-        do {
-            try await second.value
-        } catch {
-            secondError = error
+        let secondOutcome = try await expectCompletion { await second.result }
+        XCTAssertThrowsError(try secondOutcome.get()) { error in
+            XCTAssertTrue(error is CancellationError, "the cancelled waiter must be the one that fails, got \(error)")
         }
-        XCTAssertTrue(secondError is CancellationError, "the cancelled waiter must be the one that fails")
 
         await semaphore.signal()
     }
 
+    // audit #0065: bounded like the test above; a waiter that never resumes is a failure here,
+    // not a hung suite.
     func testAsyncSemaphoreCancellationBeforeSuspensionStillThrows() async throws {
         let semaphore = AsyncSemaphore(value: 1)
         try await semaphore.wait()
@@ -2179,17 +2181,18 @@ final class converterTests: XCTestCase {
         let queued = Task { try await semaphore.wait() }
         queued.cancel()
 
-        var queuedError: (any Error)?
-        do {
-            try await queued.value
-        } catch {
-            queuedError = error
+        let outcome = try await expectCompletion { await queued.result }
+        XCTAssertThrowsError(try outcome.get()) { error in
+            XCTAssertTrue(
+                error is CancellationError, "cancellation racing ahead of suspension must be honored, got \(error)")
         }
-        XCTAssertTrue(queuedError is CancellationError, "cancellation racing ahead of suspension must still be honored")
 
         await semaphore.signal()
     }
 
+    // audit #0065: the throwing loop and the final wait() pair together assert that a throwing
+    // body returned its permit; unbounded, a leaked permit made this test hang the suite (the
+    // third throwing call already blocks) instead of failing.
     func testAsyncSemaphoreWithPermitCapsConcurrencyAndReleasesOnThrow() async throws {
         let semaphore = AsyncSemaphore(value: 2)
         let tracker = PermitPeakTracker()
@@ -2209,17 +2212,20 @@ final class converterTests: XCTestCase {
         XCTAssertLessThanOrEqual(peak, 2, "withPermit must never exceed the configured limit")
         XCTAssertGreaterThan(peak, 0)
 
-        // A throwing body must still return its permit.
+        // A throwing body must still return its permit: four throws through two permits, and
+        // both permits must be free again afterwards.
         struct Boom: Error {}
-        for _ in 0 ..< 4 {
-            do {
-                try await semaphore.withPermit { throw Boom() }
-            } catch is Boom {
-                continue
+        try await expectCompletion {
+            for _ in 0 ..< 4 {
+                do {
+                    try await semaphore.withPermit { throw Boom() }
+                } catch is Boom {
+                    continue
+                }
             }
+            try await semaphore.wait()
+            try await semaphore.wait()
         }
-        try await semaphore.wait()
-        try await semaphore.wait()
         await semaphore.signal()
         await semaphore.signal()
     }

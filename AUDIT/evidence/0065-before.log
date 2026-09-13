@@ -1,0 +1,15 @@
+# audit #0065 BEFORE, part 1: withPermit deliberately broken so a throwing body keeps its permit (no signal on throw). The OLD sleep-based test, run directly from the bundle under a 20 s guard: it never fails, it hangs (exit 124 = killed by timeout).
+Test Case '-[converterTests.converterTests testAsyncSemaphoreWithPermitCapsConcurrencyAndReleasesOnThrow]' started.
+exit status of the guarded xctest run: 124
+
+# audit #0065 BEFORE, part 2: same broken withPermit, REWRITTEN tests via swift test --filter testAsyncSemaphore: the leaked permit is reported as a failure within about 1 s instead of hanging.
+Test Case '-[converterTests.converterTests testAsyncSemaphoreCancellationBeforeSuspensionStillThrows]' passed (0.001 seconds).
+Test Case '-[converterTests.converterTests testAsyncSemaphoreCancellationResumesOnlyTheCancelledWaiter]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testAsyncSemaphoreSignalRacingCancellationLeavesNoMarkerBehind]' passed (0.007 seconds).
+Test Case '-[converterTests.converterTests testAsyncSemaphoreWaitFastPathRefusesCancelledTask]' passed (0.000 seconds).
+/Users/node4/Downloads/Converter-wt/runtime/Sources/Tests/converterTests/converterTests.swift:2315: error: -[converterTests.converterTests testAsyncSemaphoreWithPermitCapsConcurrencyAndReleasesOnThrow] : failed: caught error: "await did not complete within 1.0 s"
+Test Case '-[converterTests.converterTests testAsyncSemaphoreWithPermitCapsConcurrencyAndReleasesOnThrow]' failed (1.188 seconds).
+Test Case '-[converterTests.converterTests testAsyncSemaphoreWithPermitRefusesCancelledTask]' passed (0.000 seconds).
+	 Executed 6 tests, with 1 failure (1 unexpected) in 1.196 (1.196) seconds
+	 Executed 6 tests, with 1 failure (1 unexpected) in 1.196 (1.196) seconds
+	 Executed 6 tests, with 1 failure (1 unexpected) in 1.196 (1.197) seconds
