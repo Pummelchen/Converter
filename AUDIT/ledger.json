@@ -759,14 +759,14 @@
       "location": "Sources/converter/Config.swift:197-200",
       "title": "youtube_short overlay puts a known-failing encoder first at the default portrait size",
       "category": "logic",
-      "status": "START",
+      "status": "TEST",
       "host": "local",
       "discovered_by": "reviewer V-6",
       "session": "2026-09-13",
       "evidence_before": "AUDIT/findings/L2-validation-config.md V-6",
-      "fix_summary": "",
-      "evidence_after": "",
-      "commit": "",
+      "fix_summary": "youtube_short no longer puts h264_videotoolbox first; validate() rejects an h264_videotoolbox PRIMARY above 4096 px on either axis (measured: 4096x4096 encodes, 4098x4096 fails with -12903) for both ladders; fast_preview now sizes shorts 1080x1920 so its VT-first ladder is valid.",
+      "evidence_after": "AUDIT/evidence/0045-before.log, 0045-after.log (ladder order + session-limit rejection tests pass); swiftlint 533/56. Full suite pending",
+      "commit": "6cee542",
       "notes": ""
     },
     {

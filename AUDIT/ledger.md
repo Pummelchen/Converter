@@ -6,9 +6,9 @@ Session: `2026-09-13` · branch `audit/2026-09-13` · baseline commit `4bb136a`
 
 | status | count |
 |---|---|
-| START | 59 |
+| START | 58 |
 | PROGRESS | 1 |
-| TEST | 4 |
+| TEST | 5 |
 | AUDIT | 0 |
 | DONE | 35 |
 | BLOCKED | 1 |
@@ -41,7 +41,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 | #0042 | S2 | converter/ProcessRunner | Sources/converter/ProcessRunner.swift:112-124 | Child stdin inherited from the terminal | unsafe | START |  |
 | #0043 | S2 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:683-691,1013-1028 | containsChunk is a 64 KiB substring scan, not a RIFF chunk walk | unsafe | START |  |
 | #0044 | S2 | converter/Config | Sources/converter/Config.swift:203-205 | archive profile is a no-op placeholder | placeholder | TEST | fa443f1 |
-| #0045 | S2 | converter/Config | Sources/converter/Config.swift:197-200 | youtube_short overlay puts a known-failing encoder first at the default portrait size | logic | START |  |
+| #0045 | S2 | converter/Config | Sources/converter/Config.swift:197-200 | youtube_short overlay puts a known-failing encoder first at the default portrait size | logic | TEST | 6cee542 |
 | #0046 | S2 | converter/Config | Sources/converter/Config.swift:159-161 | Unknown config keys dropped at debug level only; BOM not stripped | incomplete | TEST | 7455803 |
 | #0047 | S2 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:16-32,59-63 | Source clip re-rendered and re-analysed for every short variant | perf | START |  |
 | #0050 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:327-336,367-387,591-600 | Loudness fallback publishes any true-peak breach with a misleading 'closest-safe' label | logic | START |  |
@@ -667,7 +667,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **evidence-after:** AUDIT/evidence/0044-before.log, 0044-after.log (rejection + help-text test pass); swiftlint 533/56. Full suite pending
 - **commit sha:** fa443f1
 
-### #0045 · S2 · START · youtube_short overlay puts a known-failing encoder first at the default portrait size
+### #0045 · S2 · TEST · youtube_short overlay puts a known-failing encoder first at the default portrait size
 
 - **project/module:** converter/Config
 - **file:line:** Sources/converter/Config.swift:197-200
@@ -675,6 +675,9 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **host-used:** local
 - **discovered-by:** reviewer V-6
 - **evidence-before:** AUDIT/findings/L2-validation-config.md V-6
+- **fix-summary:** youtube_short no longer puts h264_videotoolbox first; validate() rejects an h264_videotoolbox PRIMARY above 4096 px on either axis (measured: 4096x4096 encodes, 4098x4096 fails with -12903) for both ladders; fast_preview now sizes shorts 1080x1920 so its VT-first ladder is valid.
+- **evidence-after:** AUDIT/evidence/0045-before.log, 0045-after.log (ladder order + session-limit rejection tests pass); swiftlint 533/56. Full suite pending
+- **commit sha:** 6cee542
 
 ### #0046 · S2 · TEST · Unknown config keys dropped at debug level only; BOM not stripped
 
