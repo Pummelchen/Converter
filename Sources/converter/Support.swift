@@ -95,6 +95,10 @@ actor AsyncSemaphore {
     }
 
     func wait() async throws {
+        // A task that is already cancelled must not take a permit. `async let` siblings are
+        // cancelled when one of them throws, and a sibling that still queued up would start
+        // a full ffmpeg or magick job whose result nobody is going to await.
+        try Task.checkCancellation()
         if available > 0 {
             available -= 1
             return
@@ -140,6 +144,14 @@ actor AsyncSemaphore {
 
     func withPermit<T: Sendable>(_ operation: @escaping @Sendable () async throws -> T) async throws -> T {
         try await wait()
+        // Cancellation can land between signal() handing this task the permit and the task
+        // running again; the permit then goes straight back instead of into a doomed job.
+        do {
+            try Task.checkCancellation()
+        } catch {
+            signal()
+            throw error
+        }
         defer {
             signal()
         }

@@ -2224,6 +2224,55 @@ final class converterTests: XCTestCase {
         await semaphore.signal()
     }
 
+    // audit #0039: withPermit never looked at cancellation, so a task cancelled because an
+    // `async let` sibling had thrown still took a permit and ran its closure (a full ffmpeg or
+    // magick job whose result nobody awaits). It must throw CancellationError, leave the closure
+    // unrun and hand the permit back; the follow-up withPermit would hang on a leaked permit.
+    func testAsyncSemaphoreWithPermitRefusesCancelledTask() async throws {
+        let semaphore = AsyncSemaphore(value: 1)
+        let closureRan = ResultBox<Bool>()
+
+        let cancelled = Task {
+            // Spin until the cancel below has landed, so the semaphore is asked by a cancelled task.
+            while !Task.isCancelled {
+                await Task.yield()
+            }
+            return try await semaphore.withPermit { closureRan.store(true) }
+        }
+        cancelled.cancel()
+
+        let outcome = await cancelled.result
+        XCTAssertThrowsError(try outcome.get()) { error in
+            XCTAssertTrue(error is CancellationError, "expected CancellationError, got \(error)")
+        }
+        XCTAssertNil(closureRan.load(), "the closure must not run for a cancelled task")
+
+        // The single permit must still be available: a leaked one would time out here.
+        try await expectCompletion { try await semaphore.withPermit { } }
+    }
+
+    // audit #0039: the wait() fast path (a free permit) never checked cancellation either, so a
+    // cancelled task walked off with the permit. The follow-up wait() proves it was never taken.
+    func testAsyncSemaphoreWaitFastPathRefusesCancelledTask() async throws {
+        let semaphore = AsyncSemaphore(value: 1)
+
+        let cancelled = Task {
+            while !Task.isCancelled {
+                await Task.yield()
+            }
+            try await semaphore.wait()
+        }
+        cancelled.cancel()
+
+        let outcome = await cancelled.result
+        XCTAssertThrowsError(try outcome.get()) { error in
+            XCTAssertTrue(error is CancellationError, "expected CancellationError, got \(error)")
+        }
+
+        try await expectCompletion { try await semaphore.wait() }
+        await semaphore.signal()
+    }
+
     // audit #0021: one ladder for every render — reports each failed rung, stops at the first
     // failure that a different encoder cannot fix.
     func testEncoderLadderReportsEveryRungAndStopsOnEncoderIndependentFailure() throws {
@@ -2897,6 +2946,32 @@ final class converterTests: XCTestCase {
         )
         XCTAssertEqual(same.samples, 1_000)
         XCTAssertEqual(same.failingSamples, 0)
+    }
+}
+
+// audit #0039: bounds an await so a leaked permit fails the test instead of hanging the suite.
+// The loser of the race is cancelled by the group on exit, which AsyncSemaphore honours.
+private struct AwaitTimedOut: Error, CustomStringConvertible {
+    let seconds: Double
+    var description: String { "await did not complete within \(seconds) s" }
+}
+
+@discardableResult
+private func expectCompletion<T: Sendable>(
+    within seconds: Double = 1,
+    _ operation: @escaping @Sendable () async throws -> T
+) async throws -> T {
+    try await withThrowingTaskGroup(of: T.self) { group in
+        group.addTask { try await operation() }
+        group.addTask {
+            try await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
+            throw AwaitTimedOut(seconds: seconds)
+        }
+        guard let result = try await group.next() else {
+            throw AwaitTimedOut(seconds: seconds)
+        }
+        group.cancelAll()
+        return result
     }
 }
 
