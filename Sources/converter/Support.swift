@@ -214,8 +214,11 @@ struct FadeCutSpec: Equatable, Sendable {
 struct SilenceSpec: Equatable, Sendable {
     let seconds: Double
 
+    // Saturates instead of trapping: parseFlexibleTimecode bounds every user-supplied
+    // duration, so a value this large can only come from a programming error upstream and
+    // must still never crash the process.
     var delayMilliseconds: Int {
-        Int((seconds * 1000).rounded())
+        Int(exactly: (seconds * 1000).rounded()) ?? Int.max
     }
 
     var effectiveLeadingSeconds: Double {
@@ -291,13 +294,19 @@ enum LoudnormArgument {
 }
 
 func ffmpegNumber(_ value: Double) -> String {
-    if value.rounded(.towardZero) == value {
-        return String(Int(value))
+    // Int(exactly:) is nil for non-integral, non-finite and out-of-range values; those fall
+    // through to the fixed-point formatter, which never traps.
+    if let integer = Int(exactly: value) {
+        return String(integer)
     }
     return String(format: "%.6f", locale: posixLocale, value)
         .replacingOccurrences(of: #"0+$"#, with: "", options: .regularExpression)
         .replacingOccurrences(of: #"\.$"#, with: "", options: .regularExpression)
 }
+
+// No audio duration is measured in years; anything above this is a typo or an exponent
+// (`1e300`) and is rejected before it can reach integer conversions downstream.
+let maximumTimecodeSeconds: Double = 366 * 86_400
 
 func parseFlexibleTimecode(_ rawValue: String, label: String) throws -> Double {
     let value = rawValue.trimmed
@@ -352,6 +361,9 @@ func parseFlexibleTimecode(_ rawValue: String, label: String) throws -> Double {
 
     guard seconds.isFinite, seconds >= 0 else {
         throw AppError("Invalid \(label) '\(rawValue)'.")
+    }
+    guard seconds <= maximumTimecodeSeconds else {
+        throw AppError("Invalid \(label) '\(rawValue)'. Durations above 366 days are not supported.")
     }
     return seconds
 }

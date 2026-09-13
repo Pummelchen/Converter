@@ -1,0 +1,82 @@
+Test Case '-[converterTests.PipelineIntegrationTests testFadeOutDoesNotEnforceDeliveryQCPolicy]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testFadeOutDoesNotEnforceDeliveryQCPolicy]' passed (3.446 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testFadeOutProducesTruncatedSameFormatAudioOutput]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testFadeOutProducesTruncatedSameFormatAudioOutput]' passed (3.479 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testFadeOutRejectsRangeBeyondSourceDuration]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testFadeOutRejectsRangeBeyondSourceDuration]' passed (0.431 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testFullAudioPreparationPreservesMP3SourceLoudnessEvenIfMasteringConfigIsEnabled]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testFullAudioPreparationPreservesMP3SourceLoudnessEvenIfMasteringConfigIsEnabled]' passed (3.090 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testLoudnessDoesNotApplyBassBoost]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testLoudnessDoesNotApplyBassBoost]' passed (5.471 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testLoudnessNormalizeKeepsPeakConstrainedMP4Transparent]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testLoudnessNormalizeKeepsPeakConstrainedMP4Transparent]' passed (5.463 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testLoudnessNormalizeProcessesAudioAndMP4Inputs]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testLoudnessNormalizeProcessesAudioAndMP4Inputs]' passed (19.539 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testMasterCanonicalWAVRemediatesOutOfPolicyLoudness]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testMasterCanonicalWAVRemediatesOutOfPolicyLoudness]' passed (4.318 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testMP3CleanDoesNotEnforceDeliveryQCOnStreamCopyCleanup]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testMP3CleanDoesNotEnforceDeliveryQCOnStreamCopyCleanup]' passed (2.764 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testNFTToShortComparesAgainstTrimmedSourceSegmentLoudness]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testNFTToShortComparesAgainstTrimmedSourceSegmentLoudness]' passed (11.985 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testNFTToShortPreservesSourceLoudnessOnLandscapePath]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testNFTToShortPreservesSourceLoudnessOnLandscapePath]' passed (14.666 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testNFTToShortPreservesSourceLoudnessOnPortraitPath]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testNFTToShortPreservesSourceLoudnessOnPortraitPath]' passed (14.000 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testNoiseAddsLeadingAndTrailingNoiseToAudioMedia]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testNoiseAddsLeadingAndTrailingNoiseToAudioMedia]' passed (40.261 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testNoiseIgnoresPreviouslyGeneratedNoiseOutputs]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testNoiseIgnoresPreviouslyGeneratedNoiseOutputs]' passed (0.144 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testNoisePaddingStaysAtTargetAfterFLACDeliveryEncode]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testNoisePaddingStaysAtTargetAfterFLACDeliveryEncode]' passed (9.244 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testNoiseSegmentUsesDynamicLoudnormForProductionDurations]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testNoiseSegmentUsesDynamicLoudnormForProductionDurations]' passed (1.675 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testRejectsStereoImbalancedOutputWhenPolicyIsStrict]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testRejectsStereoImbalancedOutputWhenPolicyIsStrict]' passed (2.756 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testSilenceAddsLeadingAndTrailingPaddingToWAVFLACAndMP4]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testSilenceAddsLeadingAndTrailingPaddingToWAVFLACAndMP4]' passed (12.251 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testSilenceIgnoresPreviouslyGeneratedSilenceOutputs]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testSilenceIgnoresPreviouslyGeneratedSilenceOutputs]' passed (0.145 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testSilenceMP4UsesH264SafeTagForSoftwareEncoder]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testSilenceMP4UsesH264SafeTagForSoftwareEncoder]' passed (4.942 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testSilentChannelIsReportedAsStereoImbalance]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testSilentChannelIsReportedAsStereoImbalance]' passed (0.345 seconds).
+	 Executed 21 tests, with 0 failures (0 unexpected) in 160.416 (160.418) seconds
+Test Case '-[converterTests.converterTests testAstatsMetricsFailClosedAndTreatSilentChannelAsInfiniteImbalance]' started.
+Test Case '-[converterTests.converterTests testAstatsMetricsFailClosedAndTreatSilentChannelAsInfiniteImbalance]' passed (0.002 seconds).
+Test Case '-[converterTests.converterTests testAstatsParserIgnoresOtherFiltersSharingTheSameStderr]' started.
+Test Case '-[converterTests.converterTests testAstatsParserIgnoresOtherFiltersSharingTheSameStderr]' passed (0.001 seconds).
+Test Case '-[converterTests.converterTests testFadeOutParsesFlexibleTimeArguments]' started.
+Test Case '-[converterTests.converterTests testFadeOutParsesFlexibleTimeArguments]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testFadeOutRejectsMissingArguments]' started.
+Test Case '-[converterTests.converterTests testFadeOutRejectsMissingArguments]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testFadeOutRejectsTooManyArguments]' started.
+Test Case '-[converterTests.converterTests testFadeOutRejectsTooManyArguments]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testLoudnessFallbackAcceptsMediaValidQCIssuesOnly]' started.
+Test Case '-[converterTests.converterTests testLoudnessFallbackAcceptsMediaValidQCIssuesOnly]' passed (0.001 seconds).
+Test Case '-[converterTests.converterTests testLoudnessFiltersRejectBassAndEQFilters]' started.
+Test Case '-[converterTests.converterTests testLoudnessFiltersRejectBassAndEQFilters]' passed (0.001 seconds).
+Test Case '-[converterTests.converterTests testLoudnessParsesTargetLUFS]' started.
+Test Case '-[converterTests.converterTests testLoudnessParsesTargetLUFS]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testLoudnessRejectsInvalidTargets]' started.
+Test Case '-[converterTests.converterTests testLoudnessRejectsInvalidTargets]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testLoudnormJSONParsingIgnoresBracesInInputMetadata]' started.
+Test Case '-[converterTests.converterTests testLoudnormJSONParsingIgnoresBracesInInputMetadata]' passed (0.001 seconds).
+Test Case '-[converterTests.converterTests testLoudnormJSONParsingToleratesSurroundingFilterOutput]' started.
+Test Case '-[converterTests.converterTests testLoudnormJSONParsingToleratesSurroundingFilterOutput]' passed (0.001 seconds).
+Test Case '-[converterTests.converterTests testNoiseParsesDefaultAndExplicitDuration]' started.
+Test Case '-[converterTests.converterTests testNoiseParsesDefaultAndExplicitDuration]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testNoiseRejectsInvalidArguments]' started.
+Test Case '-[converterTests.converterTests testNoiseRejectsInvalidArguments]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testProjectLoudnessDefaultsAreMinus12LUFS]' started.
+Test Case '-[converterTests.converterTests testProjectLoudnessDefaultsAreMinus12LUFS]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testSilenceParsesDefaultAndExplicitDuration]' started.
+Test Case '-[converterTests.converterTests testSilenceParsesDefaultAndExplicitDuration]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testSilenceRejectsInvalidArguments]' started.
+Test Case '-[converterTests.converterTests testSilenceRejectsInvalidArguments]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testStaticLoudnessGainNeverAttenuatesQuietPeakConstrainedAudio]' started.
+Test Case '-[converterTests.converterTests testStaticLoudnessGainNeverAttenuatesQuietPeakConstrainedAudio]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testTimecodeRejectsAbsurdDurationsAndFFmpegNumberNeverTraps]' started.
+Test Case '-[converterTests.converterTests testTimecodeRejectsAbsurdDurationsAndFFmpegNumberNeverTraps]' passed (0.002 seconds).
+	 Executed 18 tests, with 0 failures (0 unexpected) in 0.010 (0.011) seconds
+	 Executed 39 tests, with 0 failures (0 unexpected) in 160.426 (160.429) seconds
+	 Executed 39 tests, with 0 failures (0 unexpected) in 160.426 (160.436) seconds

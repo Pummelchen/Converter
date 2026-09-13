@@ -1578,6 +1578,18 @@ final class converterTests: XCTestCase {
         await semaphore.signal()
     }
 
+    // audit #0010: an absurd but finite duration reached Int(Double) and trapped the process
+    // instead of being rejected as input.
+    func testTimecodeRejectsAbsurdDurationsAndFFmpegNumberNeverTraps() throws {
+        XCTAssertThrowsError(try parseFlexibleTimecode("1e300", label: "silence"))
+        XCTAssertThrowsError(try parseFlexibleTimecode("31622401", label: "silence"))
+        XCTAssertEqual(try parseFlexibleTimecode("31622400", label: "silence"), 31_622_400)
+        XCTAssertEqual(ffmpegNumber(2.5), "2.5")
+        XCTAssertEqual(ffmpegNumber(1e18), "1000000000000000000")
+        XCTAssertFalse(ffmpegNumber(1e300).isEmpty, "out-of-Int-range values must format, not trap")
+        XCTAssertEqual(SilenceSpec(seconds: 1e300).delayMilliseconds, Int.max, "unrepresentable delays saturate instead of trapping")
+    }
+
     // audit #0008: --output-file names exactly one output, so only single-output actions may
     // take it. A full run produces ~29 files and used to hand the same override to both the
     // album WAV and the main MP4 render, which then published the video over the WAV.

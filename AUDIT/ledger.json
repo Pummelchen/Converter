@@ -163,15 +163,15 @@
       "location": "Sources/converter/Support.swift:218,295; CLI.swift:325-329",
       "title": "Int(Double) traps on large-but-finite user durations (-silence 1e300 etc.)",
       "category": "bug",
-      "status": "START",
+      "status": "DONE",
       "host": "local",
       "discovered_by": "reviewer C-2",
       "session": "2026-09-13",
-      "evidence_before": "AUDIT/findings/L2-core-runtime.md C-2",
-      "fix_summary": "",
-      "evidence_after": "",
-      "commit": "",
-      "notes": "Int(exactly:) plus an upper bound in parseFlexibleTimecode."
+      "evidence_before": "AUDIT/findings/L2-core-runtime.md C-2 | AUDIT/evidence/0010-before.log: parseFlexibleTimecode('1e300') did not throw and ffmpegNumber(1e300) trapped the xctest process ('Double value cannot be converted to Int', signal 5).",
+      "fix_summary": "parseFlexibleTimecode rejects durations above 366 days (maximumTimecodeSeconds) with an explicit message; ffmpegNumber uses Int(exactly:) and falls through to fixed-point formatting for anything else; SilenceSpec.delayMilliseconds saturates to Int.max instead of trapping.",
+      "evidence_after": "AUDIT/evidence/0010-0014-after.log: 39 targeted tests pass (timecode/ffmpegNumber, loudnorm braces, astats fail-closed + silent channel, existing QC/loudness/imbalance/fade/silence/noise tests). swiftlint 526/56, semgrep 0. Full suite (AUDIT/evidence/0010-0014-fullsuite.txt): 170 executed, 0 failures, 0 compiler warnings.",
+      "commit": "78c00b6",
+      "notes": "Int(exactly:) plus an upper bound in parseFlexibleTimecode. Batched full-suite run shared with #0010/#0012/#0013/#0014/#0099 (one atomic commit per task)."
     },
     {
       "id": "#0011",
@@ -197,15 +197,15 @@
       "location": "Sources/converter/PipelineCore.swift:711-714",
       "title": "parseLoudnormJSON slices from the first '{' in stderr; metadata containing '{' breaks QC on valid files",
       "category": "bug",
-      "status": "START",
+      "status": "TEST",
       "host": "local",
       "discovered_by": "reviewer C-4",
       "session": "2026-09-13",
-      "evidence_before": "AUDIT/findings/L2-core-runtime.md C-4",
-      "fix_summary": "",
-      "evidence_after": "",
+      "evidence_before": "AUDIT/findings/L2-core-runtime.md C-4 | AUDIT/evidence/0012-013-before.log: stderr with 'title : Song {Remix}' metadata before a valid loudnorm block failed with 'Audio loudness probe JSON parsing failed.'",
+      "fix_summary": "parseLoudnormJSON locates the loudnorm object from its closing brace backwards to the matching opening brace (depth counted) instead of from the first '{' in the log.",
+      "evidence_after": "AUDIT/evidence/0010-0014-after.log: 39 targeted tests pass (timecode/ffmpegNumber, loudnorm braces, astats fail-closed + silent channel, existing QC/loudness/imbalance/fade/silence/noise tests). swiftlint 526/56, semgrep 0. Full suite (AUDIT/evidence/0010-0014-fullsuite.txt): 170 executed, 0 failures, 0 compiler warnings.",
       "commit": "",
-      "notes": "Locate the loudnorm block from the end with brace matching."
+      "notes": "Locate the loudnorm block from the end with brace matching. Batched full-suite run shared with #0010/#0012/#0013/#0014/#0099 (one atomic commit per task)."
     },
     {
       "id": "#0013",
@@ -214,15 +214,15 @@
       "location": "Sources/converter/ValidationPipeline.swift:93,98",
       "title": "Stereo-imbalance check fail-open when one channel is digitally silent (-inf RMS dropped)",
       "category": "bug",
-      "status": "START",
+      "status": "TEST",
       "host": "local",
       "discovered_by": "reviewer validation V-1",
       "session": "2026-09-13",
-      "evidence_before": "AUDIT/findings/L2-validation-config.md V-1",
-      "fix_summary": "",
-      "evidence_after": "",
+      "evidence_before": "AUDIT/findings/L2-validation-config.md V-1 | AUDIT/evidence/0012-0013-before.log: a stereo WAV with a digitally silent right channel passed a 0.1 dB imbalance ceiling with no issues (imbalance reported 0).",
+      "fix_summary": "parseAstatsLevelDB maps '-inf' to -infinity; audioQCAstatsMetrics reports infinite stereo imbalance when exactly one channel is silent (both silent \u2192 0, audibility judged separately).",
+      "evidence_after": "AUDIT/evidence/0010-0014-after.log: 39 targeted tests pass (timecode/ffmpegNumber, loudnorm braces, astats fail-closed + silent channel, existing QC/loudness/imbalance/fade/silence/noise tests). swiftlint 526/56, semgrep 0. Full suite (AUDIT/evidence/0010-0014-fullsuite.txt): 170 executed, 0 failures, 0 compiler warnings.",
       "commit": "",
-      "notes": ""
+      "notes": " Batched full-suite run shared with #0010/#0012/#0013/#0014/#0099 (one atomic commit per task)."
     },
     {
       "id": "#0014",
@@ -231,15 +231,15 @@
       "location": "Sources/converter/ValidationPipeline.swift:92-99,111-121,96",
       "title": "astats-derived QC metrics fail-open on missing/unparseable report; Int(Double) trap on Peak count",
       "category": "bug",
-      "status": "START",
+      "status": "TEST",
       "host": "local",
       "discovered_by": "reviewer V-2, V-13",
       "session": "2026-09-13",
-      "evidence_before": "AUDIT/findings/L2-validation-config.md V-2, V-13",
-      "fix_summary": "",
-      "evidence_after": "",
+      "evidence_before": "AUDIT/findings/L2-validation-config.md V-2, V-13 | Statically proven (reviewer V-2/V-13): parseAstatsReport never throws and every derived metric defaulted to 0; Int(Double(nan)) traps. Pure-function test cannot compile before the extraction; behavioural sibling is #0013.",
+      "fix_summary": "New audioQCAstatsMetrics(from:expectedChannels:file:) (AstatsDerivedMetrics) fails closed: channel-block count must equal the probed channel count, every channel needs RMS level dB and DC offset, overall Peak level dB and Peak count must be present and numeric (Int(exactly:) \u2014 no trap on nan); audioQCResult uses it.",
+      "evidence_after": "AUDIT/evidence/0010-0014-after.log: 39 targeted tests pass (timecode/ffmpegNumber, loudnorm braces, astats fail-closed + silent channel, existing QC/loudness/imbalance/fade/silence/noise tests). swiftlint 526/56, semgrep 0. Full suite (AUDIT/evidence/0010-0014-fullsuite.txt): 170 executed, 0 failures, 0 compiler warnings.",
       "commit": "",
-      "notes": "Throw on incomplete astats; Int(exactly:)."
+      "notes": "Throw on incomplete astats; Int(exactly:). Batched full-suite run shared with #0010/#0012/#0013/#0014/#0099 (one atomic commit per task)."
     },
     {
       "id": "#0015",
@@ -1682,7 +1682,7 @@
       "session": "2026-09-13",
       "evidence_before": "swift test log (AUDIT/evidence/0008-fullsuite log source) shows: PipelineIntegrationTests.swift:34 'use of protocol Error as a type must be written any Error'; :1967 'initialization of immutable value wav was never used'. Present in the baseline test log too (4 matching lines); the \u00a73 baseline only built the product target with -warnings-as-errors.",
       "fix_summary": "PipelineIntegrationTests.swift: ResultBox<Result<ProcessResult, any Error>>; unused `let wav` binding in testMasterCommandProducesMasteredOutputsWithinPolicy replaced by `_ =`.",
-      "evidence_after": "swift build --build-tests -Xswiftc -warnings-as-errors: Build complete, 0 diagnostics. Targeted tests pass (AUDIT/evidence/0099-after.log). Full suite: covered by the next suite run.",
+      "evidence_after": "swift build --build-tests -Xswiftc -warnings-as-errors: Build complete, 0 diagnostics. Targeted tests pass (AUDIT/evidence/0099-after.log). Full suite (AUDIT/evidence/0010-0014-fullsuite.txt): 170 executed, 0 failures, 0 compiler warnings.",
       "commit": "",
       "notes": "Phase E requires zero warnings across all targets."
     }

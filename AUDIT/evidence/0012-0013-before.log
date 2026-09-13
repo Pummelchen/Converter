@@ -1,0 +1,26 @@
+Building for debugging...
+[0/4] Write swift-version--58304C5D6DBC2206.txt
+Build complete! (0.11s)
+Test Suite 'Selected tests' started at 2026-09-13 18:05:37.555.
+Test Suite 'converterPackageTests.xctest' started at 2026-09-13 18:05:37.562.
+Test Suite 'PipelineIntegrationTests' started at 2026-09-13 18:05:37.562.
+Test Case '-[converterTests.PipelineIntegrationTests testSilentChannelIsReportedAsStereoImbalance]' started.
+/Users/andreborchert/Library/CloudStorage/Dropbox/Coding/Converter/Sources/Tests/converterTests/PipelineIntegrationTests.swift:1292: error: -[converterTests.PipelineIntegrationTests testSilentChannelIsReportedAsStereoImbalance] : XCTAssertFalse failed - a dead channel must fail the balance ceiling: []
+/Users/andreborchert/Library/CloudStorage/Dropbox/Coding/Converter/Sources/Tests/converterTests/PipelineIntegrationTests.swift:1293: error: -[converterTests.PipelineIntegrationTests testSilentChannelIsReportedAsStereoImbalance] : XCTAssertTrue failed - []
+Test Case '-[converterTests.PipelineIntegrationTests testSilentChannelIsReportedAsStereoImbalance]' failed (0.303 seconds).
+Test Suite 'PipelineIntegrationTests' failed at 2026-09-13 18:05:37.865.
+	 Executed 1 test, with 2 failures (0 unexpected) in 0.303 (0.303) seconds
+Test Suite 'converterTests' started at 2026-09-13 18:05:37.865.
+Test Case '-[converterTests.converterTests testLoudnormJSONParsingIgnoresBracesInInputMetadata]' started.
+/Users/andreborchert/Library/CloudStorage/Dropbox/Coding/Converter/Sources/converter/PipelineCore.swift:721: error: -[converterTests.converterTests testLoudnormJSONParsingIgnoresBracesInInputMetadata] : failed: caught error: "Audio loudness probe JSON parsing failed."
+Test Case '-[converterTests.converterTests testLoudnormJSONParsingIgnoresBracesInInputMetadata]' failed (0.002 seconds).
+Test Suite 'converterTests' failed at 2026-09-13 18:05:37.867.
+	 Executed 1 test, with 1 failure (1 unexpected) in 0.002 (0.002) seconds
+Test Suite 'converterPackageTests.xctest' failed at 2026-09-13 18:05:37.867.
+	 Executed 2 tests, with 3 failures (1 unexpected) in 0.305 (0.305) seconds
+Test Suite 'Selected tests' failed at 2026-09-13 18:05:37.867.
+	 Executed 2 tests, with 3 failures (1 unexpected) in 0.305 (0.312) seconds
+􀟈  Test run started.
+􀄵  Testing Library Version: 1902
+􀄵  Target Platform: arm64e-apple-macos14.0
+􁁛  Test run with 0 tests in 0 suites passed after 0.001 seconds.
