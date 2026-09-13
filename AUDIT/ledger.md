@@ -2,20 +2,20 @@
 
 Session: `2026-09-13` · branch `audit/2026-09-13` · baseline commit `4bb136a`
 
-**known-total:99 done:14 open:85 blocked:0 new-this-session:99**
+**known-total:99 done:15 open:84 blocked:0 new-this-session:99**
 
 | status | count |
 |---|---|
 | START | 83 |
 | PROGRESS | 1 |
-| TEST | 1 |
+| TEST | 0 |
 | AUDIT | 0 |
-| DONE | 14 |
+| DONE | 15 |
 | BLOCKED | 0 |
 
 Status gates: START (reproduced/proven + expected behaviour written) → PROGRESS (diff) → TEST (failing-before/passing-after test pasted, full suite green, no new warnings) → AUDIT (cold re-read, all scanners re-run, no baseline regression, no new placeholder) → DONE (committed atomically). BLOCKED needs reason + what was tried + ≥2 options for a human.
 
-## Open S0 / S1 (25)
+## Open S0 / S1 (24)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
@@ -30,7 +30,6 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 | #0021 | S1 | converter/VideoPipeline+AudioPipeline | Sources/converter/VideoPipeline.swift:159-171; AudioPipeline.swift:1070-1082 | Encoder ladders fall through on encoder-independent failures (publish, ALAC/duration/loudness verify) and the padded-MP4 ladder reports only the last rung | logic | START |  |
 | #0022 | S1 | converter/Actions | Sources/converter/Actions.swift:209-218 | normalizedFullRunSource renames only the winning family member and orphans siblings/companions, breaking reruns; silent fallback when 1.<ext> exists | logic | START |  |
 | #0024 | S1 | converter/Actions | Sources/converter/Actions.swift:717-723,677-686,709 | -aipix/-run_pix/-pngtojpg re-ingest portrait stills and overwrite them with landscape renders | bug | START |  |
-| #0025 | S1 | converter/CLI | Sources/converter/CLI.swift:271-279 | Unknown --options and stray positionals are silently accepted | bug | TEST |  |
 | #0026 | S1 | BW64Bridge | Sources/BW64Bridge/bw64_bridge.cpp:178-197 | Disk-write failures undetectable; bridge self-validates against the ds64 size it wrote | bug | START |  |
 | #0027 | S1 | repo/docs | SECURITY.md:1-21 | SECURITY.md is the unedited GitHub template with fictitious versions | placeholder | START |  |
 | #0028 | S1 | repo/docs | README.md:94; Sources/ThirdParty/libbw64 | No third-party attribution/provenance for vendored Apache-2.0 libbw64 | deps | START |  |
@@ -114,7 +113,7 @@ _none_
 | #0097 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:1902-1911 | -doctor has only a no-throw happy path | test | START |  |
 | #0098 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:529,534 | Exact ffmpeg bass filter string pinned without a stated reason | test | START |  |
 
-## Done (14)
+## Done (15)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
@@ -128,6 +127,7 @@ _none_
 | #0013 | S1 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:93,98 | Stereo-imbalance check fail-open when one channel is digitally silent (-inf RMS dropped) | bug | DONE | 672c224 |
 | #0014 | S1 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:92-99,111-121,96 | astats-derived QC metrics fail-open on missing/unparseable report; Int(Double) trap on Peak count | bug | DONE | 672c224 |
 | #0023 | S1 | converter/Actions | Sources/converter/Actions.swift:576-600 | Non-standard WAV source is rewritten in place; no bit-exact original survives | unsafe | DONE | e71f9dc |
+| #0025 | S1 | converter/CLI | Sources/converter/CLI.swift:271-279 | Unknown --options and stray positionals are silently accepted | bug | DONE | pending-this-commit |
 | #0001 | S2 | repo/AUDIT | AUDIT/inventory.md | Phase A: scope inventory, dependency graph, trust boundaries, blast radius | docs | DONE | 5fa6546 |
 | #0002 | S2 | repo/AUDIT | AUDIT/environment.md | Phase A: environment record and audit tooling install (§1/§1b) | docs | DONE | 5fa6546 |
 | #0003 | S2 | repo/AUDIT | AUDIT/baseline.md | Phase A: baseline metrics at 4bb136a (§3) | docs | DONE | 2184906 |
@@ -413,7 +413,7 @@ _none_
 - **evidence-before:** AUDIT/findings/L2-video-image-actions-cli.md X-5
 - **notes:** Single isFullRunDerivedImage predicate in every batch discovery.
 
-### #0025 · S1 · TEST · Unknown --options and stray positionals are silently accepted
+### #0025 · S1 · DONE · Unknown --options and stray positionals are silently accepted
 
 - **project/module:** converter/CLI
 - **file:line:** Sources/converter/CLI.swift:271-279
@@ -423,6 +423,7 @@ _none_
 - **evidence-before:** AUDIT/findings/L2-video-image-actions-cli.md X-7; L6-tests.md T-21 \| AUDIT/evidence/0025-before.log: `-full --overwite`, `-full --continue-on-eror`, `-loudness --sharpnes 2`, `-short -verbose`, `-full 45`, `-doctor x`, `-flactomp3 song.flac` all parsed without error.
 - **fix-summary:** CLI: a dash-prefixed argument that is not a known option and not a number is an 'Unknown option' error; positional values are accepted only by actions that read them (-bass, -loudness, -fade, -fadecut, -fadeout, -noise, -silence, -visualsubs), every other action rejects stray words with an actionable message.
 - **evidence-after:** AUDIT/evidence/0011-0025-after.log: testUnknownOptionsAndStrayPositionalsAreRejected + existing parser/flag tests (38) pass. Full suite (AUDIT/evidence/0011-0025-fullsuite.txt): 172 executed, 0 failures, 0 compiler warnings; swiftlint 532/56 after wrapping.
+- **commit sha:** pending-this-commit
 
 ### #0026 · S1 · START · Disk-write failures undetectable; bridge self-validates against the ds64 size it wrote
 

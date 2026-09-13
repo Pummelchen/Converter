@@ -61,6 +61,17 @@ extension Action {
     // --output-file binds to exactly one output. Multi-output actions (the full run, batch
     // conversions, shorts) must reject it: handing one override to several producers made an
     // album run publish its main MP4 over its own album WAV.
+    // Actions that read positional values (`-bass 80 5`, `-loudness -13`, `-visualsubs 9`).
+    // Every other action must reject stray words: a typo such as `-full --overwite` used to run
+    // as if the option had never been given.
+    static let actionsAcceptingPositionalArguments: [Action] = [
+        .bass, .loudness, .fade, .fadecut, .fadeout, .noise, .silence, .visualsubs
+    ]
+
+    var acceptsPositionalArguments: Bool {
+        Self.actionsAcceptingPositionalArguments.contains(self)
+    }
+
     static let actionsAcceptingOutputFile: [Action] = [
         .m4atomp4, .album, .wavtoalbum, .mp3toalbum, .flactoalbum, .visualsubs
     ]
@@ -282,9 +293,21 @@ struct CLIOptions {
                 index = arguments.count
                 continue
             default:
+                // Negative numbers (`-13`, `-5`) are values; any other dash-prefixed word is a
+                // misspelled or unknown option and must not be swallowed as a positional.
+                if argument.hasPrefix("-"), Double(argument) == nil {
+                    throw AppError(
+                        "Unknown option '\(argument)'. Run \(scriptName) -help for the list of actions and options.")
+                }
                 options.actionArgs.append(argument)
             }
             index += 1
+        }
+
+        if !options.actionArgs.isEmpty, !options.action.acceptsPositionalArguments {
+            let stray = options.actionArgs.joined(separator: " ")
+            throw AppError(
+                "-\(options.action.rawValue) does not take positional arguments (got: \(stray)). Run \(scriptName) -help.")
         }
 
         if options.outputFile != nil, !options.action.acceptsOutputFile {

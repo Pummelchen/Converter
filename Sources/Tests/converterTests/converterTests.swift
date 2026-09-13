@@ -1610,6 +1610,29 @@ final class converterTests: XCTestCase {
         XCTAssertEqual(try Data(contentsOf: verified), try Data(contentsOf: script))
     }
 
+    // audit #0025: a misspelled option must be an error, not a silently ignored positional.
+    func testUnknownOptionsAndStrayPositionalsAreRejected() throws {
+        let root = URL(fileURLWithPath: "/tmp/converter-test")
+        func parse(_ arguments: [String]) throws -> CLIOptions {
+            try CLIOptions.parse(arguments: arguments, environment: [:], scriptDirectory: root, scriptName: "converter")
+        }
+        let unknown = [["-full", "--overwite"], ["-full", "--continue-on-eror"], ["-loudness", "--sharpnes", "2"], ["-short", "-verbose"]]
+        for arguments in unknown {
+            XCTAssertThrowsError(try parse(arguments), arguments.joined(separator: " ")) { error in
+                XCTAssertTrue("\(error)".contains("Unknown option"), "\(error)")
+            }
+        }
+        for arguments in [["-full", "45"], ["-full", "extra"], ["-doctor", "x"], ["-flactomp3", "song.flac"]] {
+            XCTAssertThrowsError(try parse(arguments), arguments.joined(separator: " ")) { error in
+                XCTAssertTrue("\(error)".contains("positional"), "\(error)")
+            }
+        }
+        // Negative numbers are values, not options.
+        XCTAssertEqual(try parse(["-loudness", "-13"]).actionArgs, ["-13"])
+        XCTAssertEqual(try parse(["-bass", "80", "-5"]).actionArgs, ["80", "-5"])
+        XCTAssertEqual(try parse(["-visualsubs", "9"]).actionArgs, ["9"])
+    }
+
     // audit #0014: an astats report that is missing pieces used to degrade every derived
     // ceiling to "pass"; it must fail closed. audit #0013: "-inf" RMS is a measurement.
     func testAstatsMetricsFailClosedAndTreatSilentChannelAsInfiniteImbalance() throws {
