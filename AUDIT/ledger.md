@@ -2,20 +2,20 @@
 
 Session: `2026-09-13` · branch `audit/2026-09-13` · baseline commit `4bb136a`
 
-**known-total:100 done:24 open:75 blocked:1 new-this-session:100**
+**known-total:100 done:25 open:74 blocked:1 new-this-session:100**
 
 | status | count |
 |---|---|
 | START | 71 |
 | PROGRESS | 1 |
-| TEST | 3 |
+| TEST | 2 |
 | AUDIT | 0 |
-| DONE | 24 |
+| DONE | 25 |
 | BLOCKED | 1 |
 
 Status gates: START (reproduced/proven + expected behaviour written) → PROGRESS (diff) → TEST (failing-before/passing-after test pasted, full suite green, no new warnings) → AUDIT (cold re-read, all scanners re-run, no baseline regression, no new placeholder) → DONE (committed atomically). BLOCKED needs reason + what was tried + ≥2 options for a human.
 
-## Open S0 / S1 (16)
+## Open S0 / S1 (15)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
@@ -25,7 +25,6 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 | #0020 | S1 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:492-530,487-490 | -bass can clip the 24-bit staging WAV; nothing verifies true peak/clipping before publish | incomplete | TEST | ed9bc61 |
 | #0021 | S1 | converter/VideoPipeline+AudioPipeline | Sources/converter/VideoPipeline.swift:159-171; AudioPipeline.swift:1070-1082 | Encoder ladders fall through on encoder-independent failures (publish, ALAC/duration/loudness verify) and the padded-MP4 ladder reports only the last rung | logic | TEST | 8298dd8 |
 | #0026 | S1 | BW64Bridge | Sources/BW64Bridge/bw64_bridge.cpp:178-197 | Disk-write failures undetectable; bridge self-validates against the ds64 size it wrote | bug | START |  |
-| #0028 | S1 | repo/docs | README.md:94; Sources/ThirdParty/libbw64 | No third-party attribution/provenance for vendored Apache-2.0 libbw64 | deps | TEST |  |
 | #0030 | S1 | repo/docs | README.md:25,59; Sources/converter/CLI.swift:461-481,664-665; CONTRIBUTING.md:59; wiki Home/Full-Run-Contract | README, CLI help, CONTRIBUTING and wiki contradict actual behaviour (source rename, audio alteration, portrait input, --keep-full-name, 58 s, auto-install wording) | docs | START |  |
 | #0031 | S1 | converterTests | Sources/Tests/converterTests/IntegrationTestSupport.swift:25,133-143 | Integration workspace inherits OUTPUT_DIR/SRC_DIR/OUT_DIR/CONFIG_FILE/DEBUG from the host shell | test | START |  |
 | #0032 | S1 | converterTests | Sources/converter/PipelineCore.swift:487-505 | publishTemp restore-on-failure branch has no test | test | START |  |
@@ -106,7 +105,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 | #0098 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:529,534 | Exact ffmpeg bass filter string pinned without a stated reason | test | START |  |
 | #0100 | S3 | converter/Actions | Sources/converter/Actions.swift (normalizedFullRunSource / resolveFullAudio) | Full-run source is renamed before preflight; a corrupt source loses its original name in the error | logic | START |  |
 
-## Done (24)
+## Done (25)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
@@ -128,6 +127,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 | #0024 | S1 | converter/Actions | Sources/converter/Actions.swift:717-723,677-686,709 | -aipix/-run_pix/-pngtojpg re-ingest portrait stills and overwrite them with landscape renders | bug | DONE | 55aa10e |
 | #0025 | S1 | converter/CLI | Sources/converter/CLI.swift:271-279 | Unknown --options and stray positionals are silently accepted | bug | DONE | 58a6826 |
 | #0027 | S1 | repo/docs | SECURITY.md:1-21 | SECURITY.md is the unedited GitHub template with fictitious versions | placeholder | DONE | a4203f8 |
+| #0028 | S1 | repo/docs | README.md:94; Sources/ThirdParty/libbw64 | No third-party attribution/provenance for vendored Apache-2.0 libbw64 | deps | DONE | a40e56a |
 | #0001 | S2 | repo/AUDIT | AUDIT/inventory.md | Phase A: scope inventory, dependency graph, trust boundaries, blast radius | docs | DONE | 5fa6546 |
 | #0002 | S2 | repo/AUDIT | AUDIT/environment.md | Phase A: environment record and audit tooling install (§1/§1b) | docs | DONE | 5fa6546 |
 | #0003 | S2 | repo/AUDIT | AUDIT/baseline.md | Phase A: baseline metrics at 4bb136a (§3) | docs | DONE | 2184906 |
@@ -473,7 +473,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **evidence-after:** grep -c 'Use this section' SECURITY.md = 0 (was 2); no fictitious versions remain. Docs-only change, no test impact.
 - **commit sha:** a4203f8
 
-### #0028 · S1 · TEST · No third-party attribution/provenance for vendored Apache-2.0 libbw64
+### #0028 · S1 · DONE · No third-party attribution/provenance for vendored Apache-2.0 libbw64
 
 - **project/module:** repo/docs
 - **file:line:** README.md:94; Sources/ThirdParty/libbw64
@@ -483,6 +483,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **evidence-before:** AUDIT/findings/L0-L3-bridge-repo.md B-3
 - **fix-summary:** UPSTREAM.md for libbw64 (0.10.0 == upstream latest, Apache-2.0, unmodified) and README Third-party section.
 - **evidence-after:** Files present; README references the licence and UPSTREAM.md. Docs-only change.
+- **commit sha:** a40e56a
 - **notes:** UPSTREAM.md + README third-party section.
 
 ### #0029 · S1 · BLOCKED · Repository has no LICENSE file

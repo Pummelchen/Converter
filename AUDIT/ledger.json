@@ -469,14 +469,14 @@
       "location": "README.md:94; Sources/ThirdParty/libbw64",
       "title": "No third-party attribution/provenance for vendored Apache-2.0 libbw64",
       "category": "deps",
-      "status": "TEST",
+      "status": "DONE",
       "host": "local",
       "discovered_by": "reviewer B-3",
       "session": "2026-09-13",
       "evidence_before": "AUDIT/findings/L0-L3-bridge-repo.md B-3",
       "fix_summary": "UPSTREAM.md for libbw64 (0.10.0 == upstream latest, Apache-2.0, unmodified) and README Third-party section.",
       "evidence_after": "Files present; README references the licence and UPSTREAM.md. Docs-only change.",
-      "commit": "",
+      "commit": "a40e56a",
       "notes": "UPSTREAM.md + README third-party section."
     },
     {
