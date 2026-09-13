@@ -123,7 +123,7 @@ _none_
 | #0004 | S1 | converter/BW64Bridge | Sources/ | Phase A: sanitizer baseline — test suite under ASan, UBSan, TSan | test | DONE | ce3addc |
 | #0009 | S1 | converter/ProcessRunner | Sources/converter/ProcessRunner.swift:139-152; DependencyBootstrap.swift:145-153 | Process timeout sends SIGTERM only; a child ignoring it (or a grandchild holding the pipe) hangs the run forever | bug | DONE | 69d6f14 |
 | #0010 | S1 | converter/Support | Sources/converter/Support.swift:218,295; CLI.swift:325-329 | Int(Double) traps on large-but-finite user durations (-silence 1e300 etc.) | bug | DONE | e89447a |
-| #0011 | S1 | converter/DependencyBootstrap | Sources/converter/DependencyBootstrap.swift:164-176 | Homebrew installer fetched from unpinned HEAD URL, piped to bash, no integrity check, no pipefail | unsafe | DONE | pending-this-commit |
+| #0011 | S1 | converter/DependencyBootstrap | Sources/converter/DependencyBootstrap.swift:164-176 | Homebrew installer fetched from unpinned HEAD URL, piped to bash, no integrity check, no pipefail | unsafe | DONE | bc60050 |
 | #0012 | S1 | converter/PipelineCore | Sources/converter/PipelineCore.swift:711-714 | parseLoudnormJSON slices from the first '{' in stderr; metadata containing '{' breaks QC on valid files | bug | DONE | b8e97f9 |
 | #0013 | S1 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:93,98 | Stereo-imbalance check fail-open when one channel is digitally silent (-inf RMS dropped) | bug | DONE | 672c224 |
 | #0014 | S1 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:92-99,111-121,96 | astats-derived QC metrics fail-open on missing/unparseable report; Int(Double) trap on Peak count | bug | DONE | 672c224 |
@@ -269,7 +269,7 @@ _none_
 - **evidence-before:** AUDIT/findings/L2-core-runtime.md C-3 \| AUDIT/evidence/0011-before.txt: DependencyBootstrap.swift:168 executed `curl -fsSL …/Homebrew/install/HEAD/install.sh \| /bin/bash`.
 - **fix-summary:** Homebrew self-install downloads a PINNED installer (commit fde1410a…, 2026-09-11) to a 0600 temp file with curl (--proto =https,file --tlsv1.2 --max-time 300), verifies SHA-256 (CryptoKit) against an embedded constant, and only then runs /bin/bash <file>; a mismatch removes the download and throws with a manual-install hint. No curl\|bash pipeline remains.
 - **evidence-after:** AUDIT/evidence/0011-0025-after.log: testHomebrewInstallerIsPinnedAndIntegrityChecked (pinned 40-hex URL, 64-hex digest, file:// fixture: wrong hash refused before execution and no sentinel written; right hash returns the verified copy). 38 targeted tests pass. swiftlint 529/56, semgrep 0. Full suite (AUDIT/evidence/0011-0025-fullsuite.txt): 172 executed, 0 failures, 0 compiler warnings; swiftlint 532/56 after wrapping.
-- **commit sha:** pending-this-commit
+- **commit sha:** bc60050
 - **notes:** Opt-in path only. Decision: pin + SHA-256 verify, or remove self-install and keep brew install only; document rejected alternative. Rejected alternative: removing Homebrew self-install entirely — it is an opt-in, documented feature the owner built; pinning + integrity verification keeps it while removing the unpinned remote-code path. The pinned script's own behaviour (git clone of brew) is Homebrew's contract, not ours.
 
 ### #0012 · S1 · DONE · parseLoudnormJSON slices from the first '{' in stderr; metadata containing '{' breaks QC on valid files
