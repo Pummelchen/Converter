@@ -1,0 +1,48 @@
+[0/1] Planning build
+Building for debugging...
+[0/7] Write swift-version--58304C5D6DBC2206.txt
+[1/7] Compiling BW64Bridge bw64_bridge.cpp
+[3/22] Compiling converter ImagePipeline.swift
+[4/22] Compiling converter LosslessAudioPipeline.swift
+[5/22] Compiling converter Support.swift
+[6/22] Compiling converter ValidationPipeline.swift
+[7/22] Compiling converter Main.swift
+[8/22] Compiling converter PipelineCore.swift
+[9/22] Compiling converter CLI.swift
+[10/22] Compiling converter Config.swift
+[11/23] Compiling converter VideoPipeline.swift
+[12/23] Compiling converter ProcessRunner.swift
+[13/23] Compiling converter QualityReporting.swift
+[14/23] Compiling converter DependencyBootstrap.swift
+[15/23] Compiling converter Diagnostics.swift
+[16/23] Compiling converter Actions.swift
+[17/23] Compiling converter AudioPipeline.swift
+[18/23] Emitting module converter
+[18/23] Write Objects.LinkFileList
+[19/23] Linking converter
+[20/23] Applying converter
+[22/27] Compiling converterTests PipelineIntegrationTests.swift
+[23/27] Compiling converterTests converterTests.swift
+[24/27] Emitting module converterTests
+[25/27] Compiling converterTests IntegrationTestSupport.swift
+[26/29] Emitting module converterPackageTests
+[27/29] Compiling converterPackageTests runner.swift
+[27/29] Write Objects.LinkFileList
+[28/29] Linking converterPackageTests
+Build complete! (4.28s)
+Test Suite 'Selected tests' started at 2026-09-13 19:50:53.635.
+Test Suite 'converterPackageTests.xctest' started at 2026-09-13 19:50:53.638.
+Test Suite 'PipelineIntegrationTests' started at 2026-09-13 19:50:53.638.
+Test Case '-[converterTests.PipelineIntegrationTests testBW64WriterReportsATruncatedOutput]' started.
+/Users/node4/Downloads/Converter/Sources/Tests/converterTests/PipelineIntegrationTests.swift:166: error: -[converterTests.PipelineIntegrationTests testBW64WriterReportsATruncatedOutput] : XCTAssertThrowsError failed: did not throw an error
+Test Case '-[converterTests.PipelineIntegrationTests testBW64WriterReportsATruncatedOutput]' failed (1.474 seconds).
+Test Suite 'PipelineIntegrationTests' failed at 2026-09-13 19:50:55.112.
+	 Executed 1 test, with 1 failure (0 unexpected) in 1.474 (1.474) seconds
+Test Suite 'converterPackageTests.xctest' failed at 2026-09-13 19:50:55.112.
+	 Executed 1 test, with 1 failure (0 unexpected) in 1.474 (1.474) seconds
+Test Suite 'Selected tests' failed at 2026-09-13 19:50:55.112.
+	 Executed 1 test, with 1 failure (0 unexpected) in 1.474 (1.477) seconds
+◇ Test run started.
+↳ Testing Library Version: 1902
+↳ Target Platform: arm64e-apple-macos14.0
+✔ Test run with 0 tests in 0 suites passed after 0.001 seconds.
