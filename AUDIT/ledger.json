@@ -596,7 +596,7 @@
       "evidence_before": "AUDIT/findings/L6-tests.md T-6",
       "fix_summary": "Four integration tests (a valid / b garbage / c valid) for -wavtomp3 via processBatch and -loudness: with --continue-on-error a and c are produced and the summary is thrown; without it the per-file error propagates and c is never produced.",
       "evidence_after": "AUDIT/evidence/0035-before.log (guards inverted: 4/4 fail), 0035-after.log (4 pass); swiftlint 533/56. Full suite pending",
-      "commit": "",
+      "commit": "7a94113",
       "notes": ""
     },
     {

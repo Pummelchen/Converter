@@ -27,7 +27,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 | #0032 | S1 | converterTests | Sources/converter/PipelineCore.swift:487-505 | publishTemp restore-on-failure branch has no test | test | TEST | f4d018d |
 | #0033 | S1 | converterTests | Sources/converter/PipelineCore.swift:551-561 | requireDirectChild never tested with .., symlinks, absolute paths | test | TEST | 1682212 |
 | #0034 | S1 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:63-81 | PipeCapture cap test never reaches the 64 MiB cap | test | TEST | 2185827 |
-| #0035 | S1 | converterTests | Sources/converter/Actions.swift:126-154 | --continue-on-error batch semantics and summary untested | test | TEST |  |
+| #0035 | S1 | converterTests | Sources/converter/Actions.swift:126-154 | --continue-on-error batch semantics and summary untested | test | TEST | 7a94113 |
 | #0036 | S1 | converterTests | Sources/converter/PipelineCore.swift:842-856 | -clean has no test guarding 'never deletes user files' | test | START |  |
 | #0037 | S1 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:1138-1167 | loudnessPreservingQCPolicy has no direct test; 'hot' fixture is not hot | test | START |  |
 | #0038 | S1 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:126-146 | Orphan temp cleanup untested against a live foreign PID | test | START |  |
@@ -571,6 +571,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **evidence-before:** AUDIT/findings/L6-tests.md T-6
 - **fix-summary:** Four integration tests (a valid / b garbage / c valid) for -wavtomp3 via processBatch and -loudness: with --continue-on-error a and c are produced and the summary is thrown; without it the per-file error propagates and c is never produced.
 - **evidence-after:** AUDIT/evidence/0035-before.log (guards inverted: 4/4 fail), 0035-after.log (4 pass); swiftlint 533/56. Full suite pending
+- **commit sha:** 7a94113
 
 ### #0036 · S1 · START · -clean has no test guarding 'never deletes user files'
 
