@@ -452,14 +452,14 @@
       "location": "SECURITY.md:1-21",
       "title": "SECURITY.md is the unedited GitHub template with fictitious versions",
       "category": "placeholder",
-      "status": "TEST",
+      "status": "DONE",
       "host": "local",
       "discovered_by": "reviewer B-2",
       "session": "2026-09-13",
       "evidence_before": "AUDIT/findings/L0-L3-bridge-repo.md B-2",
       "fix_summary": "SECURITY.md rewritten: supported = main + checked-in binary; GitHub private vulnerability reporting; 7/30-day expectations; scope notes.",
       "evidence_after": "grep -c 'Use this section' SECURITY.md = 0 (was 2); no fictitious versions remain. Docs-only change, no test impact.",
-      "commit": "",
+      "commit": "a4203f8",
       "notes": ""
     },
     {
