@@ -630,7 +630,7 @@
       "evidence_before": "AUDIT/findings/L6-tests.md T-9",
       "fix_summary": "Portrait-path fixture now breaches -1 dBTP (asserted); three direct tests of loudnessPreservingQCPolicy: breached ceiling rebased to measured+0.1 with others untouched, clean source returns the input policy, limitDuration measures the leading seconds.",
       "evidence_after": "AUDIT/evidence/0037-before.log (rebase disabled: 3/4 fail), 0037-after.log (4 pass); swiftlint 533/56. Full suite pending",
-      "commit": "",
+      "commit": "a715956",
       "notes": ""
     },
     {

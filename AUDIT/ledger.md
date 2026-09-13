@@ -29,7 +29,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 | #0034 | S1 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:63-81 | PipeCapture cap test never reaches the 64 MiB cap | test | TEST | 2185827 |
 | #0035 | S1 | converterTests | Sources/converter/Actions.swift:126-154 | --continue-on-error batch semantics and summary untested | test | TEST | 7a94113 |
 | #0036 | S1 | converterTests | Sources/converter/PipelineCore.swift:842-856 | -clean has no test guarding 'never deletes user files' | test | TEST | 03bfa6d |
-| #0037 | S1 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:1138-1167 | loudnessPreservingQCPolicy has no direct test; 'hot' fixture is not hot | test | TEST |  |
+| #0037 | S1 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:1138-1167 | loudnessPreservingQCPolicy has no direct test; 'hot' fixture is not hot | test | TEST | a715956 |
 | #0038 | S1 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:126-146 | Orphan temp cleanup untested against a live foreign PID | test | TEST | a53673a |
 
 ## Blocked (1)
@@ -595,6 +595,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **evidence-before:** AUDIT/findings/L6-tests.md T-9
 - **fix-summary:** Portrait-path fixture now breaches -1 dBTP (asserted); three direct tests of loudnessPreservingQCPolicy: breached ceiling rebased to measured+0.1 with others untouched, clean source returns the input policy, limitDuration measures the leading seconds.
 - **evidence-after:** AUDIT/evidence/0037-before.log (rebase disabled: 3/4 fail), 0037-after.log (4 pass); swiftlint 533/56. Full suite pending
+- **commit sha:** a715956
 
 ### #0038 · S1 · TEST · Orphan temp cleanup untested against a live foreign PID
 
