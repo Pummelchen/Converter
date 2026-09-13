@@ -3,7 +3,7 @@
 # Edit this file to change audio quality behavior across scripts.
 
 # Optional built-in profile overlay before the rest of this file is applied.
-# Supported: youtube_master, youtube_short, archive, fast_preview
+# Supported: youtube_master, youtube_short, fast_preview
 PROFILE=youtube_master
 
 # WAV standard (used for WAV creation/normalization/validation)

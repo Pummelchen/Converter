@@ -1195,6 +1195,45 @@ final class converterTests: XCTestCase {
         XCTAssertEqual(config.videoMP4Height, 1080)
     }
 
+    // audit #0044: the "archive" profile only assigned values that already were the defaults (and
+    // MP3_BITRATE cannot be anything but 320k), so selecting it changed nothing while the help text
+    // advertised it as a real profile. It is removed; asking for it must fail like any unknown name.
+    func testArchiveProfileIsNoLongerAcceptedOrAdvertised() throws {
+        let root = URL(fileURLWithPath: "/tmp/converter-test")
+        let logger = Logger(scriptName: "converterTests", debugEnabled: false)
+        let options = try CLIOptions.parse(
+            arguments: ["-help", "--profile", "archive"],
+            environment: [:],
+            scriptDirectory: root,
+            scriptName: "converter"
+        )
+        XCTAssertThrowsError(
+            try ProjectConfig.load(
+                from: root.appendingPathComponent("missing-config.txt"),
+                environment: [:],
+                cli: options,
+                logger: logger
+            )
+        ) { error in
+            XCTAssertEqual(
+                error.localizedDescription,
+                "PROFILE must be one of: youtube_master, youtube_short, fast_preview (got 'archive')"
+            )
+        }
+
+        // PROFILE=archive in config.txt goes through the same check.
+        let workspace = try IntegrationWorkspace()
+        try workspace.overwriteConfig(IntegrationWorkspace.defaultConfig + "\nPROFILE=archive\n")
+        XCTAssertThrowsError(try loadConfig(from: workspace)) { error in
+            XCTAssertTrue(error.localizedDescription.contains("(got 'archive')"), error.localizedDescription)
+        }
+
+        XCTAssertEqual(RunProfile.allCases.map(\.rawValue), ["youtube_master", "youtube_short", "fast_preview"])
+        let help = options.helpText()
+        XCTAssertTrue(help.contains("Built-in profiles: youtube_master, youtube_short, fast_preview"))
+        XCTAssertFalse(help.contains("archive"))
+    }
+
     func testFadeOutParsesFlexibleTimeArguments() throws {
         let root = URL(fileURLWithPath: "/tmp/converter-test")
         let options = try CLIOptions.parse(

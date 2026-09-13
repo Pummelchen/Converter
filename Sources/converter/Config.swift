@@ -3,7 +3,6 @@ import Foundation
 enum RunProfile: String, CaseIterable, Sendable {
     case youtubeMaster = "youtube_master"
     case youtubeShort = "youtube_short"
-    case archive = "archive"
     case fastPreview = "fast_preview"
 }
 
@@ -205,9 +204,6 @@ struct ProjectConfig {
             shortMP4VTQuality = "65"
             shortAudioQCTargetLUFS = LoudnessSpec.defaultTargetLUFS
             shortAudioQCLUFSTolerance = 6.0
-        case .archive:
-            mp3Bitrate = "320k"
-            flacCompressionLevel = 12
         case .fastPreview:
             videoMP4Encoder = "h264_videotoolbox"
             videoMP4EncoderFallbacks = "libx264"

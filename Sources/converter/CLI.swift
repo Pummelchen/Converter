@@ -497,7 +497,7 @@ struct CLIOptions {
           \(scriptName) -visualsubs 9 --output-file dots.png
 
         Profiles:
-          Built-in profiles: youtube_master, youtube_short, archive, fast_preview
+          Built-in profiles: youtube_master, youtube_short, fast_preview
           Use: --profile NAME
           Default: config-driven if PROFILE is set, otherwise youtube_master
 
