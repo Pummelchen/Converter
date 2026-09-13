@@ -170,7 +170,9 @@ final class IntegrationWorkspace {
     }
 
     // Audio fixtures are generated directly with ffmpeg so tests do not depend on converter output to build input data.
-    func createAudio(name: String, ext: String, duration: Double = 1.2, frequency: Int = 440, sampleRate: Int = 48_000) throws -> URL {
+    func createAudio(
+        name: String, ext: String, duration: Double = 1.2, frequency: Int = 440, sampleRate: Int = 48_000
+    ) throws -> URL {
         let target = output.appendingPathComponent(name).appendingPathExtension(ext)
         let rate = String(sampleRate)
         var args = [

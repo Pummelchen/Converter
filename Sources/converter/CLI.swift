@@ -57,6 +57,19 @@ enum Action: String {
     case list
 }
 
+extension Action {
+    // --output-file binds to exactly one output. Multi-output actions (the full run, batch
+    // conversions, shorts) must reject it: handing one override to several producers made an
+    // album run publish its main MP4 over its own album WAV.
+    static let actionsAcceptingOutputFile: [Action] = [
+        .m4atomp4, .album, .wavtoalbum, .mp3toalbum, .flactoalbum, .visualsubs
+    ]
+
+    var acceptsOutputFile: Bool {
+        Self.actionsAcceptingOutputFile.contains(self)
+    }
+}
+
 struct CLIOptions {
     // Padding below this cannot be verified by the silence/noise content probes.
     static let minimumPaddingSeconds = 0.5
@@ -272,6 +285,13 @@ struct CLIOptions {
                 options.actionArgs.append(argument)
             }
             index += 1
+        }
+
+        if options.outputFile != nil, !options.action.acceptsOutputFile {
+            let supported = Action.actionsAcceptingOutputFile.map { "-\($0.rawValue)" }.joined(separator: ", ")
+            throw AppError(
+                "--output-file names exactly one output file and is not supported by -\(options.action.rawValue). "
+                + "It is accepted by: \(supported).")
         }
 
         return options

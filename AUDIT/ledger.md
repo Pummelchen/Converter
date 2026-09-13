@@ -2,25 +2,24 @@
 
 Session: `2026-09-13` · branch `audit/2026-09-13` · baseline commit `4bb136a`
 
-**known-total:98 done:6 open:92 blocked:0 new-this-session:98**
+**known-total:98 done:7 open:91 blocked:0 new-this-session:98**
 
 | status | count |
 |---|---|
-| START | 91 |
+| START | 90 |
 | PROGRESS | 1 |
 | TEST | 0 |
 | AUDIT | 0 |
-| DONE | 6 |
+| DONE | 7 |
 | BLOCKED | 0 |
 
 Status gates: START (reproduced/proven + expected behaviour written) → PROGRESS (diff) → TEST (failing-before/passing-after test pasted, full suite green, no new warnings) → AUDIT (cold re-read, all scanners re-run, no baseline regression, no new placeholder) → DONE (committed atomically). BLOCKED needs reason + what was tried + ≥2 options for a human.
 
-## Open S0 / S1 (32)
+## Open S0 / S1 (31)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
 | #0006 | S0 | repo | node1 (fresh clone) | Phase E: independent verification from a fresh clone on node1 | test | START |  |
-| #0008 | S0 | converter/VideoPipeline | Sources/converter/VideoPipeline.swift:314; Sources/converter/AudioPipeline.swift:1986 | -album --output-file publishes the main MP4 over the album WAV | bug | START |  |
 | #0005 | S1 | repo | wiki | Create and maintain the wiki audit tracker page mirroring the ledger (§9) | docs | PROGRESS |  |
 | #0009 | S1 | converter/ProcessRunner | Sources/converter/ProcessRunner.swift:139-152; DependencyBootstrap.swift:145-153 | Process timeout sends SIGTERM only; a child ignoring it (or a grandchild holding the pipe) hangs the run forever | bug | START |  |
 | #0010 | S1 | converter/Support | Sources/converter/Support.swift:218,295; CLI.swift:325-329 | Int(Double) traps on large-but-finite user durations (-silence 1e300 etc.) | bug | START |  |
@@ -121,11 +120,12 @@ _none_
 | #0097 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:1902-1911 | -doctor has only a no-throw happy path | test | START |  |
 | #0098 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:529,534 | Exact ffmpeg bass filter string pinned without a stated reason | test | START |  |
 
-## Done (6)
+## Done (7)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
 | #0007 | S0 | converter/Actions | Sources/converter/Actions.swift:563-569 | -full with an MP3 source overwrites the user's source file with its own transcode | bug | DONE | ce3addc |
+| #0008 | S0 | converter/VideoPipeline | Sources/converter/VideoPipeline.swift:314; Sources/converter/AudioPipeline.swift:1986 | -album --output-file publishes the main MP4 over the album WAV | bug | DONE | a881e33 |
 | #0004 | S1 | converter/BW64Bridge | Sources/ | Phase A: sanitizer baseline — test suite under ASan, UBSan, TSan | test | DONE | ce3addc |
 | #0023 | S1 | converter/Actions | Sources/converter/Actions.swift:576-600 | Non-standard WAV source is rewritten in place; no bit-exact original survives | unsafe | DONE | ce3addc |
 | #0001 | S2 | repo/AUDIT | AUDIT/inventory.md | Phase A: scope inventory, dependency graph, trust boundaries, blast radius | docs | DONE | 5fa6546 |
@@ -218,14 +218,17 @@ _none_
 - **commit sha:** ce3addc
 - **notes:** Design: no publish path may target its own source; standard MP3 deliverable gets a distinct name. Related #0019, #0023. Shared root cause and one fix commit with #0023. Rejected alternative: keep 1.<ext> and only special-case the MP3 collision — leaves a standard-MP3 source ranked below its own 1.wav on rerun, so a later reuse-check failure could still overwrite it.
 
-### #0008 · S0 · START · -album --output-file publishes the main MP4 over the album WAV
+### #0008 · S0 · DONE · -album --output-file publishes the main MP4 over the album WAV
 
 - **project/module:** converter/VideoPipeline
 - **file:line:** Sources/converter/VideoPipeline.swift:314; Sources/converter/AudioPipeline.swift:1986
 - **category:** bug
 - **host-used:** local
 - **discovered-by:** reviewer X-2
-- **evidence-before:** AUDIT/findings/L2-video-image-actions-cli.md X-2: album build and renderM4AToMP4 both resolve cli.outputFile in one run; MP4 reuse check fails on the WAV, render publishes over it.
+- **evidence-before:** AUDIT/findings/L2-video-image-actions-cli.md X-2: album build and renderM4AToMP4 both resolve cli.outputFile in one run; MP4 reuse check fails on the WAV, render publishes over it. \| AUDIT/evidence/0008-before.log: -album --output-file MyAlbum.wav ends with MyAlbum.wav having format 'isom' (the MP4); parser accepted --output-file for -full/-run/-short/-flactomp3.
+- **fix-summary:** --output-file is accepted only by single-output actions (-m4atomp4, -album, -wavtoalbum, -mp3toalbum, -flactoalbum, -visualsubs); every other action rejects it at parse time with the list of actions that accept it. renderM4AToMP4 takes an explicit outputOverride that only stepM4AToMP4 passes; the full and album runs always name the main MP4 <stem>_8K.mp4, so an album run's --output-file binds to the album WAV alone.
+- **evidence-after:** AUDIT/evidence/0008-after.log: 11 targeted tests pass (2 new + album/visualsubs/m4atomp4 regressions). swiftlint 526/56 (baseline 533/56; 9 over-long lines I introduced were wrapped, pre-existing lines left untouched), semgrep 0. Full suite (AUDIT/evidence/0008-fullsuite.txt): 164 executed, 0 failures, 0 compiler warnings.
+- **commit sha:** a881e33
 - **notes:** --output-file must bind to exactly one output per action.
 
 ### #0009 · S1 · START · Process timeout sends SIGTERM only; a child ignoring it (or a grandchild holding the pipe) hangs the run forever

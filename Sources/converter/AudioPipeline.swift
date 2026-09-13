@@ -1326,7 +1326,8 @@ extension ConverterTool {
             try verifyMP3Standard(source, qcPolicy: nil)
             sourceIsStandard = true
         } catch let mismatch as AppError {
-            logger.info("Full step: MP3 source is not the delivery standard (\(mismatch.message)); encoding \(output.basename)")
+            logger.info(
+                "Full step: MP3 source is not the delivery standard (\(mismatch.message)); encoding \(output.basename)")
             sourceIsStandard = false
         }
         guard sourceIsStandard else {
@@ -1445,7 +1446,8 @@ extension ConverterTool {
     // the only original. The guard runs before any probe so it holds even for unreadable input.
     func requireDistinctOutput(_ output: URL, from source: URL) throws {
         if output.standardizedFileURL.path == source.standardizedFileURL.path {
-            throw AppError("Refusing to write \(output.basename) over its own source \(source.path); the source must stay untouched.")
+            throw AppError(
+                "Refusing to write \(output.basename) over its own source \(source.path); the source must stay untouched.")
         }
     }
 

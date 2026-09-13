@@ -1395,7 +1395,8 @@ final class PipelineIntegrationTests: XCTestCase {
 
         // BW64 is a WAV-only container, so no FLAC counterpart may be emitted.
         XCTAssertFalse(
-            FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("wav_release_BW64.flac").path),
+            FileManager.default.fileExists(
+                atPath: workspace.output.appendingPathComponent("wav_release_BW64.flac").path),
             "BW64 has no FLAC container variant; emitting one would duplicate the RF64 FLAC byte-for-byte."
         )
     }
@@ -1450,7 +1451,9 @@ final class PipelineIntegrationTests: XCTestCase {
         let tool = try workspace.makeTool(arguments: ["-aipix"])
         try tool.stepAIPix()
 
-        XCTAssertTrue(FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("art_1_8K.png").path))
+        XCTAssertTrue(
+
+            FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("art_1_8K.png").path))
         XCTAssertTrue(FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("art_2_8K.png").path))
         XCTAssertFalse(FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("art_8K.png").path))
     }
@@ -1562,8 +1565,8 @@ final class PipelineIntegrationTests: XCTestCase {
         // Every generated file — images included — carries the release stem. The run renames its
         // single source audio to `1_source` first, so `1` is the stem, not the incoming filename,
         // and the untouched original sits beside the deliverables.
-        XCTAssertTrue(FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("1_source.mp3").path))
-        XCTAssertEqual(try tool.crc32(for: workspace.output.appendingPathComponent("1_source.mp3")), try tool.crc32(for: sourceMP3Reference))
+        // (Byte-for-byte preservation of the source is asserted by testFullRunNeverOverwritesItsMP3Source.)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: workspace.output.path + "/1_source.mp3"))
         XCTAssertFalse(FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("track.mp3").path))
         let prefix = "1"
         let base = "1"
@@ -1705,7 +1708,8 @@ final class PipelineIntegrationTests: XCTestCase {
 
         // The run renames its source audio to `1`, so that names the release here too.
         let base = "1"
-        XCTAssertTrue(FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("1_source.flac").path))
+        XCTAssertTrue(
+            FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("1_source.flac").path))
         XCTAssertFalse(FileManager.default.fileExists(
             atPath: workspace.output.appendingPathComponent("463406_B_PH.flac").path))
         let mainOutput = workspace.output.appendingPathComponent("\(base)_8K").appendingPathExtension("mp4")
@@ -2174,6 +2178,29 @@ final class PipelineIntegrationTests: XCTestCase {
             label: "External FLAC",
             format: .s24le
         )
-        XCTAssertFalse(FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("track.wav").path))
+        XCTAssertFalse(
+            FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("track.wav").path))
+    }
+
+    // audit #0008: in an album run --output-file names the album WAV and nothing else; the main
+    // MP4 must keep its own <stem>_8K.mp4 name instead of being published over the WAV.
+    func testAlbumRunKeepsOutputFileForTheAlbumWAVOnly() async throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe", "magick"])
+        _ = try workspace.createImage(name: "art", ext: "png")
+        _ = try workspace.createAudio(name: "01", ext: "wav", duration: 1.0)
+        _ = try workspace.createAudio(name: "02", ext: "wav", duration: 1.0, frequency: 660)
+
+        let tool = try workspace.makeTool(arguments: ["-album", "--output-file", "MyAlbum.wav"])
+        defer { tool.cleanupTemps() }
+        try tool.initializeForExecution()
+        try await tool.stepAlbum()
+
+        let album = workspace.output.appendingPathComponent("MyAlbum.wav")
+        try tool.verifyWAVStandard(album, qcPolicy: nil)
+        XCTAssertTrue(
+            FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("MyAlbum_8K.mp4").path))
+        XCTAssertTrue(
+            FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("MyAlbum.m4a").path))
     }
 }

@@ -1578,6 +1578,33 @@ final class converterTests: XCTestCase {
         await semaphore.signal()
     }
 
+    // audit #0008: --output-file names exactly one output, so only single-output actions may
+    // take it. A full run produces ~29 files and used to hand the same override to both the
+    // album WAV and the main MP4 render, which then published the video over the WAV.
+    func testOutputFileIsOnlyAcceptedBySingleOutputActions() throws {
+        let root = URL(fileURLWithPath: "/tmp/converter-test")
+        func parse(_ arguments: [String]) throws -> CLIOptions {
+            try CLIOptions.parse(arguments: arguments, environment: [:], scriptDirectory: root, scriptName: "converter")
+        }
+        let rejected = [
+            ["-full", "--output-file", "x.mp4"], ["-run", "--output-file", "x.mp4"],
+            ["-short", "--output-file", "x.mp4"], ["-flactomp3", "--output-file", "x.mp3"]
+        ]
+        for arguments in rejected {
+            XCTAssertThrowsError(try parse(arguments), arguments.joined(separator: " ")) { error in
+                XCTAssertTrue("\(error)".contains("--output-file"), "\(error)")
+            }
+        }
+        let accepted = [
+            ["-m4atomp4", "--output-file", "x.mp4"], ["-album", "--output-file", "a.wav"],
+            ["-wavtoalbum", "--output-file", "a.wav"], ["-mp3toalbum", "--output-file", "a.wav"],
+            ["-flactoalbum", "--output-file", "a.wav"], ["-visualsubs", "9", "--output-file", "d.png"]
+        ]
+        for arguments in accepted {
+            XCTAssertNoThrow(try parse(arguments), arguments.joined(separator: " "))
+        }
+    }
+
     // audit #0007: a conversion must never publish onto the file it reads from. With the default
     // shared SRC_DIR/OUT_DIR the full run's MP3 deliverable used to land on the renamed source.
     func testAudioConversionRefusesToWriteOverItsSource() throws {

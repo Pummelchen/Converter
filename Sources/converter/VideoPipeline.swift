@@ -299,7 +299,11 @@ extension ConverterTool {
         }
     }
 
-    func renderM4AToMP4(imageFile: URL, audioFile: URL, audioQCPolicy: AudioQCPolicy?) throws -> URL {
+    // `outputOverride` is the resolved --output-file of a single-output action (-m4atomp4);
+    // the full and album runs never pass one, so their main MP4 always keeps <stem>_8K.mp4.
+    func renderM4AToMP4(
+        imageFile: URL, audioFile: URL, audioQCPolicy: AudioQCPolicy?, outputOverride: URL? = nil
+    ) throws -> URL {
         try preflightPNGInput(imageFile)
         try preflightM4AInput(audioFile)
         guard let dimensions = try imageDimensions(imageFile) else {
@@ -311,7 +315,7 @@ extension ConverterTool {
         guard let duration = try mediaDuration(audioFile) else {
             throw AppError("Unable to read numeric audio duration from: \(audioFile.path)")
         }
-        let output = try resolveOutputPath(cli.outputFile ?? "\(audioFile.stem)_8K.mp4")
+        let output = try outputOverride ?? resolveOutputPath("\(audioFile.stem)_8K.mp4")
 
         let spec = VideoOutputSpec(
             width: config.videoMP4Width,

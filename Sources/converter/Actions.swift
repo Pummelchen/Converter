@@ -1261,7 +1261,8 @@ extension ConverterTool {
             throw AppError("Expected exactly one .m4a in '\(cli.srcDir.path)'.")
         }
         logger.info("M4A -> MP4: \(audio.basename) + \(image.basename)")
-        _ = try renderM4AToMP4(imageFile: image, audioFile: audio, audioQCPolicy: nil)
+        let outputOverride = try cli.outputFile.map { try resolveOutputPath($0) }
+        _ = try renderM4AToMP4(imageFile: image, audioFile: audio, audioQCPolicy: nil, outputOverride: outputOverride)
     }
 
     func stepMP4ToShort() throws {
