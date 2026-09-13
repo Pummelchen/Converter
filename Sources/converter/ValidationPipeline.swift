@@ -2,6 +2,21 @@ import Foundation
 import BW64Bridge
 
 extension ConverterTool {
+    // The cache key for one measurement of a source segment. Milliseconds are the resolution
+    // ffmpeg is asked for (well below anything a loudness figure can register), so two limits
+    // that differ by less are the same segment.
+    private func audioSegmentQCCacheKey(
+        source: URL, policy: AudioQCPolicy, limitDuration: Double?, sampleRate: Int, decode: AudioSegmentDecode
+    ) throws -> AudioSegmentQCCacheKey {
+        AudioSegmentQCCacheKey(
+            fingerprint: try fileProbeFingerprint(source),
+            limitDurationMillis: limitDuration.map { Int64(($0 * 1_000).rounded()) },
+            sampleRate: sampleRate,
+            decode: decode,
+            policy: policy
+        )
+    }
+
     // Loudness comparisons for trimmed renders must use the same leading program segment, not the full source.
     private func audioQCResultForComparison(_ file: URL, policy: AudioQCPolicy, limitDuration: Double?) throws -> AudioQCResult {
         guard let limitDuration, limitDuration > 0 else {
@@ -12,24 +27,32 @@ extension ConverterTool {
             return try audioQCResult(for: file, policy: policy)
         }
 
-        // Run-scoped temp so a crash mid-probe is still cleaned up by the normal recovery path.
-        let temp = try makeTemp(in: cli.outDir, stem: "\(file.stem).qc-clip", ext: ".wav")
-        defer { discardTempFile(temp) }
-        _ = try runner.run("ffmpeg", [
-            "-hide_banner", "-nostdin", "-v", "error", "-y",
-            "-i", file.path,
-            "-map", "0:a:0",
-            "-vn",
-            "-t", ffmpegArg("%.6f", limitDuration),
-            "-ac", String(config.wavChannels),
-            "-ar", String(config.wavSampleRate),
-            "-c:a", config.wavCodec,
-            "-f", "wav",
-            "-rf64", "always",
-            "-write_bext", String(config.wavWriteBext),
-            temp.path
-        ])
-        return try audioQCResult(for: temp, policy: policy)
+        // Keyed on the source, not the clip: every check of a render of this segment reads
+        // the measurement made for the first one (#0047).
+        let key = try audioSegmentQCCacheKey(
+            source: file, policy: policy, limitDuration: limitDuration, sampleRate: config.wavSampleRate,
+            decode: .comparisonClip
+        )
+        return try probeCache.cachedAudioSegmentQCResult(key: key) {
+            // Run-scoped temp so a crash mid-probe is still cleaned up by the normal recovery path.
+            let temp = try makeTemp(in: cli.outDir, stem: "\(file.stem).qc-clip", ext: ".wav")
+            defer { discardTempFile(temp) }
+            _ = try runner.run("ffmpeg", [
+                "-hide_banner", "-nostdin", "-v", "error", "-y",
+                "-i", file.path,
+                "-map", "0:a:0",
+                "-vn",
+                "-t", ffmpegArg("%.6f", limitDuration),
+                "-ac", String(config.wavChannels),
+                "-ar", String(config.wavSampleRate),
+                "-c:a", config.wavCodec,
+                "-f", "wav",
+                "-rf64", "always",
+                "-write_bext", String(config.wavWriteBext),
+                temp.path
+            ])
+            return try audioQCResult(for: temp, policy: policy)
+        }
     }
 
     // astats level values: "-inf" is a real measurement (digital silence), not a missing one.
@@ -231,30 +254,39 @@ extension ConverterTool {
     // a few samples) reports a tiny fraction of what its 24-bit render clips to full scale.
     // Decoding through the render's chain makes the count identical, so the rebased ceiling
     // can demand exactly what the source contributes and still catch clipping the render adds.
+    //
+    // Every short variant of one song asks for the same segment at the same rate, so the
+    // measurement is cached on the source and the segment rather than on the staging temp,
+    // which is new (and therefore never cached) each time (#0047).
     func renderDomainQCResult(
         for source: URL, policy: AudioQCPolicy, limitDuration: Double?, sampleRate: Int
     ) throws -> AudioQCResult {
-        let staged = try makeInternalWAV(
-            from: source, in: cli.outDir, stem: "\(source.stem).qc-stage", duration: limitDuration
+        let key = try audioSegmentQCCacheKey(
+            source: source, policy: policy, limitDuration: limitDuration, sampleRate: sampleRate, decode: .renderDomain
         )
-        defer { discardTempFile(staged) }
-        guard sampleRate != config.wavSampleRate else {
-            return try audioQCResult(for: staged, policy: policy)
+        return try probeCache.cachedAudioSegmentQCResult(key: key) {
+            let staged = try makeInternalWAV(
+                from: source, in: cli.outDir, stem: "\(source.stem).qc-stage", duration: limitDuration
+            )
+            defer { discardTempFile(staged) }
+            guard sampleRate != config.wavSampleRate else {
+                return try audioQCResult(for: staged, policy: policy)
+            }
+            let delivered = try makeTemp(in: cli.outDir, stem: "\(source.stem).qc-delivery", ext: ".wav")
+            defer { discardTempFile(delivered) }
+            _ = try runner.run("ffmpeg", [
+                "-hide_banner", "-nostdin", "-v", "error", "-y",
+                "-i", staged.path,
+                "-map", "0:a:0",
+                "-ac", String(config.wavChannels),
+                "-ar", String(sampleRate),
+                "-c:a", config.wavCodec,
+                "-f", "wav",
+                "-rf64", "always",
+                delivered.path
+            ])
+            return try audioQCResult(for: delivered, policy: policy)
         }
-        let delivered = try makeTemp(in: cli.outDir, stem: "\(source.stem).qc-delivery", ext: ".wav")
-        defer { discardTempFile(delivered) }
-        _ = try runner.run("ffmpeg", [
-            "-hide_banner", "-nostdin", "-v", "error", "-y",
-            "-i", staged.path,
-            "-map", "0:a:0",
-            "-ac", String(config.wavChannels),
-            "-ar", String(sampleRate),
-            "-c:a", config.wavCodec,
-            "-f", "wav",
-            "-rf64", "always",
-            delivered.path
-        ])
-        return try audioQCResult(for: delivered, policy: policy)
     }
 
     // Every ceiling in a delivery QC policy measures a property the render inherits from its

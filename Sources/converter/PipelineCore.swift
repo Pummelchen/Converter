@@ -112,6 +112,7 @@ private struct ProbeCacheState {
     var imageProbes: [FileProbeFingerprint: CachedImageProbe] = [:]
     var audibleAudio: [FileProbeFingerprint: Bool] = [:]
     var audioQCResults: [AudioQCCacheKey: AudioQCResult] = [:]
+    var audioSegmentQCResults: [AudioSegmentQCCacheKey: AudioQCResult] = [:]
 }
 
 final class ProbeCache: Sendable {
@@ -154,6 +155,18 @@ final class ProbeCache: Sendable {
 
         let value = try compute()
         state.withLock { $0.audioQCResults[key] = value }
+        return value
+    }
+
+    func cachedAudioSegmentQCResult(
+        key: AudioSegmentQCCacheKey, compute: () throws -> AudioQCResult
+    ) throws -> AudioQCResult {
+        if let cached = state.withLock({ $0.audioSegmentQCResults[key] }) {
+            return cached
+        }
+
+        let value = try compute()
+        state.withLock { $0.audioSegmentQCResults[key] = value }
         return value
     }
 }

@@ -1,0 +1,23 @@
+Test Suite 'Selected tests' started at 2026-09-13 23:26:33.430.
+Test Suite 'converterPackageTests.xctest' started at 2026-09-13 23:26:33.430.
+Test Suite 'PipelineIntegrationTests' started at 2026-09-13 23:26:33.430.
+Test Case '-[converterTests.PipelineIntegrationTests testSourceSegmentQCIsMeasuredOncePerSegmentAndRate]' started.
+/Users/node4/Downloads/Converter-wt/validation/Sources/Tests/converterTests/PipelineIntegrationTests.swift:2807: error: -[converterTests.PipelineIntegrationTests testSourceSegmentQCIsMeasuredOncePerSegmentAndRate] : XCTAssertEqual failed: ("2") is not equal to ("1") - one staging decode for two identical calls
+/Users/node4/Downloads/Converter-wt/validation/Sources/Tests/converterTests/PipelineIntegrationTests.swift:2808: error: -[converterTests.PipelineIntegrationTests testSourceSegmentQCIsMeasuredOncePerSegmentAndRate] : XCTAssertEqual failed: ("2") is not equal to ("1") - one delivery-rate decode for two calls
+/Users/node4/Downloads/Converter-wt/validation/Sources/Tests/converterTests/PipelineIntegrationTests.swift:2809: error: -[converterTests.PipelineIntegrationTests testSourceSegmentQCIsMeasuredOncePerSegmentAndRate] : XCTAssertEqual failed: ("2") is not equal to ("1") - one loudness analysis for two identical calls
+/Users/node4/Downloads/Converter-wt/validation/Sources/Tests/converterTests/PipelineIntegrationTests.swift:2812: error: -[converterTests.PipelineIntegrationTests testSourceSegmentQCIsMeasuredOncePerSegmentAndRate] : XCTAssertEqual failed: ("3") is not equal to ("2") - a different segment is a new measurement
+/Users/node4/Downloads/Converter-wt/validation/Sources/Tests/converterTests/PipelineIntegrationTests.swift:2814: error: -[converterTests.PipelineIntegrationTests testSourceSegmentQCIsMeasuredOncePerSegmentAndRate] : XCTAssertEqual failed: ("4") is not equal to ("3") - a different delivery rate is a new measurement
+/Users/node4/Downloads/Converter-wt/validation/Sources/Tests/converterTests/PipelineIntegrationTests.swift:2815: error: -[converterTests.PipelineIntegrationTests testSourceSegmentQCIsMeasuredOncePerSegmentAndRate] : XCTAssertEqual failed: ("3") is not equal to ("2") - the project rate needs no delivery decode
+/Users/node4/Downloads/Converter-wt/validation/Sources/Tests/converterTests/PipelineIntegrationTests.swift:2816: error: -[converterTests.PipelineIntegrationTests testSourceSegmentQCIsMeasuredOncePerSegmentAndRate] : XCTAssertEqual failed: ("4") is not equal to ("3")
+/Users/node4/Downloads/Converter-wt/validation/Sources/Tests/converterTests/PipelineIntegrationTests.swift:2822: error: -[converterTests.PipelineIntegrationTests testSourceSegmentQCIsMeasuredOncePerSegmentAndRate] : XCTAssertEqual failed: ("2") is not equal to ("1") - one comparison clip for two identical checks
+Test Case '-[converterTests.PipelineIntegrationTests testSourceSegmentQCIsMeasuredOncePerSegmentAndRate]' failed (5.412 seconds).
+Test Suite 'PipelineIntegrationTests' failed at 2026-09-13 23:26:38.843.
+	 Executed 1 test, with 8 failures (0 unexpected) in 5.412 (5.412) seconds
+Test Suite 'converterPackageTests.xctest' failed at 2026-09-13 23:26:38.843.
+	 Executed 1 test, with 8 failures (0 unexpected) in 5.412 (5.412) seconds
+Test Suite 'Selected tests' failed at 2026-09-13 23:26:38.843.
+	 Executed 1 test, with 8 failures (0 unexpected) in 5.412 (5.413) seconds
+◇ Test run started.
+↳ Testing Library Version: 1902
+↳ Target Platform: arm64e-apple-macos14.0
+✔ Test run with 0 tests in 0 suites passed after 0.001 seconds.

@@ -630,3 +630,55 @@ enum WAVFixture {
         fourCC(container) + uint32LE(sizePlaceholder) + fourCC("WAVE") + chunks.reduce(Data(), +)
     }
 }
+
+// Counts real invocations of one external tool (audit #0047, #0052). A wrapper script placed
+// ahead of the tool on PATH appends its argument line to a log and then execs the real binary,
+// so what is counted is exactly what ran and production code needs no counting hook. Build the
+// workspace with `environment` so its ProcessRunner resolves the wrapper.
+final class CommandInvocationLog {
+    let environment: [String: String]
+    private let directory: URL
+    private let logFile: URL
+
+    init(recording tool: String, inheritedEnvironment: [String: String] = ProcessInfo.processInfo.environment) throws {
+        let base = IntegrationWorkspace.sanitizedEnvironment(inheritedEnvironment)
+        guard let real = DependencyBootstrapper.executableURL(named: tool, environment: base) else {
+            throw AppError("CommandInvocationLog: '\(tool)' is not available on PATH")
+        }
+        directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("converter-shim.\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        logFile = directory.appendingPathComponent("\(tool).log")
+        let shim = directory.appendingPathComponent(tool)
+        let script = "#!/bin/sh\nprintf '%s\\n' \"$*\" >> '\(logFile.path)'\nexec '\(real.path)' \"$@\"\n"
+        try script.write(to: shim, atomically: true, encoding: .utf8)
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: shim.path)
+        var withShim = base
+        withShim["PATH"] = ([directory.path] + (base["PATH"] ?? "").split(separator: ":").map(String.init))
+            .joined(separator: ":")
+        environment = withShim
+    }
+
+    deinit {
+        try? FileManager.default.removeItem(at: directory)
+    }
+
+    // Forgets everything recorded so far, so fixture creation is not counted with the code under test.
+    func reset() throws {
+        try Data().write(to: logFile)
+    }
+
+    // One argument line per invocation, in the order they ran.
+    func invocations() throws -> [String] {
+        guard FileManager.default.fileExists(atPath: logFile.path) else {
+            return []
+        }
+        return try String(contentsOf: logFile, encoding: .utf8)
+            .split(whereSeparator: \.isNewline)
+            .map(String.init)
+    }
+
+    func count(containing needle: String) throws -> Int {
+        try invocations().filter { $0.contains(needle) }.count
+    }
+}

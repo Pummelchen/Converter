@@ -2986,4 +2986,46 @@ final class PipelineIntegrationTests: XCTestCase {
             XCTAssertTrue(message.contains("Canonical PCM mismatch for mono"), message)
         }
     }
+
+    // audit #0047: the source segment a render is judged against was decoded and analysed
+    // again for every call — every short variant of one song staged the same leading seconds
+    // to a fresh temp, and a fresh temp never hits the QC cache. The measurement of one
+    // (source, segment, delivery rate, policy) must be made once and reused; a different
+    // segment or rate is a different measurement and must not be served from the cache.
+    func testSourceSegmentQCIsMeasuredOncePerSegmentAndRate() throws {
+        let log = try CommandInvocationLog(recording: "ffmpeg")
+        let workspace = try IntegrationWorkspace(inheritedEnvironment: log.environment)
+        try workspace.requireCommands(["ffmpeg", "ffprobe"])
+        let source = try workspace.createAudio(name: "song", ext: "wav", duration: 6.0)
+        let clip = try workspace.createAudio(name: "clip", ext: "wav", duration: 2.0)
+        let tool = try workspace.makeTool(arguments: ["-short"])
+        let policy = tool.config.deliveryAudioQCPolicy
+
+        // A render is the one ffmpeg call that reads `input` and writes a temp with `stem` in
+        // its (sanitised) name; the analyses that later read that temp do not mention `input`.
+        func renders(from input: String, to stem: String) throws -> Int {
+            try log.invocations().filter { $0.contains(input) && $0.contains(stem) }.count
+        }
+
+        try log.reset()
+        let first = try tool.loudnessPreservingQCPolicy(policy, source: source, limitDuration: 2.0, sampleRate: 48_000)
+        let second = try tool.loudnessPreservingQCPolicy(policy, source: source, limitDuration: 2.0, sampleRate: 48_000)
+        XCTAssertEqual(first, second)
+        XCTAssertEqual(try renders(from: source.path, to: "qc_stage"), 1, "one staging decode for two identical calls")
+        XCTAssertEqual(try renders(from: "qc_stage", to: "qc_delivery"), 1, "one delivery-rate decode for two calls")
+        XCTAssertEqual(try log.count(containing: "loudnorm=I="), 1, "one loudness analysis for two identical calls")
+
+        _ = try tool.loudnessPreservingQCPolicy(policy, source: source, limitDuration: 3.0, sampleRate: 48_000)
+        XCTAssertEqual(try renders(from: source.path, to: "qc_stage"), 2, "a different segment is a new measurement")
+        _ = try tool.loudnessPreservingQCPolicy(policy, source: source, limitDuration: 3.0, sampleRate: 96_000)
+        XCTAssertEqual(try renders(from: source.path, to: "qc_stage"), 3, "a different delivery rate is a new one")
+        XCTAssertEqual(try renders(from: "qc_stage", to: "qc_delivery"), 2, "the project rate needs no delivery decode")
+        XCTAssertEqual(try log.count(containing: "loudnorm=I="), 3)
+
+        // The loudness-preservation check renders its own comparison clip of the source.
+        try log.reset()
+        try tool.verifySourceLoudnessPreserved(source: source, output: clip)
+        try tool.verifySourceLoudnessPreserved(source: source, output: clip)
+        XCTAssertEqual(try renders(from: source.path, to: "qc_clip"), 1, "one comparison clip for two identical checks")
+    }
 }
