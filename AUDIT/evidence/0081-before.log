@@ -1,0 +1,17 @@
+Test Suite 'Selected tests' started at 2026-09-13 23:35:29.311.
+Test Suite 'converterPackageTests.xctest' started at 2026-09-13 23:35:29.312.
+Test Suite 'PipelineIntegrationTests' started at 2026-09-13 23:35:29.312.
+Test Case '-[converterTests.PipelineIntegrationTests testLUFSRebaseMovesOnlyTheBreachedBound]' started.
+/Users/node4/Downloads/Converter-wt/validation/Sources/Tests/converterTests/PipelineIntegrationTests.swift:2884: error: -[converterTests.PipelineIntegrationTests testLUFSRebaseMovesOnlyTheBreachedBound] : XCTAssertEqual failed: ("1.3499999999999996") is not equal to ("-4.0") - the ceiling the source never breached stays put
+/Users/node4/Downloads/Converter-wt/validation/Sources/Tests/converterTests/PipelineIntegrationTests.swift:2890: error: -[converterTests.PipelineIntegrationTests testLUFSRebaseMovesOnlyTheBreachedBound] : XCTUnwrap failed: expected non-nil value of type "String"
+Test Case '-[converterTests.PipelineIntegrationTests testLUFSRebaseMovesOnlyTheBreachedBound]' failed (1.650 seconds).
+Test Suite 'PipelineIntegrationTests' failed at 2026-09-13 23:35:30.962.
+	 Executed 1 test, with 2 failures (0 unexpected) in 1.650 (1.650) seconds
+Test Suite 'converterPackageTests.xctest' failed at 2026-09-13 23:35:30.962.
+	 Executed 1 test, with 2 failures (0 unexpected) in 1.650 (1.650) seconds
+Test Suite 'Selected tests' failed at 2026-09-13 23:35:30.962.
+	 Executed 1 test, with 2 failures (0 unexpected) in 1.650 (1.651) seconds
+◇ Test run started.
+↳ Testing Library Version: 1902
+↳ Target Platform: arm64e-apple-macos14.0
+✔ Test run with 0 tests in 0 suites passed after 0.001 seconds.

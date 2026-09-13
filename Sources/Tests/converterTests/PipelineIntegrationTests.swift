@@ -3061,4 +3061,53 @@ final class PipelineIntegrationTests: XCTestCase {
         XCTAssertEqual(try log.count(containing: decode), 2, "a rewritten file is decoded exactly once more")
         XCTAssertEqual(try tool.imageDimensions(image)?.0, 160, "the probe follows the rewritten file too")
     }
+
+    // audit #0081: the source-relative rebase widened the integrated-loudness tolerance
+    // symmetrically, so a quiet source that breached only the floor also lifted the ceiling —
+    // a -25 LUFS source against -12 +/- 8 handed the render a window up to +1.1 LUFS, and a
+    // render that came out far too loud would have passed. Only the breached bound moves,
+    // by the measured value plus the rounding allowance; the other bound keeps guarding.
+    func testLUFSRebaseMovesOnlyTheBreachedBound() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe"])
+        try workspace.overwriteConfig(
+            IntegrationWorkspace.defaultConfig + "\nAUDIO_QC_TARGET_LUFS=-12\nAUDIO_QC_LUFS_TOLERANCE=8\n"
+        )
+        let quiet = try workspace.createHotAudio(name: "quiet_master", ext: "wav", duration: 6.0, gainDB: -3.5)
+        let loud = try workspace.createHotAudio(name: "loud_master", ext: "wav", duration: 6.0, gainDB: 22)
+        let tool = try workspace.makeTool(arguments: ["-short"])
+        let policy = tool.config.deliveryAudioQCPolicy
+        XCTAssertEqual(policy.minimumLUFS, -20)
+        XCTAssertEqual(policy.maximumLUFS, -4)
+
+        let quietLUFS = try XCTUnwrap(
+            tool.renderDomainQCResult(for: quiet, policy: policy, limitDuration: 2.0, sampleRate: 48_000)
+                .metrics.integratedLUFS
+        )
+        XCTAssertLessThan(quietLUFS, -23, "fixture must sit below the -20 LUFS floor")
+        let quietPolicy = try tool.loudnessPreservingQCPolicy(
+            policy, source: quiet, limitDuration: 2.0, sampleRate: 48_000
+        )
+        XCTAssertTrue(quietPolicy.name.hasSuffix("-source-relative"))
+        XCTAssertEqual(quietPolicy.minimumLUFS, quietLUFS - 0.1, accuracy: 0.001, "floor rebased to the source")
+        XCTAssertEqual(quietPolicy.maximumLUFS, -4, "the ceiling the source never breached stays put")
+        XCTAssertEqual(quietPolicy.targetLUFS, -12)
+
+        // The rebased policy still rejects a render that is far too loud.
+        let verdict = try tool.audioQCResult(for: loud, policy: quietPolicy)
+        XCTAssertFalse(verdict.passed)
+        let issue = try XCTUnwrap(verdict.issues.first { $0.contains("integrated loudness") })
+        XCTAssertTrue(issue.contains("to -4.00 LUFS"), issue)
+
+        let loudLUFS = try XCTUnwrap(
+            tool.renderDomainQCResult(for: loud, policy: policy, limitDuration: 2.0, sampleRate: 48_000)
+                .metrics.integratedLUFS
+        )
+        XCTAssertGreaterThan(loudLUFS, -4, "fixture must sit above the -4 LUFS ceiling")
+        let loudPolicy = try tool.loudnessPreservingQCPolicy(
+            policy, source: loud, limitDuration: 2.0, sampleRate: 48_000
+        )
+        XCTAssertEqual(loudPolicy.maximumLUFS, loudLUFS + 0.1, accuracy: 0.001, "ceiling rebased to the source")
+        XCTAssertEqual(loudPolicy.minimumLUFS, -20, "the floor the source never breached stays put")
+    }
 }

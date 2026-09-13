@@ -10,9 +10,14 @@ struct AudioQCPolicy: Hashable, Sendable {
     let maxStereoImbalanceDB: Double
     let maxClippedSamples: Int
     let minimumAnalysisSeconds: Double
+    // The integrated-loudness window is symmetric around the target as configured. A
+    // source-relative rebase overrides only the bound the source breaches (#0081), so the
+    // other bound keeps guarding the render; both default to nil in the memberwise init.
+    var minimumLUFSOverride: Double?
+    var maximumLUFSOverride: Double?
 
-    var minimumLUFS: Double { targetLUFS - lufsTolerance }
-    var maximumLUFS: Double { targetLUFS + lufsTolerance }
+    var minimumLUFS: Double { minimumLUFSOverride ?? targetLUFS - lufsTolerance }
+    var maximumLUFS: Double { maximumLUFSOverride ?? targetLUFS + lufsTolerance }
 }
 
 struct AudioQCMetrics: Sendable {

@@ -211,10 +211,11 @@ extension ConverterTool {
                 if integratedLUFS < policy.minimumLUFS || integratedLUFS > policy.maximumLUFS {
                     issues.append(
                         String(
-                            format: "integrated loudness %.2f LUFS outside target %.2f +/- %.2f",
+                            format: "integrated loudness %.2f LUFS outside %.2f to %.2f LUFS (target %.2f)",
                             integratedLUFS,
-                            policy.targetLUFS,
-                            policy.lufsTolerance
+                            policy.minimumLUFS,
+                            policy.maximumLUFS,
+                            policy.targetLUFS
                         )
                     )
                 }
@@ -341,12 +342,22 @@ extension ConverterTool {
             clippedSamples = metrics.clippedSamples
         }
 
-        var lufsTolerance = policy.lufsTolerance
+        // Loudness is a window, not a ceiling: only the bound the source sits at or beyond
+        // moves, to the measurement plus the allowance. Widening both sides would let a render
+        // of a quiet source come out far too loud and still pass (#0081).
+        var minimumLUFS = policy.minimumLUFSOverride
+        var maximumLUFS = policy.maximumLUFSOverride
         if let integrated = metrics.integratedLUFS, integrated.isFinite {
-            let required = abs(integrated - policy.targetLUFS) + 0.1
-            if required > lufsTolerance {
-                relaxations.append(String(format: "integrated loudness %.2f LUFS (target %.2f +/- %.2f)", integrated, policy.targetLUFS, lufsTolerance))
-                lufsTolerance = required
+            if integrated - 0.1 < policy.minimumLUFS {
+                relaxations.append(
+                    String(format: "integrated loudness %.2f LUFS (minimum %.2f)", integrated, policy.minimumLUFS)
+                )
+                minimumLUFS = integrated - 0.1
+            } else if integrated + 0.1 > policy.maximumLUFS {
+                relaxations.append(
+                    String(format: "integrated loudness %.2f LUFS (maximum %.2f)", integrated, policy.maximumLUFS)
+                )
+                maximumLUFS = integrated + 0.1
             }
         }
 
@@ -360,13 +371,15 @@ extension ConverterTool {
         return AudioQCPolicy(
             name: "\(policy.name)-source-relative",
             targetLUFS: policy.targetLUFS,
-            lufsTolerance: lufsTolerance,
+            lufsTolerance: policy.lufsTolerance,
             maxTruePeakDBTP: truePeak,
             maxLoudnessRange: loudnessRange,
             maxDCOffset: dcOffset,
             maxStereoImbalanceDB: imbalance,
             maxClippedSamples: clippedSamples,
-            minimumAnalysisSeconds: policy.minimumAnalysisSeconds
+            minimumAnalysisSeconds: policy.minimumAnalysisSeconds,
+            minimumLUFSOverride: minimumLUFS,
+            maximumLUFSOverride: maximumLUFS
         )
     }
 

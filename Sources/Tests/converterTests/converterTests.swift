@@ -666,7 +666,7 @@ final class converterTests: XCTestCase {
             metrics: metrics,
             passed: false,
             issues: [
-                "integrated loudness -13.30 LUFS outside target -12.00 +/- 0.80",
+                "integrated loudness -13.30 LUFS outside -12.80 to -11.20 LUFS (target -12.00)",
                 "true peak -0.60 dBTP exceeds max -1.00"
             ]
         )
