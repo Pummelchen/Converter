@@ -199,8 +199,9 @@ struct ProjectConfig {
         case .youtubeMaster:
             break
         case .youtubeShort:
-            shortMP4VideoCodec = "h264_videotoolbox"
-            shortMP4VideoFallbacks = "libx264"
+            // The short ladder keeps its default order (libx264 first, h264_videotoolbox as the
+            // fallback): VideoToolbox cannot open an H.264 session at the 4320x7680 portrait size,
+            // so putting it first only burned a failing rung and a warning per variant.
             shortMP4VTQuality = "65"
             shortAudioQCTargetLUFS = LoudnessSpec.defaultTargetLUFS
             shortAudioQCLUFSTolerance = 6.0
@@ -213,6 +214,10 @@ struct ProjectConfig {
             videoMP4Height = 1080
             shortMP4VideoCodec = "h264_videotoolbox"
             shortMP4VideoFallbacks = "libx264"
+            // The portrait counterpart of the 1920x1080 preview; also keeps the short render inside
+            // the h264_videotoolbox session limit this profile relies on for speed.
+            shortMP4ScaleW = 1080
+            shortMP4ScaleH = 1920
             image8KWidth = 1920
             image8KHeight = 1080
             image4KWidth = 1280
@@ -418,6 +423,14 @@ struct ProjectConfig {
         if shortVideoEncoderLadder.isEmpty {
             throw AppError("SHORT_MP4 encoder ladder must not be empty")
         }
+        try requireH264VideoToolboxPrimaryFits(
+            ladder: videoEncoderLadder, width: videoMP4Width, height: videoMP4Height,
+            codecKey: "VIDEO_MP4_ENCODER", sizeKeys: "VIDEO_MP4_WIDTH x VIDEO_MP4_HEIGHT"
+        )
+        try requireH264VideoToolboxPrimaryFits(
+            ladder: shortVideoEncoderLadder, width: shortMP4ScaleW, height: shortMP4ScaleH,
+            codecKey: "SHORT_MP4_VIDEO_CODEC", sizeKeys: "SHORT_MP4_SCALE_W x SHORT_MP4_SCALE_H"
+        )
         try requirePositive(image8KWidth, "IMAGE_8K_WIDTH")
         try requirePositive(image8KHeight, "IMAGE_8K_HEIGHT")
         try requirePositive(image4KWidth, "IMAGE_4K_WIDTH")
@@ -510,6 +523,27 @@ private func requirePositiveRateString(_ value: String, _ name: String) throws {
         return
     }
     throw AppError("\(name) must be a positive number or ratio (got '\(value)')")
+}
+
+// VideoToolbox refuses to open an H.264 compression session above 4096 pixels on either axis:
+// `ffmpeg -f lavfi -i color=size=4320x7680 -frames:v 1 -c:v h264_videotoolbox -f null -` fails with
+// "Cannot create compression session: -12903" (4096x4096 encodes; 4098x4096 and 4096x4098 do not).
+// hevc_videotoolbox has no such limit at 8K, so only the H.264 encoder is checked.
+private let h264VideoToolboxMaxDimension = 4096
+
+// A primary encoder that can never open a session at the configured size is a configuration
+// error, not something to discover through a failing rung and a warning on every render.
+private func requireH264VideoToolboxPrimaryFits(
+    ladder: [String], width: Int, height: Int, codecKey: String, sizeKeys: String
+) throws {
+    guard ladder.first == "h264_videotoolbox", max(width, height) > h264VideoToolboxMaxDimension else {
+        return
+    }
+    throw AppError(
+        "\(codecKey)=h264_videotoolbox cannot encode \(width)x\(height) (\(sizeKeys)): VideoToolbox H.264 "
+            + "sessions are limited to \(h264VideoToolboxMaxDimension) pixels per dimension. "
+            + "Use libx264 as the primary encoder and list h264_videotoolbox as a fallback."
+    )
 }
 
 private func commaSeparatedList(_ value: String) -> [String] {

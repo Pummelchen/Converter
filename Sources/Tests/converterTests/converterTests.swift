@@ -458,6 +458,89 @@ final class converterTests: XCTestCase {
         XCTAssertEqual(config.masteringTargetLUFS, -12)
     }
 
+    // audit #0045: the youtube_short overlay put h264_videotoolbox first at the default 4320x7680
+    // portrait size, where VideoToolbox cannot open an H.264 session (ffmpeg: "Cannot create
+    // compression session: -12903"), so every short variant burned a failing rung and a warning
+    // before libx264 ran. libx264 stays primary with VideoToolbox as the fallback.
+    func testYouTubeShortProfileKeepsLibx264PrimaryAtPortrait8K() throws {
+        let root = URL(fileURLWithPath: "/tmp/converter-test")
+        let options = try CLIOptions.parse(
+            arguments: ["--profile", "youtube_short", "-help"],
+            environment: [:],
+            scriptDirectory: root,
+            scriptName: "converter"
+        )
+        let config = try ProjectConfig.load(
+            from: root.appendingPathComponent("missing-config.txt"),
+            environment: [:],
+            cli: options,
+            logger: Logger(scriptName: "converterTests", debugEnabled: false)
+        )
+
+        XCTAssertEqual(config.shortMP4ScaleW, 4320)
+        XCTAssertEqual(config.shortMP4ScaleH, 7680)
+        XCTAssertEqual(config.shortVideoEncoderLadder, ["libx264", "h264_videotoolbox"])
+        // The rest of the overlay is unchanged.
+        XCTAssertEqual(config.shortMP4VTQuality, "65")
+        XCTAssertEqual(config.shortAudioQCLUFSTolerance, 6)
+    }
+
+    // audit #0045: an h264_videotoolbox primary above the 4096-pixel VideoToolbox H.264 session
+    // limit is a configuration error and must be rejected at load, naming the codec key, the size
+    // and the limit, instead of failing on every render. VideoToolbox as a fallback stays allowed.
+    func testValidateRejectsH264VideoToolboxPrimaryAboveVideoToolboxSessionLimit() throws {
+        let workspace = try IntegrationWorkspace()
+        func load(_ extraLines: String) throws -> ProjectConfig {
+            try workspace.overwriteConfig(IntegrationWorkspace.defaultConfig + "\n" + extraLines + "\n")
+            return try loadConfig(from: workspace)
+        }
+        let shortVTPrimary = "SHORT_MP4_VIDEO_CODEC=h264_videotoolbox\nSHORT_MP4_VIDEO_FALLBACKS=libx264\n"
+
+        XCTAssertThrowsError(try load(shortVTPrimary + "SHORT_MP4_SCALE_W=4320\nSHORT_MP4_SCALE_H=7680")) { error in
+            let message = error.localizedDescription
+            XCTAssertTrue(message.hasPrefix("SHORT_MP4_VIDEO_CODEC=h264_videotoolbox cannot encode 4320x7680"), message)
+            XCTAssertTrue(message.contains("limited to 4096 pixels per dimension"), message)
+        }
+        // Either axis alone over the limit is rejected; exactly at the limit is fine.
+        XCTAssertThrowsError(try load(shortVTPrimary + "SHORT_MP4_SCALE_W=4098\nSHORT_MP4_SCALE_H=4096"))
+        XCTAssertThrowsError(try load(shortVTPrimary + "SHORT_MP4_SCALE_W=4096\nSHORT_MP4_SCALE_H=4098"))
+        let atLimit = try load(shortVTPrimary + "SHORT_MP4_SCALE_W=4096\nSHORT_MP4_SCALE_H=4096")
+        XCTAssertEqual(atLimit.shortVideoEncoderLadder.first, "h264_videotoolbox")
+
+        // As a fallback behind libx264 the encoder is never asked to open the oversized session.
+        let vtFallback = try load("SHORT_MP4_VIDEO_CODEC=libx264\nSHORT_MP4_VIDEO_FALLBACKS=h264_videotoolbox\n"
+            + "SHORT_MP4_SCALE_W=4320\nSHORT_MP4_SCALE_H=7680")
+        XCTAssertEqual(vtFallback.shortVideoEncoderLadder, ["libx264", "h264_videotoolbox"])
+
+        // The main ladder has the same limit.
+        XCTAssertThrowsError(
+            try load("VIDEO_MP4_ENCODER=h264_videotoolbox\nVIDEO_MP4_WIDTH=7680\nVIDEO_MP4_HEIGHT=4320")
+        ) { error in
+            let message = error.localizedDescription
+            XCTAssertTrue(message.hasPrefix("VIDEO_MP4_ENCODER=h264_videotoolbox cannot encode 7680x4320"), message)
+        }
+        XCTAssertNoThrow(try load("VIDEO_MP4_ENCODER=hevc_videotoolbox\nVIDEO_MP4_WIDTH=7680\nVIDEO_MP4_HEIGHT=4320"))
+
+        // fast_preview keeps h264_videotoolbox first for both ladders, so its short render must sit
+        // inside the limit too (the portrait counterpart of its 1920x1080 main render). Loaded
+        // without a config.txt so the profile overlay is what sets the size.
+        let previewOptions = try CLIOptions.parse(
+            arguments: ["-help", "--profile", "fast_preview"],
+            environment: [:],
+            scriptDirectory: workspace.root,
+            scriptName: "converter"
+        )
+        let preview = try ProjectConfig.load(
+            from: workspace.root.appendingPathComponent("missing-config.txt"),
+            environment: [:],
+            cli: previewOptions,
+            logger: Logger(scriptName: "converterTests", debugEnabled: false)
+        )
+        XCTAssertEqual(preview.shortVideoEncoderLadder.first, "h264_videotoolbox")
+        XCTAssertEqual(preview.shortMP4ScaleW, 1080)
+        XCTAssertEqual(preview.shortMP4ScaleH, 1920)
+    }
+
     func testLoudnessParsesTargetLUFS() throws {
         let root = URL(fileURLWithPath: "/tmp/converter-test")
         let defaultOptions = try CLIOptions.parse(

@@ -1,0 +1,57 @@
+[0/1] Planning build
+Building for debugging...
+[0/8] Write sources
+[2/8] Write swift-version--58304C5D6DBC2206.txt
+[4/23] Compiling converter ProcessRunner.swift
+[5/23] Compiling converter QualityReporting.swift
+[6/23] Compiling converter Main.swift
+[7/23] Compiling converter PipelineCore.swift
+[8/23] Compiling converter ImagePipeline.swift
+[9/23] Compiling converter LosslessAudioPipeline.swift
+[10/24] Compiling converter VideoPipeline.swift
+[11/24] Compiling converter Support.swift
+[12/24] Compiling converter ValidationPipeline.swift
+[13/24] Compiling converter DependencyBootstrap.swift
+[14/24] Compiling converter Diagnostics.swift
+[15/24] Emitting module converter
+[16/24] Compiling converter Actions.swift
+[17/24] Compiling converter AudioPipeline.swift
+[18/24] Compiling converter CLI.swift
+[19/24] Compiling converter Config.swift
+[19/23] Linking converter
+[20/23] Applying converter
+[22/27] Emitting module converterTests
+[23/27] Compiling converterTests converterTests.swift
+[24/27] Compiling converterTests IntegrationTestSupport.swift
+[25/27] Compiling converterTests PipelineIntegrationTests.swift
+[26/29] Emitting module converterPackageTests
+[27/29] Compiling converterPackageTests runner.swift
+[27/29] Write Objects.LinkFileList
+[28/29] Linking converterPackageTests
+Build complete! (4.68s)
+Test Suite 'Selected tests' started at 2026-09-13 23:14:46.793.
+Test Suite 'converterPackageTests.xctest' started at 2026-09-13 23:14:46.794.
+Test Suite 'converterTests' started at 2026-09-13 23:14:46.794.
+Test Case '-[converterTests.converterTests testValidateRejectsH264VideoToolboxPrimaryAboveVideoToolboxSessionLimit]' started.
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:499: error: -[converterTests.converterTests testValidateRejectsH264VideoToolboxPrimaryAboveVideoToolboxSessionLimit] : XCTAssertThrowsError failed: did not throw an error
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:505: error: -[converterTests.converterTests testValidateRejectsH264VideoToolboxPrimaryAboveVideoToolboxSessionLimit] : XCTAssertThrowsError failed: did not throw an error
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:506: error: -[converterTests.converterTests testValidateRejectsH264VideoToolboxPrimaryAboveVideoToolboxSessionLimit] : XCTAssertThrowsError failed: did not throw an error
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:516: error: -[converterTests.converterTests testValidateRejectsH264VideoToolboxPrimaryAboveVideoToolboxSessionLimit] : XCTAssertThrowsError failed: did not throw an error
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:539: error: -[converterTests.converterTests testValidateRejectsH264VideoToolboxPrimaryAboveVideoToolboxSessionLimit] : XCTAssertEqual failed: ("4320") is not equal to ("1080")
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:540: error: -[converterTests.converterTests testValidateRejectsH264VideoToolboxPrimaryAboveVideoToolboxSessionLimit] : XCTAssertEqual failed: ("7680") is not equal to ("1920")
+Test Case '-[converterTests.converterTests testValidateRejectsH264VideoToolboxPrimaryAboveVideoToolboxSessionLimit]' failed (0.092 seconds).
+Test Case '-[converterTests.converterTests testYouTubeShortProfileKeepsLibx264PrimaryAtPortrait8K]' started.
+/Users/node4/Downloads/Converter-wt/config/Sources/Tests/converterTests/converterTests.swift:482: error: -[converterTests.converterTests testYouTubeShortProfileKeepsLibx264PrimaryAtPortrait8K] : XCTAssertEqual failed: ("["h264_videotoolbox", "libx264"]") is not equal to ("["libx264", "h264_videotoolbox"]")
+Test Case '-[converterTests.converterTests testYouTubeShortProfileKeepsLibx264PrimaryAtPortrait8K]' failed (0.001 seconds).
+Test Suite 'converterTests' failed at 2026-09-13 23:14:46.887.
+	 Executed 2 tests, with 7 failures (0 unexpected) in 0.093 (0.093) seconds
+Test Suite 'converterPackageTests.xctest' failed at 2026-09-13 23:14:46.887.
+	 Executed 2 tests, with 7 failures (0 unexpected) in 0.093 (0.093) seconds
+Test Suite 'Selected tests' failed at 2026-09-13 23:14:46.887.
+	 Executed 2 tests, with 7 failures (0 unexpected) in 0.093 (0.095) seconds
+◇ Test run started.
+↳ Testing Library Version: 1902
+↳ Target Platform: arm64e-apple-macos14.0
+✔ Test run with 0 tests in 0 suites passed after 0.001 seconds.
+
+# audit #0045 note: run with the Config.swift change reverted (youtube_short overlay still puts h264_videotoolbox first; no session-limit rule).
