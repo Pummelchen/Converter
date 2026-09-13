@@ -1,0 +1,12 @@
+# audit #0064 AFTER: production restored; swift test --filter 'testScheduler|testAsyncSemaphore' (rewritten test plus the semaphore neighbours)
+Test Case '-[converterTests.PipelineIntegrationTests testSchedulerRespectsResourceClassLimits]' passed (3.261 seconds).
+Test Case '-[converterTests.converterTests testAsyncSemaphoreCancellationBeforeSuspensionStillThrows]' passed (0.001 seconds).
+Test Case '-[converterTests.converterTests testAsyncSemaphoreCancellationResumesOnlyTheCancelledWaiter]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testAsyncSemaphoreSignalRacingCancellationLeavesNoMarkerBehind]' passed (0.007 seconds).
+Test Case '-[converterTests.converterTests testAsyncSemaphoreWaitFastPathRefusesCancelledTask]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testAsyncSemaphoreWithPermitCapsConcurrencyAndReleasesOnThrow]' passed (0.099 seconds).
+Test Case '-[converterTests.converterTests testAsyncSemaphoreWithPermitRefusesCancelledTask]' passed (0.001 seconds).
+Test Case '-[converterTests.converterTests testSchedulerProfileKeepsExpectedConcurrencyCaps]' passed (0.000 seconds).
+	 Executed 7 tests, with 0 failures (0 unexpected) in 0.109 (0.110) seconds
+	 Executed 8 tests, with 0 failures (0 unexpected) in 3.370 (3.371) seconds
+	 Executed 8 tests, with 0 failures (0 unexpected) in 3.370 (3.372) seconds

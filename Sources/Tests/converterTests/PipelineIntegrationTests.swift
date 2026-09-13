@@ -2355,46 +2355,78 @@ final class PipelineIntegrationTests: XCTestCase {
         XCTAssertEqual(album.lastPathComponent, "album.rf64.wav")
     }
 
-    func testSchedulerRespectsResourceClassLimits() async throws {
-        let workspace = try IntegrationWorkspace()
-        let tool = try workspace.makeTool(arguments: ["-wavtom4a"])
-        let counter = ConcurrencyCounter()
-
+    // Runs 16 jobs of one class through `permit`, each holding its permit for 50 ms: far more
+    // jobs than permits, so the class cap is the only thing that bounds the observed peak. The
+    // permit closures are synchronous (they wrap ProcessRunner.run), so the hold is a blocking
+    // sleep, exactly like a real encode occupying the thread.
+    private static func saturate(
+        _ jobClass: JobClass,
+        counter: ConcurrencyCounter,
+        permit: @escaping @Sendable (@escaping @Sendable () throws -> Void) async throws -> Void
+    ) async throws {
         try await withThrowingTaskGroup(of: Void.self) { group in
-            for _ in 0 ..< 8 {
+            for _ in 0 ..< 16 {
                 group.addTask {
-                    try await tool.withImagePermit {
-                        counter.enter(.image)
-                        defer { counter.leave(.image) }
-                        Thread.sleep(forTimeInterval: 0.05)
-                    }
-                }
-            }
-            for _ in 0 ..< 8 {
-                group.addTask {
-                    try await tool.withAudioPermit {
-                        counter.enter(.audio)
-                        defer { counter.leave(.audio) }
-                        Thread.sleep(forTimeInterval: 0.05)
-                    }
-                }
-            }
-            for _ in 0 ..< 4 {
-                group.addTask {
-                    try await tool.withVideoPermit {
-                        counter.enter(.video)
-                        defer { counter.leave(.video) }
+                    try await permit {
+                        counter.enter(jobClass)
+                        defer { counter.leave(jobClass) }
                         Thread.sleep(forTimeInterval: 0.05)
                     }
                 }
             }
             try await group.waitForAll()
         }
+    }
 
-        XCTAssertLessThanOrEqual(counter.peak(.image), tool.schedulerProfile.image)
-        XCTAssertLessThanOrEqual(counter.peak(.audio), tool.schedulerProfile.audio)
-        XCTAssertLessThanOrEqual(counter.peak(.video), tool.schedulerProfile.video)
-        XCTAssertLessThanOrEqual(counter.peakTotalCount(), tool.schedulerProfile.total)
+    // audit #0064: this test only asserted `<=`, which a scheduler that ran every job serially
+    // (or a counter that never saw two jobs at once) satisfied vacuously. Each class is now
+    // saturated on its own and must reach exactly its cap, and a control run with a wide profile
+    // proves the counter does observe concurrency above 1 through the same permit plumbing.
+    func testSchedulerRespectsResourceClassLimits() async throws {
+        let workspace = try IntegrationWorkspace()
+        let tool = try workspace.makeTool(arguments: ["-wavtom4a"])
+        let profile = tool.schedulerProfile
+
+        let image = ConcurrencyCounter()
+        try await Self.saturate(.image, counter: image) { try await tool.withImagePermit($0) }
+        XCTAssertEqual(image.peak(.image), min(profile.image, profile.total), "image cap not reached or exceeded")
+
+        let audio = ConcurrencyCounter()
+        try await Self.saturate(.audio, counter: audio) { try await tool.withAudioPermit($0) }
+        XCTAssertEqual(audio.peak(.audio), min(profile.audio, profile.total), "audio cap not reached or exceeded")
+
+        let video = ConcurrencyCounter()
+        try await Self.saturate(.video, counter: video) { try await tool.withVideoPermit($0) }
+        XCTAssertEqual(video.peak(.video), min(profile.video, profile.total), "video cap not reached or exceeded")
+
+        // All classes at once: the global cap must hold across them. Its exact peak depends on
+        // which class holds the global permits at any moment, so only the bound is asserted.
+        let mixed = ConcurrencyCounter()
+        try await withThrowingTaskGroup(of: Void.self) { group in
+            group.addTask { try await Self.saturate(.image, counter: mixed) { try await tool.withImagePermit($0) } }
+            group.addTask { try await Self.saturate(.audio, counter: mixed) { try await tool.withAudioPermit($0) } }
+            group.addTask { try await Self.saturate(.video, counter: mixed) { try await tool.withVideoPermit($0) } }
+            try await group.waitForAll()
+        }
+        XCTAssertLessThanOrEqual(mixed.peakTotalCount(), profile.total)
+        XCTAssertLessThanOrEqual(mixed.peak(.image), profile.image)
+        XCTAssertLessThanOrEqual(mixed.peak(.audio), profile.audio)
+        XCTAssertLessThanOrEqual(mixed.peak(.video), profile.video)
+
+        // Control: with a wide profile the same plumbing and counter must show real overlap,
+        // otherwise the equalities above could be met by a scheduler stuck at one job.
+        let wide = ConverterTool(
+            cli: tool.cli,
+            config: tool.config,
+            logger: tool.logger,
+            runner: tool.runner,
+            environment: tool.environment,
+            schedulerProfile: SchedulerProfile(total: 4, image: 4, audio: 4, video: 4)
+        )
+        let control = ConcurrencyCounter()
+        try await Self.saturate(.image, counter: control) { try await wide.withImagePermit($0) }
+        XCTAssertGreaterThan(control.peak(.image), 1, "the counter must observe concurrent jobs")
+        XCTAssertLessThanOrEqual(control.peak(.image), 4)
     }
 
     func testDoctorPassesOnHealthyWorkspace() throws {

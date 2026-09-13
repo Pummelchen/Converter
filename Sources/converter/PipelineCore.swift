@@ -280,17 +280,28 @@ final class ConverterTool: Sendable {
     let runToken: String
     private let encoderSetLock = Mutex<Set<String>?>(nil)
 
-    init(cli: CLIOptions, config: ProjectConfig, logger: Logger, runner: ProcessRunner, environment: [String: String]) {
+    // The scheduler profile follows the machine unless a caller pins one (tests exercise the
+    // permit plumbing against caps the recommended profile never produces).
+    init(
+        cli: CLIOptions,
+        config: ProjectConfig,
+        logger: Logger,
+        runner: ProcessRunner,
+        environment: [String: String],
+        schedulerProfile: SchedulerProfile? = nil
+    ) {
         self.cli = cli
         self.config = config
         self.logger = logger
         self.runner = runner
         self.environment = environment
-        self.schedulerProfile = SchedulerProfile.recommended(for: ProcessInfo.processInfo.activeProcessorCount)
-        self.globalJobs = AsyncSemaphore(value: schedulerProfile.total)
-        self.imageJobs = AsyncSemaphore(value: schedulerProfile.image)
-        self.audioJobs = AsyncSemaphore(value: schedulerProfile.audio)
-        self.videoJobs = AsyncSemaphore(value: schedulerProfile.video)
+        let profile = schedulerProfile
+            ?? SchedulerProfile.recommended(for: ProcessInfo.processInfo.activeProcessorCount)
+        self.schedulerProfile = profile
+        self.globalJobs = AsyncSemaphore(value: profile.total)
+        self.imageJobs = AsyncSemaphore(value: profile.image)
+        self.audioJobs = AsyncSemaphore(value: profile.audio)
+        self.videoJobs = AsyncSemaphore(value: profile.video)
         self.runToken = "\(ProcessInfo.processInfo.processIdentifier).\(UUID().uuidString.lowercasedASCII)"
     }
 
