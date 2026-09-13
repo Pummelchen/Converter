@@ -647,7 +647,7 @@
       "evidence_before": "AUDIT/findings/L6-tests.md T-10",
       "fix_summary": "Two integration tests with a real child process cover every branch of isOrphanedConverterTempFile and processExists: own PID, parent, PID 1 (EPERM), live child (kept), exited child (swept), malformed and prefix-less names (kept).",
       "evidence_after": "AUDIT/evidence/0038-before.log (processExists forced false: 9 failures), 0038-after.log (3 pass); swiftlint 533/56. Full suite pending",
-      "commit": "",
+      "commit": "a53673a",
       "notes": ""
     },
     {

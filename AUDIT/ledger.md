@@ -30,7 +30,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 | #0035 | S1 | converterTests | Sources/converter/Actions.swift:126-154 | --continue-on-error batch semantics and summary untested | test | TEST | 7a94113 |
 | #0036 | S1 | converterTests | Sources/converter/PipelineCore.swift:842-856 | -clean has no test guarding 'never deletes user files' | test | TEST | 03bfa6d |
 | #0037 | S1 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:1138-1167 | loudnessPreservingQCPolicy has no direct test; 'hot' fixture is not hot | test | START |  |
-| #0038 | S1 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:126-146 | Orphan temp cleanup untested against a live foreign PID | test | TEST |  |
+| #0038 | S1 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:126-146 | Orphan temp cleanup untested against a live foreign PID | test | TEST | a53673a |
 
 ## Blocked (1)
 
@@ -604,6 +604,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **evidence-before:** AUDIT/findings/L6-tests.md T-10
 - **fix-summary:** Two integration tests with a real child process cover every branch of isOrphanedConverterTempFile and processExists: own PID, parent, PID 1 (EPERM), live child (kept), exited child (swept), malformed and prefix-less names (kept).
 - **evidence-after:** AUDIT/evidence/0038-before.log (processExists forced false: 9 failures), 0038-after.log (3 pass); swiftlint 533/56. Full suite pending
+- **commit sha:** a53673a
 
 ### #0039 · S2 · START · AsyncSemaphore grants permits to already-cancelled tasks
 
