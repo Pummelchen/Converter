@@ -1,0 +1,33 @@
+Building for debugging...
+[0/5] Write sources
+[1/5] Write swift-version--58304C5D6DBC2206.txt
+[3/7] Emitting module converter
+[4/7] Compiling converter ProcessRunner.swift
+[4/9] Write Objects.LinkFileList
+[5/9] Linking converter
+[6/9] Applying converter
+[7/9] Write Objects.LinkFileList
+[8/9] Linking converterPackageTests
+Build complete! (1.16s)
+Test Suite 'Selected tests' started at 2026-09-13 20:23:55.823.
+Test Suite 'converterPackageTests.xctest' started at 2026-09-13 20:23:55.824.
+Test Suite 'PipelineIntegrationTests' started at 2026-09-13 20:23:55.824.
+Test Case '-[converterTests.PipelineIntegrationTests testRunCapsCapturedOutputAt64MiBOnBothStreams]' started.
+/Users/node4/Downloads/Converter-wt/0034/Sources/Tests/converterTests/PipelineIntegrationTests.swift:103: error: -[converterTests.PipelineIntegrationTests testRunCapsCapturedOutputAt64MiBOnBothStreams] : XCTAssertEqual failed: ("68157440") is not equal to ("67108864") - stdout must be truncated to exactly the cap
+/Users/node4/Downloads/Converter-wt/0034/Sources/Tests/converterTests/PipelineIntegrationTests.swift:108: error: -[converterTests.PipelineIntegrationTests testRunCapsCapturedOutputAt64MiBOnBothStreams] : XCTAssertEqual failed: ("68157440") is not equal to ("67108864") - stderr must be truncated to exactly the cap
+Test Case '-[converterTests.PipelineIntegrationTests testRunCapsCapturedOutputAt64MiBOnBothStreams]' failed (7.629 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testRunCapturedOutputCapBoundaryKeepsExactCapAndDropsOneByteOver]' started.
+/Users/node4/Downloads/Converter-wt/0034/Sources/Tests/converterTests/PipelineIntegrationTests.swift:137: error: -[converterTests.PipelineIntegrationTests testRunCapturedOutputCapBoundaryKeepsExactCapAndDropsOneByteOver] : XCTAssertEqual failed: ("67108865") is not equal to ("67108864") - one byte over the cap must be trimmed to the cap
+/Users/node4/Downloads/Converter-wt/0034/Sources/Tests/converterTests/PipelineIntegrationTests.swift:138: error: -[converterTests.PipelineIntegrationTests testRunCapturedOutputCapBoundaryKeepsExactCapAndDropsOneByteOver] : XCTAssertEqual failed: ("Optional(122)") is not equal to ("Optional(97)") - the byte past the cap must be discarded
+/Users/node4/Downloads/Converter-wt/0034/Sources/Tests/converterTests/PipelineIntegrationTests.swift:139: error: -[converterTests.PipelineIntegrationTests testRunCapturedOutputCapBoundaryKeepsExactCapAndDropsOneByteOver] : XCTAssertFalse failed - the byte past the cap must be discarded
+Test Case '-[converterTests.PipelineIntegrationTests testRunCapturedOutputCapBoundaryKeepsExactCapAndDropsOneByteOver]' failed (6.062 seconds).
+Test Suite 'PipelineIntegrationTests' failed at 2026-09-13 20:24:09.515.
+	 Executed 2 tests, with 5 failures (0 unexpected) in 13.691 (13.691) seconds
+Test Suite 'converterPackageTests.xctest' failed at 2026-09-13 20:24:09.515.
+	 Executed 2 tests, with 5 failures (0 unexpected) in 13.691 (13.691) seconds
+Test Suite 'Selected tests' failed at 2026-09-13 20:24:09.515.
+	 Executed 2 tests, with 5 failures (0 unexpected) in 13.691 (13.692) seconds
+◇ Test run started.
+↳ Testing Library Version: 1902
+↳ Target Platform: arm64e-apple-macos14.0
+✔ Test run with 0 tests in 0 suites passed after 0.001 seconds.

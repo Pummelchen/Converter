@@ -80,6 +80,65 @@ final class PipelineIntegrationTests: XCTestCase {
         XCTAssertEqual(result.exitCode, 0)
     }
 
+    // audit #0034: PipeCapture keeps at most 64 MiB per stream and drains the surplus; the drain
+    // test above emits ~168 KB, so the exceededCap branch never ran. This crosses the cap on BOTH
+    // streams (70 MB each) and checks the retained prefix is exactly the cap, the surplus is
+    // discarded rather than deadlocking the child, and the run finishes in bounded time.
+    func testRunCapsCapturedOutputAt64MiBOnBothStreams() throws {
+        let workspace = try IntegrationWorkspace()
+        let runner = workspace.runner()
+        let cap = 64 * 1024 * 1024
+        let start = Date()
+
+        let result = try runner.run(
+            "/bin/sh",
+            ["-c", "head -c 70000000 /dev/zero | tr '\\0' a; head -c 70000000 /dev/zero | tr '\\0' b 1>&2"],
+            timeoutSeconds: 240
+        )
+
+        let elapsed = Date().timeIntervalSince(start)
+        XCTAssertLessThan(elapsed, 120, "capped capture must not stall on the discarded surplus")
+        XCTAssertEqual(result.exitCode, 0)
+
+        XCTAssertEqual(result.stdout.utf8.count, cap, "stdout must be truncated to exactly the cap")
+        XCTAssertEqual(result.stdout.utf8.first, UInt8(ascii: "a"))
+        XCTAssertEqual(result.stdout.utf8.last, UInt8(ascii: "a"))
+        XCTAssertFalse(result.stdout.utf8.contains { $0 != UInt8(ascii: "a") }, "stdout must hold only 'a'")
+
+        XCTAssertEqual(result.stderr.utf8.count, cap, "stderr must be truncated to exactly the cap")
+        XCTAssertEqual(result.stderr.utf8.first, UInt8(ascii: "b"))
+        XCTAssertEqual(result.stderr.utf8.last, UInt8(ascii: "b"))
+        XCTAssertFalse(result.stderr.utf8.contains { $0 != UInt8(ascii: "b") }, "stderr must hold only 'b'")
+    }
+
+    // audit #0034: pins the cap boundary. Output landing exactly on 64 MiB is kept in full (an
+    // off-by-one would drop the last byte); one byte over is trimmed to the cap via
+    // `captured.append(chunk.prefix(remaining))`, so the trailing 'z' must never be retained.
+    func testRunCapturedOutputCapBoundaryKeepsExactCapAndDropsOneByteOver() throws {
+        let workspace = try IntegrationWorkspace()
+        let runner = workspace.runner()
+        let cap = 64 * 1024 * 1024
+
+        let exact = try runner.run(
+            "/bin/sh",
+            ["-c", "head -c \(cap) /dev/zero | tr '\\0' a"],
+            timeoutSeconds: 120
+        )
+        XCTAssertEqual(exact.exitCode, 0)
+        XCTAssertEqual(exact.stdout.utf8.count, cap, "output landing exactly on the cap must be kept whole")
+        XCTAssertEqual(exact.stdout.utf8.last, UInt8(ascii: "a"))
+
+        let oneOver = try runner.run(
+            "/bin/sh",
+            ["-c", "head -c \(cap) /dev/zero | tr '\\0' a; printf z"],
+            timeoutSeconds: 120
+        )
+        XCTAssertEqual(oneOver.exitCode, 0)
+        XCTAssertEqual(oneOver.stdout.utf8.count, cap, "one byte over the cap must be trimmed to the cap")
+        XCTAssertEqual(oneOver.stdout.utf8.last, UInt8(ascii: "a"), "the byte past the cap must be discarded")
+        XCTAssertFalse(oneOver.stdout.utf8.contains(UInt8(ascii: "z")), "the byte past the cap must be discarded")
+    }
+
     // audit #0009: a child that ignores SIGTERM must still be reaped once the timeout fires.
     // Before the fix the watchdog only sent SIGTERM and waitUntilExit blocked for the child's
     // natural lifetime (here 60 s; for a wedged ffmpeg, forever).
