@@ -2,15 +2,15 @@
 
 Session: `2026-09-13` · branch `audit/2026-09-13` · baseline commit `4bb136a`
 
-**known-total:100 done:37 open:62 blocked:1 new-this-session:100**
+**known-total:100 done:44 open:55 blocked:1 new-this-session:100**
 
 | status | count |
 |---|---|
 | START | 54 |
 | PROGRESS | 1 |
-| TEST | 7 |
+| TEST | 0 |
 | AUDIT | 0 |
-| DONE | 37 |
+| DONE | 44 |
 | BLOCKED | 1 |
 
 Status gates: START (reproduced/proven + expected behaviour written) → PROGRESS (diff) → TEST (failing-before/passing-after test pasted, full suite green, no new warnings) → AUDIT (cold re-read, all scanners re-run, no baseline regression, no new placeholder) → DONE (committed atomically). BLOCKED needs reason + what was tried + ≥2 options for a human.
@@ -29,7 +29,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 |---|---|---|---|---|---|---|---|
 | #0029 | S1 | repo | LICENSE (missing) | Repository has no LICENSE file | deps | BLOCKED |  |
 
-## Open S2 / S3 (59)
+## Open S2 / S3 (52)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
@@ -38,9 +38,6 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 | #0041 | S2 | converter/DependencyBootstrap | Sources/converter/DependencyBootstrap.swift:216-248 | Installer subprocesses have no timeout and discard diagnostics | incomplete | START |  |
 | #0042 | S2 | converter/ProcessRunner | Sources/converter/ProcessRunner.swift:112-124 | Child stdin inherited from the terminal | unsafe | START |  |
 | #0043 | S2 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:683-691,1013-1028 | containsChunk is a 64 KiB substring scan, not a RIFF chunk walk | unsafe | START |  |
-| #0044 | S2 | converter/Config | Sources/converter/Config.swift:203-205 | archive profile is a no-op placeholder | placeholder | TEST | fa443f1 |
-| #0045 | S2 | converter/Config | Sources/converter/Config.swift:197-200 | youtube_short overlay puts a known-failing encoder first at the default portrait size | logic | TEST | 6cee542 |
-| #0046 | S2 | converter/Config | Sources/converter/Config.swift:159-161 | Unknown config keys dropped at debug level only; BOM not stripped | incomplete | TEST | 7455803 |
 | #0047 | S2 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:16-32,59-63 | Source clip re-rendered and re-analysed for every short variant | perf | START |  |
 | #0050 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:327-336,367-387,591-600 | Loudness fallback publishes any true-peak breach with a misleading 'closest-safe' label | logic | START |  |
 | #0051 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:992,1170,1029,508 | Redundant padding verification, uncached ffmpeg -filters, per-file ladder resolution | perf | START |  |
@@ -55,15 +52,12 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 | #0060 | S2 | repo | album.txt; Sources/converter/AudioPipeline.swift:2063 | Personal track list committed as the production album.txt | placeholder | START |  |
 | #0061 | S2 | BW64Bridge | Sources/BW64Bridge/bw64_bridge.cpp:125-141,161 | Bridge does not bound channels; libbw64 uint16 blockAlignment wraps to heap overflow (unreachable via config today) | unsafe | START |  |
 | #0062 | S2 | BW64Bridge/Package | Sources/Package.swift:35-37; ThirdParty/libbw64/bw64/reader.hpp:220,225,227 | Strict C++ flags (-Wall -Wextra -Werror) fail on three benign sign-compare warnings in vendored libbw64 | deps | START |  |
-| #0063 | S2 | converterTests+Config | Sources/Tests/converterTests/converterTests.swift:128-140; Config.swift:400; VideoPipeline.swift:269 | SHORT_MP4_CLIP_SECONDS validated with Double() but consumed via parseFlexibleTimecode; test sets a value validate() rejects | test | TEST | 17816b6 |
 | #0064 | S2 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:1860-1900 | Scheduler-limit test can pass vacuously | test | START |  |
 | #0065 | S2 | converterTests | Sources/Tests/converterTests/converterTests.swift:1473-1550 | AsyncSemaphore tests rely on sleeps for ordering and hang instead of failing on a leaked permit | test | START |  |
 | #0066 | S2 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:1627-1637,1738-1748 | Full-pipeline tests require hevc_videotoolbox; fail on hosts without HW HEVC | test | START |  |
 | #0067 | S2 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:473-491 | Fade-out 'does not enforce delivery QC' test never proves the fixture is out of policy | test | START |  |
 | #0068 | S2 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:1933-1948 | Mastering fallback test cannot observe which path ran | test | START |  |
 | #0069 | S2 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:387-392 | Bare XCTAssertThrowsError on garbage MP3 accepts any error | test | START |  |
-| #0070 | S2 | converterTests | Sources/Tests/converterTests/converterTests.swift:737-749 | LoudnormArgument clamping untested at the exact bounds | test | TEST | e33815c |
-| #0071 | S2 | converter/Config+tests | Sources/converter/Config.swift:319-452 | Config validation gaps (ranges, empty strings, zero byte targets, CRC chunk bound, negative message) and only 3 keys tested | test | TEST | 87c940b |
 | #0072 | S2 | converter/VideoPipeline+tests | Sources/converter/VideoPipeline.swift:284-300,456-458; Actions.swift:875-876 | Short-cap boundary untested and duration thresholds inconsistent between short paths | test | START |  |
 | #0073 | S2 | converter (lint) | AUDIT/baseline/swiftlint-by-rule-4bb136a.txt | swiftlint baseline 533 (56 error-level): fix the actionable rules; structural rules deferred with rationale | style | START |  |
 | #0074 | S2 | converter (dead code) | Sources/converter/Actions.swift:114; ImagePipeline.swift:26-27; ProcessRunner.swift:78; ValidationPipeline.swift:857; Tests/IntegrationTestSupport.swift:32 | periphery-flagged unused declarations (6 unused, 15 assign-only) — prove reachability, then remove or retain with reason | dead | START |  |
@@ -74,7 +68,6 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 | #0079 | S3 | converter/ProcessRunner | Sources/converter/ProcessRunner.swift:156-160 | Signal deaths reported as ordinary exit codes | incomplete | START |  |
 | #0080 | S3 | converter/PipelineCore | Sources/converter/PipelineCore.swift:323-344,271 | Orphan-temp detection keys on local PID only; synced directories across hosts | logic | START |  |
 | #0081 | S3 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:203-210 | LUFS rebase widens the tolerance symmetrically | logic | START |  |
-| #0082 | S3 | repo/docs | config.txt; wiki Configuration | PREFLIGHT_SECONDS, DURATION_TOLERANCE_SEC, CRC_CHUNK_BYTES supported but undocumented | docs | TEST | bbf40ef |
 | #0083 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:905 | Noise seed is Int.random; reruns not reproducible | logic | START |  |
 | #0084 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:53-77 | Derived-media predicates use the first _silence_/_noise_ occurrence | logic | START |  |
 | #0085 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:1850-1854 | Track-number parse uses Unicode isNumber and can overflow | logic | START |  |
@@ -93,7 +86,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 | #0098 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:529,534 | Exact ffmpeg bass filter string pinned without a stated reason | test | START |  |
 | #0100 | S3 | converter/Actions | Sources/converter/Actions.swift (normalizedFullRunSource / resolveFullAudio) | Full-run source is renamed before preflight; a corrupt source loses its original name in the error | logic | START |  |
 
-## Done (37)
+## Done (44)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
@@ -131,8 +124,15 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 | #0001 | S2 | repo/AUDIT | AUDIT/inventory.md | Phase A: scope inventory, dependency graph, trust boundaries, blast radius | docs | DONE | 5fa6546 |
 | #0002 | S2 | repo/AUDIT | AUDIT/environment.md | Phase A: environment record and audit tooling install (§1/§1b) | docs | DONE | 5fa6546 |
 | #0003 | S2 | repo/AUDIT | AUDIT/baseline.md | Phase A: baseline metrics at 4bb136a (§3) | docs | DONE | 2184906 |
+| #0044 | S2 | converter/Config | Sources/converter/Config.swift:203-205 | archive profile is a no-op placeholder | placeholder | DONE | fa443f1 |
+| #0045 | S2 | converter/Config | Sources/converter/Config.swift:197-200 | youtube_short overlay puts a known-failing encoder first at the default portrait size | logic | DONE | 6cee542 |
+| #0046 | S2 | converter/Config | Sources/converter/Config.swift:159-161 | Unknown config keys dropped at debug level only; BOM not stripped | incomplete | DONE | 7455803 |
 | #0048 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:94-97; Actions.swift:1071 | -master is not idempotent (re-masters its own _mastered outputs) | logic | DONE | 8fac9dc |
 | #0049 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:2104-2113 | -flactoalbum concatenates the pipeline's own derived/archival FLACs | logic | DONE | 8fac9dc |
+| #0063 | S2 | converterTests+Config | Sources/Tests/converterTests/converterTests.swift:128-140; Config.swift:400; VideoPipeline.swift:269 | SHORT_MP4_CLIP_SECONDS validated with Double() but consumed via parseFlexibleTimecode; test sets a value validate() rejects | test | DONE | 17816b6 |
+| #0070 | S2 | converterTests | Sources/Tests/converterTests/converterTests.swift:737-749 | LoudnormArgument clamping untested at the exact bounds | test | DONE | e33815c |
+| #0071 | S2 | converter/Config+tests | Sources/converter/Config.swift:319-452 | Config validation gaps (ranges, empty strings, zero byte targets, CRC chunk bound, negative message) and only 3 keys tested | test | DONE | 87c940b |
+| #0082 | S3 | repo/docs | config.txt; wiki Configuration | PREFLIGHT_SECONDS, DURATION_TOLERANCE_SEC, CRC_CHUNK_BYTES supported but undocumented | docs | DONE | bbf40ef |
 | #0099 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:34,1967 | Test target compiles with two warnings (bare 'Error' existential, unused 'wav' binding) | style | DONE | 9343977 |
 
 ## Full records
@@ -655,7 +655,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **evidence-before:** AUDIT/findings/L2-validation-config.md V-4; L6-tests.md T-18
 - **notes:** Bounds-checked chunk walker; boundary tests for header/PCM parsers.
 
-### #0044 · S2 · TEST · archive profile is a no-op placeholder
+### #0044 · S2 · DONE · archive profile is a no-op placeholder
 
 - **project/module:** converter/Config
 - **file:line:** Sources/converter/Config.swift:203-205
@@ -664,10 +664,10 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **discovered-by:** reviewer V-5
 - **evidence-before:** AUDIT/findings/L2-validation-config.md V-5
 - **fix-summary:** The no-op archive profile is removed from RunProfile, the CLI help profile list and config.txt; PROFILE=archive / --profile archive fail with the usual 'must be one of' message. Wiki Configuration still lists it (docs sync #0030).
-- **evidence-after:** AUDIT/evidence/0044-before.log, 0044-after.log (rejection + help-text test pass); swiftlint 533/56. Full suite pending
+- **evidence-after:** AUDIT/evidence/0044-before.log, 0044-after.log (rejection + help-text test pass); swiftlint 533/56. Full suite (AUDIT/evidence/config-group-fullsuite.txt): 215 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** fa443f1
 
-### #0045 · S2 · TEST · youtube_short overlay puts a known-failing encoder first at the default portrait size
+### #0045 · S2 · DONE · youtube_short overlay puts a known-failing encoder first at the default portrait size
 
 - **project/module:** converter/Config
 - **file:line:** Sources/converter/Config.swift:197-200
@@ -676,10 +676,10 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **discovered-by:** reviewer V-6
 - **evidence-before:** AUDIT/findings/L2-validation-config.md V-6
 - **fix-summary:** youtube_short no longer puts h264_videotoolbox first; validate() rejects an h264_videotoolbox PRIMARY above 4096 px on either axis (measured: 4096x4096 encodes, 4098x4096 fails with -12903) for both ladders; fast_preview now sizes shorts 1080x1920 so its VT-first ladder is valid.
-- **evidence-after:** AUDIT/evidence/0045-before.log, 0045-after.log (ladder order + session-limit rejection tests pass); swiftlint 533/56. Full suite pending
+- **evidence-after:** AUDIT/evidence/0045-before.log, 0045-after.log (ladder order + session-limit rejection tests pass); swiftlint 533/56. Full suite (AUDIT/evidence/config-group-fullsuite.txt): 215 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** 6cee542
 
-### #0046 · S2 · TEST · Unknown config keys dropped at debug level only; BOM not stripped
+### #0046 · S2 · DONE · Unknown config keys dropped at debug level only; BOM not stripped
 
 - **project/module:** converter/Config
 - **file:line:** Sources/converter/Config.swift:159-161
@@ -688,7 +688,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **discovered-by:** reviewer V-7; tests T-20
 - **evidence-before:** AUDIT/findings/L2-validation-config.md V-7
 - **fix-summary:** Unknown config.txt keys are logged at WARN naming key and file (kept as skip, per the wiki contract); a UTF-8 BOM is already stripped by Foundation's String(contentsOf:) — pinned by test, no production strip needed.
-- **evidence-after:** AUDIT/evidence/0046-before.log (no WARN line before), 0046-after.log (7 config tests pass); swiftlint 533/56. Full suite pending
+- **evidence-after:** AUDIT/evidence/0046-before.log (no WARN line before), 0046-after.log (7 config tests pass); swiftlint 533/56. Full suite (AUDIT/evidence/config-group-fullsuite.txt): 215 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** 7455803
 
 ### #0047 · S2 · START · Source clip re-rendered and re-analysed for every short variant
@@ -847,7 +847,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **evidence-before:** AUDIT/baseline.md build table; AUDIT/findings/L0-L3-bridge-repo.md B-9
 - **notes:** Decision: document a minimal vendored patch (explicit casts + tellg<0 check) in PATCHES.md, or compile vendored headers as system headers; keep -Werror on first-party C++.
 
-### #0063 · S2 · TEST · SHORT_MP4_CLIP_SECONDS validated with Double() but consumed via parseFlexibleTimecode; test sets a value validate() rejects
+### #0063 · S2 · DONE · SHORT_MP4_CLIP_SECONDS validated with Double() but consumed via parseFlexibleTimecode; test sets a value validate() rejects
 
 - **project/module:** converterTests+Config
 - **file:line:** Sources/Tests/converterTests/converterTests.swift:128-140; Config.swift:400; VideoPipeline.swift:269
@@ -856,7 +856,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **discovered-by:** reviewer T-11, V-12
 - **evidence-before:** AUDIT/findings/L6-tests.md T-11; L2-validation-config.md V-12
 - **fix-summary:** validate() parses SHORT_MP4_CLIP_SECONDS with parseFlexibleTimecode (the consumer), so '58', '0:58', '1:30' are accepted consistently and 0 / malformed / 1e300 are rejected naming the key; the short-duration test loads '0:30' through ProjectConfig.load.
-- **evidence-after:** AUDIT/evidence/0063-before.log, 0063-after.log; swiftlint 533/56. Full suite pending
+- **evidence-after:** AUDIT/evidence/0063-before.log, 0063-after.log; swiftlint 533/56. Full suite (AUDIT/evidence/config-group-fullsuite.txt): 215 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** 17816b6
 
 ### #0064 · S2 · START · Scheduler-limit test can pass vacuously
@@ -913,7 +913,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **discovered-by:** reviewer T-17
 - **evidence-before:** AUDIT/findings/L6-tests.md T-17
 
-### #0070 · S2 · TEST · LoudnormArgument clamping untested at the exact bounds
+### #0070 · S2 · DONE · LoudnormArgument clamping untested at the exact bounds
 
 - **project/module:** converterTests
 - **file:line:** Sources/Tests/converterTests/converterTests.swift:737-749
@@ -922,10 +922,10 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **discovered-by:** reviewer T-19
 - **evidence-before:** AUDIT/findings/L6-tests.md T-19
 - **fix-summary:** LoudnormArgument clamps tested at the exact bounds (-70, -5, -9, 0, 1, 50), rounding edges, '-0.00', a -120..120 sweep and non-finite inputs.
-- **evidence-after:** AUDIT/evidence/0070-before.log (bounds moved inward by 0.01: 27 failures), 0070-after.log; swiftlint 531/55. Full suite pending
+- **evidence-after:** AUDIT/evidence/0070-before.log (bounds moved inward by 0.01: 27 failures), 0070-after.log; swiftlint 531/55. Full suite (AUDIT/evidence/config-group-fullsuite.txt): 215 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** e33815c
 
-### #0071 · S2 · TEST · Config validation gaps (ranges, empty strings, zero byte targets, CRC chunk bound, negative message) and only 3 keys tested
+### #0071 · S2 · DONE · Config validation gaps (ranges, empty strings, zero byte targets, CRC chunk bound, negative message) and only 3 keys tested
 
 - **project/module:** converter/Config+tests
 - **file:line:** Sources/converter/Config.swift:319-452
@@ -934,7 +934,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **discovered-by:** reviewer T-20, V-10, V-11
 - **evidence-before:** AUDIT/findings/L6-tests.md T-20; L2-validation-config.md V-10, V-11
 - **fix-summary:** requireRange/requireNumericRange/requireProjectStandard helpers; rules for WAV_WRITE_BEXT, FLAC_COMPRESSION_LEVEL, PNG levels, JPEG byte targets, filter/sampling non-empty, CRF 0-51, VT quality 1-100, CRC_CHUNK_BYTES <= 64 MiB; composite standard messages split per key; parseInt says non-negative. Table-driven test of 96 invalid values, boundary acceptance test, repository config.txt loads warning-free.
-- **evidence-after:** AUDIT/evidence/0071-before.log (35 failures on reverted rules), 0071-after.log; swiftlint 531/55. Full suite pending
+- **evidence-after:** AUDIT/evidence/0071-before.log (35 failures on reverted rules), 0071-after.log; swiftlint 531/55. Full suite (AUDIT/evidence/config-group-fullsuite.txt): 215 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** 87c940b
 - **notes:** requireRange/requireNonEmpty + table-driven tests.
 
@@ -1030,7 +1030,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **discovered-by:** reviewer V-9
 - **evidence-before:** AUDIT/findings/L2-validation-config.md V-9
 
-### #0082 · S3 · TEST · PREFLIGHT_SECONDS, DURATION_TOLERANCE_SEC, CRC_CHUNK_BYTES supported but undocumented
+### #0082 · S3 · DONE · PREFLIGHT_SECONDS, DURATION_TOLERANCE_SEC, CRC_CHUNK_BYTES supported but undocumented
 
 - **project/module:** repo/docs
 - **file:line:** config.txt; wiki Configuration
@@ -1039,7 +1039,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **discovered-by:** reviewer V-14, B-13
 - **evidence-before:** AUDIT/findings/L2-validation-config.md V-14
 - **fix-summary:** config.txt documents PREFLIGHT_SECONDS, DURATION_TOLERANCE_SEC and CRC_CHUNK_BYTES with defaults; test asserts config.txt keys == ProjectConfig.supportedKeys and shipped values == defaults. Wiki Configuration page pending (#0030).
-- **evidence-after:** AUDIT/evidence/0082-before.log, 0082-after.log; swiftlint 531/55. Full suite pending
+- **evidence-after:** AUDIT/evidence/0082-before.log, 0082-after.log; swiftlint 531/55. Full suite (AUDIT/evidence/config-group-fullsuite.txt): 215 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** bbf40ef
 - **notes:** Add a test asserting config.txt keys == supportedKeys.
 
