@@ -529,7 +529,11 @@ extension ConverterTool {
         guard let probe = try imageProbe(file) else {
             throw AppError("Image probe failed: \(file.path)")
         }
-        _ = try runner.run("magick", [file.path, "-resize", "1x1!", "null:"])
+        // A full decode of an 8K master costs seconds and the image pipeline preflights the
+        // same master before every derivative, so it is done once per file version (#0052).
+        try probeCache.verifyImageDecodeOnce(key: try fileProbeFingerprint(file)) {
+            _ = try runner.run("magick", [file.path, "-resize", "1x1!", "null:"])
+        }
         let autoExpected: String?
         switch file.pathExtension.lowercasedASCII {
         case "png":

@@ -1,0 +1,29 @@
+Test Suite 'Selected tests' started at 2026-09-13 23:33:33.291.
+Test Suite 'converterPackageTests.xctest' started at 2026-09-13 23:33:33.292.
+Test Suite 'PipelineIntegrationTests' started at 2026-09-13 23:33:33.292.
+Test Case '-[converterTests.PipelineIntegrationTests testImageConversionsAndDerivativesProduceVerifiedOutputs]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testImageConversionsAndDerivativesProduceVerifiedOutputs]' passed (4.338 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testImageOutputsAreNormalizedToSRGB]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testImageOutputsAreNormalizedToSRGB]' passed (0.485 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testImagePreflightDecodesEachFileVersionOnce]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testImagePreflightDecodesEachFileVersionOnce]' passed (1.011 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testProbeCacheInvalidatesWhenFileFingerprintChanges]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testProbeCacheInvalidatesWhenFileFingerprintChanges]' passed (0.281 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testRejectsEmptyImageInputWithoutPublishingOutputs]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testRejectsEmptyImageInputWithoutPublishingOutputs]' passed (0.002 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testRejectsJPEGExtensionWithPNGPayload]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testRejectsJPEGExtensionWithPNGPayload]' passed (0.214 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testRejectsPNGExtensionWithJPEGPayload]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testRejectsPNGExtensionWithJPEGPayload]' passed (0.206 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testVisualSubsCreatesVerifiedPNGViaPublishedOutput]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testVisualSubsCreatesVerifiedPNGViaPublishedOutput]' passed (0.348 seconds).
+Test Suite 'PipelineIntegrationTests' passed at 2026-09-13 23:33:40.180.
+	 Executed 8 tests, with 0 failures (0 unexpected) in 6.887 (6.888) seconds
+Test Suite 'converterPackageTests.xctest' passed at 2026-09-13 23:33:40.180.
+	 Executed 8 tests, with 0 failures (0 unexpected) in 6.887 (6.888) seconds
+Test Suite 'Selected tests' passed at 2026-09-13 23:33:40.180.
+	 Executed 8 tests, with 0 failures (0 unexpected) in 6.887 (6.889) seconds
+◇ Test run started.
+↳ Testing Library Version: 1902
+↳ Target Platform: arm64e-apple-macos14.0
+✔ Test run with 0 tests in 0 suites passed after 0.001 seconds.

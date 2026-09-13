@@ -3028,4 +3028,37 @@ final class PipelineIntegrationTests: XCTestCase {
         try tool.verifySourceLoudnessPreserved(source: source, output: clip)
         XCTAssertEqual(try renders(from: source.path, to: "qc_clip"), 1, "one comparison clip for two identical checks")
     }
+
+    // audit #0052: preflightImageInput decodes the whole image (magick -resize 1x1! null:) to
+    // prove the pixel data is intact, and did so on every call; the image pipeline preflights
+    // the same 8K master before each derivative, so one run decoded it about ten times. The
+    // decode verifies the bytes on disk, so once a fingerprint has passed it must not run
+    // again, a rewritten file (new size/mtime) must be decoded afresh, and a failed decode
+    // must not be remembered as a pass.
+    func testImagePreflightDecodesEachFileVersionOnce() throws {
+        let log = try CommandInvocationLog(recording: "magick")
+        let workspace = try IntegrationWorkspace(inheritedEnvironment: log.environment)
+        try workspace.requireCommands(["magick"])
+        let image = try workspace.createImage(name: "master", ext: "png", width: 320, height: 180)
+        let tool = try workspace.makeTool(arguments: ["-aipix"])
+        let decode = "-resize 1x1! null:"
+
+        try log.reset()
+        for _ in 0 ..< 3 {
+            try tool.preflightPNGInput(image)
+        }
+        try tool.preflightImageInput(image)
+        XCTAssertEqual(try log.count(containing: decode), 1, "one full decode for four preflights of one file")
+        XCTAssertEqual(try log.count(containing: "identify"), 1, "the header probe stays cached as before")
+
+        _ = try workspace.writeGarbageFile(name: "master", ext: "png")
+        XCTAssertThrowsError(try tool.preflightPNGInput(image), "garbage must not pass on the old fingerprint")
+        XCTAssertThrowsError(try tool.preflightPNGInput(image), "a failed preflight is not remembered as a pass")
+
+        _ = try workspace.createImage(name: "master", ext: "png", width: 160, height: 90)
+        try tool.preflightPNGInput(image)
+        try tool.preflightPNGInput(image)
+        XCTAssertEqual(try log.count(containing: decode), 2, "a rewritten file is decoded exactly once more")
+        XCTAssertEqual(try tool.imageDimensions(image)?.0, 160, "the probe follows the rewritten file too")
+    }
 }

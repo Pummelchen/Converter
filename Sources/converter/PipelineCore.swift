@@ -113,6 +113,7 @@ private struct ProbeCacheState {
     var audibleAudio: [FileProbeFingerprint: Bool] = [:]
     var audioQCResults: [AudioQCCacheKey: AudioQCResult] = [:]
     var audioSegmentQCResults: [AudioSegmentQCCacheKey: AudioQCResult] = [:]
+    var verifiedImageDecodes: Set<FileProbeFingerprint> = []
 }
 
 final class ProbeCache: Sendable {
@@ -168,6 +169,15 @@ final class ProbeCache: Sendable {
         let value = try compute()
         state.withLock { $0.audioSegmentQCResults[key] = value }
         return value
+    }
+
+    // A failed decode throws out unremembered, so a file repaired in place is judged afresh.
+    func verifyImageDecodeOnce(key: FileProbeFingerprint, verify: () throws -> Void) throws {
+        if state.withLock({ $0.verifiedImageDecodes.contains(key) }) {
+            return
+        }
+        try verify()
+        state.withLock { _ = $0.verifiedImageDecodes.insert(key) }
     }
 }
 
