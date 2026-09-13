@@ -357,7 +357,7 @@
       "evidence_before": "AUDIT/findings/L2-video-image-actions-cli.md X-6; L2-audio.md A-6; L6-tests.md T-8",
       "fix_summary": "Shared withEncoderLadder + encoderIndependent in VideoPipeline; used by renderVideoWithEncoderLadder and encodeDurationPaddedMP4.",
       "evidence_after": "AUDIT/evidence/0021-before.log (padded ladder error named no rung); 0021-after.log: 37 tests + unit test pass; swiftlint 534/56. Full suite: next batch run.",
-      "commit": "",
+      "commit": "8298dd8",
       "notes": "One shared ladder helper; all rungs reported; encoder-independent stop."
     },
     {
