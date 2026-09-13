@@ -339,7 +339,7 @@
       "session": "2026-09-13",
       "evidence_before": "AUDIT/findings/L2-audio.md A-5",
       "fix_summary": "verifyBassHeadroom: processed vs source clipped-sample count under a headroom-only policy; fails with an actionable message.",
-      "evidence_after": "AUDIT/evidence/0020-before.log; 0020-after.log: 8 bass tests pass; swiftlint 535/56. Full suite: next batch run.",
+      "evidence_after": "AUDIT/evidence/0020-before.log; 0020-after.log: 8 bass tests pass; swiftlint 535/56. Full suite: next batch run. NOTE: the batch full-suite run was interrupted at 52/183 passed, 0 failures when the session was moved; rerun the full suite before marking DONE.",
       "commit": "ed9bc61",
       "notes": ""
     },
@@ -356,7 +356,7 @@
       "session": "2026-09-13",
       "evidence_before": "AUDIT/findings/L2-video-image-actions-cli.md X-6; L2-audio.md A-6; L6-tests.md T-8",
       "fix_summary": "Shared withEncoderLadder + encoderIndependent in VideoPipeline; used by renderVideoWithEncoderLadder and encodeDurationPaddedMP4.",
-      "evidence_after": "AUDIT/evidence/0021-before.log (padded ladder error named no rung); 0021-after.log: 37 tests + unit test pass; swiftlint 534/56. Full suite: next batch run.",
+      "evidence_after": "AUDIT/evidence/0021-before.log (padded ladder error named no rung); 0021-after.log: 37 tests + unit test pass; swiftlint 534/56. Full suite: next batch run. NOTE: the batch full-suite run was interrupted at 52/183 passed, 0 failures when the session was moved; rerun the full suite before marking DONE.",
       "commit": "8298dd8",
       "notes": "One shared ladder helper; all rungs reported; encoder-independent stop."
     },
@@ -435,15 +435,15 @@
       "location": "Sources/BW64Bridge/bw64_bridge.cpp:178-197",
       "title": "Disk-write failures undetectable; bridge self-validates against the ds64 size it wrote",
       "category": "bug",
-      "status": "START",
+      "status": "PROGRESS",
       "host": "local",
       "discovered_by": "reviewer bridge B-1",
       "session": "2026-09-13",
       "evidence_before": "AUDIT/findings/L0-L3-bridge-repo.md B-1",
-      "fix_summary": "",
-      "evidence_after": "",
+      "fix_summary": "WRITTEN, NOT YET VERIFIED (session ended): requireCompleteDataChunk in bw64_bridge.cpp compares the real file size with data-chunk position + 8 + dataBytes (+pad) before and after finalization; forceBW64Container now closes the stream and checks fail(); test testBW64WriterReportsATruncatedOutput (1 MB RAM disk via hdiutil, 1.5 MB PCM) written in PipelineIntegrationTests.swift. Tree builds with -warnings-as-errors (--build-tests).",
+      "evidence_after": "None yet. Next session: (1) record failing-before by temporarily reverting ONLY Sources/BW64Bridge/bw64_bridge.cpp (git stash push -- that file), run `swift test --filter testBW64WriterReportsATruncatedOutput` (expect: does not throw), restore; (2) run the same test with the fix (expect: throws 'size mismatch'); (3) run `swift test --filter BW64` and the full suite; (4) lint; commit via AUDIT/tools/commit_one.py.",
       "commit": "",
-      "notes": "Compare real file size to expected; check stream state; close+check in forceBW64Container."
+      "notes": "Compare real file size to expected; check stream state; close+check in forceBW64Container. Committed as work-in-progress so the branch carries it; do not mark TEST/DONE until the evidence above exists."
     },
     {
       "id": "#0027",
@@ -1704,5 +1704,6 @@
       "commit": "",
       "notes": "Not folded into #0022 because the naming unit tests use empty placeholder files and would all need real media if preflight moved ahead of the rename; needs its own design (probe-only preflight of the chosen file before renaming)."
     }
-  ]
+  ],
+  "handover": "AUDIT/HANDOVER.md"
 }

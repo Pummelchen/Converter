@@ -129,6 +129,47 @@ final class PipelineIntegrationTests: XCTestCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: workspace.output.path + "/art_Short_8K_4K.png"))
     }
 
+    // audit #0026: the bridge used to validate a truncated output against the size it had
+    // written into the header itself, so a full disk produced a "successful" short file. The
+    // real file size must match; this test writes 1.5 MB of PCM onto a 1 MB RAM disk.
+    func testBW64WriterReportsATruncatedOutput() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg"])
+        let runner = workspace.runner()
+        let attach: ProcessResult
+        do {
+            attach = try runner.run("/usr/bin/hdiutil", ["attach", "-nomount", "ram://2048"])
+        } catch {
+            throw XCTSkip("RAM disk unavailable on this host: \(error)")
+        }
+        guard let device = attach.stdout.split(whereSeparator: \.isWhitespace).first.map(String.init) else {
+            throw XCTSkip("hdiutil returned no device")
+        }
+        defer { _ = try? runner.run("/usr/bin/hdiutil", ["detach", device, "-force"]) }
+        _ = try runner.run("/sbin/newfs_hfs", ["-v", "converter-audit", device])
+        _ = try runner.run("/usr/sbin/diskutil", ["mount", device])
+        let info = try runner.run("/usr/sbin/diskutil", ["info", device]).stdout
+        guard let mountLine = info.split(whereSeparator: \.isNewline).first(where: { $0.contains("Mount Point:") }),
+              let mountPoint = mountLine.split(separator: ":", maxSplits: 1).last?.trimmingCharacters(in: .whitespaces)
+        else {
+            throw XCTSkip("RAM disk did not mount")
+        }
+
+        let raw = workspace.output.appendingPathComponent("pcm.f32le")
+        _ = try runner.run("ffmpeg", [
+            "-hide_banner", "-nostdin", "-v", "error", "-y",
+            "-f", "lavfi", "-i", "sine=frequency=440:duration=2.0:sample_rate=96000",
+            "-ac", "2", "-f", "f32le", "-acodec", "pcm_f32le", raw.path
+        ])
+        let tool = try workspace.makeTool(arguments: ["-full"])
+        let output = URL(fileURLWithPath: mountPoint).appendingPathComponent("truncated.wav")
+        XCTAssertThrowsError(
+            try tool.writeBW64FileFromRawFloatPCM(inputPCM: raw, output: output, channels: 2, sampleRate: 96_000)
+        ) { error in
+            XCTAssertTrue("\(error)".contains("size mismatch"), "\(error)")
+        }
+    }
+
     // The stills must show exactly what the shorts show: the fitted one pads with black, the
     // centre cut fills the frame. Verified on pixels, not on the command that produced them.
     func testPortraitShortStillsMatchTheirRenderFraming() throws {

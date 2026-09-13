@@ -101,6 +101,32 @@ void forceBW64Container(const std::string& path, std::uint64_t dataBytes) {
     if (!stream) {
         throw std::runtime_error("failed to write BW64 header: " + path);
     }
+    stream.close();
+    if (stream.fail()) {
+        throw std::runtime_error("failed to close BW64 output after finalization: " + path);
+    }
+}
+
+// libbw64's writer never checks its stream, so a short write (disk full, I/O error) leaves a
+// truncated data chunk behind while every header field still claims the full length. The
+// only trustworthy witness is the file itself: its size must equal the data chunk's start plus
+// the bytes that were meant to be written (plus RIFF's pad byte for odd sizes).
+void requireCompleteDataChunk(const std::string& path, std::uint64_t dataBytes) {
+    auto reader = bw64::readFile(path);
+    const auto chunks = reader->chunks();
+    const auto dataChunk = std::find_if(chunks.begin(), chunks.end(), [](const bw64::ChunkHeader& header) {
+        return header.id == bw64::utils::fourCC("data");
+    });
+    if (dataChunk == chunks.end()) {
+        throw std::runtime_error("output has no data chunk: " + path);
+    }
+    const std::uint64_t expectedSize = dataChunk->position + 8u + dataBytes + (dataBytes % 2u);
+    const std::uint64_t actualSize = std::filesystem::file_size(path);
+    if (actualSize != expectedSize) {
+        throw std::runtime_error(
+            "output size mismatch for " + path + ": expected " + std::to_string(expectedSize) +
+            " bytes but found " + std::to_string(actualSize) + " (short write, disk full?)");
+    }
 }
 
 void validateOutput(const Options& options, std::uint64_t framesWritten) {
@@ -193,8 +219,10 @@ void writeBW64FromFile(const Options& options) {
     writer.reset();
 
     const std::uint64_t dataBytes = framesWritten * static_cast<std::uint64_t>(options.channels) * static_cast<std::uint64_t>(options.bitDepth / 8u);
+    requireCompleteDataChunk(options.outputPath, dataBytes);
     forceBW64Container(options.outputPath, dataBytes);
     validateOutput(options, framesWritten);
+    requireCompleteDataChunk(options.outputPath, dataBytes);
 }
 
 void writeError(const std::string& message, char* errorBuffer, size_t errorBufferSize) {
