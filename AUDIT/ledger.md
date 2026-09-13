@@ -26,7 +26,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 | #0031 | S1 | converterTests | Sources/Tests/converterTests/IntegrationTestSupport.swift:25,133-143 | Integration workspace inherits OUTPUT_DIR/SRC_DIR/OUT_DIR/CONFIG_FILE/DEBUG from the host shell | test | TEST | d047f82 |
 | #0032 | S1 | converterTests | Sources/converter/PipelineCore.swift:487-505 | publishTemp restore-on-failure branch has no test | test | TEST | f4d018d |
 | #0033 | S1 | converterTests | Sources/converter/PipelineCore.swift:551-561 | requireDirectChild never tested with .., symlinks, absolute paths | test | TEST | 1682212 |
-| #0034 | S1 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:63-81 | PipeCapture cap test never reaches the 64 MiB cap | test | TEST |  |
+| #0034 | S1 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:63-81 | PipeCapture cap test never reaches the 64 MiB cap | test | TEST | 2185827 |
 | #0035 | S1 | converterTests | Sources/converter/Actions.swift:126-154 | --continue-on-error batch semantics and summary untested | test | START |  |
 | #0036 | S1 | converterTests | Sources/converter/PipelineCore.swift:842-856 | -clean has no test guarding 'never deletes user files' | test | START |  |
 | #0037 | S1 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:1138-1167 | loudnessPreservingQCPolicy has no direct test; 'hot' fixture is not hot | test | START |  |
@@ -559,6 +559,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **evidence-before:** AUDIT/findings/L6-tests.md T-5
 - **fix-summary:** Integration tests cross the 64 MiB capture cap on stdout and stderr (exact size, right byte, exit 0, bounded time) and pin the boundary (exactly-cap kept whole, one byte over trimmed).
 - **evidence-after:** AUDIT/evidence/0034-before.log (cap mutated to 65 MiB: 5 failures), 0034-after.log (3 pass); swiftlint 533/56. Full suite pending
+- **commit sha:** 2185827
 
 ### #0035 · S1 · START · --continue-on-error batch semantics and summary untested
 

@@ -579,7 +579,7 @@
       "evidence_before": "AUDIT/findings/L6-tests.md T-5",
       "fix_summary": "Integration tests cross the 64 MiB capture cap on stdout and stderr (exact size, right byte, exit 0, bounded time) and pin the boundary (exactly-cap kept whole, one byte over trimmed).",
       "evidence_after": "AUDIT/evidence/0034-before.log (cap mutated to 65 MiB: 5 failures), 0034-after.log (3 pass); swiftlint 533/56. Full suite pending",
-      "commit": "",
+      "commit": "2185827",
       "notes": ""
     },
     {
