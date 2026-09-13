@@ -6,9 +6,9 @@ Session: `2026-09-13` · branch `audit/2026-09-13` · baseline commit `4bb136a`
 
 | status | count |
 |---|---|
-| START | 68 |
+| START | 67 |
 | PROGRESS | 1 |
-| TEST | 2 |
+| TEST | 3 |
 | AUDIT | 0 |
 | DONE | 28 |
 | BLOCKED | 1 |
@@ -23,7 +23,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 | #0005 | S1 | repo | wiki | Create and maintain the wiki audit tracker page mirroring the ledger (§9) | docs | PROGRESS | 0ac7242 |
 | #0015 | S1 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:18-32,97,197-201 | Clipped-samples rebase is not sample-rate invariant (source clip measured at 96 kHz, render at its own rate) | logic | TEST | 3d7ee94 |
 | #0030 | S1 | repo/docs | README.md:25,59; Sources/converter/CLI.swift:461-481,664-665; CONTRIBUTING.md:59; wiki Home/Full-Run-Contract | README, CLI help, CONTRIBUTING and wiki contradict actual behaviour (source rename, audio alteration, portrait input, --keep-full-name, 58 s, auto-install wording) | docs | START |  |
-| #0031 | S1 | converterTests | Sources/Tests/converterTests/IntegrationTestSupport.swift:25,133-143 | Integration workspace inherits OUTPUT_DIR/SRC_DIR/OUT_DIR/CONFIG_FILE/DEBUG from the host shell | test | START |  |
+| #0031 | S1 | converterTests | Sources/Tests/converterTests/IntegrationTestSupport.swift:25,133-143 | Integration workspace inherits OUTPUT_DIR/SRC_DIR/OUT_DIR/CONFIG_FILE/DEBUG from the host shell | test | TEST |  |
 | #0032 | S1 | converterTests | Sources/converter/PipelineCore.swift:487-505 | publishTemp restore-on-failure branch has no test | test | START |  |
 | #0033 | S1 | converterTests | Sources/converter/PipelineCore.swift:551-561 | requireDirectChild never tested with .., symlinks, absolute paths | test | TEST | 1682212 |
 | #0034 | S1 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:63-81 | PipeCapture cap test never reaches the 64 MiB cap | test | START |  |
@@ -513,7 +513,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **evidence-before:** AUDIT/findings/L0-L3-bridge-repo.md B-4,B-14; L2-video-image-actions-cli.md X-15
 - **notes:** Do after the behavioural fixes so docs describe the final state.
 
-### #0031 · S1 · START · Integration workspace inherits OUTPUT_DIR/SRC_DIR/OUT_DIR/CONFIG_FILE/DEBUG from the host shell
+### #0031 · S1 · TEST · Integration workspace inherits OUTPUT_DIR/SRC_DIR/OUT_DIR/CONFIG_FILE/DEBUG from the host shell
 
 - **project/module:** converterTests
 - **file:line:** Sources/Tests/converterTests/IntegrationTestSupport.swift:25,133-143
@@ -521,6 +521,8 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **host-used:** local
 - **discovered-by:** reviewer tests T-1
 - **evidence-before:** AUDIT/findings/L6-tests.md T-1
+- **fix-summary:** Test helpers strip OUTPUT_DIR/SRC_DIR/OUT_DIR/CONFIG_FILE/DEBUG and all ProjectConfig.supportedKeys from the inherited environment; IntegrationWorkspace.makeTool always passes --output-dir and --config; IntegrationWorkspace(inheritedEnvironment:) lets tests inject a poisoned environment. Matrix test uses the sanitised environment too.
+- **evidence-after:** AUDIT/evidence/0031-before.log (17 failures with unsanitised helpers), 0031-after.log (2 new tests + 14-test and 12-test slices pass); swiftlint 533/56. Full suite pending
 
 ### #0032 · S1 · START · publishTemp restore-on-failure branch has no test
 

@@ -2446,4 +2446,39 @@ final class PipelineIntegrationTests: XCTestCase {
         XCTAssertTrue(
             FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("MyAlbum.m4a").path))
     }
+
+    // audit #0031: IntegrationWorkspace handed ProcessInfo's environment straight to CLIOptions.parse,
+    // ProjectConfig.load and ProcessRunner, and makeTool never pinned --output-dir/--config, so
+    // OUTPUT_DIR/SRC_DIR/OUT_DIR/CONFIG_FILE/DEBUG exported in a developer's shell redirected every
+    // integration test at real user directories. The workspace must drop those keys, keep everything
+    // else (PATH above all) and resolve every path inside the temporary workspace.
+    func testWorkspaceIgnoresHostDirectoryAndDebugOverrides() throws {
+        var poisoned = ProcessInfo.processInfo.environment
+        poisoned["OUTPUT_DIR"] = "/nonexistent"
+        poisoned["SRC_DIR"] = "/nonexistent"
+        poisoned["OUT_DIR"] = "/nonexistent"
+        poisoned["CONFIG_FILE"] = "/nonexistent/config.txt"
+        poisoned["DEBUG"] = "1"
+        // ProjectConfig.load lets any supported config key in the environment override config.txt.
+        poisoned["PROFILE"] = "fast_preview"
+        poisoned["AUDIO_QC_TARGET_LUFS"] = "-5"
+        poisoned["CONVERTER_TEST_MARKER"] = "kept"
+
+        let workspace = try IntegrationWorkspace(inheritedEnvironment: poisoned)
+        for key in ["OUTPUT_DIR", "SRC_DIR", "OUT_DIR", "CONFIG_FILE", "DEBUG", "PROFILE", "AUDIO_QC_TARGET_LUFS"] {
+            XCTAssertNil(workspace.environment[key], "\(key) leaked into the workspace environment")
+        }
+        XCTAssertEqual(workspace.environment["PATH"], poisoned["PATH"])
+        XCTAssertEqual(workspace.environment["CONVERTER_TEST_MARKER"], "kept")
+
+        let tool = try workspace.makeTool(arguments: ["-help"])
+        XCTAssertEqual(tool.cli.outDir.path, workspace.output.path)
+        XCTAssertEqual(tool.cli.srcDir.path, workspace.output.path)
+        XCTAssertEqual(tool.cli.configFile.path, workspace.root.appendingPathComponent("config.txt").path)
+        XCTAssertFalse(tool.cli.debug)
+        XCTAssertNil(tool.environment["DEBUG"])
+        XCTAssertEqual(tool.environment["PATH"], poisoned["PATH"])
+        XCTAssertEqual(tool.config.profileName, "youtube_master")
+        XCTAssertEqual(tool.config.audioQCTargetLUFS, -12)
+    }
 }

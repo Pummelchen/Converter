@@ -2,8 +2,12 @@ import XCTest
 @testable import converter
 
 final class converterTests: XCTestCase {
-    private func makeTool(tempDirectory: URL, arguments: [String] = []) throws -> ConverterTool {
-        let environment = ProcessInfo.processInfo.environment
+    private func makeTool(
+        tempDirectory: URL,
+        arguments: [String] = [],
+        inheritedEnvironment: [String: String] = ProcessInfo.processInfo.environment
+    ) throws -> ConverterTool {
+        let environment = IntegrationWorkspace.sanitizedEnvironment(inheritedEnvironment)
         let logger = Logger(scriptName: "converterTests", debugEnabled: false)
         let options = try CLIOptions.parse(
             arguments: ["--output-dir", tempDirectory.path] + arguments,
@@ -13,6 +17,34 @@ final class converterTests: XCTestCase {
         )
         let runner = ProcessRunner(logger: logger, environment: environment, debugEnabled: false)
         return ConverterTool(cli: options, config: ProjectConfig(), logger: logger, runner: runner, environment: environment)
+    }
+
+    // audit #0031: the unit helper passed --output-dir but still handed CONFIG_FILE and DEBUG from the
+    // host shell to CLIOptions.parse. Exported host overrides must never reach the tool under test.
+    func testUnitMakeToolIgnoresHostConfigAndDebugOverrides() throws {
+        let tempDirectory = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: tempDirectory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: tempDirectory) }
+
+        var poisoned = ProcessInfo.processInfo.environment
+        poisoned["OUTPUT_DIR"] = "/nonexistent"
+        poisoned["SRC_DIR"] = "/nonexistent"
+        poisoned["OUT_DIR"] = "/nonexistent"
+        poisoned["CONFIG_FILE"] = "/nonexistent/config.txt"
+        poisoned["DEBUG"] = "1"
+        poisoned["CONVERTER_TEST_MARKER"] = "kept"
+
+        let tool = try makeTool(tempDirectory: tempDirectory, arguments: ["-help"], inheritedEnvironment: poisoned)
+        XCTAssertEqual(tool.cli.outDir.path, tempDirectory.path)
+        XCTAssertEqual(tool.cli.srcDir.path, tempDirectory.path)
+        XCTAssertEqual(tool.cli.configFile.path, tempDirectory.appendingPathComponent("config.txt").path)
+        XCTAssertFalse(tool.cli.debug)
+        for key in ["OUTPUT_DIR", "SRC_DIR", "OUT_DIR", "CONFIG_FILE", "DEBUG"] {
+            XCTAssertNil(tool.environment[key], "\(key) leaked into the tool environment")
+        }
+        XCTAssertEqual(tool.environment["PATH"], poisoned["PATH"])
+        XCTAssertEqual(tool.environment["CONVERTER_TEST_MARKER"], "kept")
     }
 
     func testDependencyManifestMatchesCurrentRuntimeTools() throws {
@@ -1003,7 +1035,7 @@ final class converterTests: XCTestCase {
         try FileManager.default.createDirectory(at: tempDirectory, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: tempDirectory) }
 
-        let environment = ProcessInfo.processInfo.environment
+        let environment = IntegrationWorkspace.sanitizedEnvironment(ProcessInfo.processInfo.environment)
         let logger = Logger(scriptName: "converterTests", debugEnabled: false)
         let options = try CLIOptions.parse(
             arguments: ["-matrix"],

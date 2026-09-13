@@ -15,14 +15,31 @@ final class IntegrationWorkspace {
     let environment: [String: String]
     private let fileManager = FileManager.default
 
-    init() throws {
+    init(inheritedEnvironment: [String: String] = ProcessInfo.processInfo.environment) throws {
         root = fileManager.temporaryDirectory.appendingPathComponent("converter-tests.\(UUID().uuidString)", isDirectory: true)
         output = root.appendingPathComponent("Output", isDirectory: true)
         try fileManager.createDirectory(at: output, withIntermediateDirectories: true)
         try Self.defaultConfig.write(to: root.appendingPathComponent("config.txt"), atomically: true, encoding: .utf8)
         try "# test album\n".write(to: root.appendingPathComponent("album.txt"), atomically: true, encoding: .utf8)
 
-        environment = ProcessInfo.processInfo.environment
+        environment = Self.sanitizedEnvironment(inheritedEnvironment)
+    }
+
+    // audit #0031: CLIOptions.parse and ProjectConfig.load honour these host-shell overrides. A developer
+    // who exports them (a common converter setup) would otherwise redirect every test at real user
+    // directories, so the workspace drops them and keeps everything else (PATH above all).
+    // Everything converter reads from the environment: the directory/config/debug overrides
+    // (CLI.swift) and every config key, which ProjectConfig.load lets the environment override.
+    // A developer exporting PROFILE or an AUDIO_QC_* key must not change what a test measures.
+    static let hostOverrideKeys: Set<String> =
+        Set(["OUTPUT_DIR", "SRC_DIR", "OUT_DIR", "CONFIG_FILE", "DEBUG"]).union(ProjectConfig.supportedKeys)
+
+    static func sanitizedEnvironment(_ inherited: [String: String]) -> [String: String] {
+        inherited.filter { !hostOverrideKeys.contains($0.key) }
+    }
+
+    var configFile: URL {
+        root.appendingPathComponent("config.txt")
     }
 
     deinit {
@@ -131,8 +148,10 @@ final class IntegrationWorkspace {
     }
 
     func makeTool(arguments: [String] = [], debug: Bool = false) throws -> ConverterTool {
+        // Pin every path inside the workspace explicitly; callers' own --src-dir/--out-dir/--config still win
+        // because CLIOptions.parse applies flags in order.
         let cli = try CLIOptions.parse(
-            arguments: arguments,
+            arguments: ["--output-dir", output.path, "--config", configFile.path] + arguments,
             environment: environment,
             scriptDirectory: root,
             scriptName: "converter"
