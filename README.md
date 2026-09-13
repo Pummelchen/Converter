@@ -1,5 +1,10 @@
 # Converter
 
+[![Stars](https://img.shields.io/github/stars/Pummelchen/Converter?style=flat-square&logo=github&label=Stars&color=e3b341)](https://github.com/Pummelchen/Converter/stargazers)
+[![Views (14d)](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/Pummelchen/Converter/main/.github/traffic.json)](https://github.com/Pummelchen/Converter)
+[![Last Commit](https://img.shields.io/github/last-commit/Pummelchen/Converter?style=flat-square&logo=git&label=Last%20Commit&color=2ea44f)](https://github.com/Pummelchen/Converter/commits/main)
+[![Contact](https://img.shields.io/badge/Contact-0xa0b1%40gmail.com-blue?style=flat-square&logo=gmail&logoColor=white)](mailto:0xa0b1@gmail.com)
+
 Swift CLI that turns one song and one image into a complete, verified upload set for macOS Apple Silicon.
 
 Every output is verified before it is published — wrong size, wrong codec, silent audio, or drifted loudness fails the run rather than producing a bad file.
@@ -97,8 +102,16 @@ Auto-install is **off by default**; a missing formula produces an error telling 
 - `album.txt` — track order for `-wavtoalbum` / `-mp3toalbum`
 - `converter` — prebuilt Apple Silicon release binary
 
+## License
+
+MIT — see [LICENSE](LICENSE).
+
 ## Third-party code
 
 `Sources/ThirdParty/libbw64/` vendors [libbw64](https://github.com/ebu/libbw64) 0.10.0 by the EBU,
 licensed under the Apache License 2.0 (see `Sources/ThirdParty/libbw64/LICENSE` and `UPSTREAM.md`).
 It is compiled into the `converter` binary, which therefore carries that notice.
+
+## Contact
+
+Questions, bug reports and suggestions are always welcome. You can contact André Borchert by email at [0xa0b1@gmail.com](mailto:0xa0b1@gmail.com).
