@@ -24,7 +24,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 | #0015 | S1 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:18-32,97,197-201 | Clipped-samples rebase is not sample-rate invariant (source clip measured at 96 kHz, render at its own rate) | logic | START |  |
 | #0020 | S1 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:492-530,487-490 | -bass can clip the 24-bit staging WAV; nothing verifies true peak/clipping before publish | incomplete | TEST | ed9bc61 |
 | #0021 | S1 | converter/VideoPipeline+AudioPipeline | Sources/converter/VideoPipeline.swift:159-171; AudioPipeline.swift:1070-1082 | Encoder ladders fall through on encoder-independent failures (publish, ALAC/duration/loudness verify) and the padded-MP4 ladder reports only the last rung | logic | TEST | 8298dd8 |
-| #0026 | S1 | BW64Bridge | Sources/BW64Bridge/bw64_bridge.cpp:178-197 | Disk-write failures undetectable; bridge self-validates against the ds64 size it wrote | bug | TEST |  |
+| #0026 | S1 | BW64Bridge | Sources/BW64Bridge/bw64_bridge.cpp:178-197 | Disk-write failures undetectable; bridge self-validates against the ds64 size it wrote | bug | TEST | f2c97eb |
 | #0030 | S1 | repo/docs | README.md:25,59; Sources/converter/CLI.swift:461-481,664-665; CONTRIBUTING.md:59; wiki Home/Full-Run-Contract | README, CLI help, CONTRIBUTING and wiki contradict actual behaviour (source rename, audio alteration, portrait input, --keep-full-name, 58 s, auto-install wording) | docs | START |  |
 | #0031 | S1 | converterTests | Sources/Tests/converterTests/IntegrationTestSupport.swift:25,133-143 | Integration workspace inherits OUTPUT_DIR/SRC_DIR/OUT_DIR/CONFIG_FILE/DEBUG from the host shell | test | START |  |
 | #0032 | S1 | converterTests | Sources/converter/PipelineCore.swift:487-505 | publishTemp restore-on-failure branch has no test | test | START |  |
@@ -461,6 +461,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **evidence-before:** AUDIT/findings/L0-L3-bridge-repo.md B-1
 - **fix-summary:** requireCompleteDataChunk checks the real file size against data-chunk position + dataBytes before and after finalisation; forceBW64Container closes its stream and checks fail(); RAM-disk truncation test testBW64WriterReportsATruncatedOutput.
 - **evidence-after:** AUDIT/evidence/0026-before.log (did not throw on pre-fix bridge), AUDIT/evidence/0026-after.log (passes; --filter BW64 passes); full suite pending
+- **commit sha:** f2c97eb
 - **notes:** Compare real file size to expected; check stream state; close+check in forceBW64Container. Committed as work-in-progress so the branch carries it; do not mark TEST/DONE until the evidence above exists.
 
 ### #0027 · S1 · DONE · SECURITY.md is the unedited GitHub template with fictitious versions

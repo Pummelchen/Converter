@@ -442,7 +442,7 @@
       "evidence_before": "AUDIT/findings/L0-L3-bridge-repo.md B-1",
       "fix_summary": "requireCompleteDataChunk checks the real file size against data-chunk position + dataBytes before and after finalisation; forceBW64Container closes its stream and checks fail(); RAM-disk truncation test testBW64WriterReportsATruncatedOutput.",
       "evidence_after": "AUDIT/evidence/0026-before.log (did not throw on pre-fix bridge), AUDIT/evidence/0026-after.log (passes; --filter BW64 passes); full suite pending",
-      "commit": "",
+      "commit": "f2c97eb",
       "notes": "Compare real file size to expected; check stream state; close+check in forceBW64Container. Committed as work-in-progress so the branch carries it; do not mark TEST/DONE until the evidence above exists."
     },
     {
