@@ -308,6 +308,30 @@ final class converterTests: XCTestCase {
         XCTAssertEqual(options.seed, 7)
     }
 
+    // audit #0077: after an install, a tool that exists but fails its -version probe was filtered
+    // out by an availability test, so the failure message listed nothing at all.
+    func testUnusableInstalledToolsAreNamedWithTheirReason() throws {
+        let fake = try FakeToolDirectory()
+        _ = try fake.add("ffmpeg", body: "exit 1")
+        _ = try fake.add("ffprobe", body: "echo 'ffprobe version 9.0'")
+        let environment = fake.environment(inheriting: ["PATH": "/bin:/usr/bin"])
+
+        let dependency = HomebrewFormulaDependency(formula: "ffmpeg", executables: ["ffmpeg", "ffprobe"])
+        let descriptions = DependencyBootstrapper.unusableToolDescriptions(dependency, environment: environment)
+
+        XCTAssertEqual(descriptions.count, 1, "only the broken tool belongs in the message: \(descriptions)")
+        let first = try XCTUnwrap(descriptions.first, "the broken tool must be listed: \(descriptions)")
+        XCTAssertTrue(first.contains("ffmpeg"), first)
+        XCTAssertTrue(first.contains("fails its -version probe"), first)
+
+        // A tool that is not on PATH at all is still reported as missing.
+        let absent = HomebrewFormulaDependency(formula: "missing", executables: ["definitely-not-installed"])
+        XCTAssertEqual(
+            DependencyBootstrapper.unusableToolDescriptions(absent, environment: environment),
+            ["definitely-not-installed (not found)"]
+        )
+    }
+
     func testNumericFormattingAndBitrateParsingUseStableFFmpegForms() throws {
         XCTAssertEqual(ffmpegNumber(5), "5")
         XCTAssertEqual(ffmpegNumber(-12.5), "-12.5")

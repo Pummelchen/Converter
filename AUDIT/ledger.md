@@ -6,9 +6,9 @@ Session: `2026-09-13` · branch `audit/2026-09-13` · baseline commit `4bb136a`
 
 | status | count |
 |---|---|
-| START | 28 |
+| START | 27 |
 | PROGRESS | 0 |
-| TEST | 1 |
+| TEST | 2 |
 | AUDIT | 0 |
 | DONE | 71 |
 | BLOCKED | 0 |
@@ -44,7 +44,7 @@ _none_
 | #0073 | S2 | converter (lint) | AUDIT/baseline/swiftlint-by-rule-4bb136a.txt | swiftlint baseline 533 (56 error-level): fix the actionable rules; structural rules deferred with rationale | style | START |  |
 | #0074 | S2 | converter (dead code) | Sources/converter/Actions.swift:114; ImagePipeline.swift:26-27; ProcessRunner.swift:78; ValidationPipeline.swift:857; Tests/IntegrationTestSupport.swift:32 | periphery-flagged unused declarations (6 unused, 15 assign-only) — prove reachability, then remove or retain with reason | dead | START |  |
 | #0075 | S2 | converter (dead code) | Sources/converter/PipelineCore.swift:347,357-362; Actions.swift:105-110,794-808; BW64Bridge/bw64_bridge.cpp:95; LosslessAudioPipeline.swift:9,30,173-174; AudioPipeline.swift:160-162,264,1955 | Dead branches, tautological guards, dead parameters, redundant discards | dead | START |  |
-| #0077 | S3 | converter/DependencyBootstrap | Sources/converter/DependencyBootstrap.swift:77-82 | Post-install failure message lists nothing when a tool is present but non-functional | logic | START |  |
+| #0077 | S3 | converter/DependencyBootstrap | Sources/converter/DependencyBootstrap.swift:77-82 | Post-install failure message lists nothing when a tool is present but non-functional | logic | TEST |  |
 | #0080 | S3 | converter/PipelineCore | Sources/converter/PipelineCore.swift:323-344,271 | Orphan-temp detection keys on local PID only; synced directories across hosts | logic | START |  |
 | #0086 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:1378,1694-1706 | Magic bytes-per-sample and missing free-space check on the BW64 path | style | START |  |
 | #0088 | S3 | converter/Config+VideoPipeline | Sources/converter/VideoPipeline.swift:230,240,244; Config.swift:393,397 | Config colour/scale-filter values spliced into the filter graph with only non-empty validation | unsafe | START |  |
@@ -1039,7 +1039,7 @@ _none_
 - **evidence-after:** AUDIT/evidence/0076-before.log (pre-fix cancelWaiter restored: 500 stale markers left behind); AUDIT/evidence/0076-after.log (0 markers, permit intact, all six semaphore tests pass). swiftlint 533/56. Full suite (AUDIT/evidence/0039-0085-fullsuite.txt): 235 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** 24e52d7
 
-### #0077 · S3 · START · Post-install failure message lists nothing when a tool is present but non-functional
+### #0077 · S3 · TEST · Post-install failure message lists nothing when a tool is present but non-functional
 
 - **project/module:** converter/DependencyBootstrap
 - **file:line:** Sources/converter/DependencyBootstrap.swift:77-82
@@ -1047,6 +1047,8 @@ _none_
 - **host-used:** local
 - **discovered-by:** reviewer C-9
 - **evidence-before:** AUDIT/findings/L2-core-runtime.md C-9
+- **fix-summary:** DependencyBootstrapper.unusableToolDescriptions probes each tool with isUsableTool and reports 'not found' versus 'installed but fails its -version probe', so the post-install error always names the offending commands.
+- **evidence-after:** AUDIT/evidence/0077-before.log (presence-only filter listed nothing for a present but broken ffmpeg); AUDIT/evidence/0077-after.log (testUnusableInstalledToolsAreNamedWithTheirReason passes). swiftlint 528/56, no new violations.
 
 ### #0078 · S3 · DONE · ensureWritableDirectory accepts a regular file at OUT_DIR
 

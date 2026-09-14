@@ -78,11 +78,24 @@ enum DependencyBootstrapper {
 
         missingFormulae = missingHomebrewFormulae(environment: environment)
         if !missingFormulae.isEmpty {
-            let missingCommands = missingFormulae
-                .flatMap(\.executables)
-                .filter { !isExecutableAvailable($0, environment: environment) }
-            throw AppError("Dependency bootstrap failed; missing command(s) after install: \(missingCommands.joined(separator: ", "))")
+            let detail = missingFormulae.flatMap { unusableToolDescriptions($0, environment: environment) }
+            throw AppError("Dependency bootstrap failed; unusable command(s) after install: \(detail.joined(separator: ", "))")
         }
+    }
+
+    // Describes every tool of an installed formula that is still unusable, and why. A tool that
+    // is present but fails its functional probe is not "missing", so filtering by presence alone
+    // produced an empty list and an error naming nothing (#0077).
+    static func unusableToolDescriptions(
+        _ formula: HomebrewFormulaDependency, environment: [String: String]
+    ) -> [String] {
+        formula.executables
+            .filter { !isUsableTool($0, environment: environment) }
+            .map { name in
+                isExecutableAvailable(name, environment: environment)
+                    ? "\(name) (installed but fails its -version probe)"
+                    : "\(name) (not found)"
+            }
     }
 
     private static func autoInstallEnabled(environment: [String: String]) -> Bool {
