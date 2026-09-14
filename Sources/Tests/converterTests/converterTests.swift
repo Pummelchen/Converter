@@ -1559,30 +1559,8 @@ final class converterTests: XCTestCase {
 
     // Logger writes straight to file descriptor 2 and has no injectable sink, so the only way to
     // observe a log line without adding a production hook is to point fd 2 at a pipe around the
-    // call. A background reader drains the pipe so a chatty body cannot block on a full buffer.
-    private func captureStandardError(_ body: () throws -> Void) throws -> String {
-        let pipe = Pipe()
-        let savedStandardError = dup(STDERR_FILENO)
-        XCTAssertNotEqual(savedStandardError, -1)
-        XCTAssertNotEqual(dup2(pipe.fileHandleForWriting.fileDescriptor, STDERR_FILENO), -1)
-        let captured = Mutex(Data())
-        let drained = DispatchGroup()
-        drained.enter()
-        DispatchQueue.global().async {
-            let data = pipe.fileHandleForReading.readDataToEndOfFile()
-            captured.withLock { $0 = data }
-            drained.leave()
-        }
-        let outcome = Result { try body() }
-        dup2(savedStandardError, STDERR_FILENO)
-        close(savedStandardError)
-        // Closing the last writer is what lets the reader see end-of-file.
-        try pipe.fileHandleForWriting.close()
-        drained.wait()
-        try outcome.get()
-        return String(bytes: captured.withLock { $0 }, encoding: .utf8) ?? ""
-    }
-
+    // call. The shared helper lives in IntegrationTestSupport so the integration tests can use it
+    // too (#0068).
     private func loadConfig(from workspace: IntegrationWorkspace) throws -> ProjectConfig {
         let options = try CLIOptions.parse(
             arguments: ["-help"],

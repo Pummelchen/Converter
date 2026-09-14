@@ -1,9 +1,35 @@
 import CoreGraphics
 import Foundation
 import ImageIO
+import Synchronization
 import UniformTypeIdentifiers
 import XCTest
 @testable import converter
+
+// Captures everything the logger writes to stderr while `body` runs, so a test can assert which
+// path the pipeline actually took instead of inferring it from the result (#0068).
+func captureStandardError(_ body: () throws -> Void) throws -> String {
+    let pipe = Pipe()
+    let savedStandardError = dup(STDERR_FILENO)
+    XCTAssertNotEqual(savedStandardError, -1)
+    XCTAssertNotEqual(dup2(pipe.fileHandleForWriting.fileDescriptor, STDERR_FILENO), -1)
+    let captured = Mutex(Data())
+    let drained = DispatchGroup()
+    drained.enter()
+    DispatchQueue.global().async {
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        captured.withLock { $0 = data }
+        drained.leave()
+    }
+    let outcome = Result { try body() }
+    dup2(savedStandardError, STDERR_FILENO)
+    close(savedStandardError)
+    // Closing the last writer is what lets the reader see end-of-file.
+    try? pipe.fileHandleForWriting.close()
+    drained.wait()
+    try outcome.get()
+    return String(bytes: captured.withLock { $0 }, encoding: .utf8) ?? ""
+}
 
 enum JobClass: String, Sendable {
     case image
@@ -91,7 +117,9 @@ final class IntegrationWorkspace {
         MASTERING_MAX_TRUE_PEAK_DBTP=-1
         MASTERING_MAX_LOUDNESS_RANGE=20
         VIDEO_MP4_ENCODER=hevc_videotoolbox
-        VIDEO_MP4_ENCODER_FALLBACKS=libx264
+        # audit #0066: the verifier demands HEVC, so the fallback must also produce HEVC. An H.264
+        # fallback made every full-run test fail on a host without hevc_videotoolbox.
+        VIDEO_MP4_ENCODER_FALLBACKS=libx265
         VIDEO_MP4_VT_QUALITY=45
         VIDEO_MP4_SOFTWARE_PRESET=medium
         VIDEO_MP4_SOFTWARE_CRF=22

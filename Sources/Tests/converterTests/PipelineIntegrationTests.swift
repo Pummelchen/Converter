@@ -914,6 +914,15 @@ final class PipelineIntegrationTests: XCTestCase {
 
         let output = workspace.output.appendingPathComponent("hot_fade_song_fadeout_1.5s_0.75s.mp3")
         XCTAssertTrue(FileManager.default.fileExists(atPath: output.path))
+        // audit #0067: prove the output really is outside the delivery policy, otherwise
+        // "fade-out does not enforce QC" is vacuous - a fixture that happened to pass would make
+        // the test pass for the wrong reason.
+        let delivery = try tool.audioQCResult(for: output, policy: tool.config.deliveryAudioQCPolicy)
+        XCTAssertFalse(delivery.passed, "the fade-out fixture must exceed the delivery policy")
+        XCTAssertTrue(
+            delivery.issues.contains { $0.lowercased().contains("true peak") },
+            "the fixture must breach the true-peak ceiling: \(delivery.issues)"
+        )
         try tool.verifyMP3Standard(output, qcPolicy: nil)
         XCTAssertThrowsError(try tool.requireVideoStream(output))
         try tool.verifyDuration(output, expectedSeconds: spec.endSeconds, label: "fadeout output")
@@ -2694,6 +2703,54 @@ final class PipelineIntegrationTests: XCTestCase {
         XCTAssertNoThrow(try tool.stepDoctor())
     }
 
+    // audit #0097: -doctor was only asserted not to throw on a healthy workspace, so a probe that
+    // stopped running, or one that lost its teeth, would not be noticed.
+    func testDoctorReportsACorruptSourceImage() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe", "magick"])
+        let broken = try workspace.createImage(name: "poster", ext: "png")
+        try Data("not a png".utf8).write(to: broken)
+
+        let tool = try workspace.makeTool(arguments: ["-doctor"])
+        XCTAssertNoThrow(try tool.initializeForExecution())
+        XCTAssertThrowsError(try tool.stepDoctor()) { error in
+            let message = (error as? AppError)?.message ?? error.localizedDescription
+            XCTAssertTrue(
+                message.lowercased().contains("image") || message.lowercased().contains("png"),
+                "the doctor must fail on the corrupt source image: \(message)"
+            )
+        }
+    }
+
+    func testDoctorReportsACorruptSourceAudio() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe", "magick"])
+        _ = try workspace.writeGarbageFile(name: "song", ext: "wav")
+
+        let tool = try workspace.makeTool(arguments: ["-doctor"])
+        XCTAssertNoThrow(try tool.initializeForExecution())
+        XCTAssertThrowsError(try tool.stepDoctor()) { error in
+            let message = (error as? AppError)?.message ?? error.localizedDescription
+            XCTAssertTrue(
+                message.lowercased().contains("wav") || message.lowercased().contains("riff")
+                    || message.lowercased().contains("header"),
+                "the doctor must fail on the corrupt source audio: \(message)"
+            )
+        }
+    }
+
+    func testDoctorReportsAMissingInputDirectory() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe", "magick"])
+        let missing = workspace.root.appendingPathComponent("missing-input", isDirectory: true)
+
+        let tool = try workspace.makeTool(arguments: ["-doctor", "--src-dir", missing.path])
+        XCTAssertNoThrow(try tool.initializeForExecution())
+        XCTAssertThrowsError(try tool.stepDoctor()) { error in
+            XCTAssertTrue("\(error)".contains("missing-input"), "\(error)")
+        }
+    }
+
     func testMasterCanonicalWAVRemediatesOutOfPolicyLoudness() throws {
         let workspace = try IntegrationWorkspace()
         try workspace.requireCommands(["ffmpeg", "ffprobe"])
@@ -2727,7 +2784,16 @@ final class PipelineIntegrationTests: XCTestCase {
         let before = try tool.audioQCResult(for: wav, policy: tool.config.masteringAudioQCPolicy)
         XCTAssertFalse(before.passed, "Hot fixture should force mastering fallback.")
 
-        XCTAssertNoThrow(try tool.masterCanonicalWAVInPlaceIfNeeded(wav))
+        // audit #0068: assert which path ran. The two-pass measurement cannot handle this fixture,
+        // so the one-pass fallback must announce itself; without observing the log the test would
+        // pass even if the two-pass path had silently produced the same result.
+        let log = try captureStandardError {
+            try tool.masterCanonicalWAVInPlaceIfNeeded(wav)
+        }
+        XCTAssertTrue(
+            log.contains("one-pass loudnorm fallback"),
+            "the mastering fallback path must be observable in the log: \(log)"
+        )
         XCTAssertNoThrow(try tool.verifyWAVStandard(wav, qcPolicy: tool.config.masteringAudioQCPolicy))
     }
 
@@ -2858,6 +2924,76 @@ final class PipelineIntegrationTests: XCTestCase {
             sampleRate: tool.config.videoMP4AudioSampleRate,
             channels: 2,
             qcPolicy: nil
+        )
+    }
+
+    // audit #0072: the short cap and the full-song companion decision were only exercised far
+    // from their boundaries, and the 0.01 s epsilon was a bare literal inline in the caller.
+    func testShortCapBoundaryAndFullSongCompanionDecision() throws {
+        let workspace = try IntegrationWorkspace()
+        // The workspace config caps at 1 s for speed, so the documented cap is set explicitly.
+        let defaultTool = try workspace.makeTool(arguments: ["-short"])
+        XCTAssertEqual(try defaultTool.effectiveShortClipSeconds(forDuration: 10), 1, accuracy: 0.0001)
+
+        try workspace.overwriteConfig(IntegrationWorkspace.defaultConfig + "\nSHORT_MP4_CLIP_SECONDS=58\n")
+        let tool = try workspace.makeTool(arguments: ["-short"])
+
+        // The cap is min(configured, 58, source duration): a long source is capped, a short one is
+        // left alone.
+        XCTAssertEqual(try tool.effectiveShortClipSeconds(forDuration: 120), 58, accuracy: 0.0001)
+        XCTAssertEqual(try tool.effectiveShortClipSeconds(forDuration: 58), 58, accuracy: 0.0001)
+        XCTAssertEqual(try tool.effectiveShortClipSeconds(forDuration: 58.005), 58, accuracy: 0.0001)
+        XCTAssertEqual(try tool.effectiveShortClipSeconds(forDuration: 10), 10, accuracy: 0.0001)
+
+        // A source at the cap, or within the epsilon of it, has no companion; just past it does.
+        XCTAssertFalse(try tool.needsFullSongCompanion(forDuration: 58))
+        XCTAssertFalse(try tool.needsFullSongCompanion(forDuration: 58.005))
+        XCTAssertTrue(try tool.needsFullSongCompanion(forDuration: 58.02))
+        XCTAssertTrue(try tool.needsFullSongCompanion(forDuration: 120))
+
+        // A configured cap below 58 lowers both the short and the companion threshold.
+        try workspace.overwriteConfig(IntegrationWorkspace.defaultConfig + "\nSHORT_MP4_CLIP_SECONDS=30\n")
+        let capped = try workspace.makeTool(arguments: ["-short"])
+        XCTAssertEqual(try capped.effectiveShortClipSeconds(forDuration: 120), 30, accuracy: 0.0001)
+        XCTAssertEqual(try capped.effectiveShortClipSeconds(forDuration: 10), 10, accuracy: 0.0001)
+        XCTAssertFalse(try capped.needsFullSongCompanion(forDuration: 30.005))
+        XCTAssertTrue(try capped.needsFullSongCompanion(forDuration: 30.02))
+
+        // A configured value above the hard cap cannot raise it.
+        try workspace.overwriteConfig(IntegrationWorkspace.defaultConfig + "\nSHORT_MP4_CLIP_SECONDS=75\n")
+        let hardCapped = try workspace.makeTool(arguments: ["-short"])
+        XCTAssertEqual(try hardCapped.effectiveShortClipSeconds(forDuration: 120), 58, accuracy: 0.0001)
+    }
+
+    // audit #0066: the workspace config paired an HEVC verifier with an H.264 fallback, so a host
+    // without hevc_videotoolbox rendered libx264 and then failed verification - every full-run test
+    // depended on hardware HEVC. The fallback is now HEVC (production parity); this proves the
+    // ladder still produces a verifiable file with the primary encoder unavailable.
+    func testMainVideoFallsBackToSoftwareHEVCWhenHardwareIsUnavailable() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe", "magick"])
+        try workspace.overwriteConfig(
+            IntegrationWorkspace.defaultConfig +
+                "\nVIDEO_MP4_ENCODER=definitely_missing_encoder\n" +
+                "VIDEO_MP4_ENCODER_FALLBACKS=libx265\n" +
+                "VIDEO_MP4_SOFTWARE_PRESET=ultrafast\n"
+        )
+
+        let image = try workspace.createImage(name: "poster", ext: "png")
+        let audio = try workspace.createAudio(name: "track", ext: "m4a")
+        let tool = try workspace.makeTool(arguments: ["-m4atomp4"])
+        let output = try tool.renderM4AToMP4(imageFile: image, audioFile: audio, audioQCPolicy: nil)
+
+        try tool.verifyVideoOutput(
+            output,
+            width: tool.config.videoMP4Width,
+            height: tool.config.videoMP4Height,
+            codec: "hevc",
+            pixelFormat: tool.config.videoMP4PixelFormat,
+            colorPrimaries: tool.config.videoColorPrimaries,
+            colorTransfer: tool.config.videoColorTransfer,
+            colorSpace: tool.config.videoColorSpace,
+            colorRange: tool.config.videoColorRange
         )
     }
 

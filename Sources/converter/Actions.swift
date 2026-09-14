@@ -958,8 +958,7 @@ extension ConverterTool {
         guard let audioDuration = try mediaDuration(audioFile) else {
             throw AppError("Unable to read numeric audio duration from: \(audioFile.path)")
         }
-        let shortDuration = try effectiveShortClipSeconds(forDuration: audioDuration)
-        let needsFullSongCompanion = audioDuration > shortDuration + 0.01
+        let needsFullSongCompanion = try needsFullSongCompanion(forDuration: audioDuration)
 
         if needsFullSongCompanion {
             _ = try renderAudioToShortMP4(

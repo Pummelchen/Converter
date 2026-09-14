@@ -325,6 +325,16 @@ extension ConverterTool {
         return try effectiveShortClipSeconds(forDuration: inputDuration)
     }
 
+    // A source within this much of the cap counts as being at the cap, so a 58.005 s song does not
+    // produce a full-song companion only milliseconds longer than the short (#0072).
+    static let shortCompanionEpsilonSeconds = 0.01
+
+    // True when the source runs past the capped short, so the full-length companion is rendered.
+    func needsFullSongCompanion(forDuration inputDuration: Double) throws -> Bool {
+        let shortDuration = try effectiveShortClipSeconds(forDuration: inputDuration)
+        return inputDuration > shortDuration + Self.shortCompanionEpsilonSeconds
+    }
+
     func verifyShortMP4Duration(_ output: URL, source: URL) throws {
         let expectedSeconds = try effectiveShortClipSeconds(for: source)
         try verifyDuration(output, expectedSeconds: expectedSeconds, label: "short MP4 output", tolerance: 0.5)
