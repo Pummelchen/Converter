@@ -35,15 +35,15 @@ _none_
 | #0059 | S2 | repo/CI | .github/workflows/ci.yml:24,27-32,39-40 | CI not reproducible: unpinned action, latest-Xcode selection, unpinned brew formulae | deps | START |  |
 | #0061 | S2 | BW64Bridge | Sources/BW64Bridge/bw64_bridge.cpp:125-141,161 | Bridge does not bound channels; libbw64 uint16 blockAlignment wraps to heap overflow (unreachable via config today) | unsafe | START |  |
 | #0062 | S2 | BW64Bridge/Package | Sources/Package.swift:35-37; ThirdParty/libbw64/bw64/reader.hpp:220,225,227 | Strict C++ flags (-Wall -Wextra -Werror) fail on three benign sign-compare warnings in vendored libbw64 | deps | START |  |
-| #0066 | S2 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:1627-1637,1738-1748 | Full-pipeline tests require hevc_videotoolbox; fail on hosts without HW HEVC | test | TEST |  |
-| #0067 | S2 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:473-491 | Fade-out 'does not enforce delivery QC' test never proves the fixture is out of policy | test | TEST |  |
-| #0068 | S2 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:1933-1948 | Mastering fallback test cannot observe which path ran | test | TEST |  |
-| #0072 | S2 | converter/VideoPipeline+tests | Sources/converter/VideoPipeline.swift:284-300,456-458; Actions.swift:875-876 | Short-cap boundary untested and duration thresholds inconsistent between short paths | test | TEST |  |
+| #0066 | S2 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:1627-1637,1738-1748 | Full-pipeline tests require hevc_videotoolbox; fail on hosts without HW HEVC | test | TEST | 7fd628f |
+| #0067 | S2 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:473-491 | Fade-out 'does not enforce delivery QC' test never proves the fixture is out of policy | test | TEST | 7fd628f |
+| #0068 | S2 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:1933-1948 | Mastering fallback test cannot observe which path ran | test | TEST | 7fd628f |
+| #0072 | S2 | converter/VideoPipeline+tests | Sources/converter/VideoPipeline.swift:284-300,456-458; Actions.swift:875-876 | Short-cap boundary untested and duration thresholds inconsistent between short paths | test | TEST | 7fd628f |
 | #0073 | S2 | converter (lint) | AUDIT/baseline/swiftlint-by-rule-4bb136a.txt | swiftlint baseline 533 (56 error-level): fix the actionable rules; structural rules deferred with rationale | style | START |  |
 | #0074 | S2 | converter (dead code) | Sources/converter/Actions.swift:114; ImagePipeline.swift:26-27; ProcessRunner.swift:78; ValidationPipeline.swift:857; Tests/IntegrationTestSupport.swift:32 | periphery-flagged unused declarations (6 unused, 15 assign-only) — prove reachability, then remove or retain with reason | dead | START |  |
 | #0075 | S2 | converter (dead code) | Sources/converter/PipelineCore.swift:347,357-362; Actions.swift:105-110,794-808; BW64Bridge/bw64_bridge.cpp:95; LosslessAudioPipeline.swift:9,30,173-174; AudioPipeline.swift:160-162,264,1955 | Dead branches, tautological guards, dead parameters, redundant discards | dead | START |  |
 | #0086 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:1378,1694-1706 | Magic bytes-per-sample and missing free-space check on the BW64 path | style | START |  |
-| #0097 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:1902-1911 | -doctor has only a no-throw happy path | test | TEST |  |
+| #0097 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:1902-1911 | -doctor has only a no-throw happy path | test | TEST | 7fd628f |
 
 ## Done (84)
 
@@ -938,6 +938,7 @@ _none_
 - **evidence-before:** AUDIT/findings/L6-tests.md T-14
 - **fix-summary:** #0066 the test config's HEVC fallback is libx265 so hosts without hevc_videotoolbox still verify, plus a fallback test; #0067 proves the fade-out fixture breaches delivery QC; #0068 observes the one-pass mastering fallback log; #0072 extracts needsFullSongCompanion and tests the cap boundaries; #0097 adds three -doctor failure tests.
 - **evidence-after:** AUDIT/evidence/0066-0097-after.log (eight tests pass). swiftlint 525/56, no new violations.
+- **commit sha:** 7fd628f
 
 ### #0067 · S2 · TEST · Fade-out 'does not enforce delivery QC' test never proves the fixture is out of policy
 
@@ -949,6 +950,7 @@ _none_
 - **evidence-before:** AUDIT/findings/L6-tests.md T-15
 - **fix-summary:** #0066 the test config's HEVC fallback is libx265 so hosts without hevc_videotoolbox still verify, plus a fallback test; #0067 proves the fade-out fixture breaches delivery QC; #0068 observes the one-pass mastering fallback log; #0072 extracts needsFullSongCompanion and tests the cap boundaries; #0097 adds three -doctor failure tests.
 - **evidence-after:** AUDIT/evidence/0066-0097-after.log (eight tests pass). swiftlint 525/56, no new violations.
+- **commit sha:** 7fd628f
 
 ### #0068 · S2 · TEST · Mastering fallback test cannot observe which path ran
 
@@ -960,6 +962,7 @@ _none_
 - **evidence-before:** AUDIT/findings/L6-tests.md T-16
 - **fix-summary:** #0066 the test config's HEVC fallback is libx265 so hosts without hevc_videotoolbox still verify, plus a fallback test; #0067 proves the fade-out fixture breaches delivery QC; #0068 observes the one-pass mastering fallback log; #0072 extracts needsFullSongCompanion and tests the cap boundaries; #0097 adds three -doctor failure tests.
 - **evidence-after:** AUDIT/evidence/0066-0097-after.log (eight tests pass). swiftlint 525/56, no new violations.
+- **commit sha:** 7fd628f
 
 ### #0069 · S2 · DONE · Bare XCTAssertThrowsError on garbage MP3 accepts any error
 
@@ -1008,6 +1011,7 @@ _none_
 - **evidence-before:** AUDIT/findings/L6-tests.md T-22; L2-video-image-actions-cli.md X-19
 - **fix-summary:** #0066 the test config's HEVC fallback is libx265 so hosts without hevc_videotoolbox still verify, plus a fallback test; #0067 proves the fade-out fixture breaches delivery QC; #0068 observes the one-pass mastering fallback log; #0072 extracts needsFullSongCompanion and tests the cap boundaries; #0097 adds three -doctor failure tests.
 - **evidence-after:** AUDIT/evidence/0066-0097-after.log (eight tests pass). swiftlint 525/56, no new violations.
+- **commit sha:** 7fd628f
 
 ### #0073 · S2 · START · swiftlint baseline 533 (56 error-level): fix the actionable rules; structural rules deferred with rationale
 
@@ -1298,6 +1302,7 @@ _none_
 - **evidence-before:** AUDIT/findings/L6-tests.md T-28
 - **fix-summary:** #0066 the test config's HEVC fallback is libx265 so hosts without hevc_videotoolbox still verify, plus a fallback test; #0067 proves the fade-out fixture breaches delivery QC; #0068 observes the one-pass mastering fallback log; #0072 extracts needsFullSongCompanion and tests the cap boundaries; #0097 adds three -doctor failure tests.
 - **evidence-after:** AUDIT/evidence/0066-0097-after.log (eight tests pass). swiftlint 525/56, no new violations.
+- **commit sha:** 7fd628f
 
 ### #0098 · S3 · DONE · Exact ffmpeg bass filter string pinned without a stated reason
 

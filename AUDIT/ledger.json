@@ -1123,7 +1123,7 @@
       "evidence_before": "AUDIT/findings/L6-tests.md T-14",
       "fix_summary": "#0066 the test config's HEVC fallback is libx265 so hosts without hevc_videotoolbox still verify, plus a fallback test; #0067 proves the fade-out fixture breaches delivery QC; #0068 observes the one-pass mastering fallback log; #0072 extracts needsFullSongCompanion and tests the cap boundaries; #0097 adds three -doctor failure tests.",
       "evidence_after": "AUDIT/evidence/0066-0097-after.log (eight tests pass). swiftlint 525/56, no new violations.",
-      "commit": "",
+      "commit": "7fd628f",
       "notes": ""
     },
     {
@@ -1140,7 +1140,7 @@
       "evidence_before": "AUDIT/findings/L6-tests.md T-15",
       "fix_summary": "#0066 the test config's HEVC fallback is libx265 so hosts without hevc_videotoolbox still verify, plus a fallback test; #0067 proves the fade-out fixture breaches delivery QC; #0068 observes the one-pass mastering fallback log; #0072 extracts needsFullSongCompanion and tests the cap boundaries; #0097 adds three -doctor failure tests.",
       "evidence_after": "AUDIT/evidence/0066-0097-after.log (eight tests pass). swiftlint 525/56, no new violations.",
-      "commit": "",
+      "commit": "7fd628f",
       "notes": ""
     },
     {
@@ -1157,7 +1157,7 @@
       "evidence_before": "AUDIT/findings/L6-tests.md T-16",
       "fix_summary": "#0066 the test config's HEVC fallback is libx265 so hosts without hevc_videotoolbox still verify, plus a fallback test; #0067 proves the fade-out fixture breaches delivery QC; #0068 observes the one-pass mastering fallback log; #0072 extracts needsFullSongCompanion and tests the cap boundaries; #0097 adds three -doctor failure tests.",
       "evidence_after": "AUDIT/evidence/0066-0097-after.log (eight tests pass). swiftlint 525/56, no new violations.",
-      "commit": "",
+      "commit": "7fd628f",
       "notes": ""
     },
     {
@@ -1225,7 +1225,7 @@
       "evidence_before": "AUDIT/findings/L6-tests.md T-22; L2-video-image-actions-cli.md X-19",
       "fix_summary": "#0066 the test config's HEVC fallback is libx265 so hosts without hevc_videotoolbox still verify, plus a fallback test; #0067 proves the fade-out fixture breaches delivery QC; #0068 observes the one-pass mastering fallback log; #0072 extracts needsFullSongCompanion and tests the cap boundaries; #0097 adds three -doctor failure tests.",
       "evidence_after": "AUDIT/evidence/0066-0097-after.log (eight tests pass). swiftlint 525/56, no new violations.",
-      "commit": "",
+      "commit": "7fd628f",
       "notes": ""
     },
     {
@@ -1650,7 +1650,7 @@
       "evidence_before": "AUDIT/findings/L6-tests.md T-28",
       "fix_summary": "#0066 the test config's HEVC fallback is libx265 so hosts without hevc_videotoolbox still verify, plus a fallback test; #0067 proves the fade-out fixture breaches delivery QC; #0068 observes the one-pass mastering fallback log; #0072 extracts needsFullSongCompanion and tests the cap boundaries; #0097 adds three -doctor failure tests.",
       "evidence_after": "AUDIT/evidence/0066-0097-after.log (eight tests pass). swiftlint 525/56, no new violations.",
-      "commit": "",
+      "commit": "7fd628f",
       "notes": ""
     },
     {
