@@ -86,6 +86,15 @@ chmod +x ./converter
 
 State in the PR that the binary was regenerated and why.
 
+## Licensing
+
+Converter is released under the [MIT License](LICENSE). By submitting a pull request you agree
+that your contribution is licensed under the same terms (inbound = outbound); there is no separate
+contributor licence agreement to sign.
+
+Third-party code keeps its own licence and attribution. `Sources/ThirdParty/libbw64/` is vendored
+Apache-2.0 code by the EBU and stays verbatim apart from a recorded upstream update.
+
 ## Pull request expectations
 
 - One focused change per PR; describe commands run and results (do not claim tests passed without running them).
