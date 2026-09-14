@@ -44,7 +44,7 @@ _none_
 | #0074 | S2 | converter (dead code) | Sources/converter/Actions.swift:114; ImagePipeline.swift:26-27; ProcessRunner.swift:78; ValidationPipeline.swift:857; Tests/IntegrationTestSupport.swift:32 | periphery-flagged unused declarations (6 unused, 15 assign-only) — prove reachability, then remove or retain with reason | dead | START |  |
 | #0075 | S2 | converter (dead code) | Sources/converter/PipelineCore.swift:347,357-362; Actions.swift:105-110,794-808; BW64Bridge/bw64_bridge.cpp:95; LosslessAudioPipeline.swift:9,30,173-174; AudioPipeline.swift:160-162,264,1955 | Dead branches, tautological guards, dead parameters, redundant discards | dead | START |  |
 | #0086 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:1378,1694-1706 | Magic bytes-per-sample and missing free-space check on the BW64 path | style | START |  |
-| #0088 | S3 | converter/Config+VideoPipeline | Sources/converter/VideoPipeline.swift:230,240,244; Config.swift:393,397 | Config colour/scale-filter values spliced into the filter graph with only non-empty validation | unsafe | TEST |  |
+| #0088 | S3 | converter/Config+VideoPipeline | Sources/converter/VideoPipeline.swift:230,240,244; Config.swift:393,397 | Config colour/scale-filter values spliced into the filter graph with only non-empty validation | unsafe | TEST | 720de01 |
 | #0089 | S3 | converter/VideoPipeline | Sources/converter/VideoPipeline.swift:334,386,467 | ALAC M4A decoded and re-encoded for every video although stream copy is bit-transparent | perf | START |  |
 | #0090 | S3 | BW64Bridge | Sources/BW64Bridge/include/bw64_bridge.h:14-22 | Easily swappable C ABI parameters (swapped paths would truncate the input) | style | START |  |
 | #0093 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:30-50 | 10 s wall-clock budget on a 40 000-iteration shell loop | test | START |  |
@@ -1179,6 +1179,7 @@ _none_
 - **evidence-before:** AUDIT/findings/L2-video-image-actions-cli.md X-20
 - **fix-summary:** VIDEO_MP4_SCALE_FILTER and VIDEO_COLOR_RANGE are validated against allow-lists and the three VIDEO_COLOR_* tokens against a letters/digits/underscore charset, so a config value cannot splice another filter into the graph.
 - **evidence-after:** AUDIT/evidence/0088-before.log (fix stashed: bogus scaler, comma/colon/space injection and an unknown range were all accepted); AUDIT/evidence/0088-after.log (testEveryConfigRuleRejectsAnInvalidValueNamingTheKey and all 14 Config tests pass). swiftlint 526/56, no new violations.
+- **commit sha:** 720de01
 
 ### #0089 · S3 · START · ALAC M4A decoded and re-encoded for every video although stream copy is bit-transparent
 

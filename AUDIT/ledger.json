@@ -1497,7 +1497,7 @@
       "evidence_before": "AUDIT/findings/L2-video-image-actions-cli.md X-20",
       "fix_summary": "VIDEO_MP4_SCALE_FILTER and VIDEO_COLOR_RANGE are validated against allow-lists and the three VIDEO_COLOR_* tokens against a letters/digits/underscore charset, so a config value cannot splice another filter into the graph.",
       "evidence_after": "AUDIT/evidence/0088-before.log (fix stashed: bogus scaler, comma/colon/space injection and an unknown range were all accepted); AUDIT/evidence/0088-after.log (testEveryConfigRuleRejectsAnInvalidValueNamingTheKey and all 14 Config tests pass). swiftlint 526/56, no new violations.",
-      "commit": "",
+      "commit": "720de01",
       "notes": ""
     },
     {
