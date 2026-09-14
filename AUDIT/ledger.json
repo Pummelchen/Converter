@@ -1480,7 +1480,7 @@
       "evidence_before": "AUDIT/findings/L2-video-image-actions-cli.md X-18",
       "fix_summary": "--seed rejects 0; --sharpness is bounded by the new ProjectConfig.maximumAIPixSharpness (also enforced for IMAGE_AIPIX_SHARPNESS); a select() helper rejects a second different action flag; requireValue refuses option-like values.",
       "evidence_after": "AUDIT/evidence/0087-before.log (fix stashed: --seed 0, --sharpness 100, '-full -album' and '--output-file --overwrite' were all accepted); AUDIT/evidence/0087-after.log (testCLIRejectsZeroSeedUnboundedSharpnessRepeatedActionsAndOptionLikeValues passes). swiftlint 530/56, no new violations.",
-      "commit": "",
+      "commit": "ee8d65d",
       "notes": ""
     },
     {

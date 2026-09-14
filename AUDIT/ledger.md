@@ -48,7 +48,7 @@ _none_
 | #0077 | S3 | converter/DependencyBootstrap | Sources/converter/DependencyBootstrap.swift:77-82 | Post-install failure message lists nothing when a tool is present but non-functional | logic | START |  |
 | #0080 | S3 | converter/PipelineCore | Sources/converter/PipelineCore.swift:323-344,271 | Orphan-temp detection keys on local PID only; synced directories across hosts | logic | START |  |
 | #0086 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:1378,1694-1706 | Magic bytes-per-sample and missing free-space check on the BW64 path | style | START |  |
-| #0087 | S3 | converter/CLI | Sources/converter/CLI.swift:231-260 | CLI inconsistencies: --seed 0, unbounded --sharpness, repeated action flags, option values beginning with -- | logic | TEST |  |
+| #0087 | S3 | converter/CLI | Sources/converter/CLI.swift:231-260 | CLI inconsistencies: --seed 0, unbounded --sharpness, repeated action flags, option values beginning with -- | logic | TEST | ee8d65d |
 | #0088 | S3 | converter/Config+VideoPipeline | Sources/converter/VideoPipeline.swift:230,240,244; Config.swift:393,397 | Config colour/scale-filter values spliced into the filter graph with only non-empty validation | unsafe | START |  |
 | #0089 | S3 | converter/VideoPipeline | Sources/converter/VideoPipeline.swift:334,386,467 | ALAC M4A decoded and re-encoded for every video although stream copy is bit-transparent | perf | START |  |
 | #0090 | S3 | BW64Bridge | Sources/BW64Bridge/include/bw64_bridge.h:14-22 | Easily swappable C ABI parameters (swapped paths would truncate the input) | style | START |  |
@@ -1158,6 +1158,7 @@ _none_
 - **evidence-before:** AUDIT/findings/L2-video-image-actions-cli.md X-18
 - **fix-summary:** --seed rejects 0; --sharpness is bounded by the new ProjectConfig.maximumAIPixSharpness (also enforced for IMAGE_AIPIX_SHARPNESS); a select() helper rejects a second different action flag; requireValue refuses option-like values.
 - **evidence-after:** AUDIT/evidence/0087-before.log (fix stashed: --seed 0, --sharpness 100, '-full -album' and '--output-file --overwrite' were all accepted); AUDIT/evidence/0087-after.log (testCLIRejectsZeroSeedUnboundedSharpnessRepeatedActionsAndOptionLikeValues passes). swiftlint 530/56, no new violations.
+- **commit sha:** ee8d65d
 
 ### #0088 · S3 · START · Config colour/scale-filter values spliced into the filter graph with only non-empty validation
 
