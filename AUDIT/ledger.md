@@ -34,7 +34,7 @@ _none_
 | #0041 | S2 | converter/DependencyBootstrap | Sources/converter/DependencyBootstrap.swift:216-248 | Installer subprocesses have no timeout and discard diagnostics | incomplete | START |  |
 | #0050 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:327-336,367-387,591-600 | Loudness fallback publishes any true-peak breach with a misleading 'closest-safe' label | logic | START |  |
 | #0051 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:992,1170,1029,508 | Redundant padding verification, uncached ffmpeg -filters, per-file ladder resolution | perf | START |  |
-| #0053 | S2 | converter/Support | Sources/converter/Support.swift:308 | M:SS timecode parsing drops empty components; empty-component guard unreachable | logic | TEST |  |
+| #0053 | S2 | converter/Support | Sources/converter/Support.swift:308 | M:SS timecode parsing drops empty components; empty-component guard unreachable | logic | TEST | c79f502 |
 | #0054 | S2 | converter/Actions | Sources/converter/Actions.swift:1254 | -mp4toshort re-ingests the pipeline's own _Short_CenterCut/_FullSong outputs | bug | START |  |
 | #0055 | S2 | converter/ImagePipeline | Sources/converter/ImagePipeline.swift:329-336 | Fitted portrait still double-sharpens derived masters and user Vertical_8K.png | logic | START |  |
 | #0056 | S2 | converter/VideoPipeline | Sources/converter/VideoPipeline.swift:399-404 | shortenMP4 upscales with ffmpeg's default scaler instead of the configured flags | bug | START |  |
@@ -781,6 +781,7 @@ _none_
 - **evidence-before:** AUDIT/findings/L2-video-image-actions-cli.md X-8
 - **fix-summary:** parseFlexibleTimecode splits on ':' with omittingEmptySubsequences:false, so empty colon-separated fields reach the parseTimecodeComponent guard instead of being dropped and silently reparsed as a shorter duration.
 - **evidence-after:** AUDIT/evidence/0053-before.log (fix not applied: 8 failures — 7 'did not throw' plus ':' rejected with the wrong message); AUDIT/evidence/0053-after.log (4 timecode tests pass). swiftlint 531/56, no new violations.
+- **commit sha:** c79f502
 
 ### #0054 · S2 · START · -mp4toshort re-ingests the pipeline's own _Short_CenterCut/_FullSong outputs
 
