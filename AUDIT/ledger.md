@@ -2,15 +2,15 @@
 
 Session: `2026-09-13` · branch `audit/2026-09-13` · baseline commit `4bb136a`
 
-**known-total:100 done:71 open:29 blocked:0 new-this-session:100**
+**known-total:100 done:73 open:27 blocked:0 new-this-session:100**
 
 | status | count |
 |---|---|
 | START | 27 |
 | PROGRESS | 0 |
-| TEST | 2 |
+| TEST | 0 |
 | AUDIT | 0 |
-| DONE | 71 |
+| DONE | 73 |
 | BLOCKED | 0 |
 
 Status gates: START (reproduced/proven + expected behaviour written) → PROGRESS (diff) → TEST (failing-before/passing-after test pasted, full suite green, no new warnings) → AUDIT (cold re-read, all scanners re-run, no baseline regression, no new placeholder) → DONE (committed atomically). BLOCKED needs reason + what was tried + ≥2 options for a human.
@@ -26,11 +26,10 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 
 _none_
 
-## Open S2 / S3 (27)
+## Open S2 / S3 (25)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
-| #0050 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:327-336,367-387,591-600 | Loudness fallback publishes any true-peak breach with a misleading 'closest-safe' label | logic | TEST | 8828888 |
 | #0051 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:992,1170,1029,508 | Redundant padding verification, uncached ffmpeg -filters, per-file ladder resolution | perf | START |  |
 | #0058 | S2 | repo | converter (binary); docs/KNOWN_GOOD_VERSIONS.md | Checked-in release binary has no verifiable provenance (no SHA-256, adhoc signature, no tag) | deps | START |  |
 | #0059 | S2 | repo/CI | .github/workflows/ci.yml:24,27-32,39-40 | CI not reproducible: unpinned action, latest-Xcode selection, unpinned brew formulae | deps | START |  |
@@ -44,7 +43,6 @@ _none_
 | #0073 | S2 | converter (lint) | AUDIT/baseline/swiftlint-by-rule-4bb136a.txt | swiftlint baseline 533 (56 error-level): fix the actionable rules; structural rules deferred with rationale | style | START |  |
 | #0074 | S2 | converter (dead code) | Sources/converter/Actions.swift:114; ImagePipeline.swift:26-27; ProcessRunner.swift:78; ValidationPipeline.swift:857; Tests/IntegrationTestSupport.swift:32 | periphery-flagged unused declarations (6 unused, 15 assign-only) — prove reachability, then remove or retain with reason | dead | START |  |
 | #0075 | S2 | converter (dead code) | Sources/converter/PipelineCore.swift:347,357-362; Actions.swift:105-110,794-808; BW64Bridge/bw64_bridge.cpp:95; LosslessAudioPipeline.swift:9,30,173-174; AudioPipeline.swift:160-162,264,1955 | Dead branches, tautological guards, dead parameters, redundant discards | dead | START |  |
-| #0077 | S3 | converter/DependencyBootstrap | Sources/converter/DependencyBootstrap.swift:77-82 | Post-install failure message lists nothing when a tool is present but non-functional | logic | TEST | 2c71af1 |
 | #0080 | S3 | converter/PipelineCore | Sources/converter/PipelineCore.swift:323-344,271 | Orphan-temp detection keys on local PID only; synced directories across hosts | logic | START |  |
 | #0086 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:1378,1694-1706 | Magic bytes-per-sample and missing free-space check on the BW64 path | style | START |  |
 | #0088 | S3 | converter/Config+VideoPipeline | Sources/converter/VideoPipeline.swift:230,240,244; Config.swift:393,397 | Config colour/scale-filter values spliced into the filter graph with only non-empty validation | unsafe | START |  |
@@ -58,7 +56,7 @@ _none_
 | #0098 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:529,534 | Exact ffmpeg bass filter string pinned without a stated reason | test | START |  |
 | #0100 | S3 | converter/Actions | Sources/converter/Actions.swift (normalizedFullRunSource / resolveFullAudio) | Full-run source is renamed before preflight; a corrupt source loses its original name in the error | logic | START |  |
 
-## Done (71)
+## Done (73)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
@@ -109,6 +107,7 @@ _none_
 | #0047 | S2 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:16-32,59-63 | Source clip re-rendered and re-analysed for every short variant | perf | DONE | c238583 |
 | #0048 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:94-97; Actions.swift:1071 | -master is not idempotent (re-masters its own _mastered outputs) | logic | DONE | 8fac9dc |
 | #0049 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:2104-2113 | -flactoalbum concatenates the pipeline's own derived/archival FLACs | logic | DONE | 8fac9dc |
+| #0050 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:327-336,367-387,591-600 | Loudness fallback publishes any true-peak breach with a misleading 'closest-safe' label | logic | DONE | 8828888 |
 | #0052 | S2 | converter/ImagePipeline | Sources/converter/ValidationPipeline.swift:391 (preflightImageInput call sites) | Full-decode image preflight of the same master repeated ~10x per run | perf | DONE | fbefda6 |
 | #0053 | S2 | converter/Support | Sources/converter/Support.swift:308 | M:SS timecode parsing drops empty components; empty-component guard unreachable | logic | DONE | c79f502 |
 | #0054 | S2 | converter/Actions | Sources/converter/Actions.swift:1254 | -mp4toshort re-ingests the pipeline's own _Short_CenterCut/_FullSong outputs | bug | DONE | 8e78584 |
@@ -122,6 +121,7 @@ _none_
 | #0070 | S2 | converterTests | Sources/Tests/converterTests/converterTests.swift:737-749 | LoudnormArgument clamping untested at the exact bounds | test | DONE | e33815c |
 | #0071 | S2 | converter/Config+tests | Sources/converter/Config.swift:319-452 | Config validation gaps (ranges, empty strings, zero byte targets, CRC chunk bound, negative message) and only 3 keys tested | test | DONE | 87c940b |
 | #0076 | S3 | converter/Support | Sources/converter/Support.swift:122-126 | cancelledBeforeSuspension can retain a marker for an already-resumed waiter | logic | DONE | 24e52d7 |
+| #0077 | S3 | converter/DependencyBootstrap | Sources/converter/DependencyBootstrap.swift:77-82 | Post-install failure message lists nothing when a tool is present but non-functional | logic | DONE | 2c71af1 |
 | #0078 | S3 | converter/PipelineCore | Sources/converter/PipelineCore.swift:372-379 | ensureWritableDirectory accepts a regular file at OUT_DIR | logic | DONE | 9a721d9 |
 | #0079 | S3 | converter/ProcessRunner | Sources/converter/ProcessRunner.swift:156-160 | Signal deaths reported as ordinary exit codes | incomplete | DONE | 9a721d9 |
 | #0081 | S3 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:203-210 | LUFS rebase widens the tolerance symmetrically | logic | DONE | bccf942 |
@@ -747,7 +747,7 @@ _none_
 - **commit sha:** 8fac9dc
 - **notes:**  Committed together with the other album/master selection fixes (#0016/#0017/#0048/#0049): they touch the same hunks of AudioPipeline.swift and were verified by one suite run; #0018 has its own commit.
 
-### #0050 · S2 · TEST · Loudness fallback publishes any true-peak breach with a misleading 'closest-safe' label
+### #0050 · S2 · DONE · Loudness fallback publishes any true-peak breach with a misleading 'closest-safe' label
 
 - **project/module:** converter/AudioPipeline
 - **file:line:** Sources/converter/AudioPipeline.swift:327-336,367-387,591-600
@@ -756,7 +756,7 @@ _none_
 - **discovered-by:** reviewer A-9
 - **evidence-before:** AUDIT/findings/L2-audio.md A-9
 - **fix-summary:** A fallback may excuse a true-peak issue only when truePeak <= sourcePeak + appliedGain + 0.3 dB (MP3) / 0.1 dB (lossless); loudnessFallbackReason(result:) derives the warning label from the issue set, and both the loudness and album paths use it.
-- **evidence-after:** AUDIT/evidence/0050-before.log (guard disabled: the added-peak plan and the lossless near-ceiling result were accepted); AUDIT/evidence/0050-after.log (testLoudnessFallbackAcceptsMediaValidQCIssuesOnly and testLoudnessFallbackOnlyExcusesAnInherentTruePeak pass; testLoudnessNormalizeKeepsPeakConstrainedMP4Transparent passes). swiftlint 528/56, no new violations.
+- **evidence-after:** AUDIT/evidence/0050-before.log (guard disabled: the added-peak plan and the lossless near-ceiling result were accepted); AUDIT/evidence/0050-after.log (testLoudnessFallbackAcceptsMediaValidQCIssuesOnly and testLoudnessFallbackOnlyExcusesAnInherentTruePeak pass; testLoudnessNormalizeKeepsPeakConstrainedMP4Transparent passes). swiftlint 528/56, no new violations. Full suite (AUDIT/evidence/0050-0077-fullsuite.txt): 249 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** 8828888
 
 ### #0051 · S2 · START · Redundant padding verification, uncached ffmpeg -filters, per-file ladder resolution
@@ -1039,7 +1039,7 @@ _none_
 - **evidence-after:** AUDIT/evidence/0076-before.log (pre-fix cancelWaiter restored: 500 stale markers left behind); AUDIT/evidence/0076-after.log (0 markers, permit intact, all six semaphore tests pass). swiftlint 533/56. Full suite (AUDIT/evidence/0039-0085-fullsuite.txt): 235 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** 24e52d7
 
-### #0077 · S3 · TEST · Post-install failure message lists nothing when a tool is present but non-functional
+### #0077 · S3 · DONE · Post-install failure message lists nothing when a tool is present but non-functional
 
 - **project/module:** converter/DependencyBootstrap
 - **file:line:** Sources/converter/DependencyBootstrap.swift:77-82
@@ -1048,7 +1048,7 @@ _none_
 - **discovered-by:** reviewer C-9
 - **evidence-before:** AUDIT/findings/L2-core-runtime.md C-9
 - **fix-summary:** DependencyBootstrapper.unusableToolDescriptions probes each tool with isUsableTool and reports 'not found' versus 'installed but fails its -version probe', so the post-install error always names the offending commands.
-- **evidence-after:** AUDIT/evidence/0077-before.log (presence-only filter listed nothing for a present but broken ffmpeg); AUDIT/evidence/0077-after.log (testUnusableInstalledToolsAreNamedWithTheirReason passes). swiftlint 528/56, no new violations.
+- **evidence-after:** AUDIT/evidence/0077-before.log (presence-only filter listed nothing for a present but broken ffmpeg); AUDIT/evidence/0077-after.log (testUnusableInstalledToolsAreNamedWithTheirReason passes). swiftlint 528/56, no new violations. Full suite (AUDIT/evidence/0050-0077-fullsuite.txt): 249 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** 2c71af1
 
 ### #0078 · S3 · DONE · ensureWritableDirectory accepts a regular file at OUT_DIR
