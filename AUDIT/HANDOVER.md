@@ -124,11 +124,18 @@ against the working tree and `origin` on 2026-09-14 06:58 WIB.
   (file_length 6, type_body_length 6, function_body_length 4, cyclomatic_complexity 3) and
   deferred with a written rationale in the commit.
 - Ledger after batch 14: **done 95 · open 5 · blocked 0**.
-- Remaining 5: **#0058** (record the release binary's SHA-256/size/signature and verify it in CI),
-  **#0059** (pin `actions/checkout` by SHA, select a specific Xcode, stop the unpinned
-  `brew update`, add the now-passing strict C++ build step), **#0051** (redundant padding
-  verification / uncached `ffmpeg -filters` — needs a counting runner), **#0030** (docs sync,
-  deliberately last), then S0 **#0006** (Phase E independent verification on `node1`).
+- Batch 15 DONE after a 261-test full suite: **#0058** (`converter` rebuilt from the audited source
+  with its size/SHA-256/signature/source commit recorded in `docs/BINARY_PROVENANCE.md` +
+  `docs/converter.sha256` and gated by CI), **#0059** (CI now pins `actions/checkout` by SHA,
+  asserts Swift 6.3.3, drops the unpinned `brew update`, limits permissions and runs
+  warnings-as-errors plus the strict C++ build).
+- Ledger after batch 15: **done 97 · open 3 · blocked 0**.
+- Remaining 3: **#0051** (redundant padding verification — up to 8 ffmpeg decodes on the staging
+  WAV and again on the deliverable; `ffmpeg -filters` spawned per file; ladder resolved per file.
+  Needs a recording-tool wrapper in `IntegrationTestSupport` that logs argv and execs the real
+  ffmpeg, then assert the invocation count drops), **#0030** (docs/CLI-help/wiki sync — do LAST,
+  it must describe final behaviour), then S0 **#0006** (Phase E independent verification from a
+  fresh clone on `node1`: ssh with the machine name as user, clone, build, run the suite).
 - Investigated but deliberately deferred: **#0086** (the 3-byte width in `estimateWAVBytes` is
   latent because `Config.validate` pins `WAV_CODEC` to `pcm_s24le`; only the BW64 free-space gap
   is real — fold it into a later perf/validation pass), **#0051** (needs a counting runner to
