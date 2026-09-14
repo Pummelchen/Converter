@@ -2,7 +2,7 @@
 
 Session: `2026-09-13` · branch `audit/2026-09-13` · baseline commit `4bb136a`
 
-**known-total:100 done:56 open:43 blocked:1 new-this-session:100**
+**known-total:100 done:57 open:43 blocked:0 new-this-session:100**
 
 | status | count |
 |---|---|
@@ -10,8 +10,8 @@ Session: `2026-09-13` · branch `audit/2026-09-13` · baseline commit `4bb136a`
 | PROGRESS | 1 |
 | TEST | 0 |
 | AUDIT | 0 |
-| DONE | 56 |
-| BLOCKED | 1 |
+| DONE | 57 |
+| BLOCKED | 0 |
 
 Status gates: START (reproduced/proven + expected behaviour written) → PROGRESS (diff) → TEST (failing-before/passing-after test pasted, full suite green, no new warnings) → AUDIT (cold re-read, all scanners re-run, no baseline regression, no new placeholder) → DONE (committed atomically). BLOCKED needs reason + what was tried + ≥2 options for a human.
 
@@ -23,11 +23,9 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 | #0005 | S1 | repo | wiki | Create and maintain the wiki audit tracker page mirroring the ledger (§9) | docs | PROGRESS | 0ac7242 |
 | #0030 | S1 | repo/docs | README.md:25,59; Sources/converter/CLI.swift:461-481,664-665; CONTRIBUTING.md:59; wiki Home/Full-Run-Contract | README, CLI help, CONTRIBUTING and wiki contradict actual behaviour (source rename, audio alteration, portrait input, --keep-full-name, 58 s, auto-install wording) | docs | START |  |
 
-## Blocked (1)
+## Blocked (0)
 
-| id | sev | module | file:line | title | category | status | commit |
-|---|---|---|---|---|---|---|---|
-| #0029 | S1 | repo | LICENSE (missing) | Repository has no LICENSE file | deps | BLOCKED |  |
+_none_
 
 ## Open S2 / S3 (40)
 
@@ -74,7 +72,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 | #0098 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:529,534 | Exact ffmpeg bass filter string pinned without a stated reason | test | START |  |
 | #0100 | S3 | converter/Actions | Sources/converter/Actions.swift (normalizedFullRunSource / resolveFullAudio) | Full-run source is renamed before preflight; a corrupt source loses its original name in the error | logic | START |  |
 
-## Done (56)
+## Done (57)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
@@ -101,6 +99,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 | #0026 | S1 | BW64Bridge | Sources/BW64Bridge/bw64_bridge.cpp:178-197 | Disk-write failures undetectable; bridge self-validates against the ds64 size it wrote | bug | DONE | f2c97eb |
 | #0027 | S1 | repo/docs | SECURITY.md:1-21 | SECURITY.md is the unedited GitHub template with fictitious versions | placeholder | DONE | a4203f8 |
 | #0028 | S1 | repo/docs | README.md:94; Sources/ThirdParty/libbw64 | No third-party attribution/provenance for vendored Apache-2.0 libbw64 | deps | DONE | a40e56a |
+| #0029 | S1 | repo | LICENSE (missing) | Repository has no LICENSE file | deps | DONE | 420315e |
 | #0031 | S1 | converterTests | Sources/Tests/converterTests/IntegrationTestSupport.swift:25,133-143 | Integration workspace inherits OUTPUT_DIR/SRC_DIR/OUT_DIR/CONFIG_FILE/DEBUG from the host shell | test | DONE | d047f82 |
 | #0032 | S1 | converterTests | Sources/converter/PipelineCore.swift:487-505 | publishTemp restore-on-failure branch has no test | test | DONE | f4d018d |
 | #0033 | S1 | converterTests | Sources/converter/PipelineCore.swift:551-561 | requireDirectChild never tested with .., symlinks, absolute paths | test | DONE | 1682212 |
@@ -492,7 +491,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **commit sha:** a40e56a
 - **notes:** UPSTREAM.md + README third-party section.
 
-### #0029 · S1 · BLOCKED · Repository has no LICENSE file
+### #0029 · S1 · DONE · Repository has no LICENSE file
 
 - **project/module:** repo
 - **file:line:** LICENSE (missing)
@@ -500,6 +499,9 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **host-used:** local
 - **discovered-by:** reviewer B-3
 - **evidence-before:** AUDIT/findings/L0-L3-bridge-repo.md B-3
+- **fix-summary:** Owner chose MIT. The LICENSE file (MIT, Copyright (c) 2026 André Borchert) and the README License section arrive via the origin/main merge 4bd292e; CONTRIBUTING gains the inbound=outbound rule and the vendored-code note in this commit. No engineering decision was made by the audit.
+- **evidence-after:** LICENSE present at the repo root (1072 bytes, 'MIT License'); README '## License' links it; CONTRIBUTING '## Licensing' records inbound = outbound; the libbw64 Apache-2.0 attribution from #0028 is kept under '## Third-party code'.
+- **commit sha:** 420315e
 - **notes:** License text is the owner's decision — expected BLOCKED with options. Owner: repository maintainer (Pummelchen).
 - **blocked-reason:** Choosing a licence is the repository owner's legal decision, not an engineering one; the audit must not pick one. Tried: confirmed no LICENSE exists anywhere in history (git log --all --diff-filter=A -- 'LICENSE*' is empty) and that the only licence text in the tree is libbw64's Apache-2.0. Options for the owner: (1) MIT or Apache-2.0 for a permissive tool (Apache-2.0 pairs naturally with the vendored libbw64 and adds an explicit patent grant); (2) GPL-3.0 if derivatives must stay open; (3) keep it proprietary — then state 'All rights reserved' in README and remove the CONTRIBUTING invitation for outside PRs, or add a contributor licence statement. Once decided: add LICENSE at the root, name it in README, and note the inbound=outbound rule in CONTRIBUTING.
 
