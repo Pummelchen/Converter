@@ -33,7 +33,7 @@ _none_
 | #0051 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:992,1170,1029,508 | Redundant padding verification, uncached ffmpeg -filters, per-file ladder resolution | perf | START |  |
 | #0058 | S2 | repo | converter (binary); docs/KNOWN_GOOD_VERSIONS.md | Checked-in release binary has no verifiable provenance (no SHA-256, adhoc signature, no tag) | deps | START |  |
 | #0059 | S2 | repo/CI | .github/workflows/ci.yml:24,27-32,39-40 | CI not reproducible: unpinned action, latest-Xcode selection, unpinned brew formulae | deps | START |  |
-| #0073 | S2 | converter (lint) | AUDIT/baseline/swiftlint-by-rule-4bb136a.txt | swiftlint baseline 533 (56 error-level): fix the actionable rules; structural rules deferred with rationale | style | TEST |  |
+| #0073 | S2 | converter (lint) | AUDIT/baseline/swiftlint-by-rule-4bb136a.txt | swiftlint baseline 533 (56 error-level): fix the actionable rules; structural rules deferred with rationale | style | TEST | 555c2c5 |
 
 ## Done (94)
 
@@ -1029,6 +1029,7 @@ _none_
 - **evidence-before:** AUDIT/baseline.md linters table
 - **fix-summary:** Wraps 26 over-long lines, renames the 1-2 character identifiers in the VisualSubs geometry helpers and the CRC table locals, renames the unit test class to ConverterTests, replaces the 4-member tuple with a named struct, and merges verifyVideoRender into the spec-based verifyRenderedVideo; the 19 structural errors are deferred with a recorded rationale.
 - **evidence-after:** AUDIT/evidence/0073-swiftlint-before.txt (523 total / 56 errors) vs 0073-swiftlint-after.txt (472 total / 19 errors, all file/type/function length or complexity); unit (125), Hash (6) and image suites pass.
+- **commit sha:** 555c2c5
 - **notes:** Keep swiftlint default rules (no config that lowers strictness). Fix the actionable rules (identifier_name, for_where, syntactic_sugar, optional_data_string_conversion, large_tuple, type_name, function_parameter_count where clean, inclusive_language). Structural rules (line_length, file_length, type_body_length, function_body_length, cyclomatic_complexity) are deferred: fixing them means splitting files/functions, which the no-drive-by-refactor rule forbids inside fix commits; recorded as deferred with owner = maintainer. Total count must never exceed the 533 baseline.
 
 ### #0074 · S2 · DONE · periphery-flagged unused declarations (6 unused, 15 assign-only) — prove reachability, then remove or retain with reason
