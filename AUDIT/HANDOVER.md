@@ -80,10 +80,17 @@ against the working tree and `origin` on 2026-09-14 06:58 WIB.
   are separated by the numeric options so a swap cannot compile, and equal input/output is
   refused before the writer truncates the source).
 - Ledger after batch 8: **done 77 · open 23 · blocked 0**.
-- Next planned batch: **#0089** (every video decodes the ALAC M4A to a 96 kHz WAV and re-encodes
-  it; a stream copy is bit-transparent — the largest remaining perf win), then the test-quality
-  batch #0093–#0098, **#0074/#0075** (dead code), **#0066–#0069** (test gaps), and the S0
-  `#0006` Phase E on `node1` once the tree is frozen.
+- Batch 9 DONE after a 253-test full suite: **#0089** (every full run decoded its own ALAC M4A
+  into a 96 kHz WAV and re-encoded it for all five videos; a stream copy is now used when the
+  source already matches the project's ALAC sample format, raw bit depth, rate and channels).
+- Ledger after batch 9: **done 78 · open 22 · blocked 0**. swiftlint is 526/56.
+- Next planned batch (test quality, mostly test-only changes — use a deliberate mutation to show
+  the weak test passes and the strengthened one fails): **#0069** (bare `XCTAssertThrowsError` on
+  a garbage MP3), **#0096** (SchedulerProfile asserted through its summary string), **#0095**
+  (progress-event count pinned to `== 6`), **#0093** (10 s wall-clock budget on the shell-loop
+  test), **#0094** (help-text tests couple to prose), **#0098** (bass filter string pinned
+  without a stated reason). Then **#0074/#0075** (dead code), **#0066–#0068** (test gaps), and
+  S0 **#0006** (Phase E on `node1`) once the tree is frozen.
 - Investigated but deliberately deferred: **#0086** (the 3-byte width in `estimateWAVBytes` is
   latent because `Config.validate` pins `WAV_CODEC` to `pcm_s24le`; only the BW64 free-space gap
   is real — fold it into a later perf/validation pass), **#0051** (needs a counting runner to
