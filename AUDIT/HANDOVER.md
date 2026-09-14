@@ -74,6 +74,16 @@ against the working tree and `origin` on 2026-09-14 06:58 WIB.
   naming tests keep driving it), **#0080** (temp names carry a host token, so orphan cleanup no
   longer deletes another machine's live temp in a synced directory).
 - Ledger after batch 7: **done 75 · open 25 · blocked 0**. swiftlint is 526/56.
+- Batch 8 DONE after a 252-test full suite: **#0088** (`VIDEO_MP4_SCALE_FILTER` and the
+  `VIDEO_COLOR_*` values are validated against allow-lists / a token charset instead of only
+  non-empty, closing a filter-graph injection), **#0090** (the BW64 bridge's two path parameters
+  are separated by the numeric options so a swap cannot compile, and equal input/output is
+  refused before the writer truncates the source).
+- Ledger after batch 8: **done 77 · open 23 · blocked 0**.
+- Next planned batch: **#0089** (every video decodes the ALAC M4A to a 96 kHz WAV and re-encodes
+  it; a stream copy is bit-transparent — the largest remaining perf win), then the test-quality
+  batch #0093–#0098, **#0074/#0075** (dead code), **#0066–#0069** (test gaps), and the S0
+  `#0006` Phase E on `node1` once the tree is frozen.
 - Investigated but deliberately deferred: **#0086** (the 3-byte width in `estimateWAVBytes` is
   latent because `Config.validate` pins `WAV_CODEC` to `pcm_s24le`; only the BW64 free-space gap
   is real — fold it into a later perf/validation pass), **#0051** (needs a counting runner to
