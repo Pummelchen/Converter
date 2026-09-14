@@ -1,0 +1,19 @@
+$ shasum -a 256 -c docs/converter.sha256
+converter: OK
+
+$ stat -f '%z bytes' converter; codesign -dv converter 2>&1 | grep -E 'Signature|Format'
+1717352 bytes
+Format=Mach-O thin (arm64)
+Signature=adhoc
+
+$ swift --version | grep -q 'Swift version 6.3.3' && echo 'toolchain assertion ok'
+swift-driver version: 1.148.6 toolchain assertion ok
+
+$ swift build --package-path Sources -Xswiftc -warnings-as-errors
+Build complete! (0.13s)
+
+$ swift build --package-path Sources -c release -Xswiftc -warnings-as-errors -Xcc -Wall -Xcc -Wextra -Xcc -Werror
+Build complete! (17.26s)
+
+$ ./converter -doctor (trimmed)
+[2026-09-14 11:01:49] [converter] [INFO] Doctor complete

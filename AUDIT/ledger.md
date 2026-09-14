@@ -6,9 +6,9 @@ Session: `2026-09-13` · branch `audit/2026-09-13` · baseline commit `4bb136a`
 
 | status | count |
 |---|---|
-| START | 5 |
+| START | 3 |
 | PROGRESS | 0 |
-| TEST | 0 |
+| TEST | 2 |
 | AUDIT | 0 |
 | DONE | 95 |
 | BLOCKED | 0 |
@@ -31,8 +31,8 @@ _none_
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
 | #0051 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:992,1170,1029,508 | Redundant padding verification, uncached ffmpeg -filters, per-file ladder resolution | perf | START |  |
-| #0058 | S2 | repo | converter (binary); docs/KNOWN_GOOD_VERSIONS.md | Checked-in release binary has no verifiable provenance (no SHA-256, adhoc signature, no tag) | deps | START |  |
-| #0059 | S2 | repo/CI | .github/workflows/ci.yml:24,27-32,39-40 | CI not reproducible: unpinned action, latest-Xcode selection, unpinned brew formulae | deps | START |  |
+| #0058 | S2 | repo | converter (binary); docs/KNOWN_GOOD_VERSIONS.md | Checked-in release binary has no verifiable provenance (no SHA-256, adhoc signature, no tag) | deps | TEST |  |
+| #0059 | S2 | repo/CI | .github/workflows/ci.yml:24,27-32,39-40 | CI not reproducible: unpinned action, latest-Xcode selection, unpinned brew formulae | deps | TEST |  |
 
 ## Done (95)
 
@@ -840,7 +840,7 @@ _none_
 - **evidence-after:** AUDIT/evidence/0057-before.log (production fix stashed: full-run selection fails with 'exactly one landscape source image'); AUDIT/evidence/0057-after.log (testFullRunClassifiesEXIFRotatedJPEGByDisplayedOrientation and testFullRunTreatsASquareSourceAsTheLandscapeImage pass). swiftlint 531/56, no new violations. Full suite (AUDIT/evidence/0054-0060-fullsuite.txt): 242 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** 0a98ca1
 
-### #0058 · S2 · START · Checked-in release binary has no verifiable provenance (no SHA-256, adhoc signature, no tag)
+### #0058 · S2 · TEST · Checked-in release binary has no verifiable provenance (no SHA-256, adhoc signature, no tag)
 
 - **project/module:** repo
 - **file:line:** converter (binary); docs/KNOWN_GOOD_VERSIONS.md
@@ -848,9 +848,11 @@ _none_
 - **host-used:** local
 - **discovered-by:** reviewer B-5
 - **evidence-before:** AUDIT/findings/L0-L3-bridge-repo.md B-5
+- **fix-summary:** #0058 the committed release binary is rebuilt from the audited source and its size/SHA-256/signature/source commit are recorded in docs/BINARY_PROVENANCE.md + docs/converter.sha256, with a CI checksum gate; #0059 CI pins actions/checkout by SHA, asserts Swift 6.3.3, drops the unpinned brew update, limits permissions and adds the strict C++ build.
+- **evidence-after:** AUDIT/evidence/0058-0059-after.log (checksum OK; Swift 6.3.3 assertion; warnings-as-errors build; strict C++ release build; ./converter -doctor on the rebuilt binary).
 - **notes:** Record sha256 per rebuild; CI release build + help diff. Removal from git is a maintainer decision (deferred note).
 
-### #0059 · S2 · START · CI not reproducible: unpinned action, latest-Xcode selection, unpinned brew formulae
+### #0059 · S2 · TEST · CI not reproducible: unpinned action, latest-Xcode selection, unpinned brew formulae
 
 - **project/module:** repo/CI
 - **file:line:** .github/workflows/ci.yml:24,27-32,39-40
@@ -858,6 +860,8 @@ _none_
 - **host-used:** local
 - **discovered-by:** reviewer B-6
 - **evidence-before:** AUDIT/findings/L0-L3-bridge-repo.md B-6
+- **fix-summary:** #0058 the committed release binary is rebuilt from the audited source and its size/SHA-256/signature/source commit are recorded in docs/BINARY_PROVENANCE.md + docs/converter.sha256, with a CI checksum gate; #0059 CI pins actions/checkout by SHA, asserts Swift 6.3.3, drops the unpinned brew update, limits permissions and adds the strict C++ build.
+- **evidence-after:** AUDIT/evidence/0058-0059-after.log (checksum OK; Swift 6.3.3 assertion; warnings-as-errors build; strict C++ release build; ./converter -doctor on the rebuilt binary).
 - **notes:** Pin checkout SHA, DEVELOPER_DIR, version guard.
 
 ### #0060 · S2 · DONE · Personal track list committed as the production album.txt

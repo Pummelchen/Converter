@@ -7,12 +7,17 @@ on:
     branches: [main]
   workflow_dispatch:
 
-# The Swift package lives at Sources/, so all SwiftPM commands use --package-path Sources.
-# The package requires Swift tools 6.3.3; the macos-26 (Tahoe) runner ships Xcode 26.6,
-# which provides Swift 6.3.3 (macos-15 tops out at Xcode 26.3 / Swift 6.2.4).
-# Integration tests require ffmpeg/ffprobe (Homebrew formula `ffmpeg`) and ImageMagick
-# (`magick`, Homebrew formula `imagemagick`). Both are installed below. No build artifacts
-# or runtime media are uploaded; Output/ and Sources/.build/ stay untracked.
+# The Swift package lives at Sources/, so every SwiftPM command uses --package-path Sources.
+# The package requires Swift tools 6.3.3; the macos-26 (Tahoe) runner ships Xcode 26.6, which
+# provides Swift 6.3.3 (macos-15 tops out at Xcode 26.3 / Swift 6.2.4). The toolchain step below
+# pins that expectation and fails loudly if the runner image moves, instead of silently building
+# with whatever Xcode happens to be newest.
+# Integration tests require ffmpeg/ffprobe (Homebrew formula `ffmpeg`) and ImageMagick (`magick`,
+# Homebrew formula `imagemagick`). Both are installed below with Homebrew's implicit update
+# disabled, and their versions are printed so a change is visible in the log.
+
+permissions:
+  contents: read
 
 jobs:
   build-and-test:
@@ -20,30 +25,44 @@ jobs:
     runs-on: macos-26
     env:
       CONVERTER_AUTO_INSTALL_DEPS: "0"
+      HOMEBREW_NO_AUTO_UPDATE: "1"
+      HOMEBREW_NO_ANALYTICS: "1"
+      HOMEBREW_NO_ENV_HINTS: "1"
     steps:
+      # Pinned by commit SHA (v4). Update the SHA and this comment together with Dependabot or
+      # `gh api repos/actions/checkout/git/ref/tags/v4`; a moving tag is not reproducible.
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
 
-      - name: Select latest Xcode
+      - name: Verify the committed release binary
+        run: shasum -a 256 -c docs/converter.sha256
+
+      - name: Select the required toolchain
         run: |
-          LATEST_XCODE=$(ls /Applications | grep -E '^Xcode_[0-9.]+\.app$' | sort -V | tail -1)
-          if [ -n "$LATEST_XCODE" ]; then
-            sudo xcode-select -s "/Applications/$LATEST_XCODE/Contents/Developer"
+          if [ -d /Applications/Xcode_26.6.app ]; then
+            sudo xcode-select -s /Applications/Xcode_26.6.app/Contents/Developer
           fi
           sw_vers
           xcodebuild -version
           swift --version
+          swift --version | grep -q 'Swift version 6.3.3' \
+            || { echo "This package requires Swift 6.3.3 (see Sources/Package.swift)"; exit 1; }
 
       - name: Install media toolchain (ffmpeg, imagemagick)
         run: |
-          brew update >/dev/null
           brew install ffmpeg imagemagick
           ffmpeg -version | head -1
           ffprobe -version | head -1
           magick -version | head -1
 
-      - name: Build
-        run: swift build --package-path Sources
+      - name: Build (warnings are errors)
+        run: swift build --package-path Sources -Xswiftc -warnings-as-errors
+
+      # The strict C++ pass covers the BW64 bridge and the vendored libbw64 headers (#0062).
+      - name: Build release with strict C++ flags
+        run: >
+          swift build --package-path Sources -c release
+          -Xswiftc -warnings-as-errors -Xcc -Wall -Xcc -Wextra -Xcc -Werror
 
       - name: Test
         run: swift test --package-path Sources

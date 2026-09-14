@@ -82,9 +82,12 @@ Only when explicitly part of the change:
 swift build --package-path Sources -c release
 cp Sources/.build/arm64-apple-macosx/release/converter ./converter
 chmod +x ./converter
+shasum -a 256 converter
 ```
 
-State in the PR that the binary was regenerated and why.
+Update `docs/converter.sha256` and the record in `docs/BINARY_PROVENANCE.md` (size, source commit,
+toolchain) in the same commit — CI verifies the checksum, so a replaced binary with a stale record
+fails the build. State in the PR that the binary was regenerated and why.
 
 ## Licensing
 
