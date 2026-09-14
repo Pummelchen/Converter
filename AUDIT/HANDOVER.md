@@ -108,13 +108,20 @@ against the working tree and `origin` on 2026-09-14 06:58 WIB.
   tolerance — now `min(DURATION_TOLERANCE_SEC, ALBUM_SILENCE_SECS / 2)`, below the 2 s gap it
   exists to detect).
 - Ledger after batch 12: **done 91 · open 9 · blocked 0**. swiftlint is 523/56.
-- Remaining 9: **#0073** (swiftlint actionable rules — the 56 error-level violations break down as
-  line_length 26, identifier_name 8, file_length 6, type_body_length 6, function_body_length 4,
-  cyclomatic_complexity 3, function_parameter_count 1, large_tuple 1, type_name 1; the 399
-  line_length warnings and the body/file-length rules are structural and must be deferred with a
-  written rationale), **#0061/#0062** (bridge channel bound, strict C++ on vendored headers),
-  **#0058/#0059** (binary + CI provenance), **#0086** (BW64 free space), **#0051** (redundant
-  probes), **#0030** (docs sync), then S0 **#0006** (Phase E on `node1`).
+- Batch 13 DONE after a 261-test full suite: **#0061** (the bridge now refuses a
+  channels/bit-depth combination whose WAV block alignment would overflow libbw64's uint16),
+  **#0062** (the vendored sign-compare diagnostics are suppressed around the libbw64 include
+  only, so `swift build -c release -Xcc -Wall -Xcc -Wextra -Xcc -Werror` now succeeds — CI can
+  rely on it), **#0086** (the BW64 path checks free space for the raw f32le temp plus the output
+  through a shared `requireFreeSpace`, and the staging width is named).
+- Ledger after batch 13: **done 94 · open 6 · blocked 0**.
+- Remaining 6: **#0073** (swiftlint actionable rules: 26 line_length errors to wrap, 8
+  identifier_name errors in `PipelineCore`'s geometry helpers, 1 type_name — the lowercase
+  `converterTests` class, 1 large_tuple, 1 function_parameter_count in `verifyVideoRender`; the
+  structural rules — file_length 6, type_body_length 6, function_body_length 4,
+  cyclomatic_complexity 3, plus 399 line_length warnings — are deferred with the baseline
+  rationale), **#0058/#0059** (binary + CI provenance), **#0051** (redundant probes), **#0030**
+  (docs sync), then S0 **#0006** (Phase E on `node1`).
 - Investigated but deliberately deferred: **#0086** (the 3-byte width in `estimateWAVBytes` is
   latent because `Config.validate` pins `WAV_CODEC` to `pcm_s24le`; only the BW64 free-space gap
   is real — fold it into a later perf/validation pass), **#0051** (needs a counting runner to
