@@ -36,7 +36,7 @@ _none_
 | #0061 | S2 | BW64Bridge | Sources/BW64Bridge/bw64_bridge.cpp:125-141,161 | Bridge does not bound channels; libbw64 uint16 blockAlignment wraps to heap overflow (unreachable via config today) | unsafe | START |  |
 | #0062 | S2 | BW64Bridge/Package | Sources/Package.swift:35-37; ThirdParty/libbw64/bw64/reader.hpp:220,225,227 | Strict C++ flags (-Wall -Wextra -Werror) fail on three benign sign-compare warnings in vendored libbw64 | deps | START |  |
 | #0073 | S2 | converter (lint) | AUDIT/baseline/swiftlint-by-rule-4bb136a.txt | swiftlint baseline 533 (56 error-level): fix the actionable rules; structural rules deferred with rationale | style | START |  |
-| #0074 | S2 | converter (dead code) | Sources/converter/Actions.swift:114; ImagePipeline.swift:26-27; ProcessRunner.swift:78; ValidationPipeline.swift:857; Tests/IntegrationTestSupport.swift:32 | periphery-flagged unused declarations (6 unused, 15 assign-only) — prove reachability, then remove or retain with reason | dead | TEST |  |
+| #0074 | S2 | converter (dead code) | Sources/converter/Actions.swift:114; ImagePipeline.swift:26-27; ProcessRunner.swift:78; ValidationPipeline.swift:857; Tests/IntegrationTestSupport.swift:32 | periphery-flagged unused declarations (6 unused, 15 assign-only) — prove reachability, then remove or retain with reason | dead | TEST | dc15b65 |
 | #0075 | S2 | converter (dead code) | Sources/converter/PipelineCore.swift:347,357-362; Actions.swift:105-110,794-808; BW64Bridge/bw64_bridge.cpp:95; LosslessAudioPipeline.swift:9,30,173-174; AudioPipeline.swift:160-162,264,1955 | Dead branches, tautological guards, dead parameters, redundant discards | dead | START |  |
 | #0086 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:1378,1694-1706 | Magic bytes-per-sample and missing free-space check on the BW64 path | style | START |  |
 
@@ -1033,6 +1033,7 @@ _none_
 - **evidence-before:** AUDIT/baseline/periphery-4bb136a.txt
 - **fix-summary:** Deletes rankedFullRunImageCandidates, the 4-arg decodeAudioToCanonicalPCM overload, ProcessRunner.fileManager, RIFFChunkWalker.first(_:), aipixResizeArguments' unused filter/colorSpace params, and two test-side dead declarations; records why projectRoot and the assignOnlyProperty records are retained.
 - **evidence-after:** AUDIT/evidence/0074-0075-periphery-before.csv (31 findings, 8 unused) vs 0074-0075-periphery-after.csv (23 findings, 0 unused); LoudnessFallback/Chunk/ContinueOnError/Image suites pass; swiftlint 524/56.
+- **commit sha:** dc15b65
 - **notes:** §6: proof of non-reachability across dynamic dispatch/tests/@testable before deletion.
 
 ### #0075 · S2 · START · Dead branches, tautological guards, dead parameters, redundant discards

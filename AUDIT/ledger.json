@@ -1259,7 +1259,7 @@
       "evidence_before": "AUDIT/baseline/periphery-4bb136a.txt",
       "fix_summary": "Deletes rankedFullRunImageCandidates, the 4-arg decodeAudioToCanonicalPCM overload, ProcessRunner.fileManager, RIFFChunkWalker.first(_:), aipixResizeArguments' unused filter/colorSpace params, and two test-side dead declarations; records why projectRoot and the assignOnlyProperty records are retained.",
       "evidence_after": "AUDIT/evidence/0074-0075-periphery-before.csv (31 findings, 8 unused) vs 0074-0075-periphery-after.csv (23 findings, 0 unused); LoudnessFallback/Chunk/ContinueOnError/Image suites pass; swiftlint 524/56.",
-      "commit": "",
+      "commit": "dc15b65",
       "notes": "\u00a76: proof of non-reachability across dynamic dispatch/tests/@testable before deletion."
     },
     {
