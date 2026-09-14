@@ -1,0 +1,22 @@
+swiftlint before #0073 (default rules, Sources/converter + Sources/Tests)
+total 523
+Error    cyclomatic_complexity            3
+Error    file_length                      6
+Error    function_body_length             4
+Error    function_parameter_count         1
+Error    identifier_name                  8
+Error    large_tuple                      1
+Error    line_length                      26
+Error    type_body_length                 6
+Error    type_name                        1
+Warning  cyclomatic_complexity            5
+Warning  file_length                      5
+Warning  for_where                        2
+Warning  function_body_length             17
+Warning  function_parameter_count         2
+Warning  identifier_name                  10
+Warning  inclusive_language               22
+Warning  large_tuple                      3
+Warning  line_length                      399
+Warning  optional_data_string_conversion  1
+Warning  syntactic_sugar                  1

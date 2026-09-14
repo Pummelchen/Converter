@@ -2,7 +2,7 @@ import Synchronization
 import XCTest
 @testable import converter
 
-final class converterTests: XCTestCase {
+final class ConverterTests: XCTestCase {
     private func makeTool(
         tempDirectory: URL,
         arguments: [String] = [],

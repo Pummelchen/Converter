@@ -634,62 +634,69 @@ final class PipelineIntegrationTests: XCTestCase {
         let m4a = try workspace.createAudio(name: "audio_m4a", ext: "m4a")
         let tool = try workspace.makeTool(arguments: ["-wavtom4a"])
 
-        let checks: [(String, URL, () throws -> URL, (URL) throws -> Void)] = [
-            ("flac->wav", flac, { try tool.convertAudioToWAV(flac) }, { file in
+        // A named record instead of a 4-member tuple (swiftlint large_tuple) so the loop reads.
+        struct Check {
+            let label: String
+            let source: URL
+            let build: () throws -> URL
+            let verify: (URL) throws -> Void
+        }
+        let checks: [Check] = [
+            Check(label: "flac->wav", source: flac, build: { try tool.convertAudioToWAV(flac) }, verify: { file in
                 try tool.verifyWAVStandard(file)
                 try tool.verifyDurationMatch(source: flac, output: file)
             }),
-            ("flac->mp3", flac, { try tool.convertAudioToMP3(flac) }, { file in
+            Check(label: "flac->mp3", source: flac, build: { try tool.convertAudioToMP3(flac) }, verify: { file in
                 try tool.verifyMP3Standard(file)
                 try tool.verifyDurationMatch(source: flac, output: file)
             }),
-            ("flac->m4a", flac, { try tool.convertAudioToM4A(flac) }, { file in
+            Check(label: "flac->m4a", source: flac, build: { try tool.convertAudioToM4A(flac) }, verify: { file in
                 try tool.verifyM4AFile(file, sampleRate: tool.config.m4aSampleRate, channels: tool.config.m4aChannels)
                 try tool.verifyDurationMatch(source: flac, output: file)
             }),
-            ("wav->flac", wav, { try tool.convertAudioToFLAC(wav) }, { file in
+            Check(label: "wav->flac", source: wav, build: { try tool.convertAudioToFLAC(wav) }, verify: { file in
                 try tool.verifyAudioOutput(file, codec: "flac", sampleRate: tool.config.flacSampleRate, channels: tool.config.flacChannels)
                 try tool.verifyDurationMatch(source: wav, output: file)
             }),
-            ("wav->mp3", wav, { try tool.convertAudioToMP3(wav) }, { file in
+            Check(label: "wav->mp3", source: wav, build: { try tool.convertAudioToMP3(wav) }, verify: { file in
                 try tool.verifyMP3Standard(file)
                 try tool.verifyDurationMatch(source: wav, output: file)
             }),
-            ("wav->m4a", wav, { try tool.convertAudioToM4A(wav) }, { file in
+            Check(label: "wav->m4a", source: wav, build: { try tool.convertAudioToM4A(wav) }, verify: { file in
                 try tool.verifyM4AFile(file, sampleRate: tool.config.m4aSampleRate, channels: tool.config.m4aChannels)
                 try tool.verifyDurationMatch(source: wav, output: file)
             }),
-            ("mp3->wav", mp3, { try tool.convertAudioToWAV(mp3) }, { file in
+            Check(label: "mp3->wav", source: mp3, build: { try tool.convertAudioToWAV(mp3) }, verify: { file in
                 try tool.verifyWAVStandard(file)
                 try tool.verifyDurationMatch(source: mp3, output: file)
             }),
-            ("mp3->flac", mp3, { try tool.convertAudioToFLAC(mp3) }, { file in
+            Check(label: "mp3->flac", source: mp3, build: { try tool.convertAudioToFLAC(mp3) }, verify: { file in
                 try tool.verifyAudioOutput(file, codec: "flac", sampleRate: tool.config.flacSampleRate, channels: tool.config.flacChannels)
                 try tool.verifyDurationMatch(source: mp3, output: file)
             }),
-            ("mp3->m4a", mp3, { try tool.convertAudioToM4A(mp3) }, { file in
+            Check(label: "mp3->m4a", source: mp3, build: { try tool.convertAudioToM4A(mp3) }, verify: { file in
                 try tool.verifyM4AFile(file, sampleRate: tool.config.m4aSampleRate, channels: tool.config.m4aChannels)
                 try tool.verifyDurationMatch(source: mp3, output: file)
             }),
-            ("m4a->wav", m4a, { try tool.convertAudioToWAV(m4a) }, { file in
+            Check(label: "m4a->wav", source: m4a, build: { try tool.convertAudioToWAV(m4a) }, verify: { file in
                 try tool.verifyWAVStandard(file)
                 try tool.verifyDurationMatch(source: m4a, output: file)
             }),
-            ("m4a->mp3", m4a, { try tool.convertAudioToMP3(m4a) }, { file in
+            Check(label: "m4a->mp3", source: m4a, build: { try tool.convertAudioToMP3(m4a) }, verify: { file in
                 try tool.verifyMP3Standard(file)
                 try tool.verifyDurationMatch(source: m4a, output: file)
             }),
-            ("m4a->flac", m4a, { try tool.convertAudioToFLAC(m4a) }, { file in
+            Check(label: "m4a->flac", source: m4a, build: { try tool.convertAudioToFLAC(m4a) }, verify: { file in
                 try tool.verifyAudioOutput(file, codec: "flac", sampleRate: tool.config.flacSampleRate, channels: tool.config.flacChannels)
                 try tool.verifyDurationMatch(source: m4a, output: file)
             })
         ]
 
-        for (label, source, build, verify) in checks {
-            let output = try build()
-            XCTAssertTrue(FileManager.default.fileExists(atPath: output.path), "Missing output for \(label)")
-            try verify(output)
-            try tool.verifySourceLoudnessPreserved(source: source, output: output)
+        for check in checks {
+            let output = try check.build()
+            XCTAssertTrue(FileManager.default.fileExists(atPath: output.path), "Missing output for \(check.label)")
+            try check.verify(output)
+            try tool.verifySourceLoudnessPreserved(source: check.source, output: output)
         }
     }
 
@@ -763,7 +770,10 @@ final class PipelineIntegrationTests: XCTestCase {
         try tool.verifyImageOutput(threeK, width: tool.config.image3KSize, height: tool.config.image3KSize, format: "PNG")
         try tool.verifyImageOutput(twoK, width: tool.config.image2KSize, height: tool.config.image2KSize, format: "PNG")
 
-        let jpgExtent = try tool.jpegExtentFromPNG(aipix.eightK, requiredWidth: tool.config.image8KWidth, requiredHeight: tool.config.image8KHeight, suffix: "1MB", targetBytes: tool.config.image8KJPG1MBTargetBytes)
+        let jpgExtent = try tool.jpegExtentFromPNG(
+            aipix.eightK, requiredWidth: tool.config.image8KWidth, requiredHeight: tool.config.image8KHeight,
+            suffix: "1MB", targetBytes: tool.config.image8KJPG1MBTargetBytes
+        )
         try tool.verifyImageOutput(jpgExtent, width: tool.config.image8KWidth, height: tool.config.image8KHeight, format: "JPEG", maxBytes: tool.config.image8KJPG1MBTargetBytes)
     }
 
@@ -831,7 +841,12 @@ final class PipelineIntegrationTests: XCTestCase {
         let fakeM4A = try workspace.copy(mp3, as: "fake_aac", ext: "m4a")
         let tool = try workspace.makeTool(arguments: ["-m4atowav"])
         XCTAssertThrowsError(try tool.convertAudioToWAV(fakeM4A)) { error in
-            XCTAssertTrue(error.localizedDescription.contains("Audio codec mismatch") || error.localizedDescription.contains("Unexpected video stream") || error.localizedDescription.contains("Audio container mismatch"))
+            let message = error.localizedDescription
+            XCTAssertTrue(
+                message.contains("Audio codec mismatch") || message.contains("Unexpected video stream")
+                    || message.contains("Audio container mismatch"),
+                message
+            )
         }
     }
 

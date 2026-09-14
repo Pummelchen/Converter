@@ -27,7 +27,7 @@ Requires Swift tools 6.3.3+ (Swift language mode 6) and macOS 15+, matching the 
 swift build --package-path Sources            # build/typecheck
 swift build --package-path Sources -c release # release build
 swift test --package-path Sources             # full test suite
-swift test --package-path Sources --filter converterTests.<testName>  # focused test
+swift test --package-path Sources --filter ConverterTests.<testName>  # focused test
 ```
 
 Integration tests perform real media processing with `ffmpeg`/`ffprobe`/`magick` in isolated temporary workspaces; they never touch your `Output/` directory.

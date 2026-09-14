@@ -677,7 +677,11 @@ extension ConverterTool {
             try publishTemp(temp, to: output)
             let reason = loudnessFallbackReason(result: result)
             logger.warn(
-                "Created \(reason) loudness media without compression: \(output.basename) [integrated=\(measured) LUFS target=\(String(format: "%.2f", policy.targetLUFS)) gain=\(String(format: "%.2f", plan.appliedGainDB)) dB requested=\(String(format: "%.2f", plan.requestedGainDB)) dB peak=\(String(format: "%.2f", plan.sourcePeakDBFS)) dBFS]"
+                "Created \(reason) loudness media without compression: \(output.basename) "
+                    + "[integrated=\(measured) LUFS target=\(String(format: "%.2f", policy.targetLUFS)) "
+                    + "gain=\(String(format: "%.2f", plan.appliedGainDB)) dB "
+                    + "requested=\(String(format: "%.2f", plan.requestedGainDB)) dB "
+                    + "peak=\(String(format: "%.2f", plan.sourcePeakDBFS)) dBFS]"
             )
             return output
         } catch {
@@ -905,7 +909,12 @@ extension ConverterTool {
             do {
                 maxVolume = try audioSegmentMaxVolumeDBFS(file: file, startSeconds: start, durationSeconds: probeSeconds)
             } catch {
-                throw AppError("\(label) noise peak verification failed for \(file.path): start=\(String(format: "%.3f", start)) duration=\(String(format: "%.3f", probeSeconds)) error=\(error.localizedDescription)")
+                throw AppError(
+                    "\(label) noise peak verification failed for \(file.path): "
+                        + "start=\(String(format: "%.3f", start)) "
+                        + "duration=\(String(format: "%.3f", probeSeconds)) "
+                        + "error=\(error.localizedDescription)"
+                )
             }
             if maxVolume <= minimumAudibleDBFS {
                 throw AppError("\(label) noise verification failed for \(file.path): max_volume=\(String(format: "%.2f", maxVolume)) dBFS")
@@ -918,7 +927,10 @@ extension ConverterTool {
             )
             if abs(integrated - targetLUFS) > tolerance {
                 throw AppError(
-                    "\(label) noise loudness verification failed for \(file.path): integrated=\(String(format: "%.2f", integrated)) LUFS target=\(String(format: "%.2f", targetLUFS)) +/- \(String(format: "%.2f", tolerance))"
+                    "\(label) noise loudness verification failed for \(file.path): "
+                        + "integrated=\(String(format: "%.2f", integrated)) LUFS "
+                        + "target=\(String(format: "%.2f", targetLUFS)) "
+                        + "+/- \(String(format: "%.2f", tolerance))"
                 )
             }
         }
@@ -942,7 +954,12 @@ extension ConverterTool {
                     durationSeconds: silenceProbeSeconds
                 )
             } catch {
-                throw AppError("\(label) transition silence peak verification failed for \(file.path): start=\(String(format: "%.3f", probeStart)) duration=\(String(format: "%.3f", silenceProbeSeconds)) error=\(error.localizedDescription)")
+                throw AppError(
+                    "\(label) transition silence peak verification failed for \(file.path): "
+                        + "start=\(String(format: "%.3f", probeStart)) "
+                        + "duration=\(String(format: "%.3f", silenceProbeSeconds)) "
+                        + "error=\(error.localizedDescription)"
+                )
             }
             if maxVolume > -55.0 {
                 throw AppError("\(label) transition silence verification failed for \(file.path): max_volume=\(String(format: "%.2f", maxVolume)) dBFS")
@@ -1069,7 +1086,12 @@ extension ConverterTool {
             }
             guard let integrated = result.metrics.integratedLUFS, abs(integrated - policy.targetLUFS) <= policy.lufsTolerance else {
                 let measured = result.metrics.integratedLUFS.map { String(format: "%.2f", $0) } ?? "unknown"
-                throw AppError("Noise segment loudness verification failed for \(processed.path): integrated=\(measured) LUFS target=\(String(format: "%.2f", policy.targetLUFS)) +/- \(String(format: "%.2f", policy.lufsTolerance))")
+                throw AppError(
+                    "Noise segment loudness verification failed for \(processed.path): "
+                        + "integrated=\(measured) LUFS "
+                        + "target=\(String(format: "%.2f", policy.targetLUFS)) "
+                        + "+/- \(String(format: "%.2f", policy.lufsTolerance))"
+                )
             }
             return processed
         } catch {
@@ -1160,7 +1182,8 @@ extension ConverterTool {
         let videoFilter =
             "tpad=start_duration=\(ffmpegArg("%.6f", leadingSeconds)):stop_duration=\(ffmpegArg("%.6f", trailingSeconds)):start_mode=clone:stop_mode=clone," +
             "format=\(config.videoMP4PixelFormat)," +
-            "setparams=color_primaries=\(config.videoColorPrimaries):color_trc=\(config.videoColorTransfer):colorspace=\(config.videoColorSpace):range=\(ffmpegFilterRangeValue(config.videoColorRange))"
+            "setparams=color_primaries=\(config.videoColorPrimaries):color_trc=\(config.videoColorTransfer):"
+                + "colorspace=\(config.videoColorSpace):range=\(ffmpegFilterRangeValue(config.videoColorRange))"
 
         func buildArguments(encoder: String) -> [String] {
             let normalizedEncoder = encoder.lowercasedASCII
@@ -1319,7 +1342,9 @@ extension ConverterTool {
 
         let fadeSeconds = min(spec.fadeDurationSeconds, targetDuration)
         let fadeStart = max(0, targetDuration - fadeSeconds)
-        let output = cli.outDir.appendingPathComponent("\(source.stem)_fadecut_\(ffmpegNumber(spec.cutSeconds))s_\(ffmpegNumber(fadeSeconds))s").appendingPathExtension(source.pathExtension.lowercasedASCII)
+        let stem = "\(source.stem)_fadecut_\(ffmpegNumber(spec.cutSeconds))s_\(ffmpegNumber(fadeSeconds))s"
+        let output = cli.outDir.appendingPathComponent(stem)
+            .appendingPathExtension(source.pathExtension.lowercasedASCII)
         if canReuseOutput(output, verifier: {
             try self.verifyTailFadeOutput(output, sourceExtension: source.pathExtension, expectedDuration: targetDuration)
         }) {
@@ -1409,7 +1434,10 @@ extension ConverterTool {
             throw AppError("Fade end \(targetDuration)s exceeds source duration \(sourceDuration)s for \(source.basename)")
         }
 
-        let output = cli.outDir.appendingPathComponent("\(source.stem)_fadeout_\(ffmpegNumber(spec.fadeStartSeconds))s_\(ffmpegNumber(spec.fadeDurationSeconds))s").appendingPathExtension(source.pathExtension.lowercasedASCII)
+        let stem = "\(source.stem)_fadeout_\(ffmpegNumber(spec.fadeStartSeconds))s_"
+            + "\(ffmpegNumber(spec.fadeDurationSeconds))s"
+        let output = cli.outDir.appendingPathComponent(stem)
+            .appendingPathExtension(source.pathExtension.lowercasedASCII)
         if canReuseOutput(output, verifier: {
             try self.verifyFadeOutOutput(output, sourceExtension: source.pathExtension, expectedDuration: targetDuration)
         }) {
@@ -1954,8 +1982,8 @@ extension ConverterTool {
         let handle = try FileHandle(forReadingFrom: file)
         defer { try? handle.close() }
 
-        let t0 = crc32Tables[0], t1 = crc32Tables[1], t2 = crc32Tables[2], t3 = crc32Tables[3]
-        let t4 = crc32Tables[4], t5 = crc32Tables[5], t6 = crc32Tables[6], t7 = crc32Tables[7]
+        let table0 = crc32Tables[0], table1 = crc32Tables[1], table2 = crc32Tables[2], table3 = crc32Tables[3]
+        let table4 = crc32Tables[4], table5 = crc32Tables[5], table6 = crc32Tables[6], table7 = crc32Tables[7]
 
         var crc: UInt32 = 0xFFFFFFFF
         while true {
@@ -1973,14 +2001,14 @@ extension ConverterTool {
                     let low = UInt32(littleEndian: rawBuffer.loadUnaligned(fromByteOffset: offset, as: UInt32.self))
                     let high = UInt32(littleEndian: rawBuffer.loadUnaligned(fromByteOffset: offset + 4, as: UInt32.self))
                     let mixed = crc ^ low
-                    crc = t7[Int(mixed & 0xFF)] ^ t6[Int((mixed >> 8) & 0xFF)]
-                        ^ t5[Int((mixed >> 16) & 0xFF)] ^ t4[Int(mixed >> 24)]
-                        ^ t3[Int(high & 0xFF)] ^ t2[Int((high >> 8) & 0xFF)]
-                        ^ t1[Int((high >> 16) & 0xFF)] ^ t0[Int(high >> 24)]
+                    crc = table7[Int(mixed & 0xFF)] ^ table6[Int((mixed >> 8) & 0xFF)]
+                        ^ table5[Int((mixed >> 16) & 0xFF)] ^ table4[Int(mixed >> 24)]
+                        ^ table3[Int(high & 0xFF)] ^ table2[Int((high >> 8) & 0xFF)]
+                        ^ table1[Int((high >> 16) & 0xFF)] ^ table0[Int(high >> 24)]
                     offset += 8
                 }
                 while offset < count {
-                    crc = t0[Int((crc ^ UInt32(rawBuffer[offset])) & 0xFF)] ^ (crc >> 8)
+                    crc = table0[Int((crc ^ UInt32(rawBuffer[offset])) & 0xFF)] ^ (crc >> 8)
                     offset += 1
                 }
             }

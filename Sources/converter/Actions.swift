@@ -549,9 +549,18 @@ extension ConverterTool {
 
         async let eightKJPGTask: Void = withImagePermit {
             self.logger.info("Full step: 8K JPG deliverables")
-            _ = try self.jpegExtentFromPNG(variants.eightK, requiredWidth: self.config.image8KWidth, requiredHeight: self.config.image8KHeight, suffix: "1MB", targetBytes: self.config.image8KJPG1MBTargetBytes)
-            _ = try self.jpegExtentFromPNG(variants.eightK, requiredWidth: self.config.image8KWidth, requiredHeight: self.config.image8KHeight, suffix: "2MB", targetBytes: self.config.image8KJPG2MBTargetBytes)
-            _ = try self.jpegExtentFromPNG(variants.eightK, requiredWidth: self.config.image8KWidth, requiredHeight: self.config.image8KHeight, suffix: "20MB", targetBytes: self.config.image8KJPG20MBTargetBytes)
+            _ = try self.jpegExtentFromPNG(
+                variants.eightK, requiredWidth: self.config.image8KWidth, requiredHeight: self.config.image8KHeight,
+                suffix: "1MB", targetBytes: self.config.image8KJPG1MBTargetBytes
+            )
+            _ = try self.jpegExtentFromPNG(
+                variants.eightK, requiredWidth: self.config.image8KWidth, requiredHeight: self.config.image8KHeight,
+                suffix: "2MB", targetBytes: self.config.image8KJPG2MBTargetBytes
+            )
+            _ = try self.jpegExtentFromPNG(
+                variants.eightK, requiredWidth: self.config.image8KWidth, requiredHeight: self.config.image8KHeight,
+                suffix: "20MB", targetBytes: self.config.image8KJPG20MBTargetBytes
+            )
         }
 
         let nft = try await nftTask
@@ -592,9 +601,18 @@ extension ConverterTool {
         async let eightKJPGTask: Void = withImagePermit {
             self.logger.info("Full step: 8K JPG deliverables")
             let eightKStem = deliveryPrefix.map { "\($0)_8K" }
-            _ = try self.jpegExtentFromPNG(sourcePNG, requiredWidth: self.config.image8KWidth, requiredHeight: self.config.image8KHeight, suffix: "1MB", targetBytes: self.config.image8KJPG1MBTargetBytes, outputStem: eightKStem)
-            _ = try self.jpegExtentFromPNG(sourcePNG, requiredWidth: self.config.image8KWidth, requiredHeight: self.config.image8KHeight, suffix: "2MB", targetBytes: self.config.image8KJPG2MBTargetBytes, outputStem: eightKStem)
-            _ = try self.jpegExtentFromPNG(sourcePNG, requiredWidth: self.config.image8KWidth, requiredHeight: self.config.image8KHeight, suffix: "20MB", targetBytes: self.config.image8KJPG20MBTargetBytes, outputStem: eightKStem)
+            _ = try self.jpegExtentFromPNG(
+                sourcePNG, requiredWidth: self.config.image8KWidth, requiredHeight: self.config.image8KHeight,
+                suffix: "1MB", targetBytes: self.config.image8KJPG1MBTargetBytes, outputStem: eightKStem
+            )
+            _ = try self.jpegExtentFromPNG(
+                sourcePNG, requiredWidth: self.config.image8KWidth, requiredHeight: self.config.image8KHeight,
+                suffix: "2MB", targetBytes: self.config.image8KJPG2MBTargetBytes, outputStem: eightKStem
+            )
+            _ = try self.jpegExtentFromPNG(
+                sourcePNG, requiredWidth: self.config.image8KWidth, requiredHeight: self.config.image8KHeight,
+                suffix: "20MB", targetBytes: self.config.image8KJPG20MBTargetBytes, outputStem: eightKStem
+            )
         }
 
         let fourK = try await fourKTask
@@ -1244,7 +1262,10 @@ extension ConverterTool {
             emptyMessage: "No supported media files (.flac, .wav, .mp3, .m4a, .mp4) found in '\(cli.srcDir.path)'.",
             failWhenEmpty: true
         ) { file in
-            self.logger.info("Add noise \(file.basename): before=\(self.actionTimeDisplay(spec.seconds)) silence=\(self.actionTimeDisplay(NoiseSpec.transitionSilenceSeconds)) after=\(self.actionTimeDisplay(spec.seconds)) level=-12 LUFS")
+            let timing = "before=\(self.actionTimeDisplay(spec.seconds)) "
+                + "silence=\(self.actionTimeDisplay(NoiseSpec.transitionSilenceSeconds)) "
+                + "after=\(self.actionTimeDisplay(spec.seconds))"
+            self.logger.info("Add noise \(file.basename): \(timing) level=-12 LUFS")
             return try self.addNoiseToMedia(file, spec: spec)
         }
     }

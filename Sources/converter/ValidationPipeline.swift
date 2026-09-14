@@ -153,7 +153,11 @@ extension ConverterTool {
                     "-hide_banner", "-nostdin", "-v", "info",
                     "-i", file.path,
                     "-map", "0:a:0",
-                    "-af", "loudnorm=I=\(LoudnormArgument.integrated(policy.targetLUFS)):TP=\(LoudnormArgument.truePeak(policy.maxTruePeakDBTP)):LRA=\(LoudnormArgument.loudnessRange(policy.maxLoudnessRange)):print_format=json",
+                    "-af",
+                    "loudnorm=I=\(LoudnormArgument.integrated(policy.targetLUFS))"
+                        + ":TP=\(LoudnormArgument.truePeak(policy.maxTruePeakDBTP))"
+                        + ":LRA=\(LoudnormArgument.loudnessRange(policy.maxLoudnessRange))"
+                        + ":print_format=json",
                     "-f", "null", "-"
                 ],
                 allowedExitCodes: [0]
@@ -401,7 +405,11 @@ extension ConverterTool {
                 "-hide_banner", "-nostdin", "-v", "info",
                 "-i", file.path,
                 "-map", "0:a:0",
-                "-af", "loudnorm=I=\(LoudnormArgument.integrated(policy.targetLUFS)):TP=\(LoudnormArgument.truePeak(policy.maxTruePeakDBTP)):LRA=\(LoudnormArgument.loudnessRange(policy.maxLoudnessRange)):print_format=json",
+                "-af",
+                "loudnorm=I=\(LoudnormArgument.integrated(policy.targetLUFS))"
+                    + ":TP=\(LoudnormArgument.truePeak(policy.maxTruePeakDBTP))"
+                    + ":LRA=\(LoudnormArgument.loudnessRange(policy.maxLoudnessRange))"
+                    + ":print_format=json",
                 "-f", "null", "-"
             ],
             allowedExitCodes: [0]
@@ -1152,11 +1160,19 @@ extension ConverterTool {
         )
         if comparison.failingSamples > allowedFailures {
             throw AppError(
-                "Canonical PCM mismatch for \(label): src='\(source.path)' out='\(output.path)' out_of_tolerance_samples=\(comparison.failingSamples) max_delta=\(comparison.maxDelta) allowed_out_of_tolerance=\(allowedFailures) allowed_delta=\(allowedDelta) sample_rate=\(compareSampleRate) channels=\(compareChannels) canonical=\(format.ffmpegCodec)"
+                "Canonical PCM mismatch for \(label): src='\(source.path)' out='\(output.path)' "
+                    + "out_of_tolerance_samples=\(comparison.failingSamples) "
+                    + "max_delta=\(comparison.maxDelta) "
+                    + "allowed_out_of_tolerance=\(allowedFailures) allowed_delta=\(allowedDelta) "
+                    + "sample_rate=\(compareSampleRate) channels=\(compareChannels) "
+                    + "canonical=\(format.ffmpegCodec)"
             )
         }
         logger.debug(
-            "Canonical PCM match for \(label): samples=\(comparison.samples) out_of_tolerance=\(comparison.failingSamples) max_delta=\(comparison.maxDelta) rate=\(compareSampleRate) channels=\(compareChannels) canonical=\(format.ffmpegCodec)"
+            "Canonical PCM match for \(label): samples=\(comparison.samples) "
+                + "out_of_tolerance=\(comparison.failingSamples) max_delta=\(comparison.maxDelta) "
+                + "rate=\(compareSampleRate) channels=\(compareChannels) "
+                + "canonical=\(format.ffmpegCodec)"
         )
     }
 
@@ -1218,7 +1234,7 @@ extension ConverterTool {
     }
 
     func writeBW64FileFromRawFloatPCM(inputPCM: URL, output: URL, channels: Int, sampleRate: Int, bitDepth: Int = 32) throws {
-        var errorBuffer = Array<CChar>(repeating: 0, count: 4096)
+        var errorBuffer = [CChar](repeating: 0, count: 4096)
         let status = errorBuffer.withUnsafeMutableBufferPointer { buffer -> Int32 in
             inputPCM.path.withCString { inputPath in
                 output.path.withCString { outputPath in
@@ -1237,7 +1253,7 @@ extension ConverterTool {
         guard status == 0 else {
             let nulIndex = errorBuffer.firstIndex(of: 0) ?? errorBuffer.endIndex
             let messageBytes = errorBuffer[..<nulIndex].map { UInt8(bitPattern: $0) }
-            let message = String(decoding: messageBytes, as: UTF8.self)
+            let message = (String(bytes: messageBytes, encoding: .utf8) ?? "")
                 .trimmingCharacters(in: .whitespacesAndNewlines)
             if message.isEmpty {
                 throw AppError("BW64 writer failed for \(output.path)")

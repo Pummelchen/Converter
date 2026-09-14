@@ -438,7 +438,11 @@ struct CLIOptions {
             throw AppError("Loudness target must be a finite LUFS value, for example -12.")
         }
         guard target <= LoudnessSpec.maximumTargetLUFS else {
-            throw AppError("Loudness target must be at or below \(ffmpegNumber(LoudnessSpec.maximumTargetLUFS)) LUFS because ffmpeg loudnorm supports \(ffmpegNumber(LoudnessSpec.minimumTargetLUFS)) to \(ffmpegNumber(LoudnessSpec.maximumTargetLUFS)) LUFS.")
+            throw AppError(
+                "Loudness target must be at or below \(ffmpegNumber(LoudnessSpec.maximumTargetLUFS)) LUFS "
+                    + "because ffmpeg loudnorm supports \(ffmpegNumber(LoudnessSpec.minimumTargetLUFS)) "
+                    + "to \(ffmpegNumber(LoudnessSpec.maximumTargetLUFS)) LUFS."
+            )
         }
         guard target >= LoudnessSpec.minimumTargetLUFS else {
             throw AppError("Loudness target is too low for practical livestream normalization: \(target) LUFS")
@@ -567,7 +571,8 @@ struct CLIOptions {
               Output: same-format files normalized to TARGET_LUFS for livestream-consistent playback; default is -12 LUFS
             -master
               Input: one or more .flac, .wav, .mp3, .m4a, or .mp4 files in SRC_DIR
-              Output: same-format _mastered files; stages through the internal WAV and remediates loudness to the mastering target (-12 LUFS default) with two-pass loudnorm when the source is out of policy
+              Output: same-format _mastered files; stages through the internal WAV and remediates loudness
+                to the mastering target (-12 LUFS default) with two-pass loudnorm when the source is out of policy
             -noise [SECONDS]
               Input: one or more .flac, .wav, .mp3, .m4a, or .mp4 files in SRC_DIR
               Output: same-format files ending in _noise_SECONDSs: noise, 2s silence, source, 2s silence, noise; noise is -12 LUFS and default is 30 seconds; SECONDS must be at least 0.5
@@ -576,7 +581,9 @@ struct CLIOptions {
               Output: same-format files ending in _silence_SECONDSs with SECONDS of silence before and after the original media; default is 30 seconds; SECONDS must be at least 0.5
             -short
               Input: exactly 1 image (.png/.jpg/.jpeg) plus exactly 1 audio-only file supported by ffmpeg in SRC_DIR
-              Output: ALAC-audio portrait shorts capped at 58 seconds — _8K_Short.mp4 fits the image into the frame with black padding, _8K_Short_CenterCut.mp4 crops the centre of the 8K master to fill the frame with no padding; each gains a _FullSong companion when the audio is longer than 58 seconds
+              Output: ALAC-audio portrait shorts capped at 58 seconds — _8K_Short.mp4 fits the image into the
+                frame with black padding, _8K_Short_CenterCut.mp4 crops the centre of the 8K master to fill the
+                frame with no padding; each gains a _FullSong companion when the audio is longer than 58 seconds
             -flactowav
               Input: one or more .flac files in SRC_DIR
               Output: project-standard RF64 WAV files
@@ -614,7 +621,10 @@ struct CLIOptions {
               Output: .m4a files
             -nfttoshort
               Input: exactly 1 audio-only file supported by ffmpeg plus exactly 1 source image (.png/.jpg/.jpeg) or exactly 1 *_8K.png in SRC_DIR
-              Output: ALAC-audio portrait shorts capped at 58 seconds, preserving source loudness — _8K_Short.mp4 uses Vertical_8K.png when present, otherwise *_NFT8K.png with black padding; _8K_Short_CenterCut.mp4 crops the centre of the 8K master to fill the frame; each gains a _FullSong companion when the audio is longer
+              Output: ALAC-audio portrait shorts capped at 58 seconds, preserving source loudness — _8K_Short.mp4
+                uses Vertical_8K.png when present, otherwise *_NFT8K.png with black padding;
+                _8K_Short_CenterCut.mp4 crops the centre of the 8K master to fill the frame; each gains a
+                _FullSong companion when the audio is longer
             -mp3clean
               Input: one or more .mp3 files in SRC_DIR
               Output: same .mp3 files rewritten as audio-only MP3 with artwork, junk streams, and metadata removed

@@ -640,10 +640,8 @@ private func commaSeparatedList(_ value: String) -> [String] {
 private func uniqueStrings(_ values: [String]) -> [String] {
     var seen = Set<String>()
     var result: [String] = []
-    for value in values.map(\.trimmed).filter({ !$0.isEmpty }) {
-        if seen.insert(value).inserted {
-            result.append(value)
-        }
+    for value in values.map(\.trimmed).filter({ !$0.isEmpty }) where seen.insert(value).inserted {
+        result.append(value)
     }
     return result
 }

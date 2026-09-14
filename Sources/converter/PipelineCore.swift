@@ -36,11 +36,9 @@ final class RuntimeState: Sendable {
             return snapshot
         }
 
-        for url in files {
-            if fileManager.fileExists(atPath: url.path) {
-                try? fileManager.removeItem(at: url)
-                logger.debug("Removed temp file: \(url.path)")
-            }
+        for url in files where fileManager.fileExists(atPath: url.path) {
+            try? fileManager.removeItem(at: url)
+            logger.debug("Removed temp file: \(url.path)")
         }
     }
 }
@@ -562,7 +560,9 @@ final class ConverterTool: Sendable {
                 } catch let restoreError {
                     state.unregister(tempFile: temp)
                     throw AppError(
-                        "Publish failed for \(destination.path) and the previous version could not be restored. Previous version preserved at: \(backup.path) (original error: \(error.localizedDescription))",
+                        "Publish failed for \(destination.path) and the previous version could not be restored. "
+                            + "Previous version preserved at: \(backup.path) "
+                            + "(original error: \(error.localizedDescription))",
                         underlying: restoreError
                     )
                 }
@@ -976,19 +976,19 @@ final class ConverterTool: Sendable {
         let cellSize = max(1, cli.dotSize)
         var occupancy: [String: [(Int, Int)]] = [:]
 
-        func cellKey(x: Int, y: Int) -> String {
-            "\(x):\(y)"
+        func cellKey(pointX: Int, pointY: Int) -> String {
+            "\(pointX):\(pointY)"
         }
 
-        func isOccupied(x: Int, y: Int) -> Bool {
-            let cellX = x / cellSize
-            let cellY = y / cellSize
+        func isOccupied(pointX: Int, pointY: Int) -> Bool {
+            let cellX = pointX / cellSize
+            let cellY = pointY / cellSize
             for scanX in (cellX - 1) ... (cellX + 1) {
                 for scanY in (cellY - 1) ... (cellY + 1) {
-                    for other in occupancy[cellKey(x: scanX, y: scanY)] ?? [] {
-                        let dx = Double(x - other.0)
-                        let dy = Double(y - other.1)
-                        if sqrt(dx * dx + dy * dy) < Double(cli.dotSize) {
+                    for other in occupancy[cellKey(pointX: scanX, pointY: scanY)] ?? [] {
+                        let offsetX = Double(pointX - other.0)
+                        let offsetY = Double(pointY - other.1)
+                        if sqrt(offsetX * offsetX + offsetY * offsetY) < Double(cli.dotSize) {
                             return true
                         }
                     }
@@ -997,23 +997,24 @@ final class ConverterTool: Sendable {
             return false
         }
 
-        func register(x: Int, y: Int) {
-            occupancy[cellKey(x: x / cellSize, y: y / cellSize), default: []].append((x, y))
+        func register(pointX: Int, pointY: Int) {
+            occupancy[cellKey(pointX: pointX / cellSize, pointY: pointY / cellSize), default: []]
+                .append((pointX, pointY))
         }
 
         let centerX = width / 2
         let centerY = height / 2
-        register(x: centerX, y: centerY)
+        register(pointX: centerX, pointY: centerY)
         var drawScript = "fill red\ncircle \(centerX),\(centerY) \(centerX + radius),\(centerY)\n"
 
         for _ in 0 ..< numDots {
             var placed = false
             for _ in 0 ..< cli.maxAttempts {
-                let x = rng.nextInt(in: radius ... max(radius, width - radius - 1))
-                let y = rng.nextInt(in: radius ... max(radius, height - radius - 1))
-                if !isOccupied(x: x, y: y) {
-                    register(x: x, y: y)
-                    drawScript += "fill black\ncircle \(x),\(y) \(x + radius),\(y)\n"
+                let dotX = rng.nextInt(in: radius ... max(radius, width - radius - 1))
+                let dotY = rng.nextInt(in: radius ... max(radius, height - radius - 1))
+                if !isOccupied(pointX: dotX, pointY: dotY) {
+                    register(pointX: dotX, pointY: dotY)
+                    drawScript += "fill black\ncircle \(dotX),\(dotY) \(dotX + radius),\(dotY)\n"
                     placed = true
                     break
                 }
