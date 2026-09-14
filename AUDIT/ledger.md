@@ -34,7 +34,7 @@ _none_
 | #0041 | S2 | converter/DependencyBootstrap | Sources/converter/DependencyBootstrap.swift:216-248 | Installer subprocesses have no timeout and discard diagnostics | incomplete | START |  |
 | #0050 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:327-336,367-387,591-600 | Loudness fallback publishes any true-peak breach with a misleading 'closest-safe' label | logic | START |  |
 | #0051 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:992,1170,1029,508 | Redundant padding verification, uncached ffmpeg -filters, per-file ladder resolution | perf | START |  |
-| #0055 | S2 | converter/ImagePipeline | Sources/converter/ImagePipeline.swift:329-336 | Fitted portrait still double-sharpens derived masters and user Vertical_8K.png | logic | TEST |  |
+| #0055 | S2 | converter/ImagePipeline | Sources/converter/ImagePipeline.swift:329-336 | Fitted portrait still double-sharpens derived masters and user Vertical_8K.png | logic | TEST | 56536a3 |
 | #0056 | S2 | converter/VideoPipeline | Sources/converter/VideoPipeline.swift:399-404 | shortenMP4 upscales with ffmpeg's default scaler instead of the configured flags | bug | TEST | dc65cd5 |
 | #0058 | S2 | repo | converter (binary); docs/KNOWN_GOOD_VERSIONS.md | Checked-in release binary has no verifiable provenance (no SHA-256, adhoc signature, no tag) | deps | START |  |
 | #0059 | S2 | repo/CI | .github/workflows/ci.yml:24,27-32,39-40 | CI not reproducible: unpinned action, latest-Xcode selection, unpinned brew formulae | deps | START |  |
@@ -805,6 +805,7 @@ _none_
 - **evidence-before:** AUDIT/findings/L2-video-image-actions-cli.md X-10
 - **fix-summary:** The fitted portrait still is sharpened only when its source is the raw discovered portrait; FullRunImageArtifacts.shortVideoImageIsRawArtwork distinguishes it from Vertical_8K.png and the generated NFT8K, which are used as-is. The magick argv moves into portraitShortStillsArguments(...).
 - **evidence-after:** AUDIT/evidence/0055-before.log (Vertical_8K.png received '-sharpen 0x0.200'); AUDIT/evidence/0055-after.log (testFittedPortraitStillOnlySharpensRawArtwork passes; testPortraitShortStillsMatchTheirRenderFraming still passes). swiftlint 531/56, no new violations.
+- **commit sha:** 56536a3
 
 ### #0056 · S2 · TEST · shortenMP4 upscales with ffmpeg's default scaler instead of the configured flags
 

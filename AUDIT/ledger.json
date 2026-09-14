@@ -936,7 +936,7 @@
       "evidence_before": "AUDIT/findings/L2-video-image-actions-cli.md X-10",
       "fix_summary": "The fitted portrait still is sharpened only when its source is the raw discovered portrait; FullRunImageArtifacts.shortVideoImageIsRawArtwork distinguishes it from Vertical_8K.png and the generated NFT8K, which are used as-is. The magick argv moves into portraitShortStillsArguments(...).",
       "evidence_after": "AUDIT/evidence/0055-before.log (Vertical_8K.png received '-sharpen 0x0.200'); AUDIT/evidence/0055-after.log (testFittedPortraitStillOnlySharpensRawArtwork passes; testPortraitShortStillsMatchTheirRenderFraming still passes). swiftlint 531/56, no new violations.",
-      "commit": "",
+      "commit": "56536a3",
       "notes": ""
     },
     {
