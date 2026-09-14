@@ -61,42 +61,6 @@ extension ConverterTool {
         return true
     }
 
-    private func verifyVideoRender(
-        _ url: URL,
-        width: Int,
-        height: Int,
-        codec: String,
-        pixelFormat: String,
-        colorPrimaries: String,
-        colorTransfer: String,
-        colorSpace: String,
-        colorRange: String,
-        sampleRate: Int,
-        channels: Int,
-        qcPolicy: AudioQCPolicy?,
-        source: URL,
-        durationCheck: (URL) throws -> Void
-    ) throws {
-        try verifyVideoOutput(
-            url,
-            width: width,
-            height: height,
-            codec: codec,
-            pixelFormat: pixelFormat,
-            colorPrimaries: colorPrimaries,
-            colorTransfer: colorTransfer,
-            colorSpace: colorSpace,
-            colorRange: colorRange
-        )
-        // The audio track, the duration and the loudness do not depend on the video encoder:
-        // a failure here must stop the ladder instead of re-rendering on every rung.
-        try encoderIndependent {
-            try verifyALACAudioOutput(url, sampleRate: sampleRate, channels: channels, qcPolicy: qcPolicy)
-            try durationCheck(url)
-            try verifySourceLoudnessPreserved(source: source, output: url, toleranceDB: 1.0)
-        }
-    }
-
     // Marks a failure that no other encoder could fix (publishing, audio/duration/loudness
     // verification, a padded audio track of the wrong length) so the ladder stops there.
     func encoderIndependent<T>(_ work: () throws -> T) throws -> T {
@@ -163,8 +127,11 @@ extension ConverterTool {
         let audioStreamCopy: Bool
     }
 
+    // What a finished render must satisfy: geometry and codec from the spec, then the checks that
+    // do not depend on the video encoder. verifyVideoRender used to take all fourteen of these as
+    // separate parameters on top of this wrapper (#0073).
     private func verifyRenderedVideo(_ url: URL, spec: VideoOutputSpec, codec: String? = nil) throws {
-        try verifyVideoRender(
+        try verifyVideoOutput(
             url,
             width: spec.width,
             height: spec.height,
@@ -173,13 +140,17 @@ extension ConverterTool {
             colorPrimaries: config.videoColorPrimaries,
             colorTransfer: config.videoColorTransfer,
             colorSpace: config.videoColorSpace,
-            colorRange: config.videoColorRange,
-            sampleRate: spec.audioSampleRate,
-            channels: 2,
-            qcPolicy: spec.audioQCPolicy,
-            source: spec.loudnessSource,
-            durationCheck: spec.durationCheck
+            colorRange: config.videoColorRange
         )
+        // The audio track, the duration and the loudness do not depend on the video encoder:
+        // a failure here must stop the ladder instead of re-rendering on every rung.
+        try encoderIndependent {
+            try verifyALACAudioOutput(
+                url, sampleRate: spec.audioSampleRate, channels: 2, qcPolicy: spec.audioQCPolicy
+            )
+            try spec.durationCheck(url)
+            try verifySourceLoudnessPreserved(source: spec.loudnessSource, output: url, toleranceDB: 1.0)
+        }
     }
 
     // Walks the encoder ladder, verifying before publishing and falling through to the
