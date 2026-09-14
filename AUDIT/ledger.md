@@ -54,7 +54,7 @@ _none_
 | #0096 | S3 | converterTests | Sources/Tests/converterTests/converterTests.swift:108-115 | SchedulerProfile tested via its summary string | test | START |  |
 | #0097 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:1902-1911 | -doctor has only a no-throw happy path | test | START |  |
 | #0098 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:529,534 | Exact ffmpeg bass filter string pinned without a stated reason | test | START |  |
-| #0100 | S3 | converter/Actions | Sources/converter/Actions.swift (normalizedFullRunSource / resolveFullAudio) | Full-run source is renamed before preflight; a corrupt source loses its original name in the error | logic | TEST |  |
+| #0100 | S3 | converter/Actions | Sources/converter/Actions.swift (normalizedFullRunSource / resolveFullAudio) | Full-run source is renamed before preflight; a corrupt source loses its original name in the error | logic | TEST | 8ede5fd |
 
 ## Done (73)
 
@@ -1294,5 +1294,6 @@ _none_
 - **evidence-before:** resolveFullAudio renames the family, then fullAudioPreparation preflights; a file that fails preflight is reported under its new 1_source name. Cosmetic: no data is lost, the file is intact under the new name.
 - **fix-summary:** stepFull preflights the sole discovered source before resolveFullAudio renames it, and fullAudioPreparation skips the duplicate preflight for the normalized 1_source name; the rename helper remains a pure resolver.
 - **evidence-after:** AUDIT/evidence/0100-before.log (fix stashed: the error named 1_source.mp3 and the source had been renamed); AUDIT/evidence/0100-after.log (testFullRunPreflightsTheSourceBeforeRenamingIt passes; all 24 'Full' tests green). swiftlint 528/56, no new violations.
+- **commit sha:** 8ede5fd
 - **notes:** Not folded into #0022 because the naming unit tests use empty placeholder files and would all need real media if preflight moved ahead of the rename; needs its own design (probe-only preflight of the chosen file before renaming).
 

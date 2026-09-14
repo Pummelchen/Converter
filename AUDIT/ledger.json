@@ -1701,7 +1701,7 @@
       "evidence_before": "resolveFullAudio renames the family, then fullAudioPreparation preflights; a file that fails preflight is reported under its new 1_source name. Cosmetic: no data is lost, the file is intact under the new name.",
       "fix_summary": "stepFull preflights the sole discovered source before resolveFullAudio renames it, and fullAudioPreparation skips the duplicate preflight for the normalized 1_source name; the rename helper remains a pure resolver.",
       "evidence_after": "AUDIT/evidence/0100-before.log (fix stashed: the error named 1_source.mp3 and the source had been renamed); AUDIT/evidence/0100-after.log (testFullRunPreflightsTheSourceBeforeRenamingIt passes; all 24 'Full' tests green). swiftlint 528/56, no new violations.",
-      "commit": "",
+      "commit": "8ede5fd",
       "notes": "Not folded into #0022 because the naming unit tests use empty placeholder files and would all need real media if preflight moved ahead of the rename; needs its own design (probe-only preflight of the chosen file before renaming)."
     }
   ],
