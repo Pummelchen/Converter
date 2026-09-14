@@ -36,6 +36,20 @@ against the working tree and `origin` on 2026-09-14 06:58 WIB.
 - Working tree clean; no stash; the five `Converter-wt/*` worktrees are stale/unregistered
   (`git worktree list` marks them *prunable*) and are not usable without re-creating them.
 
+## Progress since resume (2026-09-14, new agent)
+
+- Merged `origin/main` (`4bd292e`): adopted the owner's MIT LICENSE and the README
+  badge/License/Contact sections and kept the audit's libbw64 attribution — **#0029 resolved**.
+- Stamped the 8 drifted fixes (**#0039, #0042, #0064, #0065, #0076, #0083, #0084, #0085**) DONE
+  after a 235-test full suite, and closed **#0005** (wiki tracker) against the pushed page.
+- Batch 2 DONE after a 238-test full suite: **#0053** (empty colon-separated timecode components),
+  **#0078** (regular file at OUT_DIR), **#0079** (signal deaths named), **#0091** (stale ignore
+  entry), **#0092** (FORMATS.md maintenance commands + `-fadeflac`).
+- Ledger after batch 2: **done 63 · open 37 · blocked 0**. Both repos are pushed.
+- Next planned batch: **#0040** (cancel sibling external processes), **#0041** (installer
+  timeout + diagnostics), **#0054** (`-mp4toshort` re-ingests its own shorts), **#0057** (EXIF
+  orientation), **#0060** (committed personal `album.txt`).
+
 ## Exactly where to continue
 
 1. Finish the in-flight full suite; if green, stamp the 8 pending tasks DONE via
