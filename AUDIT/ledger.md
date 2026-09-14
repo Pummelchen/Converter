@@ -2,15 +2,15 @@
 
 Session: `2026-09-13` · branch `audit/2026-09-13` · baseline commit `4bb136a`
 
-**known-total:100 done:48 open:51 blocked:1 new-this-session:100**
+**known-total:100 done:56 open:43 blocked:1 new-this-session:100**
 
 | status | count |
 |---|---|
-| START | 50 |
+| START | 42 |
 | PROGRESS | 1 |
 | TEST | 0 |
 | AUDIT | 0 |
-| DONE | 48 |
+| DONE | 56 |
 | BLOCKED | 1 |
 
 Status gates: START (reproduced/proven + expected behaviour written) → PROGRESS (diff) → TEST (failing-before/passing-after test pasted, full suite green, no new warnings) → AUDIT (cold re-read, all scanners re-run, no baseline regression, no new placeholder) → DONE (committed atomically). BLOCKED needs reason + what was tried + ≥2 options for a human.
@@ -29,14 +29,12 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 |---|---|---|---|---|---|---|---|
 | #0029 | S1 | repo | LICENSE (missing) | Repository has no LICENSE file | deps | BLOCKED |  |
 
-## Open S2 / S3 (48)
+## Open S2 / S3 (40)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
-| #0039 | S2 | converter/Support | Sources/converter/Support.swift:97-101,141-147 | AsyncSemaphore grants permits to already-cancelled tasks | perf | START |  |
 | #0040 | S2 | converter/ProcessRunner | Sources/converter/ProcessRunner.swift:145; Actions.swift:615-619 | Cancellation does not terminate sibling external processes after a fan-out failure | unsafe | START |  |
 | #0041 | S2 | converter/DependencyBootstrap | Sources/converter/DependencyBootstrap.swift:216-248 | Installer subprocesses have no timeout and discard diagnostics | incomplete | START |  |
-| #0042 | S2 | converter/ProcessRunner | Sources/converter/ProcessRunner.swift:112-124 | Child stdin inherited from the terminal | unsafe | START |  |
 | #0050 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:327-336,367-387,591-600 | Loudness fallback publishes any true-peak breach with a misleading 'closest-safe' label | logic | START |  |
 | #0051 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:992,1170,1029,508 | Redundant padding verification, uncached ffmpeg -filters, per-file ladder resolution | perf | START |  |
 | #0053 | S2 | converter/Support | Sources/converter/Support.swift:308 | M:SS timecode parsing drops empty components; empty-component guard unreachable | logic | START |  |
@@ -49,8 +47,6 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 | #0060 | S2 | repo | album.txt; Sources/converter/AudioPipeline.swift:2063 | Personal track list committed as the production album.txt | placeholder | START |  |
 | #0061 | S2 | BW64Bridge | Sources/BW64Bridge/bw64_bridge.cpp:125-141,161 | Bridge does not bound channels; libbw64 uint16 blockAlignment wraps to heap overflow (unreachable via config today) | unsafe | START |  |
 | #0062 | S2 | BW64Bridge/Package | Sources/Package.swift:35-37; ThirdParty/libbw64/bw64/reader.hpp:220,225,227 | Strict C++ flags (-Wall -Wextra -Werror) fail on three benign sign-compare warnings in vendored libbw64 | deps | START |  |
-| #0064 | S2 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:1860-1900 | Scheduler-limit test can pass vacuously | test | START |  |
-| #0065 | S2 | converterTests | Sources/Tests/converterTests/converterTests.swift:1473-1550 | AsyncSemaphore tests rely on sleeps for ordering and hang instead of failing on a leaked permit | test | START |  |
 | #0066 | S2 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:1627-1637,1738-1748 | Full-pipeline tests require hevc_videotoolbox; fail on hosts without HW HEVC | test | START |  |
 | #0067 | S2 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:473-491 | Fade-out 'does not enforce delivery QC' test never proves the fixture is out of policy | test | START |  |
 | #0068 | S2 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:1933-1948 | Mastering fallback test cannot observe which path ran | test | START |  |
@@ -59,14 +55,10 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 | #0073 | S2 | converter (lint) | AUDIT/baseline/swiftlint-by-rule-4bb136a.txt | swiftlint baseline 533 (56 error-level): fix the actionable rules; structural rules deferred with rationale | style | START |  |
 | #0074 | S2 | converter (dead code) | Sources/converter/Actions.swift:114; ImagePipeline.swift:26-27; ProcessRunner.swift:78; ValidationPipeline.swift:857; Tests/IntegrationTestSupport.swift:32 | periphery-flagged unused declarations (6 unused, 15 assign-only) — prove reachability, then remove or retain with reason | dead | START |  |
 | #0075 | S2 | converter (dead code) | Sources/converter/PipelineCore.swift:347,357-362; Actions.swift:105-110,794-808; BW64Bridge/bw64_bridge.cpp:95; LosslessAudioPipeline.swift:9,30,173-174; AudioPipeline.swift:160-162,264,1955 | Dead branches, tautological guards, dead parameters, redundant discards | dead | START |  |
-| #0076 | S3 | converter/Support | Sources/converter/Support.swift:122-126 | cancelledBeforeSuspension can retain a marker for an already-resumed waiter | logic | START |  |
 | #0077 | S3 | converter/DependencyBootstrap | Sources/converter/DependencyBootstrap.swift:77-82 | Post-install failure message lists nothing when a tool is present but non-functional | logic | START |  |
 | #0078 | S3 | converter/PipelineCore | Sources/converter/PipelineCore.swift:372-379 | ensureWritableDirectory accepts a regular file at OUT_DIR | logic | START |  |
 | #0079 | S3 | converter/ProcessRunner | Sources/converter/ProcessRunner.swift:156-160 | Signal deaths reported as ordinary exit codes | incomplete | START |  |
 | #0080 | S3 | converter/PipelineCore | Sources/converter/PipelineCore.swift:323-344,271 | Orphan-temp detection keys on local PID only; synced directories across hosts | logic | START |  |
-| #0083 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:905 | Noise seed is Int.random; reruns not reproducible | logic | START |  |
-| #0084 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:53-77 | Derived-media predicates use the first _silence_/_noise_ occurrence | logic | START |  |
-| #0085 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:1850-1854 | Track-number parse uses Unicode isNumber and can overflow | logic | START |  |
 | #0086 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:1378,1694-1706 | Magic bytes-per-sample and missing free-space check on the BW64 path | style | START |  |
 | #0087 | S3 | converter/CLI | Sources/converter/CLI.swift:231-260 | CLI inconsistencies: --seed 0, unbounded --sharpness, repeated action flags, option values beginning with -- | logic | START |  |
 | #0088 | S3 | converter/Config+VideoPipeline | Sources/converter/VideoPipeline.swift:230,240,244; Config.swift:393,397 | Config colour/scale-filter values spliced into the filter graph with only non-empty validation | unsafe | START |  |
@@ -82,7 +74,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 | #0098 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:529,534 | Exact ffmpeg bass filter string pinned without a stated reason | test | START |  |
 | #0100 | S3 | converter/Actions | Sources/converter/Actions.swift (normalizedFullRunSource / resolveFullAudio) | Full-run source is renamed before preflight; a corrupt source loses its original name in the error | logic | START |  |
 
-## Done (48)
+## Done (56)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
@@ -120,6 +112,8 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 | #0001 | S2 | repo/AUDIT | AUDIT/inventory.md | Phase A: scope inventory, dependency graph, trust boundaries, blast radius | docs | DONE | 5fa6546 |
 | #0002 | S2 | repo/AUDIT | AUDIT/environment.md | Phase A: environment record and audit tooling install (§1/§1b) | docs | DONE | 5fa6546 |
 | #0003 | S2 | repo/AUDIT | AUDIT/baseline.md | Phase A: baseline metrics at 4bb136a (§3) | docs | DONE | 2184906 |
+| #0039 | S2 | converter/Support | Sources/converter/Support.swift:97-101,141-147 | AsyncSemaphore grants permits to already-cancelled tasks | perf | DONE | 15fbfbb |
+| #0042 | S2 | converter/ProcessRunner | Sources/converter/ProcessRunner.swift:112-124 | Child stdin inherited from the terminal | unsafe | DONE | 2ed4463 |
 | #0043 | S2 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:683-691,1013-1028 | containsChunk is a 64 KiB substring scan, not a RIFF chunk walk | unsafe | DONE | 9bc41f4 |
 | #0044 | S2 | converter/Config | Sources/converter/Config.swift:203-205 | archive profile is a no-op placeholder | placeholder | DONE | fa443f1 |
 | #0045 | S2 | converter/Config | Sources/converter/Config.swift:197-200 | youtube_short overlay puts a known-failing encoder first at the default portrait size | logic | DONE | 6cee542 |
@@ -129,10 +123,16 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 | #0049 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:2104-2113 | -flactoalbum concatenates the pipeline's own derived/archival FLACs | logic | DONE | 8fac9dc |
 | #0052 | S2 | converter/ImagePipeline | Sources/converter/ValidationPipeline.swift:391 (preflightImageInput call sites) | Full-decode image preflight of the same master repeated ~10x per run | perf | DONE | fbefda6 |
 | #0063 | S2 | converterTests+Config | Sources/Tests/converterTests/converterTests.swift:128-140; Config.swift:400; VideoPipeline.swift:269 | SHORT_MP4_CLIP_SECONDS validated with Double() but consumed via parseFlexibleTimecode; test sets a value validate() rejects | test | DONE | 17816b6 |
+| #0064 | S2 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:1860-1900 | Scheduler-limit test can pass vacuously | test | DONE | 588bb0b |
+| #0065 | S2 | converterTests | Sources/Tests/converterTests/converterTests.swift:1473-1550 | AsyncSemaphore tests rely on sleeps for ordering and hang instead of failing on a leaked permit | test | DONE | 7508e7a |
 | #0070 | S2 | converterTests | Sources/Tests/converterTests/converterTests.swift:737-749 | LoudnormArgument clamping untested at the exact bounds | test | DONE | e33815c |
 | #0071 | S2 | converter/Config+tests | Sources/converter/Config.swift:319-452 | Config validation gaps (ranges, empty strings, zero byte targets, CRC chunk bound, negative message) and only 3 keys tested | test | DONE | 87c940b |
+| #0076 | S3 | converter/Support | Sources/converter/Support.swift:122-126 | cancelledBeforeSuspension can retain a marker for an already-resumed waiter | logic | DONE | 24e52d7 |
 | #0081 | S3 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:203-210 | LUFS rebase widens the tolerance symmetrically | logic | DONE | bccf942 |
 | #0082 | S3 | repo/docs | config.txt; wiki Configuration | PREFLIGHT_SECONDS, DURATION_TOLERANCE_SEC, CRC_CHUNK_BYTES supported but undocumented | docs | DONE | bbf40ef |
+| #0083 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:905 | Noise seed is Int.random; reruns not reproducible | logic | DONE | ee37ce5 |
+| #0084 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:53-77 | Derived-media predicates use the first _silence_/_noise_ occurrence | logic | DONE | 724d350 |
+| #0085 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:1850-1854 | Track-number parse uses Unicode isNumber and can overflow | logic | DONE | 6a674bc |
 | #0099 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:34,1967 | Test target compiles with two warnings (bare 'Error' existential, unused 'wav' binding) | style | DONE | 9343977 |
 
 ## Full records
@@ -609,7 +609,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **evidence-after:** AUDIT/evidence/0038-before.log (processExists forced false: 9 failures), 0038-after.log (3 pass); swiftlint 533/56. Full suite (AUDIT/evidence/0037-0038-fullsuite.txt): 203 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** a53673a
 
-### #0039 · S2 · START · AsyncSemaphore grants permits to already-cancelled tasks
+### #0039 · S2 · DONE · AsyncSemaphore grants permits to already-cancelled tasks
 
 - **project/module:** converter/Support
 - **file:line:** Sources/converter/Support.swift:97-101,141-147
@@ -617,6 +617,9 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **host-used:** local
 - **discovered-by:** reviewer C-5
 - **evidence-before:** AUDIT/findings/L2-core-runtime.md C-5
+- **fix-summary:** AsyncSemaphore.wait() calls Task.checkCancellation() before the fast path and withPermit checks again after wait(), returning the permit when cancellation landed in between; two cancellation tests plus an expectCompletion(within:) helper that fails instead of hanging on a leaked permit.
+- **evidence-after:** AUDIT/evidence/0039-before.log (fix stashed: no throw, closure ran, follow-up wait timed out after 1 s); AUDIT/evidence/0039-after.log (all five semaphore tests pass). swiftlint 533/56. Full suite (AUDIT/evidence/0039-0085-fullsuite.txt): 235 executed, 0 failures, 0 compiler warnings.
+- **commit sha:** 15fbfbb
 
 ### #0040 · S2 · START · Cancellation does not terminate sibling external processes after a fan-out failure
 
@@ -636,7 +639,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **discovered-by:** reviewer C-6
 - **evidence-before:** AUDIT/findings/L2-core-runtime.md C-6
 
-### #0042 · S2 · START · Child stdin inherited from the terminal
+### #0042 · S2 · DONE · Child stdin inherited from the terminal
 
 - **project/module:** converter/ProcessRunner
 - **file:line:** Sources/converter/ProcessRunner.swift:112-124
@@ -644,6 +647,9 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **host-used:** local
 - **discovered-by:** reviewer C-7
 - **evidence-before:** AUDIT/findings/L2-core-runtime.md C-7
+- **fix-summary:** ProcessRunner.run and DependencyBootstrapper.isFunctionalTool set process.standardInput = FileHandle.nullDevice; FakeToolDirectory shadows tools with shell stubs, and two tests prove a `read` returns at once and stdin-reading probes pass within seconds.
+- **evidence-after:** AUDIT/evidence/0042-before.log (fix stashed, held-open stdin: `read` times out after 3 s; probes take 20 s and report ffmpeg/imagemagick missing); AUDIT/evidence/0042-after.log (both pass in <1 s; 11 neighbouring runner/bootstrap tests pass). swiftlint 533/56. Full suite (AUDIT/evidence/0039-0085-fullsuite.txt): 235 executed, 0 failures, 0 compiler warnings.
+- **commit sha:** 2ed4463
 
 ### #0043 · S2 · DONE · containsChunk is a 64 KiB substring scan, not a RIFF chunk walk
 
@@ -868,7 +874,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **evidence-after:** AUDIT/evidence/0063-before.log, 0063-after.log; swiftlint 533/56. Full suite (AUDIT/evidence/config-group-fullsuite.txt): 215 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** 17816b6
 
-### #0064 · S2 · START · Scheduler-limit test can pass vacuously
+### #0064 · S2 · DONE · Scheduler-limit test can pass vacuously
 
 - **project/module:** converterTests
 - **file:line:** Sources/Tests/converterTests/PipelineIntegrationTests.swift:1860-1900
@@ -876,8 +882,11 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **host-used:** local
 - **discovered-by:** reviewer T-12
 - **evidence-before:** AUDIT/findings/L6-tests.md T-12
+- **fix-summary:** testSchedulerRespectsResourceClassLimits saturates each class with 16 jobs and asserts peak == min(class cap, total); a mixed phase keeps the global bound; a control run through a ConverterTool pinned to a wide SchedulerProfile (4/4/4/4) proves the counter observes overlap. ConverterTool.init gains an optional schedulerProfile parameter.
+- **evidence-after:** AUDIT/evidence/0064-before.log (every semaphore capped at 1: the old `<=` test passes, the rewritten test fails on image/audio == 2 and the control > 1); AUDIT/evidence/0064-after.log (passes with the seven semaphore neighbours). swiftlint 533/56. Full suite (AUDIT/evidence/0039-0085-fullsuite.txt): 235 executed, 0 failures, 0 compiler warnings.
+- **commit sha:** 588bb0b
 
-### #0065 · S2 · START · AsyncSemaphore tests rely on sleeps for ordering and hang instead of failing on a leaked permit
+### #0065 · S2 · DONE · AsyncSemaphore tests rely on sleeps for ordering and hang instead of failing on a leaked permit
 
 - **project/module:** converterTests
 - **file:line:** Sources/Tests/converterTests/converterTests.swift:1473-1550
@@ -885,6 +894,9 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **host-used:** local
 - **discovered-by:** reviewer T-13
 - **evidence-before:** AUDIT/findings/L6-tests.md T-13
+- **fix-summary:** The three pre-existing AsyncSemaphore tests stop ordering events with 80 ms Task.sleep calls and observe the queue through waiterCount (spin-wait via waitUntil); every await a lost permit could block runs under the 1 s expectCompletion bound.
+- **evidence-after:** AUDIT/evidence/0065-before.log (permit deliberately leaked when the body throws: the old test hangs until a 20 s guard kills it, exit 124; the rewritten test reports "await did not complete within 1.0 s" in 1.2 s); AUDIT/evidence/0065-after.log (all six semaphore tests pass). swiftlint 533/56. Full suite (AUDIT/evidence/0039-0085-fullsuite.txt): 235 executed, 0 failures, 0 compiler warnings.
+- **commit sha:** 7508e7a
 
 ### #0066 · S2 · START · Full-pipeline tests require hevc_videotoolbox; fail on hosts without HW HEVC
 
@@ -985,7 +997,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **discovered-by:** reviewers C-10, X-17, B-15, A-15
 - **evidence-before:** AUDIT/findings/L2-core-runtime.md C-10; L2-video-image-actions-cli.md X-17; L0-L3-bridge-repo.md B-15; L2-audio.md A-15
 
-### #0076 · S3 · START · cancelledBeforeSuspension can retain a marker for an already-resumed waiter
+### #0076 · S3 · DONE · cancelledBeforeSuspension can retain a marker for an already-resumed waiter
 
 - **project/module:** converter/Support
 - **file:line:** Sources/converter/Support.swift:122-126
@@ -993,6 +1005,9 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **host-used:** local
 - **discovered-by:** reviewer C-8
 - **evidence-before:** AUDIT/findings/L2-core-runtime.md C-8
+- **fix-summary:** wait() records its id in an `arming` set until enqueue() runs; cancelWaiter() only leaves a cancelledBeforeSuspension marker for an armed id, so a cancel after signal() resumed the waiter is a no-op. Adds test-visible waiterCount / pendingCancellationCount, a waitUntil spin helper and a 500-iteration signal-vs-cancel race test. The actor moves to Sources/converter/AsyncSemaphore.swift (Support.swift crossed swiftlint's 400-line file limit).
+- **evidence-after:** AUDIT/evidence/0076-before.log (pre-fix cancelWaiter restored: 500 stale markers left behind); AUDIT/evidence/0076-after.log (0 markers, permit intact, all six semaphore tests pass). swiftlint 533/56. Full suite (AUDIT/evidence/0039-0085-fullsuite.txt): 235 executed, 0 failures, 0 compiler warnings.
+- **commit sha:** 24e52d7
 
 ### #0077 · S3 · START · Post-install failure message lists nothing when a tool is present but non-functional
 
@@ -1055,7 +1070,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **commit sha:** bbf40ef
 - **notes:** Add a test asserting config.txt keys == supportedKeys.
 
-### #0083 · S3 · START · Noise seed is Int.random; reruns not reproducible
+### #0083 · S3 · DONE · Noise seed is Int.random; reruns not reproducible
 
 - **project/module:** converter/AudioPipeline
 - **file:line:** Sources/converter/AudioPipeline.swift:905
@@ -1063,8 +1078,11 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **host-used:** local
 - **discovered-by:** reviewer A-11
 - **evidence-before:** AUDIT/findings/L2-audio.md A-11
+- **fix-summary:** crc32(for:) is split into crc32Value(for:) -> UInt32 plus the hex wrapper; noiseSeed(for:segment:) XORs that CRC with a per-position salt (NoiseSegment.leading/.trailing) and the two segment builders take the seed explicitly. verifyNoisePadding starts with verifyNoisePaddedProgrammeAudible, which probes the span between the two transition silences and rejects max_volume <= -70 dBFS. Two integration tests.
+- **evidence-after:** AUDIT/evidence/0083-before.log (API kept, seed randomised and programme probe removed: rerun CRCs differ for FLAC and WAV, silent programme accepted); AUDIT/evidence/0083-after.log (all 8 noise tests pass, incl. the 2 new ones). swiftlint 533/56. Full suite (AUDIT/evidence/0039-0085-fullsuite.txt): 235 executed, 0 failures, 0 compiler warnings.
+- **commit sha:** ee37ce5
 
-### #0084 · S3 · START · Derived-media predicates use the first _silence_/_noise_ occurrence
+### #0084 · S3 · DONE · Derived-media predicates use the first _silence_/_noise_ occurrence
 
 - **project/module:** converter/AudioPipeline
 - **file:line:** Sources/converter/AudioPipeline.swift:53-77
@@ -1072,8 +1090,11 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **host-used:** local
 - **discovered-by:** reviewer A-12
 - **evidence-before:** AUDIT/findings/L2-audio.md A-12
+- **fix-summary:** isSilenceDerivedMedia and isNoiseDerivedMedia share isPaddingDerivedMedia(_:marker:), which locates the LAST _silence_/_noise_ marker in the stem (range(of:options:.backwards)) and requires the bare "<seconds>s" token after it. One unit test covers the predicates and the -silence/-noise candidate lists.
+- **evidence-after:** AUDIT/evidence/0084-before.log (4 failures: both double-marker files unrecognised and listed as candidates); AUDIT/evidence/0084-after.log (new test + album/silence/noise candidate tests, 4 pass). swiftlint 533/56. Full suite (AUDIT/evidence/0039-0085-fullsuite.txt): 235 executed, 0 failures, 0 compiler warnings.
+- **commit sha:** 724d350
 
-### #0085 · S3 · START · Track-number parse uses Unicode isNumber and can overflow
+### #0085 · S3 · DONE · Track-number parse uses Unicode isNumber and can overflow
 
 - **project/module:** converter/AudioPipeline
 - **file:line:** Sources/converter/AudioPipeline.swift:1850-1854
@@ -1081,6 +1102,9 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **host-used:** local
 - **discovered-by:** reviewer A-13
 - **evidence-before:** AUDIT/findings/L2-audio.md A-13
+- **fix-summary:** sortAlbumAudioTracks' leadingTrackNumber collects the stem prefix with `isASCII && isWholeNumber` instead of `isNumber`, and a prefix longer than maxAlbumTrackNumberDigits (9) is not a track number. One unit test drives sortAlbumAudioTracks with '3½ x', '07 v', '10 y', '2 z', a 25-digit prefix and an Arabic-Indic digit.
+- **evidence-after:** AUDIT/evidence/0085-before.log (1 failure: '3½ x' sorted after '10 y'); AUDIT/evidence/0085-after.log (new test + both existing album sort tests, 3 pass). swiftlint 533/56. Full suite (AUDIT/evidence/0039-0085-fullsuite.txt): 235 executed, 0 failures, 0 compiler warnings.
+- **commit sha:** 6a674bc
 
 ### #0086 · S3 · START · Magic bytes-per-sample and missing free-space check on the BW64 path
 
