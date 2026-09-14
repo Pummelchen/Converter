@@ -6,9 +6,9 @@ Session: `2026-09-13` · branch `audit/2026-09-13` · baseline commit `4bb136a`
 
 | status | count |
 |---|---|
-| START | 32 |
+| START | 31 |
 | PROGRESS | 0 |
-| TEST | 2 |
+| TEST | 3 |
 | AUDIT | 0 |
 | DONE | 66 |
 | BLOCKED | 0 |
@@ -31,7 +31,7 @@ _none_
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
 | #0040 | S2 | converter/ProcessRunner | Sources/converter/ProcessRunner.swift:145; Actions.swift:615-619 | Cancellation does not terminate sibling external processes after a fan-out failure | unsafe | START |  |
-| #0041 | S2 | converter/DependencyBootstrap | Sources/converter/DependencyBootstrap.swift:216-248 | Installer subprocesses have no timeout and discard diagnostics | incomplete | START |  |
+| #0041 | S2 | converter/DependencyBootstrap | Sources/converter/DependencyBootstrap.swift:216-248 | Installer subprocesses have no timeout and discard diagnostics | incomplete | TEST |  |
 | #0050 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:327-336,367-387,591-600 | Loudness fallback publishes any true-peak breach with a misleading 'closest-safe' label | logic | START |  |
 | #0051 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:992,1170,1029,508 | Redundant padding verification, uncached ffmpeg -filters, per-file ladder resolution | perf | START |  |
 | #0055 | S2 | converter/ImagePipeline | Sources/converter/ImagePipeline.swift:329-336 | Fitted portrait still double-sharpens derived masters and user Vertical_8K.png | logic | TEST | 56536a3 |
@@ -633,7 +633,7 @@ _none_
 - **discovered-by:** reviewer X-14
 - **evidence-before:** AUDIT/findings/L2-video-image-actions-cli.md X-14
 
-### #0041 · S2 · START · Installer subprocesses have no timeout and discard diagnostics
+### #0041 · S2 · TEST · Installer subprocesses have no timeout and discard diagnostics
 
 - **project/module:** converter/DependencyBootstrap
 - **file:line:** Sources/converter/DependencyBootstrap.swift:216-248
@@ -641,6 +641,8 @@ _none_
 - **host-used:** local
 - **discovered-by:** reviewer C-6
 - **evidence-before:** AUDIT/findings/L2-core-runtime.md C-6
+- **fix-summary:** DependencyBootstrapper.runSilent is internal, captures bounded stderr, sets stdin to /dev/null and escalates SIGTERM->SIGKILL after a timeout; Homebrew installs set HOMEBREW_NO_AUTO_UPDATE=1 and the installer download is bounded. The installer runner lives in DependencyInstaller.swift.
+- **evidence-after:** AUDIT/evidence/0041-before.log (old body behind a signature shim: stderr lost, hung stub ran 10.6 s despite timeoutSeconds: 1); AUDIT/evidence/0041-after.log (testInstallerSubprocessReportsStderrAndTimesOut passes in 1.27 s). swiftlint 530/56, one fewer than baseline.
 
 ### #0042 · S2 · DONE · Child stdin inherited from the terminal
 

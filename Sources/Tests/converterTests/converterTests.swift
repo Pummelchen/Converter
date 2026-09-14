@@ -218,6 +218,32 @@ final class converterTests: XCTestCase {
         }
     }
 
+    // audit #0041: installer subprocesses ran with stdout/stderr on /dev/null and no timeout, so
+    // a failing formula reported only its exit status and a hung installer hung the whole run.
+    func testInstallerSubprocessReportsStderrAndTimesOut() throws {
+        let fake = try FakeToolDirectory()
+        let path = ["PATH": "/bin:/usr/bin:/usr/local/bin:/opt/homebrew/bin"]
+
+        let failing = try fake.add("failing-installer", body: "echo 'Error: boom' 1>&2; exit 3")
+        XCTAssertThrowsError(
+            try DependencyBootstrapper.runSilent(failing, arguments: [], environment: path, timeoutSeconds: 30)
+        ) { error in
+            let message = (error as? AppError)?.message ?? error.localizedDescription
+            XCTAssertTrue(message.contains("exited with status 3"), "unexpected message: \(message)")
+            XCTAssertTrue(message.contains("Error: boom"), "stderr must be reported: \(message)")
+        }
+
+        let sleeping = try fake.add("sleeping-installer", body: "sleep 10")
+        let start = Date()
+        XCTAssertThrowsError(
+            try DependencyBootstrapper.runSilent(sleeping, arguments: [], environment: path, timeoutSeconds: 1)
+        ) { error in
+            let message = (error as? AppError)?.message ?? error.localizedDescription
+            XCTAssertTrue(message.contains("timed out after 1 seconds"), "unexpected message: \(message)")
+        }
+        XCTAssertLessThan(Date().timeIntervalSince(start), 5, "the watchdog must end a hung installer")
+    }
+
     func testNumericFormattingAndBitrateParsingUseStableFFmpegForms() throws {
         XCTAssertEqual(ffmpegNumber(5), "5")
         XCTAssertEqual(ffmpegNumber(-12.5), "-12.5")

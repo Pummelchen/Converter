@@ -1,5 +1,6 @@
 import CryptoKit
 import Foundation
+import Synchronization
 
 struct HomebrewFormulaDependency: Equatable, Sendable {
     let formula: String
@@ -217,7 +218,8 @@ enum DependencyBootstrapper {
             try runSilent(
                 URL(fileURLWithPath: "/usr/bin/curl"),
                 arguments: ["-fsSL", "--proto", "=https,file", "--tlsv1.2", "--max-time", "300", "-o", temp.path, url],
-                environment: environment
+                environment: environment,
+                timeoutSeconds: 360
             )
             let actual = sha256Hex(of: try Data(contentsOf: temp))
             guard actual == expectedSHA256.lowercased() else {
@@ -241,7 +243,10 @@ enum DependencyBootstrapper {
             environment: environment.merging([
                 "CI": "1",
                 "HOMEBREW_NO_ANALYTICS": "1",
-                "HOMEBREW_NO_ENV_HINTS": "1"
+                "HOMEBREW_NO_ENV_HINTS": "1",
+                // An implicit `brew update` can add minutes and pull in unrelated formula
+                // changes; the operator updates Homebrew explicitly.
+                "HOMEBREW_NO_AUTO_UPDATE": "1"
             ]) { _, new in new }
         )
     }
@@ -263,40 +268,6 @@ enum DependencyBootstrapper {
             }
         }
         return nil
-    }
-
-    private static func runSilent(_ executable: URL, arguments: [String], environment: [String: String]) throws {
-        let process = Process()
-        process.executableURL = executable
-        process.arguments = arguments
-        process.environment = environment
-        process.qualityOfService = .utility
-
-        guard
-            let nullInput = FileHandle(forReadingAtPath: "/dev/null"),
-            let nullOutput = FileHandle(forWritingAtPath: "/dev/null")
-        else {
-            throw AppError("Unable to open /dev/null for silent dependency installation.")
-        }
-        process.standardInput = nullInput
-        process.standardOutput = nullOutput
-        process.standardError = nullOutput
-
-        do {
-            try process.run()
-        } catch {
-            try? nullInput.close()
-            try? nullOutput.close()
-            throw AppError("Failed to launch dependency installer '\(executable.path)': \(error.localizedDescription)")
-        }
-
-        process.waitUntilExit()
-        try? nullInput.close()
-        try? nullOutput.close()
-
-        guard process.terminationStatus == 0 else {
-            throw AppError("Dependency installer failed: \(executable.path) \(arguments.joined(separator: " ")) exited with status \(process.terminationStatus)")
-        }
     }
 }
 
