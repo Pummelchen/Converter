@@ -46,9 +46,14 @@ against the working tree and `origin` on 2026-09-14 06:58 WIB.
   **#0078** (regular file at OUT_DIR), **#0079** (signal deaths named), **#0091** (stale ignore
   entry), **#0092** (FORMATS.md maintenance commands + `-fadeflac`).
 - Ledger after batch 2: **done 63 · open 37 · blocked 0**. Both repos are pushed.
-- Next planned batch: **#0040** (cancel sibling external processes), **#0041** (installer
-  timeout + diagnostics), **#0054** (`-mp4toshort` re-ingests its own shorts), **#0057** (EXIF
-  orientation), **#0060** (committed personal `album.txt`).
+- Batch 3 DONE after a 242-test full suite: **#0054** (`-mp4toshort` re-ingested its own
+  `_Short_CenterCut`/`_Short_FullSong` companions), **#0057** (EXIF-rotated phone JPEGs were
+  classified by stored pixels, not displayed geometry; squares now warn), **#0060** (the author's
+  personal `album.txt` replaced by a documented, git-ignored `album.example.txt`).
+- Ledger after batch 3: **done 66 · open 34 · blocked 0**.
+- Next planned batch: **#0056** (`shortenMP4` scaler flags), **#0040** (cancel sibling external
+  processes), **#0041** (installer timeout + diagnostics), **#0055** (fitted still double-sharpens),
+  **#0050/#0051** (loudness fallback labelling, redundant probes).
 
 ## Exactly where to continue
 
