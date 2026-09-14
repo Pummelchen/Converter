@@ -62,11 +62,22 @@ against the working tree and `origin` on 2026-09-14 06:58 WIB.
   terminate them on cancellation), **#0087** (CLI accepted `--seed 0`, unbounded `--sharpness`,
   a second action flag and option-like option values).
 - Ledger after batch 5: **done 71 · open 29 · blocked 0**.
-- Next planned batch: **#0050** (fallback publishes a true-peak breach with a "closest-safe"
-  label — see `AUDIT/findings/L2-audio.md` A-9 for the intended inherent-peak rule and the MP3
-  headroom), **#0051** (redundant padding verification / uncached `ffmpeg -filters`), **#0086**
-  (BW64 magic byte width + free-space check), plus the S3 cleanup tasks (#0090, #0091 done,
-  #0080, #0077).
+- Batch 6 DONE after a 249-test full suite: **#0050** (the loudness fallback excused every
+  true-peak issue and labelled the result "closest-safe"; it now only excuses a peak the render
+  did not add, with 0.3 dB of MP3 headroom, and the label comes from the issue set), **#0077**
+  (the post-install failure message listed nothing when a tool was present but failed its
+  `-version` probe).
+- Ledger after batch 6: **done 73 · open 27 · blocked 0**. swiftlint is 528/56 (three below the
+  531 baseline).
+- Investigated but deliberately deferred: **#0086** (the 3-byte width in `estimateWAVBytes` is
+  latent because `Config.validate` pins `WAV_CODEC` to `pcm_s24le`; only the BW64 free-space gap
+  is real — fold it into a later perf/validation pass), **#0051** (needs a counting runner to
+  assert fewer ffmpeg invocations).
+- Next planned batch: **#0100** (full-run rename happens before preflight, so a corrupt source
+  loses its original name — decide between preflighting first or rolling the rename back),
+  **#0080** (orphan-temp detection keys on the local PID only), **#0088** (config filter values
+  spliced into the filter graph), **#0090** (easily swappable C ABI parameters), then the
+  test-quality batch #0093–#0098.
 
 ## Exactly where to continue
 
