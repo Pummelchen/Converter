@@ -1,4 +1,7 @@
+import CoreGraphics
 import Foundation
+import ImageIO
+import UniformTypeIdentifiers
 import XCTest
 @testable import converter
 
@@ -185,6 +188,41 @@ final class IntegrationWorkspace {
             "gradient:#1A4B8C-#E7A84B",
             target.path
         ])
+        return target
+    }
+
+    // A JPEG whose stored pixel grid does not match how it is displayed: phone cameras write
+    // these, and ImageMagick reports the stored size plus an EXIF "%[orientation]" of RightTop.
+    func createEXIFOrientedImage(name: String, width: Int = 320, height: Int = 180, orientation: Int) throws -> URL {
+        let target = output.appendingPathComponent(name).appendingPathExtension("jpg")
+        guard let context = CGContext(
+            data: nil,
+            width: width,
+            height: height,
+            bitsPerComponent: 8,
+            bytesPerRow: 0,
+            space: CGColorSpaceCreateDeviceRGB(),
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        ) else {
+            throw AppError("Unable to create a bitmap context for the EXIF orientation fixture.")
+        }
+        context.setFillColor(CGColor(red: 0.2, green: 0.4, blue: 0.8, alpha: 1))
+        context.fill(CGRect(x: 0, y: 0, width: width, height: height))
+        guard let image = context.makeImage() else {
+            throw AppError("Unable to rasterise the EXIF orientation fixture.")
+        }
+        guard let destination = CGImageDestinationCreateWithURL(
+            target as CFURL,
+            UTType.jpeg.identifier as CFString,
+            1,
+            nil
+        ) else {
+            throw AppError("Unable to open a JPEG destination for the EXIF orientation fixture.")
+        }
+        CGImageDestinationAddImage(destination, image, [kCGImagePropertyOrientation: orientation] as CFDictionary)
+        guard CGImageDestinationFinalize(destination) else {
+            throw AppError("Unable to write the EXIF orientation fixture.")
+        }
         return target
     }
 

@@ -345,6 +345,14 @@ extension ConverterTool {
             guard let dimensions = try imageDimensions(candidate) else {
                 throw AppError("Unable to read dimensions: \(candidate.path)")
             }
+            // A square is not portrait, so it becomes the landscape master; say so instead of
+            // silently treating it as one.
+            guard dimensions.0 != dimensions.1 else {
+                logger.warn("Square source image '\(candidate.basename)' is treated as the landscape master; "
+                    + "it will be fitted into a \(config.videoMP4Width)x\(config.videoMP4Height) frame.")
+                masters.append(candidate)
+                continue
+            }
             if dimensions.1 > dimensions.0 {
                 portraits.append(candidate)
             } else {

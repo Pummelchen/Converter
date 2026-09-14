@@ -1,0 +1,10 @@
+$ swift test --package-path Sources --filter testFullRunClassifiesEXIFRotatedJPEGByDisplayedOrientation   # fix applied
+	 Executed 1 test, with 0 failures (0 unexpected) in 0.267 (0.267) seconds
+	 Executed 1 test, with 0 failures (0 unexpected) in 0.267 (0.267) seconds
+	 Executed 1 test, with 0 failures (0 unexpected) in 0.267 (0.268) seconds
+
+$ swift test --package-path Sources --filter testFullRunTreatsASquareSourceAsTheLandscapeImage   # fix applied
+	 Executed 1 test, with 0 failures (0 unexpected) in 0.138 (0.138) seconds
+	 Executed 1 test, with 0 failures (0 unexpected) in 0.138 (0.138) seconds
+	 Executed 1 test, with 0 failures (0 unexpected) in 0.138 (0.139) seconds
+

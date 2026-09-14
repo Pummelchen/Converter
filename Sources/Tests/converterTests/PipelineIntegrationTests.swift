@@ -26,6 +26,38 @@ final class PipelineIntegrationTests: XCTestCase {
         return lowBand - midBand
     }
 
+    // audit #0057: a phone JPEG stores landscape pixels plus EXIF orientation 6, so classifying
+    // by the stored grid made it a second landscape source and the run failed with "expects ...
+    // exactly one landscape source image" instead of using it as the portrait source. The image
+    // pipeline already passes -auto-orient, so the displayed geometry is the correct one.
+    func testFullRunClassifiesEXIFRotatedJPEGByDisplayedOrientation() throws {
+        let workspace = try IntegrationWorkspace()
+        let landscape = try workspace.createImage(name: "landscape", ext: "jpg", width: 320, height: 180)
+        let phone = try workspace.createEXIFOrientedImage(name: "phone", width: 320, height: 180, orientation: 6)
+
+        let tool = try workspace.makeTool(arguments: ["-full"])
+        let resolved = try tool.resolveFullRunSourceImages()
+        XCTAssertEqual(resolved.master.lastPathComponent, landscape.lastPathComponent)
+        XCTAssertEqual(resolved.portrait?.lastPathComponent, phone.lastPathComponent)
+
+        // The probe reports displayed geometry, and orientation 1 stays as stored.
+        XCTAssertEqual(try tool.imageDimensions(phone).map { [$0.0, $0.1] }, [180, 320])
+        let upright = try workspace.createEXIFOrientedImage(name: "upright", width: 320, height: 180, orientation: 1)
+        XCTAssertEqual(try tool.imageDimensions(upright).map { [$0.0, $0.1] }, [320, 180])
+    }
+
+    // audit #0057: squares are neither portrait nor landscape, so they are treated as the
+    // landscape source (and warned about) rather than silently rejected.
+    func testFullRunTreatsASquareSourceAsTheLandscapeImage() throws {
+        let workspace = try IntegrationWorkspace()
+        let square = try workspace.createImage(name: "artwork", ext: "png", width: 200, height: 200)
+
+        let tool = try workspace.makeTool(arguments: ["-full"])
+        let resolved = try tool.resolveFullRunSourceImages()
+        XCTAssertEqual(resolved.master.lastPathComponent, square.lastPathComponent)
+        XCTAssertNil(resolved.portrait)
+    }
+
     // Large stderr output used to risk pipe-buffer deadlock; this keeps that path under test.
     func testRunHandlesLargeStderrWithoutDeadlock() throws {
         let workspace = try IntegrationWorkspace()

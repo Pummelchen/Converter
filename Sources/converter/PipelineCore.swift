@@ -87,6 +87,21 @@ struct ImageProbe: Sendable {
     let height: Int
     let format: String
     let colorSpace: String
+    // EXIF orientation name as reported by ImageMagick ("TopLeft", "RightTop", "Undefined", …).
+    let orientation: String
+
+    // Orientations 5-8 rotate the stored pixels by 90°, so the image as displayed (and as the
+    // pipeline renders it, because every magick call passes -auto-orient) is transposed.
+    private static let transposedOrientations: Set<String> = [
+        "LeftTop", "RightTop", "RightBottom", "LeftBottom"
+    ]
+
+    var isTransposed: Bool {
+        Self.transposedOrientations.contains(orientation)
+    }
+
+    var displayedWidth: Int { isTransposed ? height : width }
+    var displayedHeight: Int { isTransposed ? width : height }
 }
 
 enum CachedImageProbe: Sendable {
@@ -679,12 +694,13 @@ final class ConverterTool: Sendable {
         return Double(value)
     }
 
-    // One `magick identify` answers geometry, format, and colorspace together. The
-    // trailing newline keeps multi-frame inputs parseable: only the first frame is read.
+    // One `magick identify` answers geometry, format, colorspace, and EXIF orientation together.
+    // The trailing newline keeps multi-frame inputs parseable: only the first frame is read.
     func imageProbe(_ file: URL) throws -> ImageProbe? {
         let fingerprint = try fileProbeFingerprint(file)
         return try probeCache.cachedImageProbe(key: fingerprint) {
-            let result = try runner.run("magick", ["identify", "-format", "%w|%h|%m|%[colorspace]\n", file.path])
+            let format = "%w|%h|%m|%[colorspace]|%[orientation]\n"
+            let result = try runner.run("magick", ["identify", "-format", format, file.path])
             guard let firstFrame = result.stdout.split(whereSeparator: \.isNewline).first else {
                 return nil
             }
@@ -692,15 +708,22 @@ final class ConverterTool: Sendable {
             guard fields.count >= 4, let width = Int(fields[0]), let height = Int(fields[1]) else {
                 return nil
             }
-            return ImageProbe(width: width, height: height, format: fields[2], colorSpace: fields[3])
+            // Older ImageMagick builds omit %[orientation]; treat that as an unrotated image.
+            let orientation = fields.count >= 5 && !fields[4].isEmpty ? fields[4] : "Undefined"
+            return ImageProbe(
+                width: width, height: height, format: fields[2],
+                colorSpace: fields[3], orientation: orientation
+            )
         }
     }
 
+    // Dimensions as the image is displayed: a phone JPEG rotated by EXIF metadata is portrait
+    // even though its stored pixel grid is landscape.
     func imageDimensions(_ file: URL) throws -> (Int, Int)? {
         guard let probe = try imageProbe(file) else {
             return nil
         }
-        return (probe.width, probe.height)
+        return (probe.displayedWidth, probe.displayedHeight)
     }
 
     func imageFormat(_ file: URL) throws -> String? {
