@@ -511,7 +511,7 @@
       "evidence_before": "AUDIT/findings/L0-L3-bridge-repo.md B-4,B-14; L2-video-image-actions-cli.md X-15",
       "fix_summary": "README, CLI help, CONTRIBUTING, docs/FORMATS.md and docs/KNOWN_GOOD_VERSIONS.md now describe the source rename, the loudness-changing actions, the min(SHORT_MP4_CLIP_SECONDS, 58) cap, the album.txt error semantics and the opt-in auto-install; the wiki pages received the same corrections in a separate commit.",
       "evidence_after": "Stale-claim sweep clean; seven help-text tests pass; full suite recorded below.",
-      "commit": "",
+      "commit": "13aeb25",
       "notes": "Do after the behavioural fixes so docs describe the final state."
     },
     {

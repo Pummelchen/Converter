@@ -20,7 +20,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
 | #0006 | S0 | repo | node1 (fresh clone) | Phase E: independent verification from a fresh clone on node1 | test | START |  |
-| #0030 | S1 | repo/docs | README.md:25,59; Sources/converter/CLI.swift:461-481,664-665; CONTRIBUTING.md:59; wiki Home/Full-Run-Contract | README, CLI help, CONTRIBUTING and wiki contradict actual behaviour (source rename, audio alteration, portrait input, --keep-full-name, 58 s, auto-install wording) | docs | TEST |  |
+| #0030 | S1 | repo/docs | README.md:25,59; Sources/converter/CLI.swift:461-481,664-665; CONTRIBUTING.md:59; wiki Home/Full-Run-Contract | README, CLI help, CONTRIBUTING and wiki contradict actual behaviour (source rename, audio alteration, portrait input, --keep-full-name, 58 s, auto-install wording) | docs | TEST | 13aeb25 |
 
 ## Blocked (0)
 
@@ -515,6 +515,7 @@ _none_
 - **evidence-before:** AUDIT/findings/L0-L3-bridge-repo.md B-4,B-14; L2-video-image-actions-cli.md X-15
 - **fix-summary:** README, CLI help, CONTRIBUTING, docs/FORMATS.md and docs/KNOWN_GOOD_VERSIONS.md now describe the source rename, the loudness-changing actions, the min(SHORT_MP4_CLIP_SECONDS, 58) cap, the album.txt error semantics and the opt-in auto-install; the wiki pages received the same corrections in a separate commit.
 - **evidence-after:** Stale-claim sweep clean; seven help-text tests pass; full suite recorded below.
+- **commit sha:** 13aeb25
 - **notes:** Do after the behavioural fixes so docs describe the final state.
 
 ### #0031 · S1 · DONE · Integration workspace inherits OUTPUT_DIR/SRC_DIR/OUT_DIR/CONFIG_FILE/DEBUG from the host shell
