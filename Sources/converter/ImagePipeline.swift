@@ -23,8 +23,6 @@ extension ConverterTool {
         width: Int,
         height: Int,
         sharpness: Double,
-        filter: String,
-        colorSpace: String,
         compressionLevel: Int
     ) -> [String] {
         var args = [
@@ -162,8 +160,6 @@ extension ConverterTool {
                         width: target.width,
                         height: target.height,
                         sharpness: config.imageAIPixSharpness,
-                        filter: config.imageAIPixFilter,
-                        colorSpace: config.imageOutputColorSpace,
                         compressionLevel: config.imageAIPixPNGCompressionLevel
                     ) + [temp.path]
                     _ = try runner.run("magick", finalArgs)
@@ -240,8 +236,6 @@ extension ConverterTool {
                 width: config.image4KWidth,
                 height: config.image4KHeight,
                 sharpness: config.imageAIPixSharpness,
-                filter: config.imageAIPixFilter,
-                colorSpace: config.imageOutputColorSpace,
                 compressionLevel: config.imageAIPixPNGCompressionLevel
             ) + [temp.path]
             _ = try runner.run("magick", finalArgs)

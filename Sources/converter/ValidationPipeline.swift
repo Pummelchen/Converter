@@ -1010,10 +1010,6 @@ extension ConverterTool {
     }
 
     // Decode to a canonical signed 32-bit PCM stream so lossless/container variants can be compared sample-for-sample.
-    func decodeAudioToCanonicalPCM(_ source: URL, output: URL, sampleRate: Int, channels: Int) throws {
-        try decodeAudioToCanonicalPCM(source, output: output, sampleRate: sampleRate, channels: channels, format: .s32le)
-    }
-
     func decodeAudioToCanonicalPCM(_ source: URL, output: URL, sampleRate: Int, channels: Int, format: CanonicalPCMFormat) throws {
         _ = try runner.run("ffmpeg", [
             "-hide_banner", "-nostdin", "-v", "error", "-y",

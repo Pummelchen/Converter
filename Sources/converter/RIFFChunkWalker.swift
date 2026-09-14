@@ -66,10 +66,6 @@ struct RIFFChunkWalker: Sendable {
         chunks.contains { $0.chunkID == chunkID }
     }
 
-    func first(_ chunkID: String) -> RIFFChunk? {
-        chunks.first { $0.chunkID == chunkID }
-    }
-
     private static func invalid(_ file: URL, _ reason: String) -> AppError {
         AppError("WAV chunk structure invalid for \(file.path): \(reason)")
     }

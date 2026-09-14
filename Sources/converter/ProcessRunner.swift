@@ -129,7 +129,6 @@ final class ProcessRunner: Sendable {
 
     private let logger: Logger
     private let environment: [String: String]
-    var fileManager: FileManager { FileManager.default }
     private let debugEnabled: Bool
     // Children currently waiting, so a cancelled fan-out can terminate the siblings it no longer
     // needs instead of letting each ffmpeg/magick job run to completion (#0040).

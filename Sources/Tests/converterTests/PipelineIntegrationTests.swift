@@ -3242,14 +3242,14 @@ final class PipelineIntegrationTests: XCTestCase {
     // discovered in that order (localizedStandardCompare), so the middle file is the one that fails.
     private struct GarbageMiddleBatch {
         let first: URL
-        let broken: URL
         let last: URL
     }
 
     private func makeBatchWithGarbageMiddleFile(_ workspace: IntegrationWorkspace) throws -> GarbageMiddleBatch {
-        GarbageMiddleBatch(
+        // The garbage middle file only has to exist on disk; no caller needs its URL.
+        _ = try workspace.writeGarbageFile(name: "b", ext: "wav")
+        return GarbageMiddleBatch(
             first: try workspace.createAudio(name: "a", ext: "wav", duration: 1.0),
-            broken: try workspace.writeGarbageFile(name: "b", ext: "wav"),
             last: try workspace.createAudio(name: "c", ext: "wav", duration: 1.0, frequency: 660)
         )
     }

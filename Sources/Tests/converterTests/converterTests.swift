@@ -985,7 +985,7 @@ final class converterTests: XCTestCase {
         let policy = tool.loudnessPolicy(targetLUFS: -12)
         let addedPeakPlan = loudnessFallbackPlan(sourcePeakDBFS: -1.5, appliedGainDB: 0.5, peakConstrained: false)
         let addedPeakResult = try loudnessFallbackResult(
-            tool: tool, policy: policy, truePeakDBTP: -0.6, peakLevelDBFS: -1.5
+            policy: policy, truePeakDBTP: -0.6, peakLevelDBFS: -1.5
         )
 
         // -0.6 dBTP against a ceiling of -1.5 + 0.5 + 0.1 = -0.9: the render added the breach.
@@ -995,7 +995,7 @@ final class converterTests: XCTestCase {
 
         // -0.75 dBTP is inside the lossy allowance (-0.7) but outside the lossless one (-0.9).
         let nearCeilingResult = try loudnessFallbackResult(
-            tool: tool, policy: policy, truePeakDBTP: -0.75, peakLevelDBFS: -1.5
+            policy: policy, truePeakDBTP: -0.75, peakLevelDBFS: -1.5
         )
         XCTAssertFalse(
             tool.loudnessCandidateIsPublishableFallback(nearCeilingResult, policy: policy, plan: addedPeakPlan)
@@ -1021,7 +1021,7 @@ final class converterTests: XCTestCase {
     }
 
     private func loudnessFallbackResult(
-        tool: ConverterTool, policy: AudioQCPolicy, truePeakDBTP: Double, peakLevelDBFS: Double
+        policy: AudioQCPolicy, truePeakDBTP: Double, peakLevelDBFS: Double
     ) throws -> AudioQCResult {
         let metrics = AudioQCMetrics(
             integratedLUFS: -13.3,

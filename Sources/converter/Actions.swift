@@ -138,17 +138,6 @@ extension ConverterTool {
         return 0
     }
 
-    func rankedFullRunImageCandidates() throws -> [URL] {
-        let candidates = try files(in: cli.srcDir, matchingExtensions: ["png", "jpg", "jpeg"])
-            .filter { !isNamedFullRunImage($0) }
-        return rankedFamily(
-            candidates,
-            groupKey: { self.fullRunImageBaseName($0.stem) },
-            rank: { self.fullRunImageRank($0) },
-            warnMessage: "Full pipeline found multiple same-stem images; auto-selecting "
-        )
-    }
-
     @discardableResult
     func processBatch<T>(files: [URL], emptyMessage: String, failWhenEmpty: Bool, operation: (URL) throws -> T) throws -> [T] {
         if files.isEmpty {
