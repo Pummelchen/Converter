@@ -2,24 +2,22 @@
 
 Session: `2026-09-13` · branch `audit/2026-09-13` · baseline commit `4bb136a`
 
-**known-total:100 done:99 open:1 blocked:0 new-this-session:100**
+**known-total:100 done:100 open:0 blocked:0 new-this-session:100**
 
 | status | count |
 |---|---|
-| START | 1 |
+| START | 0 |
 | PROGRESS | 0 |
 | TEST | 0 |
 | AUDIT | 0 |
-| DONE | 99 |
+| DONE | 100 |
 | BLOCKED | 0 |
 
 Status gates: START (reproduced/proven + expected behaviour written) → PROGRESS (diff) → TEST (failing-before/passing-after test pasted, full suite green, no new warnings) → AUDIT (cold re-read, all scanners re-run, no baseline regression, no new placeholder) → DONE (committed atomically). BLOCKED needs reason + what was tried + ≥2 options for a human.
 
-## Open S0 / S1 (1)
+## Open S0 / S1 (0)
 
-| id | sev | module | file:line | title | category | status | commit |
-|---|---|---|---|---|---|---|---|
-| #0006 | S0 | repo | node1 (fresh clone) | Phase E: independent verification from a fresh clone on node1 | test | START |  |
+_none_
 
 ## Blocked (0)
 
@@ -29,10 +27,11 @@ _none_
 
 _none_
 
-## Done (99)
+## Done (100)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
+| #0006 | S0 | repo | node1 (fresh clone) | Phase E: independent verification from a fresh clone on node1 | test | DONE | ad135db |
 | #0007 | S0 | converter/Actions | Sources/converter/Actions.swift:563-569 | -full with an MP3 source overwrites the user's source file with its own transcode | bug | DONE | e71f9dc |
 | #0008 | S0 | converter/VideoPipeline | Sources/converter/VideoPipeline.swift:314; Sources/converter/AudioPipeline.swift:1986 | -album --output-file publishes the main MP4 over the album WAV | bug | DONE | a83b7b5 |
 | #0004 | S1 | converter/BW64Bridge | Sources/ | Phase A: sanitizer baseline — test suite under ASan, UBSan, TSan | test | DONE | ce3addc |
@@ -198,7 +197,7 @@ _none_
 - **commit sha:** wiki:0b140f3
 - **notes:** Page name: Audit-Tracker; linked from _Sidebar; updated at every milestone; ledger wins on conflict.
 
-### #0006 · S0 · START · Phase E: independent verification from a fresh clone on node1
+### #0006 · S0 · DONE · Phase E: independent verification from a fresh clone on node1
 
 - **project/module:** repo
 - **file:line:** node1 (fresh clone)
@@ -206,6 +205,9 @@ _none_
 - **host-used:** node1
 - **discovered-by:** §11 brief
 - **evidence-before:** Not yet run. Gate for merging the audit branch to main via PR.
+- **fix-summary:** Independent verification on node1 (Mac Mini M2, 8 GB, macOS 26.6.2, Xcode 26.6, Swift 6.3.3) from a fresh clone of audit/2026-09-13 at ad135db: warnings-as-errors debug build, strict C++ release build (-Wall -Wextra -Werror), docs/converter.sha256 check, and the full test suite.
+- **evidence-after:** AUDIT/evidence/0006-phase-e-node1.log: fresh clone at ad135db with 0 dirty files; 'Build complete' for both builds; 'converter: OK' for the checksum; 263 tests, 0 failures in 676 s. The clone was removed afterwards and node1 was left otherwise untouched. Full suite (AUDIT/evidence/0006-phase-e-node1.log): 263 executed, 0 failures, 0 compiler warnings.
+- **commit sha:** ad135db
 - **notes:** Clean build (0 warnings, strict flags), full suite, coverage, all scanners, zero placeholders, ledger has no non-BLOCKED open task, wiki synced. Clone under ~/audit/Converter on node1, removed afterwards.
 
 ### #0007 · S0 · DONE · -full with an MP3 source overwrites the user's source file with its own transcode

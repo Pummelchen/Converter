@@ -95,14 +95,14 @@
       "location": "node1 (fresh clone)",
       "title": "Phase E: independent verification from a fresh clone on node1",
       "category": "test",
-      "status": "START",
+      "status": "DONE",
       "host": "node1",
       "discovered_by": "\u00a711 brief",
       "session": "2026-09-13",
       "evidence_before": "Not yet run. Gate for merging the audit branch to main via PR.",
-      "fix_summary": "",
-      "evidence_after": "",
-      "commit": "",
+      "fix_summary": "Independent verification on node1 (Mac Mini M2, 8 GB, macOS 26.6.2, Xcode 26.6, Swift 6.3.3) from a fresh clone of audit/2026-09-13 at ad135db: warnings-as-errors debug build, strict C++ release build (-Wall -Wextra -Werror), docs/converter.sha256 check, and the full test suite.",
+      "evidence_after": "AUDIT/evidence/0006-phase-e-node1.log: fresh clone at ad135db with 0 dirty files; 'Build complete' for both builds; 'converter: OK' for the checksum; 263 tests, 0 failures in 676 s. The clone was removed afterwards and node1 was left otherwise untouched. Full suite (AUDIT/evidence/0006-phase-e-node1.log): 263 executed, 0 failures, 0 compiler warnings.",
+      "commit": "ad135db",
       "notes": "Clean build (0 warnings, strict flags), full suite, coverage, all scanners, zero placeholders, ledger has no non-BLOCKED open task, wiki synced. Clone under ~/audit/Converter on node1, removed afterwards."
     },
     {
