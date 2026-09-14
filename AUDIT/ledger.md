@@ -2,15 +2,15 @@
 
 Session: `2026-09-13` · branch `audit/2026-09-13` · baseline commit `4bb136a`
 
-**known-total:100 done:94 open:6 blocked:0 new-this-session:100**
+**known-total:100 done:95 open:5 blocked:0 new-this-session:100**
 
 | status | count |
 |---|---|
 | START | 5 |
 | PROGRESS | 0 |
-| TEST | 1 |
+| TEST | 0 |
 | AUDIT | 0 |
-| DONE | 94 |
+| DONE | 95 |
 | BLOCKED | 0 |
 
 Status gates: START (reproduced/proven + expected behaviour written) → PROGRESS (diff) → TEST (failing-before/passing-after test pasted, full suite green, no new warnings) → AUDIT (cold re-read, all scanners re-run, no baseline regression, no new placeholder) → DONE (committed atomically). BLOCKED needs reason + what was tried + ≥2 options for a human.
@@ -26,16 +26,15 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 
 _none_
 
-## Open S2 / S3 (4)
+## Open S2 / S3 (3)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
 | #0051 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:992,1170,1029,508 | Redundant padding verification, uncached ffmpeg -filters, per-file ladder resolution | perf | START |  |
 | #0058 | S2 | repo | converter (binary); docs/KNOWN_GOOD_VERSIONS.md | Checked-in release binary has no verifiable provenance (no SHA-256, adhoc signature, no tag) | deps | START |  |
 | #0059 | S2 | repo/CI | .github/workflows/ci.yml:24,27-32,39-40 | CI not reproducible: unpinned action, latest-Xcode selection, unpinned brew formulae | deps | START |  |
-| #0073 | S2 | converter (lint) | AUDIT/baseline/swiftlint-by-rule-4bb136a.txt | swiftlint baseline 533 (56 error-level): fix the actionable rules; structural rules deferred with rationale | style | TEST | 555c2c5 |
 
-## Done (94)
+## Done (95)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
@@ -106,6 +105,7 @@ _none_
 | #0070 | S2 | converterTests | Sources/Tests/converterTests/converterTests.swift:737-749 | LoudnormArgument clamping untested at the exact bounds | test | DONE | e33815c |
 | #0071 | S2 | converter/Config+tests | Sources/converter/Config.swift:319-452 | Config validation gaps (ranges, empty strings, zero byte targets, CRC chunk bound, negative message) and only 3 keys tested | test | DONE | 87c940b |
 | #0072 | S2 | converter/VideoPipeline+tests | Sources/converter/VideoPipeline.swift:284-300,456-458; Actions.swift:875-876 | Short-cap boundary untested and duration thresholds inconsistent between short paths | test | DONE | 7fd628f |
+| #0073 | S2 | converter (lint) | AUDIT/baseline/swiftlint-by-rule-4bb136a.txt | swiftlint baseline 533 (56 error-level): fix the actionable rules; structural rules deferred with rationale | style | DONE | 555c2c5 |
 | #0074 | S2 | converter (dead code) | Sources/converter/Actions.swift:114; ImagePipeline.swift:26-27; ProcessRunner.swift:78; ValidationPipeline.swift:857; Tests/IntegrationTestSupport.swift:32 | periphery-flagged unused declarations (6 unused, 15 assign-only) — prove reachability, then remove or retain with reason | dead | DONE | dc15b65 |
 | #0075 | S2 | converter (dead code) | Sources/converter/PipelineCore.swift:347,357-362; Actions.swift:105-110,794-808; BW64Bridge/bw64_bridge.cpp:95; LosslessAudioPipeline.swift:9,30,173-174; AudioPipeline.swift:160-162,264,1955 | Dead branches, tautological guards, dead parameters, redundant discards | dead | DONE | 2609059 |
 | #0076 | S3 | converter/Support | Sources/converter/Support.swift:122-126 | cancelledBeforeSuspension can retain a marker for an already-resumed waiter | logic | DONE | 24e52d7 |
@@ -1019,7 +1019,7 @@ _none_
 - **evidence-after:** AUDIT/evidence/0066-0097-after.log (eight tests pass). swiftlint 525/56, no new violations. Full suite (AUDIT/evidence/0066-0097-fullsuite.txt): 258 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** 7fd628f
 
-### #0073 · S2 · TEST · swiftlint baseline 533 (56 error-level): fix the actionable rules; structural rules deferred with rationale
+### #0073 · S2 · DONE · swiftlint baseline 533 (56 error-level): fix the actionable rules; structural rules deferred with rationale
 
 - **project/module:** converter (lint)
 - **file:line:** AUDIT/baseline/swiftlint-by-rule-4bb136a.txt
@@ -1028,7 +1028,7 @@ _none_
 - **discovered-by:** baseline §3
 - **evidence-before:** AUDIT/baseline.md linters table
 - **fix-summary:** Wraps 26 over-long lines, renames the 1-2 character identifiers in the VisualSubs geometry helpers and the CRC table locals, renames the unit test class to ConverterTests, replaces the 4-member tuple with a named struct, and merges verifyVideoRender into the spec-based verifyRenderedVideo; the 19 structural errors are deferred with a recorded rationale.
-- **evidence-after:** AUDIT/evidence/0073-swiftlint-before.txt (523 total / 56 errors) vs 0073-swiftlint-after.txt (472 total / 19 errors, all file/type/function length or complexity); unit (125), Hash (6) and image suites pass.
+- **evidence-after:** AUDIT/evidence/0073-swiftlint-before.txt (523 total / 56 errors) vs 0073-swiftlint-after.txt (472 total / 19 errors, all file/type/function length or complexity); unit (125), Hash (6) and image suites pass. Full suite (AUDIT/evidence/0073-fullsuite.txt): 261 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** 555c2c5
 - **notes:** Keep swiftlint default rules (no config that lowers strictness). Fix the actionable rules (identifier_name, for_where, syntactic_sugar, optional_data_string_conversion, large_tuple, type_name, function_parameter_count where clean, inclusive_language). Structural rules (line_length, file_length, type_body_length, function_body_length, cyclomatic_complexity) are deferred: fixing them means splitting files/functions, which the no-drive-by-refactor rule forbids inside fix commits; recorded as deferred with owner = maintainer. Total count must never exceed the 533 baseline.
 
