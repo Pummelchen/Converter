@@ -244,6 +244,28 @@ final class converterTests: XCTestCase {
         XCTAssertLessThan(Date().timeIntervalSince(start), 5, "the watchdog must end a hung installer")
     }
 
+    // audit #0040: when one async-let sibling fails, Swift cancels the others, but the blocking
+    // waitUntilExit ignored cancellation and kept the external process (and its ffmpeg/magick
+    // work) alive until it finished on its own.
+    func testCancellingAPermittedOperationTerminatesItsChildProcess() async throws {
+        let workspace = try IntegrationWorkspace()
+        let tool = try workspace.makeTool(arguments: ["-full"])
+
+        let started = Date()
+        let task = Task {
+            try await tool.withAudioPermit { try tool.runner.run("sleep", ["15"]) }
+        }
+        try await Task.sleep(for: .milliseconds(300))
+        task.cancel()
+        let result = await task.result
+        let elapsed = Date().timeIntervalSince(started)
+
+        XCTAssertLessThan(elapsed, 5, "cancellation must terminate the child instead of waiting it out")
+        guard case .failure = result else {
+            return XCTFail("a cancelled run must not succeed")
+        }
+    }
+
     func testNumericFormattingAndBitrateParsingUseStableFFmpegForms() throws {
         XCTAssertEqual(ffmpegNumber(5), "5")
         XCTAssertEqual(ffmpegNumber(-12.5), "-12.5")

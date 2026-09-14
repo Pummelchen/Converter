@@ -454,27 +454,38 @@ final class ConverterTool: Sendable {
         try ensureExecutableDependencies()
     }
 
+    // A permit's work is blocking (a sync ffmpeg/magick run), so waitUntilExit cannot observe task
+    // cancellation. The handler terminates the runner's live children, which both stops the wasted
+    // work and lets the blocked call return promptly (#0040).
+    private func withCancellationAwarePermit<T: Sendable>(
+        _ semaphore: AsyncSemaphore,
+        _ operation: @escaping @Sendable () throws -> T
+    ) async throws -> T {
+        let runner = self.runner
+        return try await semaphore.withPermit {
+            try await withTaskCancellationHandler {
+                try operation()
+            } onCancel: {
+                runner.terminateActiveProcesses()
+            }
+        }
+    }
+
     func withImagePermit<T: Sendable>(_ operation: @escaping @Sendable () throws -> T) async throws -> T {
         try await globalJobs.withPermit {
-            try await self.imageJobs.withPermit {
-                try operation()
-            }
+            try await self.withCancellationAwarePermit(self.imageJobs, operation)
         }
     }
 
     func withAudioPermit<T: Sendable>(_ operation: @escaping @Sendable () throws -> T) async throws -> T {
         try await globalJobs.withPermit {
-            try await self.audioJobs.withPermit {
-                try operation()
-            }
+            try await self.withCancellationAwarePermit(self.audioJobs, operation)
         }
     }
 
     func withVideoPermit<T: Sendable>(_ operation: @escaping @Sendable () throws -> T) async throws -> T {
         try await globalJobs.withPermit {
-            try await self.videoJobs.withPermit {
-                try operation()
-            }
+            try await self.withCancellationAwarePermit(self.videoJobs, operation)
         }
     }
 

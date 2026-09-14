@@ -84,6 +84,27 @@ final class TimeoutFlag: Sendable {
     }
 }
 
+// Process is not Sendable, but the cancellation handler only terminates the child and checks
+// that the same pid is still running, so a boxed reference is safe to hand to a @Sendable closure.
+private final class ProcessHandle: @unchecked Sendable {
+    private let process: Process
+
+    init(_ process: Process) {
+        self.process = process
+    }
+
+    func terminateIfRunning() {
+        guard process.isRunning else { return }
+        let pid = process.processIdentifier
+        process.terminate()
+        DispatchQueue.global(qos: .userInitiated)
+            .asyncAfter(deadline: .now() + ProcessRunner.killGraceSeconds) { [weak self] in
+                guard let self, self.process.isRunning, self.process.processIdentifier == pid else { return }
+                kill(pid, SIGKILL)
+            }
+    }
+}
+
 final class ProcessRunner: Sendable {
     // Bounds every external command so a hung tool cannot stall a run forever.
     static let defaultTimeoutSeconds: TimeInterval = 1800
@@ -110,11 +131,32 @@ final class ProcessRunner: Sendable {
     private let environment: [String: String]
     var fileManager: FileManager { FileManager.default }
     private let debugEnabled: Bool
+    // Children currently waiting, so a cancelled fan-out can terminate the siblings it no longer
+    // needs instead of letting each ffmpeg/magick job run to completion (#0040).
+    private let activeProcesses = Mutex<[ProcessHandle]>([])
 
     init(logger: Logger, environment: [String: String], debugEnabled: Bool) {
         self.logger = logger
         self.environment = environment
         self.debugEnabled = debugEnabled
+    }
+
+    // Called from a task-cancellation handler at the fan-out boundary. Every child this runner
+    // launched belongs to the work being cancelled, so all of them are stopped.
+    func terminateActiveProcesses() {
+        for handle in activeProcesses.withLock({ $0 }) {
+            handle.terminateIfRunning()
+        }
+    }
+
+    private func startTracking(_ handle: ProcessHandle) {
+        activeProcesses.withLock { $0.append(handle) }
+    }
+
+    private func stopTracking(_ handle: ProcessHandle) {
+        activeProcesses.withLock { handles in
+            handles.removeAll { $0 === handle }
+        }
     }
 
     func requireExecutable(_ name: String) throws {
@@ -173,13 +215,14 @@ final class ProcessRunner: Sendable {
 
         let timeout = timeoutSeconds ?? Self.defaultTimeoutSeconds
         let timeoutFlag = TimeoutFlag()
-        let watchdog = DispatchWorkItem { [weak process, timeoutFlag] in
-            guard let process else { return }
-            Self.terminateWithEscalation(process, flag: timeoutFlag, qos: .userInitiated)
-        }
-        DispatchQueue.global(qos: .userInitiated).asyncAfter(deadline: .now() + timeout, execute: watchdog)
-        process.waitUntilExit()
-        watchdog.cancel()
+        let handle = ProcessHandle(process)
+        startTracking(handle)
+        defer { stopTracking(handle) }
+        // Cancellation can arrive while this child was still being launched, because the
+        // cancellation handler at the fan-out boundary may have run before the process existed.
+        if Task.isCancelled { handle.terminateIfRunning() }
+        waitForExit(process, timeout: timeout, timeoutFlag: timeoutFlag)
+        try abortIfCancelled(stdoutCapture, stderrCapture)
 
         if timeoutFlag.isSet {
             // The child is dead (or being killed); do not block on pipe EOF, which a grandchild
@@ -199,6 +242,27 @@ final class ProcessRunner: Sendable {
         }
 
         return result
+    }
+
+    // Bounds the wait with the timeout watchdog; the child is killed by SIGTERM then SIGKILL.
+    private func waitForExit(_ process: Process, timeout: TimeInterval, timeoutFlag: TimeoutFlag) {
+        let watchdog = DispatchWorkItem { [weak process, timeoutFlag] in
+            guard let process else { return }
+            Self.terminateWithEscalation(process, flag: timeoutFlag, qos: .userInitiated)
+        }
+        DispatchQueue.global(qos: .userInitiated).asyncAfter(deadline: .now() + timeout, execute: watchdog)
+        process.waitUntilExit()
+        watchdog.cancel()
+    }
+
+    // A cancelled fan-out sibling is killed by the permit helper's cancellation handler, so the
+    // wait returns with a signal death; report the cancellation instead of that status.
+    private func abortIfCancelled(_ stdoutCapture: PipeCapture, _ stderrCapture: PipeCapture) throws {
+        guard Task.isCancelled else { return }
+        let deadline = DispatchTime.now() + Self.timeoutDrainSeconds
+        _ = stdoutCapture.waitString(until: deadline)
+        _ = stderrCapture.waitString(until: deadline)
+        throw CancellationError()
     }
 
     private func makeResult(

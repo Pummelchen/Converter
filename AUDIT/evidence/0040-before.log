@@ -1,0 +1,8 @@
+$ git stash push -- Sources/converter/ProcessRunner.swift Sources/converter/PipelineCore.swift   # fix NOT applied
+$ swift test --package-path Sources --filter testCancellingAPermittedOperationTerminatesItsChildProcess
+/Users/node4/Downloads/Converter/Converter/Sources/Tests/converterTests/converterTests.swift:263: error: -[converterTests.converterTests testCancellingAPermittedOperationTerminatesItsChildProcess] : XCTAssertLessThan failed: ("15.013758897781372") is not less than ("5.0") - cancellation must terminate the child instead of waiting it out
+/Users/node4/Downloads/Converter/Converter/Sources/Tests/converterTests/converterTests.swift:265: error: -[converterTests.converterTests testCancellingAPermittedOperationTerminatesItsChildProcess] : failed - a cancelled run must not succeed
+Test Case '-[converterTests.converterTests testCancellingAPermittedOperationTerminatesItsChildProcess]' failed (15.114 seconds).
+	 Executed 1 test, with 2 failures (0 unexpected) in 15.114 (15.114) seconds
+	 Executed 1 test, with 2 failures (0 unexpected) in 15.114 (15.114) seconds
+	 Executed 1 test, with 2 failures (0 unexpected) in 15.114 (15.115) seconds
