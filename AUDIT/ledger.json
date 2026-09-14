@@ -970,7 +970,7 @@
       "evidence_before": "AUDIT/findings/L2-video-image-actions-cli.md X-12",
       "fix_summary": "ImageProbe reads magick %[orientation]; displayedWidth/displayedHeight transpose orientations 5-8 and imageDimensions returns displayed geometry, so an EXIF-rotated phone JPEG is classified as portrait. Square sources are warned about and used as the landscape source.",
       "evidence_after": "AUDIT/evidence/0057-before.log (production fix stashed: full-run selection fails with 'exactly one landscape source image'); AUDIT/evidence/0057-after.log (testFullRunClassifiesEXIFRotatedJPEGByDisplayedOrientation and testFullRunTreatsASquareSourceAsTheLandscapeImage pass). swiftlint 531/56, no new violations.",
-      "commit": "",
+      "commit": "0a98ca1",
       "notes": ""
     },
     {

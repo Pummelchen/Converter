@@ -37,7 +37,7 @@ _none_
 | #0054 | S2 | converter/Actions | Sources/converter/Actions.swift:1254 | -mp4toshort re-ingests the pipeline's own _Short_CenterCut/_FullSong outputs | bug | START |  |
 | #0055 | S2 | converter/ImagePipeline | Sources/converter/ImagePipeline.swift:329-336 | Fitted portrait still double-sharpens derived masters and user Vertical_8K.png | logic | START |  |
 | #0056 | S2 | converter/VideoPipeline | Sources/converter/VideoPipeline.swift:399-404 | shortenMP4 upscales with ffmpeg's default scaler instead of the configured flags | bug | START |  |
-| #0057 | S2 | converter/Actions | Sources/converter/Actions.swift:278-286; PipelineCore.swift:646 | Orientation classification ignores EXIF orientation; square images silently treated as landscape | bug | TEST |  |
+| #0057 | S2 | converter/Actions | Sources/converter/Actions.swift:278-286; PipelineCore.swift:646 | Orientation classification ignores EXIF orientation; square images silently treated as landscape | bug | TEST | 0a98ca1 |
 | #0058 | S2 | repo | converter (binary); docs/KNOWN_GOOD_VERSIONS.md | Checked-in release binary has no verifiable provenance (no SHA-256, adhoc signature, no tag) | deps | START |  |
 | #0059 | S2 | repo/CI | .github/workflows/ci.yml:24,27-32,39-40 | CI not reproducible: unpinned action, latest-Xcode selection, unpinned brew formulae | deps | START |  |
 | #0060 | S2 | repo | album.txt; Sources/converter/AudioPipeline.swift:2063 | Personal track list committed as the production album.txt | placeholder | START |  |
@@ -820,6 +820,7 @@ _none_
 - **evidence-before:** AUDIT/findings/L2-video-image-actions-cli.md X-12
 - **fix-summary:** ImageProbe reads magick %[orientation]; displayedWidth/displayedHeight transpose orientations 5-8 and imageDimensions returns displayed geometry, so an EXIF-rotated phone JPEG is classified as portrait. Square sources are warned about and used as the landscape source.
 - **evidence-after:** AUDIT/evidence/0057-before.log (production fix stashed: full-run selection fails with 'exactly one landscape source image'); AUDIT/evidence/0057-after.log (testFullRunClassifiesEXIFRotatedJPEGByDisplayedOrientation and testFullRunTreatsASquareSourceAsTheLandscapeImage pass). swiftlint 531/56, no new violations.
+- **commit sha:** 0a98ca1
 
 ### #0058 · S2 · START · Checked-in release binary has no verifiable provenance (no SHA-256, adhoc signature, no tag)
 
