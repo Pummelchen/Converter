@@ -178,7 +178,12 @@ final class IntegrationWorkspace {
         ProcessRunner(logger: logger(debug: debug), environment: environment, debugEnabled: debug)
     }
 
-    func makeTool(arguments: [String] = [], debug: Bool = false) throws -> ConverterTool {
+    // `customEnvironment` lets a test redirect PATH at a recording-tool directory (#0051); it
+    // defaults to the sanitized inherited environment every other test uses.
+    func makeTool(
+        arguments: [String] = [], debug: Bool = false, environment customEnvironment: [String: String]? = nil
+    ) throws -> ConverterTool {
+        let environment = customEnvironment ?? self.environment
         // Pin every path inside the workspace explicitly; callers' own --src-dir/--out-dir/--config still win
         // because CLIOptions.parse applies flags in order.
         let cli = try CLIOptions.parse(
@@ -581,6 +586,48 @@ final class FakeToolDirectory {
         let inheritedPath = base["PATH"].map { ":" + $0 } ?? ""
         environment["PATH"] = url.path + inheritedPath
         return environment
+    }
+}
+
+// Shadows a real tool with a stub that appends its argv to a per-tool log and then executes the
+// real binary, so a test can count how often the pipeline shells out and with which arguments
+// (#0051). The inherited PATH stays behind the stub directory so awk/sed/sh still resolve.
+final class RecordingToolDirectory {
+    let url: URL
+
+    init() throws {
+        url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("converter-recording-tools-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: url, withIntermediateDirectories: true)
+    }
+
+    deinit {
+        try? FileManager.default.removeItem(at: url)
+    }
+
+    func record(_ name: String, realTool: URL) throws {
+        let stub = url.appendingPathComponent(name)
+        let log = url.appendingPathComponent("\(name).log")
+        try Data().write(to: log)
+        let body = """
+        #!/bin/sh
+        printf '%s\\n' "$*" >> "\(log.path)"
+        exec "\(realTool.path)" "$@"
+        """
+        try (body + "\n").write(to: stub, atomically: true, encoding: .utf8)
+        try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: stub.path)
+    }
+
+    func environment(inheriting base: [String: String] = ProcessInfo.processInfo.environment) -> [String: String] {
+        var environment = IntegrationWorkspace.sanitizedEnvironment(base)
+        let inheritedPath = base["PATH"].map { ":" + $0 } ?? ""
+        environment["PATH"] = url.path + inheritedPath
+        return environment
+    }
+
+    func invocations(of name: String) -> [String] {
+        let text = (try? String(contentsOf: url.appendingPathComponent("\(name).log"), encoding: .utf8)) ?? ""
+        return text.split(whereSeparator: \.isNewline).map(String.init)
     }
 }
 

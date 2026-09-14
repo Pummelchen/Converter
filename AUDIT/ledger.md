@@ -6,9 +6,9 @@ Session: `2026-09-13` · branch `audit/2026-09-13` · baseline commit `4bb136a`
 
 | status | count |
 |---|---|
-| START | 3 |
+| START | 2 |
 | PROGRESS | 0 |
-| TEST | 0 |
+| TEST | 1 |
 | AUDIT | 0 |
 | DONE | 97 |
 | BLOCKED | 0 |
@@ -30,7 +30,7 @@ _none_
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
-| #0051 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:992,1170,1029,508 | Redundant padding verification, uncached ffmpeg -filters, per-file ladder resolution | perf | START |  |
+| #0051 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:992,1170,1029,508 | Redundant padding verification, uncached ffmpeg -filters, per-file ladder resolution | perf | TEST |  |
 
 ## Done (97)
 
@@ -759,7 +759,7 @@ _none_
 - **evidence-after:** AUDIT/evidence/0050-before.log (guard disabled: the added-peak plan and the lossless near-ceiling result were accepted); AUDIT/evidence/0050-after.log (testLoudnessFallbackAcceptsMediaValidQCIssuesOnly and testLoudnessFallbackOnlyExcusesAnInherentTruePeak pass; testLoudnessNormalizeKeepsPeakConstrainedMP4Transparent passes). swiftlint 528/56, no new violations. Full suite (AUDIT/evidence/0050-0077-fullsuite.txt): 249 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** 8828888
 
-### #0051 · S2 · START · Redundant padding verification, uncached ffmpeg -filters, per-file ladder resolution
+### #0051 · S2 · TEST · Redundant padding verification, uncached ffmpeg -filters, per-file ladder resolution
 
 - **project/module:** converter/AudioPipeline
 - **file:line:** Sources/converter/AudioPipeline.swift:992,1170,1029,508
@@ -767,6 +767,8 @@ _none_
 - **host-used:** local
 - **discovered-by:** reviewer A-10
 - **evidence-before:** AUDIT/findings/L2-audio.md A-10
+- **fix-summary:** Removes the duplicated padding verification from the noise staging WAV, caches the ffmpeg filter set and the resolved encoder ladders per run, and adds a recording-tool helper plus two counting tests.
+- **evidence-after:** AUDIT/evidence/0051-before.log (47 ffmpeg invocations per -noise file and two -filters probes per 2-file batch) vs AUDIT/evidence/0051-after.log (40 invocations and one probe; both tests pass). swiftlint 471/19.
 
 ### #0052 · S2 · DONE · Full-decode image preflight of the same master repeated ~10x per run
 

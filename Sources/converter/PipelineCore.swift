@@ -301,6 +301,10 @@ final class ConverterTool: Sendable {
         return String(safe.prefix(24))
     }()
     private let encoderSetLock = Mutex<Set<String>?>(nil)
+    // `ffmpeg -filters` answers the same on every call within a run, and a batch resolves it per
+    // file; the filter set and the resolved ladders are cached like the encoder set (#0051).
+    private let filterSetLock = Mutex<Set<String>?>(nil)
+    private let encoderLadderLock = Mutex<[String: [String]]>([:])
 
     // The scheduler profile follows the machine unless a caller pins one (tests exercise the
     // permit plumbing against caps the recommended profile never produces).
@@ -340,6 +344,26 @@ final class ConverterTool: Sendable {
         let set = try ffmpegEncoderSet()
         encoderSetLock.withLock { $0 = set }
         return set
+    }
+
+    func cachedFFmpegFilterSet() throws -> Set<String> {
+        if let cached = filterSetLock.withLock({ $0 }) {
+            return cached
+        }
+
+        let set = try ffmpegFilterSet()
+        filterSetLock.withLock { $0 = set }
+        return set
+    }
+
+    func cachedEncoderLadder(_ encoders: [String], label: String, build: () throws -> [String]) rethrows -> [String] {
+        let key = "\(label)|" + encoders.joined(separator: ",")
+        if let cached = encoderLadderLock.withLock({ $0[key] }) {
+            return cached
+        }
+        let ladder = try build()
+        encoderLadderLock.withLock { $0[key] = ladder }
+        return ladder
     }
 
     func cleanupRunScopedTempFiles() {

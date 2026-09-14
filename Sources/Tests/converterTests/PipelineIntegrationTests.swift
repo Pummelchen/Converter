@@ -1157,6 +1157,63 @@ final class PipelineIntegrationTests: XCTestCase {
         XCTAssertEqual(progressEvents.last?.reportLines.count, 4)
     }
 
+    // audit #0051: `ffmpeg -filters` was spawned by every file in a batch although the answer
+    // cannot change within a run.
+    func testBassBatchResolvesTheFilterSetOncePerRun() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe"])
+        _ = try workspace.createAudio(name: "one", ext: "wav", duration: 1.0)
+        _ = try workspace.createAudio(name: "two", ext: "wav", duration: 1.0)
+
+        guard let realFFmpeg = DependencyBootstrapper.executableURL(
+            named: "ffmpeg", environment: workspace.environment
+        ) else {
+            throw XCTSkip("ffmpeg not resolvable")
+        }
+        let recording = try RecordingToolDirectory()
+        try recording.record("ffmpeg", realTool: realFFmpeg)
+
+        let tool = try workspace.makeTool(
+            arguments: ["-bass", "80", "3"], environment: recording.environment(inheriting: workspace.environment)
+        )
+        try tool.stepBass()
+
+        let filterProbes = recording.invocations(of: "ffmpeg").filter { $0.contains("-filters") }
+        XCTAssertEqual(filterProbes.count, 1, "the filter set must be resolved once per run: \(filterProbes)")
+    }
+
+    // audit #0051: addNoiseToMedia verified the padded staging WAV and then the deliverable, so the
+    // padding probes (up to eight ffmpeg decodes) ran twice for every file. The bound below is the
+    // single-verification level; the duplicate check pushed it well above.
+    func testNoiseVerifiesPaddingOncePerFile() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe"])
+        _ = try workspace.createAudio(name: "track", ext: "wav", duration: 2.0)
+
+        guard let realFFmpeg = DependencyBootstrapper.executableURL(
+            named: "ffmpeg", environment: workspace.environment
+        ) else {
+            throw XCTSkip("ffmpeg not resolvable")
+        }
+        let recording = try RecordingToolDirectory()
+        try recording.record("ffmpeg", realTool: realFFmpeg)
+
+        let tool = try workspace.makeTool(
+            arguments: ["-noise", "1"], environment: recording.environment(inheriting: workspace.environment)
+        )
+        try tool.stepNoise()
+
+        let invocations = recording.invocations(of: "ffmpeg")
+        XCTAssertFalse(invocations.isEmpty, "the recorder saw no ffmpeg runs")
+        // One padding verification instead of two costs 40 invocations here (47 before the fix),
+        // so the bound sits between the two levels rather than pinning an exact implementation.
+        print("ffmpeg invocations for one -noise file: \(invocations.count)")
+        XCTAssertLessThanOrEqual(
+            invocations.count, 44,
+            "unexpected ffmpeg invocation count: \(invocations.count) — \(invocations)"
+        )
+    }
+
     // audit #0086: the BW64 path writes a full-length raw f32le temp (4 bytes/sample) and then the
     // BW64 output, and had no free-space check at all; the staging-WAV estimate also carried a
     // bare 3 instead of naming the pinned pcm_s24le width.

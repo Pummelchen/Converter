@@ -569,7 +569,7 @@ extension ConverterTool {
 
     func bassBoostMedia(_ source: URL, spec: BassBoostSpec) throws -> URL {
         try preflightAudioMediaSource(source, label: "bass")
-        let filters = try ffmpegFilterSet()
+        let filters = try cachedFFmpegFilterSet()
         guard filters.contains("bass") else {
             throw AppError("Required ffmpeg filter is not available: bass")
         }
@@ -1139,9 +1139,10 @@ extension ConverterTool {
                 "-write_bext", String(config.wavWriteBext),
                 paddedWAV.path
             ])
+            // The padding is verified once, on the published deliverable (verifyNoiseOutput); doing
+            // it again here cost up to eight extra ffmpeg decodes per file (#0051).
             try verifyWAVStandard(paddedWAV, qcPolicy: nil)
             try verifyDuration(paddedWAV, expectedSeconds: expectedDuration, label: "noise-padded WAV")
-            try verifyNoisePadding(paddedWAV, expectedDuration: expectedDuration, spec: spec)
             return paddedWAV
         } catch {
             discardTempFile(paddedWAV)

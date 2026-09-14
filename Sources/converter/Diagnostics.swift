@@ -24,13 +24,17 @@ extension ConverterTool {
 
     @discardableResult
     func requireAvailableEncoderLadder(_ encoders: [String], label: String) throws -> [String] {
-        let available = try cachedFFmpegEncoderSet()
-        let usable = encoders.filter { available.contains($0) }
-        if usable.isEmpty {
-            throw AppError("\(label) encoder ladder has no available ffmpeg encoder: \(encoders.joined(separator: ", "))")
+        try cachedEncoderLadder(encoders, label: label) {
+            let available = try cachedFFmpegEncoderSet()
+            let usable = encoders.filter { available.contains($0) }
+            if usable.isEmpty {
+                throw AppError(
+                    "\(label) encoder ladder has no available ffmpeg encoder: \(encoders.joined(separator: ", "))"
+                )
+            }
+            logger.info("\(label) encoders: \(usable.joined(separator: ", "))")
+            return usable
         }
-        logger.info("\(label) encoders: \(usable.joined(separator: ", "))")
-        return usable
     }
 
     func stepDoctor() throws {
@@ -47,7 +51,7 @@ extension ConverterTool {
             logger.info("Doctor tool ok: \(tool)")
         }
 
-        let filters = try ffmpegFilterSet()
+        let filters = try cachedFFmpegFilterSet()
         for filter in ["loudnorm", "astats", "volumedetect", "setparams", "bass"] {
             guard filters.contains(filter) else {
                 throw AppError("Doctor missing ffmpeg filter: \(filter)")
