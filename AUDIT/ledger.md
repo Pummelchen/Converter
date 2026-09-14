@@ -43,7 +43,7 @@ _none_
 | #0073 | S2 | converter (lint) | AUDIT/baseline/swiftlint-by-rule-4bb136a.txt | swiftlint baseline 533 (56 error-level): fix the actionable rules; structural rules deferred with rationale | style | START |  |
 | #0074 | S2 | converter (dead code) | Sources/converter/Actions.swift:114; ImagePipeline.swift:26-27; ProcessRunner.swift:78; ValidationPipeline.swift:857; Tests/IntegrationTestSupport.swift:32 | periphery-flagged unused declarations (6 unused, 15 assign-only) — prove reachability, then remove or retain with reason | dead | START |  |
 | #0075 | S2 | converter (dead code) | Sources/converter/PipelineCore.swift:347,357-362; Actions.swift:105-110,794-808; BW64Bridge/bw64_bridge.cpp:95; LosslessAudioPipeline.swift:9,30,173-174; AudioPipeline.swift:160-162,264,1955 | Dead branches, tautological guards, dead parameters, redundant discards | dead | START |  |
-| #0080 | S3 | converter/PipelineCore | Sources/converter/PipelineCore.swift:323-344,271 | Orphan-temp detection keys on local PID only; synced directories across hosts | logic | TEST |  |
+| #0080 | S3 | converter/PipelineCore | Sources/converter/PipelineCore.swift:323-344,271 | Orphan-temp detection keys on local PID only; synced directories across hosts | logic | TEST | 1613e77 |
 | #0086 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:1378,1694-1706 | Magic bytes-per-sample and missing free-space check on the BW64 path | style | START |  |
 | #0088 | S3 | converter/Config+VideoPipeline | Sources/converter/VideoPipeline.swift:230,240,244; Config.swift:393,397 | Config colour/scale-filter values spliced into the filter graph with only non-empty validation | unsafe | START |  |
 | #0089 | S3 | converter/VideoPipeline | Sources/converter/VideoPipeline.swift:334,386,467 | ALAC M4A decoded and re-encoded for every video although stream copy is bit-transparent | perf | START |  |
@@ -1085,6 +1085,7 @@ _none_
 - **evidence-before:** AUDIT/findings/L2-core-runtime.md C-13
 - **fix-summary:** Temp files carry a host token (<host>.<pid>.<uuid>) and orphan cleanup only reclaims temps whose token matches this machine; untokenized legacy names are left alone. Test fixtures updated to the new format.
 - **evidence-after:** AUDIT/evidence/0080-before.log (PID-only parsing reclaimed an untokenized temp with a dead PID); AUDIT/evidence/0080-after.log (testOrphanCleanupLeavesOtherHostsTempFilesAlone, the three Orphan sweeps and ten Clean tests pass). swiftlint 526/56, no new violations.
+- **commit sha:** 1613e77
 
 ### #0081 · S3 · DONE · LUFS rebase widens the tolerance symmetrically
 
