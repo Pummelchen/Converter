@@ -87,6 +87,40 @@ final class PipelineIntegrationTests: XCTestCase {
         )
     }
 
+    // audit #0061: libbw64 stores the block alignment in a uint16 and sizes its sample buffer from
+    // it, so an unbounded channel count wrapped it to zero (16384 channels at 32-bit) and left the
+    // writer with an empty buffer.
+    func testBW64WriterRejectsAChannelCountThatOverflowsTheBlockAlignment() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg"])
+        let raw = workspace.output.appendingPathComponent("stereo.f32le")
+        _ = try workspace.runner().run("ffmpeg", [
+            "-hide_banner", "-nostdin", "-v", "error", "-y",
+            "-f", "lavfi", "-i", "sine=frequency=440:duration=0.1:sample_rate=48000",
+            "-ac", "2", "-f", "f32le", "-acodec", "pcm_f32le", raw.path
+        ])
+        let tool = try workspace.makeTool(arguments: ["-full"])
+
+        XCTAssertThrowsError(
+            try tool.writeBW64FileFromRawFloatPCM(
+                inputPCM: raw,
+                output: workspace.output.appendingPathComponent("overflow.wav"),
+                channels: 16_384,
+                sampleRate: 48_000,
+                bitDepth: 32
+            )
+        ) { error in
+            XCTAssertTrue("\(error)".contains("block alignment"), "\(error)")
+        }
+
+        // The supported channel counts still write a valid BW64 file.
+        let output = workspace.output.appendingPathComponent("ok.wav")
+        try tool.writeBW64FileFromRawFloatPCM(
+            inputPCM: raw, output: output, channels: 2, sampleRate: 48_000, bitDepth: 32
+        )
+        XCTAssertTrue(FileManager.default.fileExists(atPath: output.path))
+    }
+
     // audit #0090: the two C path parameters were adjacent, so a caller could swap them - and the
     // writer opens the output with truncation, which would destroy the raw PCM source. They are
     // now separated by the numeric options (a swap no longer compiles) and the bridge refuses an

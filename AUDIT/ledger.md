@@ -6,9 +6,9 @@ Session: `2026-09-13` · branch `audit/2026-09-13` · baseline commit `4bb136a`
 
 | status | count |
 |---|---|
-| START | 9 |
+| START | 7 |
 | PROGRESS | 0 |
-| TEST | 0 |
+| TEST | 2 |
 | AUDIT | 0 |
 | DONE | 91 |
 | BLOCKED | 0 |
@@ -33,8 +33,8 @@ _none_
 | #0051 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:992,1170,1029,508 | Redundant padding verification, uncached ffmpeg -filters, per-file ladder resolution | perf | START |  |
 | #0058 | S2 | repo | converter (binary); docs/KNOWN_GOOD_VERSIONS.md | Checked-in release binary has no verifiable provenance (no SHA-256, adhoc signature, no tag) | deps | START |  |
 | #0059 | S2 | repo/CI | .github/workflows/ci.yml:24,27-32,39-40 | CI not reproducible: unpinned action, latest-Xcode selection, unpinned brew formulae | deps | START |  |
-| #0061 | S2 | BW64Bridge | Sources/BW64Bridge/bw64_bridge.cpp:125-141,161 | Bridge does not bound channels; libbw64 uint16 blockAlignment wraps to heap overflow (unreachable via config today) | unsafe | START |  |
-| #0062 | S2 | BW64Bridge/Package | Sources/Package.swift:35-37; ThirdParty/libbw64/bw64/reader.hpp:220,225,227 | Strict C++ flags (-Wall -Wextra -Werror) fail on three benign sign-compare warnings in vendored libbw64 | deps | START |  |
+| #0061 | S2 | BW64Bridge | Sources/BW64Bridge/bw64_bridge.cpp:125-141,161 | Bridge does not bound channels; libbw64 uint16 blockAlignment wraps to heap overflow (unreachable via config today) | unsafe | TEST |  |
+| #0062 | S2 | BW64Bridge/Package | Sources/Package.swift:35-37; ThirdParty/libbw64/bw64/reader.hpp:220,225,227 | Strict C++ flags (-Wall -Wextra -Werror) fail on three benign sign-compare warnings in vendored libbw64 | deps | TEST |  |
 | #0073 | S2 | converter (lint) | AUDIT/baseline/swiftlint-by-rule-4bb136a.txt | swiftlint baseline 533 (56 error-level): fix the actionable rules; structural rules deferred with rationale | style | START |  |
 | #0086 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:1378,1694-1706 | Magic bytes-per-sample and missing free-space check on the BW64 path | style | START |  |
 
@@ -873,7 +873,7 @@ _none_
 - **commit sha:** bef61c4
 - **notes:** album.example.txt + ignore album.txt + loader message.
 
-### #0061 · S2 · START · Bridge does not bound channels; libbw64 uint16 blockAlignment wraps to heap overflow (unreachable via config today)
+### #0061 · S2 · TEST · Bridge does not bound channels; libbw64 uint16 blockAlignment wraps to heap overflow (unreachable via config today)
 
 - **project/module:** BW64Bridge
 - **file:line:** Sources/BW64Bridge/bw64_bridge.cpp:125-141,161
@@ -881,8 +881,10 @@ _none_
 - **host-used:** local
 - **discovered-by:** reviewer B-8
 - **evidence-before:** AUDIT/findings/L0-L3-bridge-repo.md B-8
+- **fix-summary:** #0061 the bridge rejects a channels/bit-depth combination whose WAV block alignment would overflow libbw64's uint16; #0062 the vendored sign-compare diagnostics are suppressed around the libbw64 include only, so the strict -Wall -Wextra -Werror build now succeeds.
+- **evidence-after:** AUDIT/evidence/0061-0062-before.log (strict build failed with three reader.hpp sign-compare errors; the 16384-channel call was accepted); AUDIT/evidence/0061-0062-after.log (strict build 0 errors; four BW64 tests pass).
 
-### #0062 · S2 · START · Strict C++ flags (-Wall -Wextra -Werror) fail on three benign sign-compare warnings in vendored libbw64
+### #0062 · S2 · TEST · Strict C++ flags (-Wall -Wextra -Werror) fail on three benign sign-compare warnings in vendored libbw64
 
 - **project/module:** BW64Bridge/Package
 - **file:line:** Sources/Package.swift:35-37; ThirdParty/libbw64/bw64/reader.hpp:220,225,227
@@ -890,6 +892,8 @@ _none_
 - **host-used:** local
 - **discovered-by:** baseline §3; reviewer B-9
 - **evidence-before:** AUDIT/baseline.md build table; AUDIT/findings/L0-L3-bridge-repo.md B-9
+- **fix-summary:** #0061 the bridge rejects a channels/bit-depth combination whose WAV block alignment would overflow libbw64's uint16; #0062 the vendored sign-compare diagnostics are suppressed around the libbw64 include only, so the strict -Wall -Wextra -Werror build now succeeds.
+- **evidence-after:** AUDIT/evidence/0061-0062-before.log (strict build failed with three reader.hpp sign-compare errors; the 16384-channel call was accepted); AUDIT/evidence/0061-0062-after.log (strict build 0 errors; four BW64 tests pass).
 - **notes:** Decision: document a minimal vendored patch (explicit casts + tellg<0 check) in PATCHES.md, or compile vendored headers as system headers; keep -Werror on first-party C++.
 
 ### #0063 · S2 · DONE · SHORT_MP4_CLIP_SECONDS validated with Double() but consumed via parseFlexibleTimecode; test sets a value validate() rejects

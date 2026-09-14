@@ -1,0 +1,13 @@
+$ git stash push -- Sources/BW64Bridge/bw64_bridge.cpp   # fixes NOT applied
+
+$ swift build --package-path Sources -c release -Xswiftc -warnings-as-errors -Xcc -Wall -Xcc -Wextra -Xcc -Werror
+/Users/node4/Downloads/Converter/Converter/Sources/ThirdParty/libbw64/bw64/reader.hpp:220:46: error: comparison of integers of different signs: 'uint64_t' (aka 'unsigned long long') and 'int64_t' (aka 'long long') [-Werror,-Wsign-compare]
+/Users/node4/Downloads/Converter/Converter/Sources/ThirdParty/libbw64/bw64/reader.hpp:225:31: error: comparison of integers of different signs: 'streamoff' (aka 'long long') and 'uint64_t' (aka 'unsigned long long') [-Werror,-Wsign-compare]
+/Users/node4/Downloads/Converter/Converter/Sources/ThirdParty/libbw64/bw64/reader.hpp:227:38: error: comparison of integers of different signs: 'streamoff' (aka 'long long') and 'uint64_t' (aka 'unsigned long long') [-Werror,-Wsign-compare]
+
+$ swift test --package-path Sources --filter testBW64WriterRejectsAChannelCountThatOverflowsTheBlockAlignment
+/Users/node4/Downloads/Converter/Converter/Sources/Tests/converterTests/PipelineIntegrationTests.swift:113: error: -[converterTests.PipelineIntegrationTests testBW64WriterRejectsAChannelCountThatOverflowsTheBlockAlignment] : XCTAssertTrue failed - BW64 writer failed: PCM input byte count is not aligned to full audio frames
+Test Case '-[converterTests.PipelineIntegrationTests testBW64WriterRejectsAChannelCountThatOverflowsTheBlockAlignment]' failed (1.025 seconds).
+	 Executed 1 test, with 1 failure (0 unexpected) in 1.025 (1.025) seconds
+	 Executed 1 test, with 1 failure (0 unexpected) in 1.025 (1.025) seconds
+	 Executed 1 test, with 1 failure (0 unexpected) in 1.025 (1.026) seconds

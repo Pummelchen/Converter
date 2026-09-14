@@ -1,6 +1,16 @@
 #include "bw64_bridge.h"
 
+// libbw64 0.10.0 trips -Wsign-compare in three places (reader.hpp seek helpers). The vendored
+// header stays verbatim (#0062), so the diagnostic is disabled only around it; first-party code
+// below keeps the strict -Wall -Wextra -Werror contract.
+#if defined(__clang__)
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wsign-compare"
+#endif
 #include <bw64/bw64.hpp>
+#if defined(__clang__)
+#pragma clang diagnostic pop
+#endif
 
 #include <algorithm>
 #include <cstdint>
@@ -165,6 +175,17 @@ void requireOptions(const Options& options) {
     }
     if (options.bitDepth != 16 && options.bitDepth != 24 && options.bitDepth != 32) {
         throw std::runtime_error("bit-depth must be 16, 24, or 32");
+    }
+    // libbw64 stores the block alignment in a uint16 and uses it to size its sample buffer, so a
+    // channel count that overflows it (16384 channels at 32-bit) must be refused here rather than
+    // wrapping to zero and leaving the writer with an empty buffer (#0061).
+    const std::uint32_t bytesPerSample = static_cast<std::uint32_t>(options.bitDepth / 8u);
+    const std::uint32_t blockAlignment = bytesPerSample * static_cast<std::uint32_t>(options.channels);
+    if (blockAlignment == 0 || blockAlignment > 0xFFFFu) {
+        throw std::runtime_error(
+            "channels and bit-depth overflow the WAV block alignment: "
+            + std::to_string(options.channels) + " channels at " + std::to_string(options.bitDepth) + "-bit"
+        );
     }
     // The writer opens the output with truncation, so reading and writing the same file would
     // destroy the source; canonicalise both paths so a relative alias cannot slip through.
