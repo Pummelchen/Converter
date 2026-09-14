@@ -1522,9 +1522,33 @@ extension ConverterTool {
         }
     }
 
+    // A 32-bit float sample occupies four bytes; the BW64 output itself is also written at
+    // 32-bit, and both are on disk at the same time, so the check covers two passes (#0086).
+    static let rawFloatBytesPerSample = 4
+    // Config.validate pins WAV_CODEC to pcm_s24le, so the internal staging WAV is always 24-bit.
+    // This constant is the single place to change if that pin is ever relaxed.
+    static let internalWAVBytesPerSample = 3
+
     func estimateWAVBytes(duration: Double, channels: Int) -> UInt64 {
-        if duration <= 0 || channels <= 0 { return 0 }
-        return UInt64((duration * Double(config.wavSampleRate * channels * 3)).rounded()) + 1_048_576
+        guard duration > 0, channels > 0 else { return 0 }
+        let bytesPerSecond = config.wavSampleRate * channels * Self.internalWAVBytesPerSample
+        return UInt64((duration * Double(bytesPerSecond)).rounded()) + 1_048_576
+    }
+
+    // The BW64 path writes a full-length raw f32le temp and then the BW64 file, so both passes
+    // need free space whether or not the source is already a WAV (#0086).
+    func estimateBW64Bytes(duration: Double, channels: Int) -> UInt64 {
+        guard duration > 0, channels > 0 else { return 0 }
+        let bytesPerSecond = config.wavSampleRate * channels * Self.rawFloatBytesPerSample
+        return UInt64((duration * Double(bytesPerSecond)).rounded()) * 2 + 1_048_576
+    }
+
+    func requireFreeSpace(forBytes need: UInt64, label: String) throws {
+        guard need > 0 else { return }
+        let free = try availableBytes(at: cli.outDir)
+        if free < need {
+            throw AppError("Low free space for \(label): avail=\(free) need~\(need)")
+        }
     }
 
     // Use the stricter WAV contract only for WAV sources; other audio inputs use generic media preflight.
@@ -1574,11 +1598,10 @@ extension ConverterTool {
             return output
         }
         if let duration = try mediaDuration(source) {
-            let need = estimateWAVBytes(duration: duration, channels: config.wavChannels)
-            let free = try availableBytes(at: cli.outDir)
-            if need > 0 && free < need {
-                throw AppError("Low free space for \(source.basename): avail=\(free) need~\(need)")
-            }
+            try requireFreeSpace(
+                forBytes: estimateWAVBytes(duration: duration, channels: config.wavChannels),
+                label: source.basename
+            )
         }
         let temp = try makeTemp(in: cli.outDir, stem: stem, ext: ".wav")
         do {
@@ -1869,6 +1892,12 @@ extension ConverterTool {
             return output
         }
 
+        if let duration = try mediaDuration(source) {
+            try requireFreeSpace(
+                forBytes: estimateBW64Bytes(duration: duration, channels: config.wavChannels),
+                label: "\(source.basename) (BW64 + raw PCM)"
+            )
+        }
         let rawPCM = try makeTemp(in: output.deletingLastPathComponent(), stem: output.stem, ext: ".f32le")
         let temp = try makeTemp(in: output.deletingLastPathComponent(), stem: output.stem, ext: ".wav")
         do {

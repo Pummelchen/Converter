@@ -1142,6 +1142,33 @@ final class PipelineIntegrationTests: XCTestCase {
         XCTAssertEqual(progressEvents.last?.reportLines.count, 4)
     }
 
+    // audit #0086: the BW64 path writes a full-length raw f32le temp (4 bytes/sample) and then the
+    // BW64 output, and had no free-space check at all; the staging-WAV estimate also carried a
+    // bare 3 instead of naming the pinned pcm_s24le width.
+    func testBW64SizeEstimateCoversBothPassesAndTheSpaceGuardFires() throws {
+        let workspace = try IntegrationWorkspace()
+        let tool = try workspace.makeTool(arguments: ["-full"])
+
+        let perSample = tool.config.wavSampleRate * 2 * 4
+        let expected = UInt64((10.0 * Double(perSample)).rounded()) * 2 + 1_048_576
+        XCTAssertEqual(tool.estimateBW64Bytes(duration: 10, channels: 2), expected)
+        XCTAssertEqual(tool.estimateBW64Bytes(duration: 0, channels: 2), 0)
+        XCTAssertEqual(tool.estimateBW64Bytes(duration: 10, channels: 0), 0)
+
+        // Both passes are 4 bytes/sample, so the BW64 need exceeds the 24-bit staging-WAV need.
+        XCTAssertGreaterThan(
+            tool.estimateBW64Bytes(duration: 10, channels: 2),
+            tool.estimateWAVBytes(duration: 10, channels: 2)
+        )
+
+        // A need larger than any disk must be refused; a trivial or absent need must pass.
+        XCTAssertThrowsError(try tool.requireFreeSpace(forBytes: UInt64.max, label: "impossible")) { error in
+            XCTAssertTrue("\(error)".contains("Low free space"), "\(error)")
+        }
+        XCTAssertNoThrow(try tool.requireFreeSpace(forBytes: 1, label: "trivial"))
+        XCTAssertNoThrow(try tool.requireFreeSpace(forBytes: 0, label: "zero"))
+    }
+
     // audit #0075: the album duration tolerance equalled the inter-track gap it had to detect, so
     // an album whose gap was dropped was exactly 2 s short and still verified as valid.
     func testAlbumDurationToleranceIsStrictlyBelowTheGapItMustDetect() throws {

@@ -6,9 +6,9 @@ Session: `2026-09-13` · branch `audit/2026-09-13` · baseline commit `4bb136a`
 
 | status | count |
 |---|---|
-| START | 7 |
+| START | 6 |
 | PROGRESS | 0 |
-| TEST | 2 |
+| TEST | 3 |
 | AUDIT | 0 |
 | DONE | 91 |
 | BLOCKED | 0 |
@@ -36,7 +36,7 @@ _none_
 | #0061 | S2 | BW64Bridge | Sources/BW64Bridge/bw64_bridge.cpp:125-141,161 | Bridge does not bound channels; libbw64 uint16 blockAlignment wraps to heap overflow (unreachable via config today) | unsafe | TEST | de57d52 |
 | #0062 | S2 | BW64Bridge/Package | Sources/Package.swift:35-37; ThirdParty/libbw64/bw64/reader.hpp:220,225,227 | Strict C++ flags (-Wall -Wextra -Werror) fail on three benign sign-compare warnings in vendored libbw64 | deps | TEST | de57d52 |
 | #0073 | S2 | converter (lint) | AUDIT/baseline/swiftlint-by-rule-4bb136a.txt | swiftlint baseline 533 (56 error-level): fix the actionable rules; structural rules deferred with rationale | style | START |  |
-| #0086 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:1378,1694-1706 | Magic bytes-per-sample and missing free-space check on the BW64 path | style | START |  |
+| #0086 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:1378,1694-1706 | Magic bytes-per-sample and missing free-space check on the BW64 path | style | TEST |  |
 
 ## Done (91)
 
@@ -1175,7 +1175,7 @@ _none_
 - **evidence-after:** AUDIT/evidence/0085-before.log (1 failure: '3½ x' sorted after '10 y'); AUDIT/evidence/0085-after.log (new test + both existing album sort tests, 3 pass). swiftlint 533/56. Full suite (AUDIT/evidence/0039-0085-fullsuite.txt): 235 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** 6a674bc
 
-### #0086 · S3 · START · Magic bytes-per-sample and missing free-space check on the BW64 path
+### #0086 · S3 · TEST · Magic bytes-per-sample and missing free-space check on the BW64 path
 
 - **project/module:** converter/AudioPipeline
 - **file:line:** Sources/converter/AudioPipeline.swift:1378,1694-1706
@@ -1183,6 +1183,8 @@ _none_
 - **host-used:** local
 - **discovered-by:** reviewer A-14
 - **evidence-before:** AUDIT/findings/L2-audio.md A-14
+- **fix-summary:** Names the pinned 24-bit staging width, adds estimateBW64Bytes covering the raw f32le temp and the BW64 output, and shares requireFreeSpace between the WAV and BW64 paths - the BW64 variant now checks space before writing the raw PCM.
+- **evidence-after:** AUDIT/evidence/0086-before.log (single-pass mutation fails the estimate test); AUDIT/evidence/0086-after.log (five BW64 tests pass). swiftlint 523/56.
 
 ### #0087 · S3 · DONE · CLI inconsistencies: --seed 0, unbounded --sharpness, repeated action flags, option values beginning with --
 
