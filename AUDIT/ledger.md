@@ -34,7 +34,7 @@ _none_
 | #0041 | S2 | converter/DependencyBootstrap | Sources/converter/DependencyBootstrap.swift:216-248 | Installer subprocesses have no timeout and discard diagnostics | incomplete | START |  |
 | #0050 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:327-336,367-387,591-600 | Loudness fallback publishes any true-peak breach with a misleading 'closest-safe' label | logic | START |  |
 | #0051 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:992,1170,1029,508 | Redundant padding verification, uncached ffmpeg -filters, per-file ladder resolution | perf | START |  |
-| #0054 | S2 | converter/Actions | Sources/converter/Actions.swift:1254 | -mp4toshort re-ingests the pipeline's own _Short_CenterCut/_FullSong outputs | bug | TEST |  |
+| #0054 | S2 | converter/Actions | Sources/converter/Actions.swift:1254 | -mp4toshort re-ingests the pipeline's own _Short_CenterCut/_FullSong outputs | bug | TEST | 8e78584 |
 | #0055 | S2 | converter/ImagePipeline | Sources/converter/ImagePipeline.swift:329-336 | Fitted portrait still double-sharpens derived masters and user Vertical_8K.png | logic | START |  |
 | #0056 | S2 | converter/VideoPipeline | Sources/converter/VideoPipeline.swift:399-404 | shortenMP4 upscales with ffmpeg's default scaler instead of the configured flags | bug | START |  |
 | #0057 | S2 | converter/Actions | Sources/converter/Actions.swift:278-286; PipelineCore.swift:646 | Orientation classification ignores EXIF orientation; square images silently treated as landscape | bug | TEST | 0a98ca1 |
@@ -793,6 +793,7 @@ _none_
 - **evidence-before:** AUDIT/findings/L2-video-image-actions-cli.md X-9
 - **fix-summary:** VideoPipeline.isShortMP4Deliverable recognises every short deliverable by the embedded '_Short' marker, and stepMP4ToShort uses it so a rerun no longer re-ingests _Short_CenterCut / _Short_FullSong outputs.
 - **evidence-after:** AUDIT/evidence/0054-before.log (fix stashed: clip_Short_CenterCut_Short.mp4 and clip_Short_FullSong_Short.mp4 are produced); AUDIT/evidence/0054-after.log (test passes; only clip_Short.mp4 is written). swiftlint 531/56, no new violations.
+- **commit sha:** 8e78584
 
 ### #0055 · S2 · START · Fitted portrait still double-sharpens derived masters and user Vertical_8K.png
 
