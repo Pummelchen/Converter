@@ -2,15 +2,15 @@
 
 Session: `2026-09-13` · branch `audit/2026-09-13` · baseline commit `4bb136a`
 
-**known-total:100 done:78 open:22 blocked:0 new-this-session:100**
+**known-total:100 done:84 open:16 blocked:0 new-this-session:100**
 
 | status | count |
 |---|---|
 | START | 16 |
 | PROGRESS | 0 |
-| TEST | 6 |
+| TEST | 0 |
 | AUDIT | 0 |
-| DONE | 78 |
+| DONE | 84 |
 | BLOCKED | 0 |
 
 Status gates: START (reproduced/proven + expected behaviour written) → PROGRESS (diff) → TEST (failing-before/passing-after test pasted, full suite green, no new warnings) → AUDIT (cold re-read, all scanners re-run, no baseline regression, no new placeholder) → DONE (committed atomically). BLOCKED needs reason + what was tried + ≥2 options for a human.
@@ -26,7 +26,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 
 _none_
 
-## Open S2 / S3 (20)
+## Open S2 / S3 (14)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
@@ -38,20 +38,14 @@ _none_
 | #0066 | S2 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:1627-1637,1738-1748 | Full-pipeline tests require hevc_videotoolbox; fail on hosts without HW HEVC | test | START |  |
 | #0067 | S2 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:473-491 | Fade-out 'does not enforce delivery QC' test never proves the fixture is out of policy | test | START |  |
 | #0068 | S2 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:1933-1948 | Mastering fallback test cannot observe which path ran | test | START |  |
-| #0069 | S2 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:387-392 | Bare XCTAssertThrowsError on garbage MP3 accepts any error | test | TEST | 022bc32 |
 | #0072 | S2 | converter/VideoPipeline+tests | Sources/converter/VideoPipeline.swift:284-300,456-458; Actions.swift:875-876 | Short-cap boundary untested and duration thresholds inconsistent between short paths | test | START |  |
 | #0073 | S2 | converter (lint) | AUDIT/baseline/swiftlint-by-rule-4bb136a.txt | swiftlint baseline 533 (56 error-level): fix the actionable rules; structural rules deferred with rationale | style | START |  |
 | #0074 | S2 | converter (dead code) | Sources/converter/Actions.swift:114; ImagePipeline.swift:26-27; ProcessRunner.swift:78; ValidationPipeline.swift:857; Tests/IntegrationTestSupport.swift:32 | periphery-flagged unused declarations (6 unused, 15 assign-only) — prove reachability, then remove or retain with reason | dead | START |  |
 | #0075 | S2 | converter (dead code) | Sources/converter/PipelineCore.swift:347,357-362; Actions.swift:105-110,794-808; BW64Bridge/bw64_bridge.cpp:95; LosslessAudioPipeline.swift:9,30,173-174; AudioPipeline.swift:160-162,264,1955 | Dead branches, tautological guards, dead parameters, redundant discards | dead | START |  |
 | #0086 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:1378,1694-1706 | Magic bytes-per-sample and missing free-space check on the BW64 path | style | START |  |
-| #0093 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:30-50 | 10 s wall-clock budget on a 40 000-iteration shell loop | test | TEST | 022bc32 |
-| #0094 | S3 | converterTests | Sources/Tests/converterTests/converterTests.swift:189-230,1297-1309 | Help-text tests couple to prose sentences | test | TEST | 022bc32 |
-| #0095 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:613-619 | Progress-event count pinned to implementation | test | TEST | 022bc32 |
-| #0096 | S3 | converterTests | Sources/Tests/converterTests/converterTests.swift:108-115 | SchedulerProfile tested via its summary string | test | TEST | 022bc32 |
 | #0097 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:1902-1911 | -doctor has only a no-throw happy path | test | START |  |
-| #0098 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:529,534 | Exact ffmpeg bass filter string pinned without a stated reason | test | TEST | 022bc32 |
 
-## Done (78)
+## Done (84)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
@@ -113,6 +107,7 @@ _none_
 | #0063 | S2 | converterTests+Config | Sources/Tests/converterTests/converterTests.swift:128-140; Config.swift:400; VideoPipeline.swift:269 | SHORT_MP4_CLIP_SECONDS validated with Double() but consumed via parseFlexibleTimecode; test sets a value validate() rejects | test | DONE | 17816b6 |
 | #0064 | S2 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:1860-1900 | Scheduler-limit test can pass vacuously | test | DONE | 588bb0b |
 | #0065 | S2 | converterTests | Sources/Tests/converterTests/converterTests.swift:1473-1550 | AsyncSemaphore tests rely on sleeps for ordering and hang instead of failing on a leaked permit | test | DONE | 7508e7a |
+| #0069 | S2 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:387-392 | Bare XCTAssertThrowsError on garbage MP3 accepts any error | test | DONE | 022bc32 |
 | #0070 | S2 | converterTests | Sources/Tests/converterTests/converterTests.swift:737-749 | LoudnormArgument clamping untested at the exact bounds | test | DONE | e33815c |
 | #0071 | S2 | converter/Config+tests | Sources/converter/Config.swift:319-452 | Config validation gaps (ranges, empty strings, zero byte targets, CRC chunk bound, negative message) and only 3 keys tested | test | DONE | 87c940b |
 | #0076 | S3 | converter/Support | Sources/converter/Support.swift:122-126 | cancelledBeforeSuspension can retain a marker for an already-resumed waiter | logic | DONE | 24e52d7 |
@@ -131,6 +126,11 @@ _none_
 | #0090 | S3 | BW64Bridge | Sources/BW64Bridge/include/bw64_bridge.h:14-22 | Easily swappable C ABI parameters (swapped paths would truncate the input) | style | DONE | 0af4a09 |
 | #0091 | S3 | repo | .gitignore:2 | Stale .converter_bw64_writer ignore entry | dead | DONE | 557dbe0 |
 | #0092 | S3 | repo/docs | docs/FORMATS.md | Maintenance commands and -fadeflac alias missing from FORMATS.md | docs | DONE | 557dbe0 |
+| #0093 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:30-50 | 10 s wall-clock budget on a 40 000-iteration shell loop | test | DONE | 022bc32 |
+| #0094 | S3 | converterTests | Sources/Tests/converterTests/converterTests.swift:189-230,1297-1309 | Help-text tests couple to prose sentences | test | DONE | 022bc32 |
+| #0095 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:613-619 | Progress-event count pinned to implementation | test | DONE | 022bc32 |
+| #0096 | S3 | converterTests | Sources/Tests/converterTests/converterTests.swift:108-115 | SchedulerProfile tested via its summary string | test | DONE | 022bc32 |
+| #0098 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:529,534 | Exact ffmpeg bass filter string pinned without a stated reason | test | DONE | 022bc32 |
 | #0099 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:34,1967 | Test target compiles with two warnings (bare 'Error' existential, unused 'wav' binding) | style | DONE | 9343977 |
 | #0100 | S3 | converter/Actions | Sources/converter/Actions.swift (normalizedFullRunSource / resolveFullAudio) | Full-run source is renamed before preflight; a corrupt source loses its original name in the error | logic | DONE | 8ede5fd |
 
@@ -955,7 +955,7 @@ _none_
 - **discovered-by:** reviewer T-16
 - **evidence-before:** AUDIT/findings/L6-tests.md T-16
 
-### #0069 · S2 · TEST · Bare XCTAssertThrowsError on garbage MP3 accepts any error
+### #0069 · S2 · DONE · Bare XCTAssertThrowsError on garbage MP3 accepts any error
 
 - **project/module:** converterTests
 - **file:line:** Sources/Tests/converterTests/PipelineIntegrationTests.swift:387-392
@@ -964,7 +964,7 @@ _none_
 - **discovered-by:** reviewer T-17
 - **evidence-before:** AUDIT/findings/L6-tests.md T-17
 - **fix-summary:** #0069 requires a WAV-specific error message; #0093 documents the drain test's timeout as a hang guard and raises it to 120 s; #0094 pins help structure/tokens instead of sentences; #0095 asserts progress-event semantics instead of a count; #0096 asserts scheduler caps numerically; #0098 states why the bass filter string is pinned and asserts its components.
-- **evidence-after:** AUDIT/evidence/0069-mutation.log (generic 'operation failed' mutation: strengthened assertion fails, old bare assertion would pass); AUDIT/evidence/0093-0098-after.log (six strengthened tests + seven help-text tests pass). swiftlint 525/56, no new violations.
+- **evidence-after:** AUDIT/evidence/0069-mutation.log (generic 'operation failed' mutation: strengthened assertion fails, old bare assertion would pass); AUDIT/evidence/0093-0098-after.log (six strengthened tests + seven help-text tests pass). swiftlint 525/56, no new violations. Full suite (AUDIT/evidence/0069-0098-fullsuite.txt): 253 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** 022bc32
 
 ### #0070 · S2 · DONE · LoudnormArgument clamping untested at the exact bounds
@@ -1232,7 +1232,7 @@ _none_
 - **evidence-after:** AUDIT/evidence/0091-0092-before.log (only .gitignore and audit prose referenced .converter_bw64_writer; FORMATS.md documented no maintenance command and no -fadeflac); AUDIT/evidence/0091-0092-after.log (no source/config reference remains; the new table and alias are present). Full suite (AUDIT/evidence/0053-0092-fullsuite.txt): 238 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** 557dbe0
 
-### #0093 · S3 · TEST · 10 s wall-clock budget on a 40 000-iteration shell loop
+### #0093 · S3 · DONE · 10 s wall-clock budget on a 40 000-iteration shell loop
 
 - **project/module:** converterTests
 - **file:line:** Sources/Tests/converterTests/PipelineIntegrationTests.swift:30-50
@@ -1241,10 +1241,10 @@ _none_
 - **discovered-by:** reviewer T-24
 - **evidence-before:** AUDIT/findings/L6-tests.md T-24
 - **fix-summary:** #0069 requires a WAV-specific error message; #0093 documents the drain test's timeout as a hang guard and raises it to 120 s; #0094 pins help structure/tokens instead of sentences; #0095 asserts progress-event semantics instead of a count; #0096 asserts scheduler caps numerically; #0098 states why the bass filter string is pinned and asserts its components.
-- **evidence-after:** AUDIT/evidence/0069-mutation.log (generic 'operation failed' mutation: strengthened assertion fails, old bare assertion would pass); AUDIT/evidence/0093-0098-after.log (six strengthened tests + seven help-text tests pass). swiftlint 525/56, no new violations.
+- **evidence-after:** AUDIT/evidence/0069-mutation.log (generic 'operation failed' mutation: strengthened assertion fails, old bare assertion would pass); AUDIT/evidence/0093-0098-after.log (six strengthened tests + seven help-text tests pass). swiftlint 525/56, no new violations. Full suite (AUDIT/evidence/0069-0098-fullsuite.txt): 253 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** 022bc32
 
-### #0094 · S3 · TEST · Help-text tests couple to prose sentences
+### #0094 · S3 · DONE · Help-text tests couple to prose sentences
 
 - **project/module:** converterTests
 - **file:line:** Sources/Tests/converterTests/converterTests.swift:189-230,1297-1309
@@ -1253,10 +1253,10 @@ _none_
 - **discovered-by:** reviewer T-25
 - **evidence-before:** AUDIT/findings/L6-tests.md T-25
 - **fix-summary:** #0069 requires a WAV-specific error message; #0093 documents the drain test's timeout as a hang guard and raises it to 120 s; #0094 pins help structure/tokens instead of sentences; #0095 asserts progress-event semantics instead of a count; #0096 asserts scheduler caps numerically; #0098 states why the bass filter string is pinned and asserts its components.
-- **evidence-after:** AUDIT/evidence/0069-mutation.log (generic 'operation failed' mutation: strengthened assertion fails, old bare assertion would pass); AUDIT/evidence/0093-0098-after.log (six strengthened tests + seven help-text tests pass). swiftlint 525/56, no new violations.
+- **evidence-after:** AUDIT/evidence/0069-mutation.log (generic 'operation failed' mutation: strengthened assertion fails, old bare assertion would pass); AUDIT/evidence/0093-0098-after.log (six strengthened tests + seven help-text tests pass). swiftlint 525/56, no new violations. Full suite (AUDIT/evidence/0069-0098-fullsuite.txt): 253 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** 022bc32
 
-### #0095 · S3 · TEST · Progress-event count pinned to implementation
+### #0095 · S3 · DONE · Progress-event count pinned to implementation
 
 - **project/module:** converterTests
 - **file:line:** Sources/Tests/converterTests/PipelineIntegrationTests.swift:613-619
@@ -1265,10 +1265,10 @@ _none_
 - **discovered-by:** reviewer T-26
 - **evidence-before:** AUDIT/findings/L6-tests.md T-26
 - **fix-summary:** #0069 requires a WAV-specific error message; #0093 documents the drain test's timeout as a hang guard and raises it to 120 s; #0094 pins help structure/tokens instead of sentences; #0095 asserts progress-event semantics instead of a count; #0096 asserts scheduler caps numerically; #0098 states why the bass filter string is pinned and asserts its components.
-- **evidence-after:** AUDIT/evidence/0069-mutation.log (generic 'operation failed' mutation: strengthened assertion fails, old bare assertion would pass); AUDIT/evidence/0093-0098-after.log (six strengthened tests + seven help-text tests pass). swiftlint 525/56, no new violations.
+- **evidence-after:** AUDIT/evidence/0069-mutation.log (generic 'operation failed' mutation: strengthened assertion fails, old bare assertion would pass); AUDIT/evidence/0093-0098-after.log (six strengthened tests + seven help-text tests pass). swiftlint 525/56, no new violations. Full suite (AUDIT/evidence/0069-0098-fullsuite.txt): 253 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** 022bc32
 
-### #0096 · S3 · TEST · SchedulerProfile tested via its summary string
+### #0096 · S3 · DONE · SchedulerProfile tested via its summary string
 
 - **project/module:** converterTests
 - **file:line:** Sources/Tests/converterTests/converterTests.swift:108-115
@@ -1277,7 +1277,7 @@ _none_
 - **discovered-by:** reviewer T-27
 - **evidence-before:** AUDIT/findings/L6-tests.md T-27
 - **fix-summary:** #0069 requires a WAV-specific error message; #0093 documents the drain test's timeout as a hang guard and raises it to 120 s; #0094 pins help structure/tokens instead of sentences; #0095 asserts progress-event semantics instead of a count; #0096 asserts scheduler caps numerically; #0098 states why the bass filter string is pinned and asserts its components.
-- **evidence-after:** AUDIT/evidence/0069-mutation.log (generic 'operation failed' mutation: strengthened assertion fails, old bare assertion would pass); AUDIT/evidence/0093-0098-after.log (six strengthened tests + seven help-text tests pass). swiftlint 525/56, no new violations.
+- **evidence-after:** AUDIT/evidence/0069-mutation.log (generic 'operation failed' mutation: strengthened assertion fails, old bare assertion would pass); AUDIT/evidence/0093-0098-after.log (six strengthened tests + seven help-text tests pass). swiftlint 525/56, no new violations. Full suite (AUDIT/evidence/0069-0098-fullsuite.txt): 253 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** 022bc32
 
 ### #0097 · S3 · START · -doctor has only a no-throw happy path
@@ -1289,7 +1289,7 @@ _none_
 - **discovered-by:** reviewer T-28
 - **evidence-before:** AUDIT/findings/L6-tests.md T-28
 
-### #0098 · S3 · TEST · Exact ffmpeg bass filter string pinned without a stated reason
+### #0098 · S3 · DONE · Exact ffmpeg bass filter string pinned without a stated reason
 
 - **project/module:** converterTests
 - **file:line:** Sources/Tests/converterTests/PipelineIntegrationTests.swift:529,534
@@ -1298,7 +1298,7 @@ _none_
 - **discovered-by:** reviewer T-29
 - **evidence-before:** AUDIT/findings/L6-tests.md T-29
 - **fix-summary:** #0069 requires a WAV-specific error message; #0093 documents the drain test's timeout as a hang guard and raises it to 120 s; #0094 pins help structure/tokens instead of sentences; #0095 asserts progress-event semantics instead of a count; #0096 asserts scheduler caps numerically; #0098 states why the bass filter string is pinned and asserts its components.
-- **evidence-after:** AUDIT/evidence/0069-mutation.log (generic 'operation failed' mutation: strengthened assertion fails, old bare assertion would pass); AUDIT/evidence/0093-0098-after.log (six strengthened tests + seven help-text tests pass). swiftlint 525/56, no new violations.
+- **evidence-after:** AUDIT/evidence/0069-mutation.log (generic 'operation failed' mutation: strengthened assertion fails, old bare assertion would pass); AUDIT/evidence/0093-0098-after.log (six strengthened tests + seven help-text tests pass). swiftlint 525/56, no new violations. Full suite (AUDIT/evidence/0069-0098-fullsuite.txt): 253 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** 022bc32
 
 ### #0099 · S3 · DONE · Test target compiles with two warnings (bare 'Error' existential, unused 'wav' binding)
