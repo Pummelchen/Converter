@@ -5,6 +5,9 @@ struct ProcessResult {
     let stdout: String
     let stderr: String
     let exitCode: Int32
+    // Set only when the child was killed by a signal. Foundation then reports the signal number
+    // through `terminationStatus`, which is otherwise indistinguishable from a genuine exit code.
+    let terminationSignal: Int32?
 }
 
 // Data is Mutex-protected; @unchecked is required only because the captured
@@ -188,15 +191,50 @@ final class ProcessRunner: Sendable {
             throw AppError("Command timed out after \(Int(timeout)) seconds: \(formatCommand(executableURL.path, arguments))\(detail)")
         }
 
-        let stdout = stdoutCapture.waitString()
-        let stderr = stderrCapture.waitString()
-        let result = ProcessResult(stdout: stdout, stderr: stderr, exitCode: process.terminationStatus)
+        let result = makeResult(stdoutCapture, stderrCapture, process)
 
         if !allowedExitCodes.contains(result.exitCode) {
-            let detail = stderr.lastNonEmptyLine ?? stdout.lastNonEmptyLine ?? "exit code \(result.exitCode)"
+            let detail = Self.failureDetail(for: result)
             throw AppError("Command failed: \(formatCommand(executableURL.path, arguments)) | \(detail)")
         }
 
         return result
+    }
+
+    private func makeResult(
+        _ stdoutCapture: PipeCapture,
+        _ stderrCapture: PipeCapture,
+        _ process: Process
+    ) -> ProcessResult {
+        ProcessResult(
+            stdout: stdoutCapture.waitString(),
+            stderr: stderrCapture.waitString(),
+            exitCode: process.terminationStatus,
+            terminationSignal: process.terminationReason == .uncaughtSignal ? process.terminationStatus : nil
+        )
+    }
+
+    // A crash and a tool that deliberately exits with the signal number are different failures,
+    // so a signal death is always named and any captured output is appended to it.
+    static func failureDetail(for result: ProcessResult) -> String {
+        let captured = result.stderr.lastNonEmptyLine ?? result.stdout.lastNonEmptyLine
+        if let signal = result.terminationSignal {
+            let named = "killed by signal \(signal) (\(signalName(signal)))"
+            return captured.map { "\(named) | \($0)" } ?? named
+        }
+        return captured ?? "exit code \(result.exitCode)"
+    }
+
+    // Foundation reports a signal death as the raw signal number, so a name lookup keeps the
+    // message short and avoids a 13-branch switch.
+    private static let signalNames: [Int32: String] = [
+        SIGSEGV: "SIGSEGV", SIGABRT: "SIGABRT", SIGKILL: "SIGKILL", SIGTERM: "SIGTERM",
+        SIGBUS: "SIGBUS", SIGILL: "SIGILL", SIGFPE: "SIGFPE", SIGPIPE: "SIGPIPE",
+        SIGINT: "SIGINT", SIGHUP: "SIGHUP", SIGQUIT: "SIGQUIT", SIGALRM: "SIGALRM",
+        SIGXCPU: "SIGXCPU"
+    ]
+
+    static func signalName(_ signal: Int32) -> String {
+        signalNames[signal] ?? "unknown signal"
     }
 }

@@ -404,7 +404,14 @@ final class ConverterTool: Sendable {
     }
 
     func ensureWritableDirectory(_ url: URL) throws {
-        if !fileManager.fileExists(atPath: url.path) {
+        var isDirectory: ObjCBool = false
+        if fileManager.fileExists(atPath: url.path, isDirectory: &isDirectory) {
+            // A regular file is writable, so isWritableFile alone accepted it and the run failed
+            // much later with an unrelated "unique temporary file" error.
+            guard isDirectory.boolValue else {
+                throw AppError("Not a directory: \(url.path)")
+            }
+        } else {
             try fileManager.createDirectory(at: url, withIntermediateDirectories: true)
         }
         guard fileManager.isWritableFile(atPath: url.path) else {

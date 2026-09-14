@@ -168,6 +168,39 @@ final class converterTests: XCTestCase {
         }
     }
 
+    // audit #0079: Foundation reports the signal number as the termination status, so a process
+    // killed by SIGSEGV used to surface as "exit code 11" — indistinguishable from a tool that
+    // chose to exit 11.
+    func testProcessRunnerNamesSignalDeaths() throws {
+        let environment = IntegrationWorkspace.sanitizedEnvironment(ProcessInfo.processInfo.environment)
+        let logger = Logger(scriptName: "converterTests", debugEnabled: false)
+        let runner = ProcessRunner(logger: logger, environment: environment, debugEnabled: false)
+
+        XCTAssertThrowsError(try runner.run("sh", ["-c", "kill -SEGV $$"])) { error in
+            let message = (error as? AppError)?.message ?? error.localizedDescription
+            XCTAssertTrue(message.contains("killed by signal 11 (SIGSEGV)"), "unexpected message: \(message)")
+        }
+    }
+
+    // audit #0078: a regular file at OUT_DIR passed the isWritableFile check, so the failure
+    // surfaced later as "Failed to create unique temporary file" instead of naming the real cause.
+    func testEnsureWritableDirectoryRejectsARegularFile() throws {
+        let tempDirectory = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: tempDirectory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: tempDirectory) }
+
+        let file = tempDirectory.appendingPathComponent("not-a-directory")
+        try Data("file".utf8).write(to: file)
+
+        let tool = try makeTool(tempDirectory: tempDirectory, arguments: ["-help"])
+        XCTAssertThrowsError(try tool.ensureWritableDirectory(file)) { error in
+            let message = (error as? AppError)?.message ?? error.localizedDescription
+            XCTAssertTrue(message.contains("Not a directory"), "unexpected message: \(message)")
+        }
+        XCTAssertNoThrow(try tool.ensureWritableDirectory(tempDirectory))
+    }
+
     func testNumericFormattingAndBitrateParsingUseStableFFmpegForms() throws {
         XCTAssertEqual(ffmpegNumber(5), "5")
         XCTAssertEqual(ffmpegNumber(-12.5), "-12.5")
