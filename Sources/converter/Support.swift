@@ -241,7 +241,10 @@ func parseFlexibleTimecode(_ rawValue: String, label: String) throws -> Double {
         throw AppError("\(label) is empty")
     }
 
-    let components = value.split(separator: ":")
+    // Colon-separated timecodes are positional, so an empty field must survive the split:
+    // otherwise ":30" collapses to ["30"] and silently means 30 seconds, and "1::30" means
+    // 1 minute 30 seconds. The empty-component guard below depends on this flag.
+    let components = value.split(separator: ":", omittingEmptySubsequences: false)
     guard !components.isEmpty, components.count <= 3 else {
         throw AppError("Invalid \(label) '\(rawValue)'. Use seconds, MM:SS, or HH:MM:SS.")
     }

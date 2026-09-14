@@ -145,6 +145,29 @@ final class converterTests: XCTestCase {
         }
     }
 
+    // A colon-separated timecode is positional: ":30" is not "30 seconds" and "1::30" is not
+    // "1 minute 30 seconds". Splitting with the default omittingEmptySubsequences dropped the
+    // empty component, so the guard in parseTimecodeComponent was unreachable and these forms
+    // silently parsed as a different duration.
+    func testTimecodeRejectsEmptyColonSeparatedComponents() throws {
+        for malformed in [":30", "1::30", "1:30:", "::30", "1:", ":", "1:2:", ":2:03"] {
+            XCTAssertThrowsError(
+                try parseFlexibleTimecode(malformed, label: "TIME"),
+                "expected '\(malformed)' to be rejected"
+            ) { error in
+                XCTAssertTrue(
+                    error.localizedDescription.contains("Empty time component"),
+                    "unexpected message for '\(malformed)': \(error.localizedDescription)"
+                )
+            }
+        }
+
+        // The component-count guard still rejects a fourth field before any component is parsed.
+        XCTAssertThrowsError(try parseFlexibleTimecode("1:2:3:4", label: "TIME")) { error in
+            XCTAssertTrue(error.localizedDescription.contains("Use seconds, MM:SS, or HH:MM:SS"))
+        }
+    }
+
     func testNumericFormattingAndBitrateParsingUseStableFFmpegForms() throws {
         XCTAssertEqual(ffmpegNumber(5), "5")
         XCTAssertEqual(ffmpegNumber(-12.5), "-12.5")

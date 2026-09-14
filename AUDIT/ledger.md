@@ -6,9 +6,9 @@ Session: `2026-09-13` · branch `audit/2026-09-13` · baseline commit `4bb136a`
 
 | status | count |
 |---|---|
-| START | 42 |
+| START | 41 |
 | PROGRESS | 0 |
-| TEST | 0 |
+| TEST | 1 |
 | AUDIT | 0 |
 | DONE | 58 |
 | BLOCKED | 0 |
@@ -34,7 +34,7 @@ _none_
 | #0041 | S2 | converter/DependencyBootstrap | Sources/converter/DependencyBootstrap.swift:216-248 | Installer subprocesses have no timeout and discard diagnostics | incomplete | START |  |
 | #0050 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:327-336,367-387,591-600 | Loudness fallback publishes any true-peak breach with a misleading 'closest-safe' label | logic | START |  |
 | #0051 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:992,1170,1029,508 | Redundant padding verification, uncached ffmpeg -filters, per-file ladder resolution | perf | START |  |
-| #0053 | S2 | converter/Support | Sources/converter/Support.swift:308 | M:SS timecode parsing drops empty components; empty-component guard unreachable | logic | START |  |
+| #0053 | S2 | converter/Support | Sources/converter/Support.swift:308 | M:SS timecode parsing drops empty components; empty-component guard unreachable | logic | TEST |  |
 | #0054 | S2 | converter/Actions | Sources/converter/Actions.swift:1254 | -mp4toshort re-ingests the pipeline's own _Short_CenterCut/_FullSong outputs | bug | START |  |
 | #0055 | S2 | converter/ImagePipeline | Sources/converter/ImagePipeline.swift:329-336 | Fitted portrait still double-sharpens derived masters and user Vertical_8K.png | logic | START |  |
 | #0056 | S2 | converter/VideoPipeline | Sources/converter/VideoPipeline.swift:399-404 | shortenMP4 upscales with ffmpeg's default scaler instead of the configured flags | bug | START |  |
@@ -771,7 +771,7 @@ _none_
 - **evidence-after:** AUDIT/evidence/0052-before.log (4 decodes for 4 preflights), 0052-after.log (1; rewritten file re-decoded once); swiftlint 533/56. Full suite (AUDIT/evidence/validation-group-fullsuite.txt): 226 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** fbefda6
 
-### #0053 · S2 · START · M:SS timecode parsing drops empty components; empty-component guard unreachable
+### #0053 · S2 · TEST · M:SS timecode parsing drops empty components; empty-component guard unreachable
 
 - **project/module:** converter/Support
 - **file:line:** Sources/converter/Support.swift:308
@@ -779,6 +779,8 @@ _none_
 - **host-used:** local
 - **discovered-by:** reviewer X-8
 - **evidence-before:** AUDIT/findings/L2-video-image-actions-cli.md X-8
+- **fix-summary:** parseFlexibleTimecode splits on ':' with omittingEmptySubsequences:false, so empty colon-separated fields reach the parseTimecodeComponent guard instead of being dropped and silently reparsed as a shorter duration.
+- **evidence-after:** AUDIT/evidence/0053-before.log (fix not applied: 8 failures — 7 'did not throw' plus ':' rejected with the wrong message); AUDIT/evidence/0053-after.log (4 timecode tests pass). swiftlint 531/56, no new violations.
 
 ### #0054 · S2 · START · -mp4toshort re-ingests the pipeline's own _Short_CenterCut/_FullSong outputs
 
