@@ -1,0 +1,1320 @@
+Building for debugging...
+[0/4] Write swift-version--58304C5D6DBC2206.txt
+Build complete! (0.10s)
+Test Suite 'All tests' started at 2026-09-14 08:48:29.450.
+Test Suite 'converterPackageTests.xctest' started at 2026-09-14 08:48:29.450.
+Test Suite 'PipelineIntegrationTests' started at 2026-09-14 08:48:29.450.
+Test Case '-[converterTests.PipelineIntegrationTests testAcceptsLeadingSilenceWhenAudioBecomesAudibleLater]' started.
+[2026-09-14 08:48:30] [converterTests] [INFO] Created WAV: leadingsilence.wav
+Test Case '-[converterTests.PipelineIntegrationTests testAcceptsLeadingSilenceWhenAudioBecomesAudibleLater]' passed (1.656 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testAIPixPreservesFullStemToAvoidUnderscoreCollisions]' started.
+[2026-09-14 08:48:31] [converterTests] [INFO] PNG variants: art_1.png
+[2026-09-14 08:48:31] [converterTests] [INFO] Created 8K PNG: art_1_8K.png
+[2026-09-14 08:48:31] [converterTests] [INFO] Created 4K PNG: art_1_4K.png
+[2026-09-14 08:48:31] [converterTests] [INFO] PNG variants: art_2.png
+[2026-09-14 08:48:32] [converterTests] [INFO] Created 8K PNG: art_2_8K.png
+[2026-09-14 08:48:32] [converterTests] [INFO] Created 4K PNG: art_2_4K.png
+Test Case '-[converterTests.PipelineIntegrationTests testAIPixPreservesFullStemToAvoidUnderscoreCollisions]' passed (1.220 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testAlbumBuildAcceptsNonStandardRIFFWavInputs]' started.
+[2026-09-14 08:48:33] [converterTests] [INFO] Created album WAV: /var/folders/k5/fzyk9mb96rqbc6_vnxv5mh3h0000gn/T/converter-tests.A12A7B8C-BFCD-447A-AA85-A6A0B70BA769/Output/album.rf64.wav
+Test Case '-[converterTests.PipelineIntegrationTests testAlbumBuildAcceptsNonStandardRIFFWavInputs]' passed (1.900 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testAlbumBuildFromAlbumFileCreatesVerifiedRF64Wave]' started.
+[2026-09-14 08:48:35] [converterTests] [INFO] Created album WAV: /var/folders/k5/fzyk9mb96rqbc6_vnxv5mh3h0000gn/T/converter-tests.85212CF3-AA16-43F0-BBF5-6DA4C3182305/Output/album.rf64.wav
+Test Case '-[converterTests.PipelineIntegrationTests testAlbumBuildFromAlbumFileCreatesVerifiedRF64Wave]' passed (1.914 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testAlbumFileFailsClosedOnMissingTracksUnlessContinueOnError]' started.
+[2026-09-14 08:48:36] [converterTests] [ERROR] album.txt entry 'missing_track.wav': missing track /var/folders/k5/fzyk9mb96rqbc6_vnxv5mh3h0000gn/T/converter-tests.FB22E7A7-6D05-4396-8CC0-91A1A3165023/Output/missing_track.wav
+[2026-09-14 08:48:37] [converterTests] [INFO] Created album WAV: /var/folders/k5/fzyk9mb96rqbc6_vnxv5mh3h0000gn/T/converter-tests.FB22E7A7-6D05-4396-8CC0-91A1A3165023/Output/album.rf64.wav
+Test Case '-[converterTests.PipelineIntegrationTests testAlbumFileFailsClosedOnMissingTracksUnlessContinueOnError]' passed (2.250 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testAlbumPipelineSortsMixedAudioNormalizesAndContinuesFullRun]' started.
+[2026-09-14 08:48:38] [converterTests] [INFO] Profile: youtube_master
+[2026-09-14 08:48:38] [converterTests] [INFO] Scheduler profile: total=3 image=2 audio=2 video=1
+[2026-09-14 08:48:38] [converterTests] [INFO] Album pipeline start
+[2026-09-14 08:48:38] [converterTests] [INFO] Album track order: 1 - Sun.mp3, 2 - Rain.wav, 10 - Storm.flac
+[2026-09-14 08:48:38] [converterTests] [INFO] Album loudness normalize 1/3: 1 - Sun.mp3
+[2026-09-14 08:48:39] [converterTests] [INFO] Album track ready: 1 - Sun.mp3 [integrated=-11.95 LUFS]
+[2026-09-14 08:48:39] [converterTests] [INFO] Album loudness normalize 2/3: 2 - Rain.wav
+[2026-09-14 08:48:40] [converterTests] [INFO] Album track ready: 2 - Rain.wav [integrated=-12.05 LUFS]
+[2026-09-14 08:48:40] [converterTests] [INFO] Album loudness normalize 3/3: 10 - Storm.flac
+[2026-09-14 08:48:40] [converterTests] [INFO] Album track ready: 10 - Storm.flac [integrated=-11.95 LUFS]
+[2026-09-14 08:48:41] [converterTests] [INFO] Created album WAV: /var/folders/k5/fzyk9mb96rqbc6_vnxv5mh3h0000gn/T/converter-tests.3D793A0A-36A8-4B78-A4EA-7A089443EAD7/Output/album.wav
+[2026-09-14 08:48:41] [converterTests] [INFO] Album source audio: album.wav
+[2026-09-14 08:48:41] [converterTests] [INFO] Full step: use Horizontal_8K.png for main MP4
+[2026-09-14 08:48:41] [converterTests] [INFO] Full step: use Vertical_8K.png for short MP4
+[2026-09-14 08:48:41] [converterTests] [INFO] Full step: image deliverables from Horizontal_8K.png
+[2026-09-14 08:48:41] [converterTests] [INFO] Full step: 4K PNG
+[2026-09-14 08:48:41] [converterTests] [INFO] Full step: NFT assets
+[2026-09-14 08:48:41] [converterTests] [INFO] Created 4K PNG: album_4K.png
+[2026-09-14 08:48:41] [converterTests] [INFO] Full step: 2K PNG
+[2026-09-14 08:48:41] [converterTests] [INFO] Created 2K PNG: album_2K.png
+[2026-09-14 08:48:41] [converterTests] [INFO] Full step: 8K JPG deliverables
+[2026-09-14 08:48:41] [converterTests] [INFO] Full step: external RF64/BW64 audio deliverables
+[2026-09-14 08:48:41] [converterTests] [INFO] Created 1MB JPG: album_8K_1MB.jpg
+[2026-09-14 08:48:41] [converterTests] [INFO] Created NFT set: album
+[2026-09-14 08:48:41] [converterTests] [INFO] Full step: 3K PNG
+[2026-09-14 08:48:41] [converterTests] [INFO] Created 2MB JPG: album_8K_2MB.jpg
+[2026-09-14 08:48:41] [converterTests] [INFO] Created 3K PNG: album_3K.png
+[2026-09-14 08:48:41] [converterTests] [INFO] Full step: 3K JPG deliverables
+[2026-09-14 08:48:41] [converterTests] [INFO] Created 20MB JPG: album_8K_20MB.jpg
+[2026-09-14 08:48:41] [converterTests] [INFO] Created 1MB JPG: album_3K_1MB.jpg
+[2026-09-14 08:48:41] [converterTests] [INFO] Created 5MB JPG: album_3K_5MB.jpg
+[2026-09-14 08:48:41] [converterTests] [INFO] Created external FLAC: album_RF64.flac
+[2026-09-14 08:48:42] [converterTests] [INFO] Created external WAV: album_RF64.wav
+[2026-09-14 08:48:42] [converterTests] [INFO] Created external BW64 WAV: album_BW64.wav
+[2026-09-14 08:48:43] [converterTests] [INFO] Created MP3: album.mp3
+[2026-09-14 08:48:43] [converterTests] [INFO] Created M4A: album.m4a
+[2026-09-14 08:48:43] [converterTests] [INFO] Full step: M4A -> MP4
+[2026-09-14 08:48:43] [converterTests] [INFO] Main video encoders: hevc_videotoolbox, libx264
+[2026-09-14 08:48:45] [converterTests] [INFO] Created MP4: album_8K.mp4 [encoder=hevc_videotoolbox]
+[2026-09-14 08:48:45] [converterTests] [INFO] Full step: portrait short stills
+[2026-09-14 08:48:45] [converterTests] [INFO] Created portrait still: album_Short_8K.png
+[2026-09-14 08:48:45] [converterTests] [INFO] Created 1MB JPG: album_Short_8K_1MB.jpg
+[2026-09-14 08:48:45] [converterTests] [INFO] Created 2MB JPG: album_Short_8K_2MB.jpg
+[2026-09-14 08:48:45] [converterTests] [INFO] Created portrait still: album_Short_CenterCut_8K.png
+[2026-09-14 08:48:45] [converterTests] [INFO] Created 1MB JPG: album_Short_CenterCut_8K_1MB.jpg
+[2026-09-14 08:48:45] [converterTests] [INFO] Created 2MB JPG: album_Short_CenterCut_8K_2MB.jpg
+[2026-09-14 08:48:45] [converterTests] [INFO] Full step: PNG -> Short: album_Short_8K.png
+[2026-09-14 08:48:45] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-14 08:48:46] [converterTests] [INFO] Created portrait short MP4: album_8K_Short.mp4 [encoder=libx264]
+[2026-09-14 08:48:47] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-14 08:48:48] [converterTests] [INFO] Created portrait short MP4: album_8K_Short_FullSong.mp4 [encoder=libx264]
+[2026-09-14 08:48:48] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-14 08:48:49] [converterTests] [INFO] Created portrait short MP4 (centre cut): album_8K_Short_CenterCut.mp4 [encoder=libx264]
+[2026-09-14 08:48:49] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-14 08:48:50] [converterTests] [INFO] Created portrait short MP4 (centre cut): album_8K_Short_FullSong_CenterCut.mp4 [encoder=libx264]
+[2026-09-14 08:48:50] [converterTests] [INFO] Album pipeline complete
+Test Case '-[converterTests.PipelineIntegrationTests testAlbumPipelineSortsMixedAudioNormalizesAndContinuesFullRun]' passed (13.217 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testAlbumRunKeepsOutputFileForTheAlbumWAVOnly]' started.
+[2026-09-14 08:48:51] [converterTests] [INFO] Profile: youtube_master
+[2026-09-14 08:48:51] [converterTests] [INFO] Scheduler profile: total=3 image=2 audio=2 video=1
+[2026-09-14 08:48:51] [converterTests] [INFO] Album pipeline start
+[2026-09-14 08:48:51] [converterTests] [INFO] Album track order: 01.wav, 02.wav
+[2026-09-14 08:48:51] [converterTests] [INFO] Album loudness normalize 1/2: 01.wav
+[2026-09-14 08:48:52] [converterTests] [INFO] Album track ready: 01.wav [integrated=-12.05 LUFS]
+[2026-09-14 08:48:52] [converterTests] [INFO] Album loudness normalize 2/2: 02.wav
+[2026-09-14 08:48:53] [converterTests] [INFO] Album track ready: 02.wav [integrated=-11.95 LUFS]
+[2026-09-14 08:48:53] [converterTests] [INFO] Created album WAV: /var/folders/k5/fzyk9mb96rqbc6_vnxv5mh3h0000gn/T/converter-tests.B5EE86D9-9ADC-4084-85C1-DDE0C27D56DB/Output/MyAlbum.wav
+[2026-09-14 08:48:53] [converterTests] [INFO] Album source audio: MyAlbum.wav
+[2026-09-14 08:48:53] [converterTests] [INFO] Full step: PNG variants
+[2026-09-14 08:48:53] [converterTests] [INFO] Created 8K PNG: MyAlbum_8K.png
+[2026-09-14 08:48:53] [converterTests] [INFO] Created 4K PNG: MyAlbum_4K.png
+[2026-09-14 08:48:53] [converterTests] [INFO] Full step: NFT assets
+[2026-09-14 08:48:53] [converterTests] [INFO] Full step: 2K PNG
+[2026-09-14 08:48:53] [converterTests] [INFO] Full step: external RF64/BW64 audio deliverables
+[2026-09-14 08:48:53] [converterTests] [INFO] Created 2K PNG: MyAlbum_2K.png
+[2026-09-14 08:48:53] [converterTests] [INFO] Full step: 3K PNG
+[2026-09-14 08:48:53] [converterTests] [INFO] Created 3K PNG: MyAlbum_3K.png
+[2026-09-14 08:48:53] [converterTests] [INFO] Full step: 3K JPG deliverables
+[2026-09-14 08:48:53] [converterTests] [INFO] Created 1MB JPG: MyAlbum_3K_1MB.jpg
+[2026-09-14 08:48:53] [converterTests] [INFO] Created NFT set: MyAlbum
+[2026-09-14 08:48:53] [converterTests] [INFO] Full step: 8K JPG deliverables
+[2026-09-14 08:48:53] [converterTests] [INFO] Created 5MB JPG: MyAlbum_3K_5MB.jpg
+[2026-09-14 08:48:53] [converterTests] [INFO] Created 1MB JPG: MyAlbum_8K_1MB.jpg
+[2026-09-14 08:48:53] [converterTests] [INFO] Created 2MB JPG: MyAlbum_8K_2MB.jpg
+[2026-09-14 08:48:53] [converterTests] [INFO] Created 20MB JPG: MyAlbum_8K_20MB.jpg
+[2026-09-14 08:48:54] [converterTests] [INFO] Created external FLAC: MyAlbum_RF64.flac
+[2026-09-14 08:48:54] [converterTests] [INFO] Created external WAV: MyAlbum_RF64.wav
+[2026-09-14 08:48:54] [converterTests] [INFO] Created external BW64 WAV: MyAlbum_BW64.wav
+[2026-09-14 08:48:55] [converterTests] [INFO] Created MP3: MyAlbum.mp3
+[2026-09-14 08:48:55] [converterTests] [INFO] Created M4A: MyAlbum.m4a
+[2026-09-14 08:48:55] [converterTests] [INFO] Full step: M4A -> MP4
+[2026-09-14 08:48:55] [converterTests] [INFO] Main video encoders: hevc_videotoolbox, libx264
+[2026-09-14 08:48:57] [converterTests] [INFO] Created MP4: MyAlbum_8K.mp4 [encoder=hevc_videotoolbox]
+[2026-09-14 08:48:57] [converterTests] [INFO] Full step: portrait short stills
+[2026-09-14 08:48:57] [converterTests] [INFO] Created portrait still: MyAlbum_Short_8K.png
+[2026-09-14 08:48:57] [converterTests] [INFO] Created 1MB JPG: MyAlbum_Short_8K_1MB.jpg
+[2026-09-14 08:48:57] [converterTests] [INFO] Created 2MB JPG: MyAlbum_Short_8K_2MB.jpg
+[2026-09-14 08:48:57] [converterTests] [INFO] Created portrait still: MyAlbum_Short_CenterCut_8K.png
+[2026-09-14 08:48:57] [converterTests] [INFO] Created 1MB JPG: MyAlbum_Short_CenterCut_8K_1MB.jpg
+[2026-09-14 08:48:57] [converterTests] [INFO] Created 2MB JPG: MyAlbum_Short_CenterCut_8K_2MB.jpg
+[2026-09-14 08:48:57] [converterTests] [INFO] Full step: PNG -> Short: MyAlbum_Short_8K.png
+[2026-09-14 08:48:57] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-14 08:48:58] [converterTests] [INFO] Created portrait short MP4: MyAlbum_8K_Short.mp4 [encoder=libx264]
+[2026-09-14 08:48:59] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-14 08:49:00] [converterTests] [INFO] Created portrait short MP4: MyAlbum_8K_Short_FullSong.mp4 [encoder=libx264]
+[2026-09-14 08:49:00] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-14 08:49:01] [converterTests] [INFO] Created portrait short MP4 (centre cut): MyAlbum_8K_Short_CenterCut.mp4 [encoder=libx264]
+[2026-09-14 08:49:01] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-14 08:49:02] [converterTests] [INFO] Created portrait short MP4 (centre cut): MyAlbum_8K_Short_FullSong_CenterCut.mp4 [encoder=libx264]
+[2026-09-14 08:49:02] [converterTests] [INFO] Album pipeline complete
+Test Case '-[converterTests.PipelineIntegrationTests testAlbumRunKeepsOutputFileForTheAlbumWAVOnly]' passed (10.740 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testAudioConversionMatrixProducesVerifiedOutputs]' started.
+[2026-09-14 08:49:03] [converterTests] [INFO] Created WAV: audio_flac.wav
+[2026-09-14 08:49:06] [converterTests] [INFO] Created MP3: audio_flac.mp3
+[2026-09-14 08:49:08] [converterTests] [INFO] Created M4A: audio_flac.m4a
+[2026-09-14 08:49:10] [converterTests] [INFO] Created FLAC: audio_wav.flac
+[2026-09-14 08:49:13] [converterTests] [INFO] Created MP3: audio_wav.mp3
+[2026-09-14 08:49:15] [converterTests] [INFO] Created M4A: audio_wav.m4a
+[2026-09-14 08:49:17] [converterTests] [INFO] Created WAV: audio_mp3.wav
+[2026-09-14 08:49:19] [converterTests] [INFO] Created FLAC: audio_mp3.flac
+[2026-09-14 08:49:21] [converterTests] [INFO] Created M4A: audio_mp3.m4a
+[2026-09-14 08:49:23] [converterTests] [INFO] Created WAV: audio_m4a.wav
+[2026-09-14 08:49:26] [converterTests] [INFO] Created MP3: audio_m4a.mp3
+[2026-09-14 08:49:28] [converterTests] [INFO] Created FLAC: audio_m4a.flac
+Test Case '-[converterTests.PipelineIntegrationTests testAudioConversionMatrixProducesVerifiedOutputs]' passed (26.332 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testAudioTranscodesIgnoreAttachedVideoStreams]' started.
+[2026-09-14 08:49:30] [converterTests] [INFO] Created WAV: flac_artwork.wav
+[2026-09-14 08:49:31] [converterTests] [INFO] Created WAV: mp3_artwork.wav
+Test Case '-[converterTests.PipelineIntegrationTests testAudioTranscodesIgnoreAttachedVideoStreams]' passed (3.778 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testBassBoostProcessesAudioAndMP4Inputs]' started.
+[2026-09-14 08:49:32] [converterTests] [INFO] Bass boost bass_flac.flac: frequency=80Hz gain=5dB
+[2026-09-14 08:49:35] [converterTests] [INFO] Created bass-adjusted media: bass_flac_bass.flac
+[2026-09-14 08:49:35] [converterTests] [INFO] Bass boost bass_m4a.m4a: frequency=80Hz gain=5dB
+[2026-09-14 08:49:38] [converterTests] [INFO] Created bass-adjusted media: bass_m4a_bass.m4a
+[2026-09-14 08:49:38] [converterTests] [INFO] Bass boost bass_mp3.mp3: frequency=80Hz gain=5dB
+[2026-09-14 08:49:41] [converterTests] [INFO] Created bass-adjusted media: bass_mp3_bass.mp3
+[2026-09-14 08:49:41] [converterTests] [INFO] Bass boost bass_video.mp4: frequency=80Hz gain=5dB
+[2026-09-14 08:49:45] [converterTests] [INFO] Created bass-adjusted media: bass_video_bass.mp4
+[2026-09-14 08:49:45] [converterTests] [INFO] Bass boost bass_wav.wav: frequency=80Hz gain=5dB
+[2026-09-14 08:49:47] [converterTests] [INFO] Created bass-adjusted media: bass_wav_bass.wav
+Test Case '-[converterTests.PipelineIntegrationTests testBassBoostProcessesAudioAndMP4Inputs]' passed (19.003 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testBassBoostRefusesToPublishClippedOutput]' started.
+[2026-09-14 08:49:56] [converterTests] [INFO] Created bass-adjusted media: quiet_low_bass.wav
+Test Case '-[converterTests.PipelineIntegrationTests testBassBoostRefusesToPublishClippedOutput]' passed (4.830 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testBassNegativeGainReducesLowBandEnergy]' started.
+[2026-09-14 08:49:59] [converterTests] [INFO] Created bass-adjusted media: bass_cut_source_bass_80Hz_m5dB.wav
+Test Case '-[converterTests.PipelineIntegrationTests testBassNegativeGainReducesLowBandEnergy]' passed (3.166 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testBassUsesSettingsSpecificSuffixForManualValues]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testBassUsesSettingsSpecificSuffixForManualValues]' passed (0.004 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testBW64StructureRejectsDs64TextInsideBext]' started.
+[2026-09-14 08:50:00] [converterTests] [INFO] Created external BW64 WAV: bw64_source_BW64.wav
+Test Case '-[converterTests.PipelineIntegrationTests testBW64StructureRejectsDs64TextInsideBext]' passed (1.664 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testBW64WriterReportsATruncatedOutput]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testBW64WriterReportsATruncatedOutput]' passed (0.852 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testCanonicalPCMEquivalenceRejectsLengthAndChannelMismatch]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testCanonicalPCMEquivalenceRejectsLengthAndChannelMismatch]' passed (0.631 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testCanonicalPCMVerifierRejectsMismatchedLosslessOutput]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testCanonicalPCMVerifierRejectsMismatchedLosslessOutput]' passed (0.266 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testCleanupOrphansRemovesTempFileOnceOwningChildHasExited]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testCleanupOrphansRemovesTempFileOnceOwningChildHasExited]' passed (0.067 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testCleanupOrphansRetainsTempFilesOfLiveProcessesAndUnparsableNames]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testCleanupOrphansRetainsTempFilesOfLiveProcessesAndUnparsableNames]' passed (0.077 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testCleanupTempsRemovesRunScopedHiddenTempFiles]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testCleanupTempsRemovesRunScopedHiddenTempFiles]' passed (0.008 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testClippedSampleCeilingIsRebasedInTheRenderDomain]' started.
+[2026-09-14 08:50:05] [converterTests] [INFO] Source already exceeds delivery QC on: true peak 0.02 dBTP (limit 0.00); clipped samples 25280 (limit 0); integrated loudness 0.65 LUFS (maximum 0.00). Verifying the render does not worsen these, rather than altering the audio.
+Test Case '-[converterTests.PipelineIntegrationTests testClippedSampleCeilingIsRebasedInTheRenderDomain]' passed (2.050 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testDerivedImageNamingOnlyReplacesTrailing8KMarker]' started.
+[2026-09-14 08:50:05] [converterTests] [INFO] Created 3K PNG: mix_8K_take_3K.png
+[2026-09-14 08:50:06] [converterTests] [INFO] Created NFT set: mix_8K_take
+Test Case '-[converterTests.PipelineIntegrationTests testDerivedImageNamingOnlyReplacesTrailing8KMarker]' passed (1.017 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testDoctorPassesOnHealthyWorkspace]' started.
+[2026-09-14 08:50:06] [converterTests] [INFO] Profile: youtube_master
+[2026-09-14 08:50:06] [converterTests] [INFO] Scheduler profile: total=3 image=2 audio=2 video=1
+[2026-09-14 08:50:06] [converterTests] [INFO] Doctor start
+[2026-09-14 08:50:06] [converterTests] [INFO] Doctor tool ok: awk
+[2026-09-14 08:50:06] [converterTests] [INFO] Doctor tool ok: sed
+[2026-09-14 08:50:06] [converterTests] [INFO] Doctor tool ok: ffmpeg
+[2026-09-14 08:50:06] [converterTests] [INFO] Doctor tool ok: ffprobe
+[2026-09-14 08:50:06] [converterTests] [INFO] Doctor tool ok: magick
+[2026-09-14 08:50:06] [converterTests] [INFO] Doctor filter ok: loudnorm
+[2026-09-14 08:50:06] [converterTests] [INFO] Doctor filter ok: astats
+[2026-09-14 08:50:06] [converterTests] [INFO] Doctor filter ok: volumedetect
+[2026-09-14 08:50:06] [converterTests] [INFO] Doctor filter ok: setparams
+[2026-09-14 08:50:06] [converterTests] [INFO] Doctor filter ok: bass
+[2026-09-14 08:50:06] [converterTests] [INFO] Doctor main video encoders: hevc_videotoolbox, libx264
+[2026-09-14 08:50:06] [converterTests] [INFO] Doctor short video encoders: libx264, h264_videotoolbox
+[2026-09-14 08:50:06] [converterTests] [INFO] Doctor encoder ok: alac
+[2026-09-14 08:50:06] [converterTests] [INFO] Doctor free space: 134054944768 bytes
+[2026-09-14 08:50:06] [converterTests] [INFO] Doctor source image ok: poster.png
+[2026-09-14 08:50:06] [converterTests] [INFO] Doctor source audio ok: song.mp3
+[2026-09-14 08:50:06] [converterTests] [INFO] Doctor complete
+Test Case '-[converterTests.PipelineIntegrationTests testDoctorPassesOnHealthyWorkspace]' passed (0.697 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testExistingExternalFLACIsRebuiltWhenCanonicalPCMDoesNotMatchSource]' started.
+[2026-09-14 08:50:08] [converterTests] [INFO] Created external FLAC: archive_source_RF64.flac
+Test Case '-[converterTests.PipelineIntegrationTests testExistingExternalFLACIsRebuiltWhenCanonicalPCMDoesNotMatchSource]' passed (2.617 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testExternalFLACVariantStreamCopiesAudioOnlyFromFLACWithArtwork]' started.
+[2026-09-14 08:50:10] [converterTests] [INFO] Created external FLAC: external_flac_artwork_RF64.flac
+Test Case '-[converterTests.PipelineIntegrationTests testExternalFLACVariantStreamCopiesAudioOnlyFromFLACWithArtwork]' passed (1.950 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testExternalWAVStructureFindsBextChunkBeyond64KiB]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testExternalWAVStructureFindsBextChunkBeyond64KiB]' passed (0.599 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testExternalWAVStructureIgnoresBextTextInsideListInfo]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testExternalWAVStructureIgnoresBextTextInsideListInfo]' passed (1.200 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testFadeCutProcessesMP3WAVAndFLACWithShortenedDuration]' started.
+[2026-09-14 08:50:13] [converterTests] [INFO] Fadecut cut_flac.flac: cut=0.500 fade=0.750
+[2026-09-14 08:50:15] [converterTests] [INFO] Created fadecut audio: cut_flac_fadecut_0.5s_0.75s.flac
+[2026-09-14 08:50:15] [converterTests] [INFO] Fadecut cut_mp3.mp3: cut=0.500 fade=0.750
+[2026-09-14 08:50:18] [converterTests] [INFO] Created fadecut audio: cut_mp3_fadecut_0.5s_0.75s.mp3
+[2026-09-14 08:50:18] [converterTests] [INFO] Fadecut cut_wav.wav: cut=0.500 fade=0.750
+[2026-09-14 08:50:20] [converterTests] [INFO] Created fadecut audio: cut_wav_fadecut_0.5s_0.75s.wav
+Test Case '-[converterTests.PipelineIntegrationTests testFadeCutProcessesMP3WAVAndFLACWithShortenedDuration]' passed (9.120 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testFadeCutRejectsCutThatRemovesEntireSource]' started.
+[2026-09-14 08:50:22] [converterTests] [INFO] Fadecut too_short.wav: cut=2 fade=0.500
+[2026-09-14 08:50:22] [converterTests] [ERROR] Fadecut would remove the entire audio file: cut=2.0s duration=1.0s for too_short.wav
+Test Case '-[converterTests.PipelineIntegrationTests testFadeCutRejectsCutThatRemovesEntireSource]' passed (0.413 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testFadeOutDoesNotEnforceDeliveryQCPolicy]' started.
+[2026-09-14 08:50:22] [converterTests] [INFO] Fadeout hot_fade_song.mp3: start=1.500 duration=0.750
+[2026-09-14 08:50:25] [converterTests] [INFO] Created faded audio: hot_fade_song_fadeout_1.5s_0.75s.mp3
+Test Case '-[converterTests.PipelineIntegrationTests testFadeOutDoesNotEnforceDeliveryQCPolicy]' passed (3.250 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testFadeOutProducesTruncatedSameFormatAudioOutput]' started.
+[2026-09-14 08:50:26] [converterTests] [INFO] Fadeout fade_song.mp3: start=1.500 duration=0.750
+[2026-09-14 08:50:28] [converterTests] [INFO] Created faded audio: fade_song_fadeout_1.5s_0.75s.mp3
+Test Case '-[converterTests.PipelineIntegrationTests testFadeOutProducesTruncatedSameFormatAudioOutput]' passed (3.333 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testFadeOutRejectsRangeBeyondSourceDuration]' started.
+[2026-09-14 08:50:29] [converterTests] [INFO] Fadeout short_song.wav: start=1 duration=1
+[2026-09-14 08:50:29] [converterTests] [ERROR] Fade end 2.0s exceeds source duration 1.2s for short_song.wav
+Test Case '-[converterTests.PipelineIntegrationTests testFadeOutRejectsRangeBeyondSourceDuration]' passed (0.399 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testFittedPortraitStillOnlySharpensRawArtwork]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testFittedPortraitStillOnlySharpensRawArtwork]' passed (0.002 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testFLACHashRenamesToCRC32Filename]' started.
+[2026-09-14 08:50:29] [converterTests] [INFO] Hash FLAC filenames
+[2026-09-14 08:50:30] [converterTests] [INFO] Renamed flac: hash_source.flac -> 5CDF3EE5.flac
+Test Case '-[converterTests.PipelineIntegrationTests testFLACHashRenamesToCRC32Filename]' passed (0.614 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testFullAudioPreparationPreservesMP3SourceLoudnessEvenIfMasteringConfigIsEnabled]' started.
+[2026-09-14 08:50:30] [converterTests] [INFO] Created WAV: master_release.wav
+[2026-09-14 08:50:30] [converterTests] [INFO] Full step: external RF64/BW64 audio deliverables
+[2026-09-14 08:50:31] [converterTests] [INFO] Created external FLAC: master_release_RF64.flac
+[2026-09-14 08:50:31] [converterTests] [INFO] Created external WAV: master_release_RF64.wav
+[2026-09-14 08:50:31] [converterTests] [INFO] Created external BW64 WAV: master_release_BW64.wav
+[2026-09-14 08:50:32] [converterTests] [INFO] Full step: MP3 source is not the delivery standard (MP3 bitrate below minimum (got=192000 min=300000): /var/folders/k5/fzyk9mb96rqbc6_vnxv5mh3h0000gn/T/converter-tests.FE33296B-1EE3-4F78-A034-EF53B1C58BBB/Output/master_me.mp3); encoding master_release.mp3
+[2026-09-14 08:50:33] [converterTests] [INFO] Created MP3: master_release.mp3
+[2026-09-14 08:50:33] [converterTests] [INFO] Created M4A: master_release.m4a
+Test Case '-[converterTests.PipelineIntegrationTests testFullAudioPreparationPreservesMP3SourceLoudnessEvenIfMasteringConfigIsEnabled]' passed (3.474 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testFullAudioPreparationPreservesOriginalWAVForExternalFLACVariants]' started.
+[2026-09-14 08:50:33] [converterTests] [INFO] Full step: external RF64/BW64 audio deliverables
+[2026-09-14 08:50:34] [converterTests] [INFO] Created WAV: wav_release.wav
+[2026-09-14 08:50:34] [converterTests] [INFO] Created external FLAC: wav_release_RF64.flac
+[2026-09-14 08:50:34] [converterTests] [INFO] Created external WAV: wav_release_RF64.wav
+[2026-09-14 08:50:35] [converterTests] [INFO] Created external BW64 WAV: wav_release_BW64.wav
+[2026-09-14 08:50:36] [converterTests] [INFO] Created MP3: wav_release.mp3
+[2026-09-14 08:50:36] [converterTests] [INFO] Created M4A: wav_release.m4a
+Test Case '-[converterTests.PipelineIntegrationTests testFullAudioPreparationPreservesOriginalWAVForExternalFLACVariants]' passed (2.416 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testFullPipelineProducesExpectedOutputsAndLeavesNoScopedTemps]' started.
+[2026-09-14 08:50:36] [converterTests] [INFO] Profile: youtube_master
+[2026-09-14 08:50:36] [converterTests] [INFO] Scheduler profile: total=3 image=2 audio=2 video=1
+[2026-09-14 08:50:36] [converterTests] [INFO] Full pipeline start
+[2026-09-14 08:50:36] [converterTests] [INFO] Source audio renamed: track.mp3 -> 1_source.mp3
+[2026-09-14 08:50:36] [converterTests] [INFO] Source audio: 1_source.mp3
+[2026-09-14 08:50:36] [converterTests] [INFO] Full step: PNG variants
+[2026-09-14 08:50:36] [converterTests] [INFO] Created 8K PNG: 1_8K.png
+[2026-09-14 08:50:36] [converterTests] [INFO] Created 4K PNG: 1_4K.png
+[2026-09-14 08:50:36] [converterTests] [INFO] Full step: NFT assets
+[2026-09-14 08:50:36] [converterTests] [INFO] Full step: 2K PNG
+[2026-09-14 08:50:36] [converterTests] [INFO] Created 2K PNG: 1_2K.png
+[2026-09-14 08:50:36] [converterTests] [INFO] Full step: 3K PNG
+[2026-09-14 08:50:36] [converterTests] [INFO] Created 3K PNG: 1_3K.png
+[2026-09-14 08:50:36] [converterTests] [INFO] Full step: 3K JPG deliverables
+[2026-09-14 08:50:36] [converterTests] [INFO] Created 1MB JPG: 1_3K_1MB.jpg
+[2026-09-14 08:50:36] [converterTests] [INFO] Created NFT set: 1
+[2026-09-14 08:50:36] [converterTests] [INFO] Full step: 8K JPG deliverables
+[2026-09-14 08:50:36] [converterTests] [INFO] Created 5MB JPG: 1_3K_5MB.jpg
+[2026-09-14 08:50:36] [converterTests] [INFO] Created 1MB JPG: 1_8K_1MB.jpg
+[2026-09-14 08:50:36] [converterTests] [INFO] Created 2MB JPG: 1_8K_2MB.jpg
+[2026-09-14 08:50:36] [converterTests] [INFO] Created 20MB JPG: 1_8K_20MB.jpg
+[2026-09-14 08:50:36] [converterTests] [INFO] Created WAV: 1.wav
+[2026-09-14 08:50:36] [converterTests] [INFO] Full step: external RF64/BW64 audio deliverables
+[2026-09-14 08:50:37] [converterTests] [INFO] Created external FLAC: 1_RF64.flac
+[2026-09-14 08:50:37] [converterTests] [INFO] Created external WAV: 1_RF64.wav
+[2026-09-14 08:50:37] [converterTests] [INFO] Created external BW64 WAV: 1_BW64.wav
+[2026-09-14 08:50:37] [converterTests] [INFO] Full step: MP3 source is not the delivery standard (MP3 bitrate below minimum (got=192000 min=300000): /private/var/folders/k5/fzyk9mb96rqbc6_vnxv5mh3h0000gn/T/converter-tests.13E5BAC7-99E9-4119-999A-00126ED8AD65/Output/1_source.mp3); encoding 1.mp3
+[2026-09-14 08:50:38] [converterTests] [INFO] Created MP3: 1.mp3
+[2026-09-14 08:50:38] [converterTests] [INFO] Created M4A: 1.m4a
+[2026-09-14 08:50:38] [converterTests] [INFO] Full step: M4A -> MP4
+[2026-09-14 08:50:38] [converterTests] [INFO] Main video encoders: hevc_videotoolbox, libx264
+[2026-09-14 08:50:40] [converterTests] [INFO] Created MP4: 1_8K.mp4 [encoder=hevc_videotoolbox]
+[2026-09-14 08:50:40] [converterTests] [INFO] Full step: portrait short stills
+[2026-09-14 08:50:40] [converterTests] [INFO] Created portrait still: 1_Short_8K.png
+[2026-09-14 08:50:40] [converterTests] [INFO] Created 1MB JPG: 1_Short_8K_1MB.jpg
+[2026-09-14 08:50:40] [converterTests] [INFO] Created 2MB JPG: 1_Short_8K_2MB.jpg
+[2026-09-14 08:50:40] [converterTests] [INFO] Created portrait still: 1_Short_CenterCut_8K.png
+[2026-09-14 08:50:40] [converterTests] [INFO] Created 1MB JPG: 1_Short_CenterCut_8K_1MB.jpg
+[2026-09-14 08:50:40] [converterTests] [INFO] Created 2MB JPG: 1_Short_CenterCut_8K_2MB.jpg
+[2026-09-14 08:50:40] [converterTests] [INFO] Full step: PNG -> Short: 1_Short_8K.png
+[2026-09-14 08:50:40] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-14 08:50:41] [converterTests] [INFO] Created portrait short MP4: 1_8K_Short.mp4 [encoder=libx264]
+[2026-09-14 08:50:41] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-14 08:50:42] [converterTests] [INFO] Created portrait short MP4: 1_8K_Short_FullSong.mp4 [encoder=libx264]
+[2026-09-14 08:50:42] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-14 08:50:43] [converterTests] [INFO] Created portrait short MP4 (centre cut): 1_8K_Short_CenterCut.mp4 [encoder=libx264]
+[2026-09-14 08:50:43] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-14 08:50:44] [converterTests] [INFO] Created portrait short MP4 (centre cut): 1_8K_Short_FullSong_CenterCut.mp4 [encoder=libx264]
+[2026-09-14 08:50:44] [converterTests] [INFO] Full pipeline complete
+Test Case '-[converterTests.PipelineIntegrationTests testFullPipelineProducesExpectedOutputsAndLeavesNoScopedTemps]' passed (10.602 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testFullPipelineProducesFullSongShortForLongSourceAudio]' started.
+[2026-09-14 08:50:47] [converterTests] [INFO] Profile: youtube_master
+[2026-09-14 08:50:47] [converterTests] [INFO] Scheduler profile: total=3 image=2 audio=2 video=1
+[2026-09-14 08:50:47] [converterTests] [INFO] Full pipeline start
+[2026-09-14 08:50:47] [converterTests] [INFO] Source audio renamed: track.mp3 -> 1_source.mp3
+[2026-09-14 08:50:47] [converterTests] [INFO] Source audio: 1_source.mp3
+[2026-09-14 08:50:47] [converterTests] [INFO] Full step: PNG variants
+[2026-09-14 08:50:47] [converterTests] [INFO] Created 8K PNG: 1_8K.png
+[2026-09-14 08:50:47] [converterTests] [INFO] Created 4K PNG: 1_4K.png
+[2026-09-14 08:50:47] [converterTests] [INFO] Full step: NFT assets
+[2026-09-14 08:50:47] [converterTests] [INFO] Full step: 2K PNG
+[2026-09-14 08:50:47] [converterTests] [INFO] Created 2K PNG: 1_2K.png
+[2026-09-14 08:50:47] [converterTests] [INFO] Full step: 3K PNG
+[2026-09-14 08:50:47] [converterTests] [INFO] Created 3K PNG: 1_3K.png
+[2026-09-14 08:50:47] [converterTests] [INFO] Full step: 3K JPG deliverables
+[2026-09-14 08:50:47] [converterTests] [INFO] Created 1MB JPG: 1_3K_1MB.jpg
+[2026-09-14 08:50:47] [converterTests] [INFO] Created NFT set: 1
+[2026-09-14 08:50:47] [converterTests] [INFO] Full step: 8K JPG deliverables
+[2026-09-14 08:50:47] [converterTests] [INFO] Created 5MB JPG: 1_3K_5MB.jpg
+[2026-09-14 08:50:47] [converterTests] [INFO] Created 1MB JPG: 1_8K_1MB.jpg
+[2026-09-14 08:50:47] [converterTests] [INFO] Created 2MB JPG: 1_8K_2MB.jpg
+[2026-09-14 08:50:47] [converterTests] [INFO] Created 20MB JPG: 1_8K_20MB.jpg
+[2026-09-14 08:50:48] [converterTests] [INFO] Created WAV: 1.wav
+[2026-09-14 08:50:48] [converterTests] [INFO] Full step: external RF64/BW64 audio deliverables
+[2026-09-14 08:50:49] [converterTests] [INFO] Created external FLAC: 1_RF64.flac
+[2026-09-14 08:50:49] [converterTests] [INFO] Created external WAV: 1_RF64.wav
+[2026-09-14 08:50:51] [converterTests] [INFO] Created external BW64 WAV: 1_BW64.wav
+[2026-09-14 08:50:51] [converterTests] [INFO] Full step: MP3 source is not the delivery standard (MP3 bitrate below minimum (got=192000 min=300000): /private/var/folders/k5/fzyk9mb96rqbc6_vnxv5mh3h0000gn/T/converter-tests.0FB33825-8C32-4F13-A6A2-F69037D1EE1B/Output/1_source.mp3); encoding 1.mp3
+[2026-09-14 08:50:58] [converterTests] [INFO] Created M4A: 1.m4a
+[2026-09-14 08:50:59] [converterTests] [INFO] Created MP3: 1.mp3
+[2026-09-14 08:50:59] [converterTests] [INFO] Full step: M4A -> MP4
+[2026-09-14 08:50:59] [converterTests] [INFO] Main video encoders: hevc_videotoolbox, libx264
+[2026-09-14 08:51:06] [converterTests] [INFO] Created MP4: 1_8K.mp4 [encoder=hevc_videotoolbox]
+[2026-09-14 08:51:06] [converterTests] [INFO] Full step: portrait short stills
+[2026-09-14 08:51:06] [converterTests] [INFO] Created portrait still: 1_Short_8K.png
+[2026-09-14 08:51:06] [converterTests] [INFO] Created 1MB JPG: 1_Short_8K_1MB.jpg
+[2026-09-14 08:51:06] [converterTests] [INFO] Created 2MB JPG: 1_Short_8K_2MB.jpg
+[2026-09-14 08:51:06] [converterTests] [INFO] Created portrait still: 1_Short_CenterCut_8K.png
+[2026-09-14 08:51:06] [converterTests] [INFO] Created 1MB JPG: 1_Short_CenterCut_8K_1MB.jpg
+[2026-09-14 08:51:06] [converterTests] [INFO] Created 2MB JPG: 1_Short_CenterCut_8K_2MB.jpg
+[2026-09-14 08:51:06] [converterTests] [INFO] Full step: PNG -> Short: 1_Short_8K.png
+[2026-09-14 08:51:08] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-14 08:51:15] [converterTests] [INFO] Created portrait short MP4: 1_8K_Short.mp4 [encoder=libx264]
+[2026-09-14 08:51:18] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-14 08:51:25] [converterTests] [INFO] Created portrait short MP4: 1_8K_Short_FullSong.mp4 [encoder=libx264]
+[2026-09-14 08:51:25] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-14 08:51:30] [converterTests] [INFO] Created portrait short MP4 (centre cut): 1_8K_Short_CenterCut.mp4 [encoder=libx264]
+[2026-09-14 08:51:30] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-14 08:51:36] [converterTests] [INFO] Created portrait short MP4 (centre cut): 1_8K_Short_FullSong_CenterCut.mp4 [encoder=libx264]
+[2026-09-14 08:51:36] [converterTests] [INFO] Full pipeline complete
+Test Case '-[converterTests.PipelineIntegrationTests testFullPipelineProducesFullSongShortForLongSourceAudio]' passed (59.388 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testFullPipelineUsesNamedHorizontalAndVertical8KPNGs]' started.
+[2026-09-14 08:51:46] [converterTests] [INFO] Profile: youtube_master
+[2026-09-14 08:51:46] [converterTests] [INFO] Scheduler profile: total=3 image=2 audio=2 video=1
+[2026-09-14 08:51:46] [converterTests] [INFO] Full pipeline start
+[2026-09-14 08:51:46] [converterTests] [INFO] Source audio renamed: 463406_B_PH.flac -> 1_source.flac
+[2026-09-14 08:51:46] [converterTests] [INFO] Source audio: 1_source.flac
+[2026-09-14 08:51:46] [converterTests] [INFO] Full step: external RF64/BW64 audio deliverables
+[2026-09-14 08:51:46] [converterTests] [INFO] Full step: use Horizontal_8K.png for main MP4
+[2026-09-14 08:51:46] [converterTests] [INFO] Full step: use Vertical_8K.png for short MP4
+[2026-09-14 08:51:46] [converterTests] [INFO] Full step: image deliverables from Horizontal_8K.png
+[2026-09-14 08:51:46] [converterTests] [INFO] Full step: 4K PNG
+[2026-09-14 08:51:46] [converterTests] [INFO] Created 4K PNG: 1_4K.png
+[2026-09-14 08:51:46] [converterTests] [INFO] Full step: NFT assets
+[2026-09-14 08:51:46] [converterTests] [INFO] Created NFT set: 1
+[2026-09-14 08:51:46] [converterTests] [INFO] Full step: 3K PNG
+[2026-09-14 08:51:46] [converterTests] [INFO] Created 3K PNG: 1_3K.png
+[2026-09-14 08:51:46] [converterTests] [INFO] Full step: 3K JPG deliverables
+[2026-09-14 08:51:46] [converterTests] [INFO] Created 1MB JPG: 1_3K_1MB.jpg
+[2026-09-14 08:51:46] [converterTests] [INFO] Created 5MB JPG: 1_3K_5MB.jpg
+[2026-09-14 08:51:46] [converterTests] [INFO] Full step: 8K JPG deliverables
+[2026-09-14 08:51:46] [converterTests] [INFO] Created 1MB JPG: 1_8K_1MB.jpg
+[2026-09-14 08:51:46] [converterTests] [INFO] Created 2MB JPG: 1_8K_2MB.jpg
+[2026-09-14 08:51:46] [converterTests] [INFO] Created 20MB JPG: 1_8K_20MB.jpg
+[2026-09-14 08:51:46] [converterTests] [INFO] Full step: 2K PNG
+[2026-09-14 08:51:46] [converterTests] [INFO] Created external FLAC: 1_RF64.flac
+[2026-09-14 08:51:46] [converterTests] [INFO] Created 2K PNG: 1_2K.png
+[2026-09-14 08:51:46] [converterTests] [INFO] Created WAV: 1.wav
+[2026-09-14 08:51:47] [converterTests] [INFO] Created external WAV: 1_RF64.wav
+[2026-09-14 08:51:47] [converterTests] [INFO] Created external BW64 WAV: 1_BW64.wav
+[2026-09-14 08:51:48] [converterTests] [INFO] Created MP3: 1.mp3
+[2026-09-14 08:51:48] [converterTests] [INFO] Created M4A: 1.m4a
+[2026-09-14 08:51:48] [converterTests] [INFO] Full step: M4A -> MP4
+[2026-09-14 08:51:48] [converterTests] [INFO] Main video encoders: hevc_videotoolbox, libx264
+[2026-09-14 08:51:49] [converterTests] [INFO] Created MP4: 1_8K.mp4 [encoder=hevc_videotoolbox]
+[2026-09-14 08:51:49] [converterTests] [INFO] Full step: portrait short stills
+[2026-09-14 08:51:49] [converterTests] [INFO] Created portrait still: 1_Short_8K.png
+[2026-09-14 08:51:49] [converterTests] [INFO] Created 1MB JPG: 1_Short_8K_1MB.jpg
+[2026-09-14 08:51:49] [converterTests] [INFO] Created 2MB JPG: 1_Short_8K_2MB.jpg
+[2026-09-14 08:51:49] [converterTests] [INFO] Created portrait still: 1_Short_CenterCut_8K.png
+[2026-09-14 08:51:49] [converterTests] [INFO] Created 1MB JPG: 1_Short_CenterCut_8K_1MB.jpg
+[2026-09-14 08:51:49] [converterTests] [INFO] Created 2MB JPG: 1_Short_CenterCut_8K_2MB.jpg
+[2026-09-14 08:51:49] [converterTests] [INFO] Full step: PNG -> Short: 1_Short_8K.png
+[2026-09-14 08:51:50] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-14 08:51:51] [converterTests] [INFO] Created portrait short MP4: 1_8K_Short.mp4 [encoder=libx264]
+[2026-09-14 08:51:51] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-14 08:51:52] [converterTests] [INFO] Created portrait short MP4: 1_8K_Short_FullSong.mp4 [encoder=libx264]
+[2026-09-14 08:51:52] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-14 08:51:53] [converterTests] [INFO] Created portrait short MP4 (centre cut): 1_8K_Short_CenterCut.mp4 [encoder=libx264]
+[2026-09-14 08:51:53] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-14 08:51:54] [converterTests] [INFO] Created portrait short MP4 (centre cut): 1_8K_Short_FullSong_CenterCut.mp4 [encoder=libx264]
+[2026-09-14 08:51:54] [converterTests] [INFO] Full pipeline complete
+Test Case '-[converterTests.PipelineIntegrationTests testFullPipelineUsesNamedHorizontalAndVertical8KPNGs]' passed (9.069 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testFullRunClassifiesEXIFRotatedJPEGByDisplayedOrientation]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testFullRunClassifiesEXIFRotatedJPEGByDisplayedOrientation]' passed (0.284 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testFullRunNeverOverwritesItsMP3Source]' started.
+[2026-09-14 08:51:55] [converterTests] [INFO] Profile: youtube_master
+[2026-09-14 08:51:55] [converterTests] [INFO] Scheduler profile: total=3 image=2 audio=2 video=1
+[2026-09-14 08:51:55] [converterTests] [INFO] Full pipeline start
+[2026-09-14 08:51:55] [converterTests] [INFO] Source audio renamed: track.mp3 -> 1_source.mp3
+[2026-09-14 08:51:55] [converterTests] [INFO] Source audio: 1_source.mp3
+[2026-09-14 08:51:55] [converterTests] [INFO] Full step: PNG variants
+[2026-09-14 08:51:55] [converterTests] [INFO] Created 8K PNG: 1_8K.png
+[2026-09-14 08:51:55] [converterTests] [INFO] Created 4K PNG: 1_4K.png
+[2026-09-14 08:51:55] [converterTests] [INFO] Full step: NFT assets
+[2026-09-14 08:51:55] [converterTests] [INFO] Full step: 2K PNG
+[2026-09-14 08:51:55] [converterTests] [INFO] Created 2K PNG: 1_2K.png
+[2026-09-14 08:51:55] [converterTests] [INFO] Full step: 3K PNG
+[2026-09-14 08:51:55] [converterTests] [INFO] Created 3K PNG: 1_3K.png
+[2026-09-14 08:51:55] [converterTests] [INFO] Full step: 3K JPG deliverables
+[2026-09-14 08:51:55] [converterTests] [INFO] Created 1MB JPG: 1_3K_1MB.jpg
+[2026-09-14 08:51:55] [converterTests] [INFO] Created NFT set: 1
+[2026-09-14 08:51:55] [converterTests] [INFO] Full step: 8K JPG deliverables
+[2026-09-14 08:51:55] [converterTests] [INFO] Created 5MB JPG: 1_3K_5MB.jpg
+[2026-09-14 08:51:55] [converterTests] [INFO] Created 1MB JPG: 1_8K_1MB.jpg
+[2026-09-14 08:51:56] [converterTests] [INFO] Created 2MB JPG: 1_8K_2MB.jpg
+[2026-09-14 08:51:56] [converterTests] [INFO] Created 20MB JPG: 1_8K_20MB.jpg
+[2026-09-14 08:51:56] [converterTests] [INFO] Created WAV: 1.wav
+[2026-09-14 08:51:56] [converterTests] [INFO] Full step: external RF64/BW64 audio deliverables
+[2026-09-14 08:51:56] [converterTests] [INFO] Created external FLAC: 1_RF64.flac
+[2026-09-14 08:51:56] [converterTests] [INFO] Created external WAV: 1_RF64.wav
+[2026-09-14 08:51:57] [converterTests] [INFO] Created external BW64 WAV: 1_BW64.wav
+[2026-09-14 08:51:57] [converterTests] [INFO] Full step: MP3 source is not the delivery standard (Audio sample rate mismatch for /private/var/folders/k5/fzyk9mb96rqbc6_vnxv5mh3h0000gn/T/converter-tests.42CD4FB9-D9B8-4109-A037-1B33DEC4F7C7/Output/1_source.mp3 (got=Optional(44100) expected=48000)); encoding 1.mp3
+[2026-09-14 08:51:58] [converterTests] [INFO] Created MP3: 1.mp3
+[2026-09-14 08:51:58] [converterTests] [INFO] Created M4A: 1.m4a
+[2026-09-14 08:51:58] [converterTests] [INFO] Full step: M4A -> MP4
+[2026-09-14 08:51:58] [converterTests] [INFO] Main video encoders: hevc_videotoolbox, libx264
+[2026-09-14 08:51:59] [converterTests] [INFO] Created MP4: 1_8K.mp4 [encoder=hevc_videotoolbox]
+[2026-09-14 08:51:59] [converterTests] [INFO] Full step: portrait short stills
+[2026-09-14 08:51:59] [converterTests] [INFO] Created portrait still: 1_Short_8K.png
+[2026-09-14 08:51:59] [converterTests] [INFO] Created 1MB JPG: 1_Short_8K_1MB.jpg
+[2026-09-14 08:51:59] [converterTests] [INFO] Created 2MB JPG: 1_Short_8K_2MB.jpg
+[2026-09-14 08:51:59] [converterTests] [INFO] Created portrait still: 1_Short_CenterCut_8K.png
+[2026-09-14 08:51:59] [converterTests] [INFO] Created 1MB JPG: 1_Short_CenterCut_8K_1MB.jpg
+[2026-09-14 08:51:59] [converterTests] [INFO] Created 2MB JPG: 1_Short_CenterCut_8K_2MB.jpg
+[2026-09-14 08:51:59] [converterTests] [INFO] Full step: PNG -> Short: 1_Short_8K.png
+[2026-09-14 08:52:00] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-14 08:52:01] [converterTests] [INFO] Created portrait short MP4: 1_8K_Short.mp4 [encoder=libx264]
+[2026-09-14 08:52:01] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-14 08:52:02] [converterTests] [INFO] Created portrait short MP4: 1_8K_Short_FullSong.mp4 [encoder=libx264]
+[2026-09-14 08:52:02] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-14 08:52:03] [converterTests] [INFO] Created portrait short MP4 (centre cut): 1_8K_Short_CenterCut.mp4 [encoder=libx264]
+[2026-09-14 08:52:03] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-14 08:52:04] [converterTests] [INFO] Created portrait short MP4 (centre cut): 1_8K_Short_FullSong_CenterCut.mp4 [encoder=libx264]
+[2026-09-14 08:52:04] [converterTests] [INFO] Full pipeline complete
+Test Case '-[converterTests.PipelineIntegrationTests testFullRunNeverOverwritesItsMP3Source]' passed (9.104 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testFullRunNeverOverwritesItsWAVSource]' started.
+[2026-09-14 08:52:04] [converterTests] [INFO] Profile: youtube_master
+[2026-09-14 08:52:04] [converterTests] [INFO] Scheduler profile: total=3 image=2 audio=2 video=1
+[2026-09-14 08:52:04] [converterTests] [INFO] Full pipeline start
+[2026-09-14 08:52:04] [converterTests] [INFO] Source audio renamed: track.wav -> 1_source.wav
+[2026-09-14 08:52:04] [converterTests] [INFO] Source audio: 1_source.wav
+[2026-09-14 08:52:04] [converterTests] [INFO] Full step: external RF64/BW64 audio deliverables
+[2026-09-14 08:52:04] [converterTests] [INFO] Full step: PNG variants
+[2026-09-14 08:52:04] [converterTests] [INFO] Created 8K PNG: 1_8K.png
+[2026-09-14 08:52:04] [converterTests] [INFO] Created 4K PNG: 1_4K.png
+[2026-09-14 08:52:04] [converterTests] [INFO] Full step: NFT assets
+[2026-09-14 08:52:05] [converterTests] [INFO] Created NFT set: 1
+[2026-09-14 08:52:05] [converterTests] [INFO] Full step: 2K PNG
+[2026-09-14 08:52:05] [converterTests] [INFO] Created 2K PNG: 1_2K.png
+[2026-09-14 08:52:05] [converterTests] [INFO] Full step: 3K PNG
+[2026-09-14 08:52:05] [converterTests] [INFO] Created 3K PNG: 1_3K.png
+[2026-09-14 08:52:05] [converterTests] [INFO] Full step: 3K JPG deliverables
+[2026-09-14 08:52:05] [converterTests] [INFO] Created 1MB JPG: 1_3K_1MB.jpg
+[2026-09-14 08:52:05] [converterTests] [INFO] Created 5MB JPG: 1_3K_5MB.jpg
+[2026-09-14 08:52:05] [converterTests] [INFO] Full step: 8K JPG deliverables
+[2026-09-14 08:52:05] [converterTests] [INFO] Created 1MB JPG: 1_8K_1MB.jpg
+[2026-09-14 08:52:05] [converterTests] [INFO] Created 2MB JPG: 1_8K_2MB.jpg
+[2026-09-14 08:52:05] [converterTests] [INFO] Created external FLAC: 1_RF64.flac
+[2026-09-14 08:52:05] [converterTests] [INFO] Created 20MB JPG: 1_8K_20MB.jpg
+[2026-09-14 08:52:05] [converterTests] [INFO] Created WAV: 1.wav
+[2026-09-14 08:52:05] [converterTests] [INFO] Created external WAV: 1_RF64.wav
+[2026-09-14 08:52:05] [converterTests] [INFO] Created external BW64 WAV: 1_BW64.wav
+[2026-09-14 08:52:06] [converterTests] [INFO] Created MP3: 1.mp3
+[2026-09-14 08:52:06] [converterTests] [INFO] Created M4A: 1.m4a
+[2026-09-14 08:52:06] [converterTests] [INFO] Full step: M4A -> MP4
+[2026-09-14 08:52:07] [converterTests] [INFO] Main video encoders: hevc_videotoolbox, libx264
+[2026-09-14 08:52:08] [converterTests] [INFO] Created MP4: 1_8K.mp4 [encoder=hevc_videotoolbox]
+[2026-09-14 08:52:08] [converterTests] [INFO] Full step: portrait short stills
+[2026-09-14 08:52:08] [converterTests] [INFO] Created portrait still: 1_Short_8K.png
+[2026-09-14 08:52:08] [converterTests] [INFO] Created 1MB JPG: 1_Short_8K_1MB.jpg
+[2026-09-14 08:52:08] [converterTests] [INFO] Created 2MB JPG: 1_Short_8K_2MB.jpg
+[2026-09-14 08:52:08] [converterTests] [INFO] Created portrait still: 1_Short_CenterCut_8K.png
+[2026-09-14 08:52:08] [converterTests] [INFO] Created 1MB JPG: 1_Short_CenterCut_8K_1MB.jpg
+[2026-09-14 08:52:08] [converterTests] [INFO] Created 2MB JPG: 1_Short_CenterCut_8K_2MB.jpg
+[2026-09-14 08:52:08] [converterTests] [INFO] Full step: PNG -> Short: 1_Short_8K.png
+[2026-09-14 08:52:08] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-14 08:52:09] [converterTests] [INFO] Created portrait short MP4: 1_8K_Short.mp4 [encoder=libx264]
+[2026-09-14 08:52:10] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-14 08:52:11] [converterTests] [INFO] Created portrait short MP4: 1_8K_Short_FullSong.mp4 [encoder=libx264]
+[2026-09-14 08:52:11] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-14 08:52:11] [converterTests] [INFO] Created portrait short MP4 (centre cut): 1_8K_Short_CenterCut.mp4 [encoder=libx264]
+[2026-09-14 08:52:12] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-14 08:52:12] [converterTests] [INFO] Created portrait short MP4 (centre cut): 1_8K_Short_FullSong_CenterCut.mp4 [encoder=libx264]
+[2026-09-14 08:52:12] [converterTests] [INFO] Full pipeline complete
+Test Case '-[converterTests.PipelineIntegrationTests testFullRunNeverOverwritesItsWAVSource]' passed (8.442 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testFullRunPreflightsTheSourceBeforeRenamingIt]' started.
+[2026-09-14 08:52:13] [converterTests] [INFO] Full pipeline start
+Test Case '-[converterTests.PipelineIntegrationTests testFullRunPreflightsTheSourceBeforeRenamingIt]' passed (0.030 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testFullRunTreatsASquareSourceAsTheLandscapeImage]' started.
+[2026-09-14 08:52:13] [converterTests] [WARN] Square source image 'artwork.png' is treated as the landscape master; it will be fitted into a 320x180 frame.
+Test Case '-[converterTests.PipelineIntegrationTests testFullRunTreatsASquareSourceAsTheLandscapeImage]' passed (0.146 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testImageBatchActionsSkipPortraitShortStills]' started.
+[2026-09-14 08:52:13] [converterTests] [INFO] PNG variants: art_Short_8K_reference.png
+[2026-09-14 08:52:13] [converterTests] [INFO] Created 8K PNG: art_Short_8K_reference_8K.png
+[2026-09-14 08:52:13] [converterTests] [INFO] Created 4K PNG: art_Short_8K_reference_4K.png
+[2026-09-14 08:52:13] [converterTests] [INFO] Run_pix image: art_Short_8K_reference_4K.png
+[2026-09-14 08:52:13] [converterTests] [INFO] Full step: PNG variants
+[2026-09-14 08:52:13] [converterTests] [INFO] Skip existing 8K PNG: art_Short_8K_reference_8K.png
+[2026-09-14 08:52:13] [converterTests] [INFO] Skip existing 4K PNG: art_Short_8K_reference_4K.png
+[2026-09-14 08:52:13] [converterTests] [INFO] Full step: NFT assets
+[2026-09-14 08:52:13] [converterTests] [INFO] Full step: 2K PNG
+[2026-09-14 08:52:13] [converterTests] [INFO] Created 2K PNG: art_Short_8K_reference_2K.png
+[2026-09-14 08:52:13] [converterTests] [INFO] Full step: 3K PNG
+[2026-09-14 08:52:13] [converterTests] [INFO] Created 3K PNG: art_Short_8K_reference_3K.png
+[2026-09-14 08:52:13] [converterTests] [INFO] Full step: 3K JPG deliverables
+[2026-09-14 08:52:13] [converterTests] [INFO] Created NFT set: art_Short_8K_reference
+[2026-09-14 08:52:13] [converterTests] [INFO] Full step: 8K JPG deliverables
+[2026-09-14 08:52:13] [converterTests] [INFO] Created 1MB JPG: art_Short_8K_reference_3K_1MB.jpg
+[2026-09-14 08:52:13] [converterTests] [INFO] Created 1MB JPG: art_Short_8K_reference_8K_1MB.jpg
+[2026-09-14 08:52:13] [converterTests] [INFO] Created 5MB JPG: art_Short_8K_reference_3K_5MB.jpg
+[2026-09-14 08:52:13] [converterTests] [INFO] Created 2MB JPG: art_Short_8K_reference_8K_2MB.jpg
+[2026-09-14 08:52:13] [converterTests] [INFO] Created 20MB JPG: art_Short_8K_reference_8K_20MB.jpg
+[2026-09-14 08:52:13] [converterTests] [INFO] Run_pix image: art_Short_8K_reference_8K.png
+[2026-09-14 08:52:13] [converterTests] [INFO] Full step: PNG variants
+[2026-09-14 08:52:13] [converterTests] [INFO] Skip existing 8K PNG: art_Short_8K_reference_8K.png
+[2026-09-14 08:52:13] [converterTests] [INFO] Skip existing 4K PNG: art_Short_8K_reference_4K.png
+[2026-09-14 08:52:13] [converterTests] [INFO] Full step: NFT assets
+[2026-09-14 08:52:13] [converterTests] [INFO] Full step: 2K PNG
+[2026-09-14 08:52:13] [converterTests] [INFO] Skip existing 2K PNG: art_Short_8K_reference_2K.png
+[2026-09-14 08:52:13] [converterTests] [INFO] Full step: 3K PNG
+[2026-09-14 08:52:13] [converterTests] [INFO] Skip existing 3K PNG: art_Short_8K_reference_3K.png
+[2026-09-14 08:52:13] [converterTests] [INFO] Full step: 3K JPG deliverables
+[2026-09-14 08:52:13] [converterTests] [INFO] Skip existing 1MB JPG: art_Short_8K_reference_3K_1MB.jpg
+[2026-09-14 08:52:13] [converterTests] [INFO] Skip existing 5MB JPG: art_Short_8K_reference_3K_5MB.jpg
+[2026-09-14 08:52:13] [converterTests] [INFO] Full step: 8K JPG deliverables
+[2026-09-14 08:52:13] [converterTests] [INFO] Skip existing NFT set: art_Short_8K_reference
+[2026-09-14 08:52:13] [converterTests] [INFO] Skip existing 1MB JPG: art_Short_8K_reference_8K_1MB.jpg
+[2026-09-14 08:52:13] [converterTests] [INFO] Skip existing 2MB JPG: art_Short_8K_reference_8K_2MB.jpg
+[2026-09-14 08:52:13] [converterTests] [INFO] Skip existing 20MB JPG: art_Short_8K_reference_8K_20MB.jpg
+[2026-09-14 08:52:13] [converterTests] [INFO] Run_pix image: art_Short_8K_reference.png
+[2026-09-14 08:52:13] [converterTests] [INFO] Full step: PNG variants
+[2026-09-14 08:52:13] [converterTests] [INFO] Skip existing 8K PNG: art_Short_8K_reference_8K.png
+[2026-09-14 08:52:13] [converterTests] [INFO] Skip existing 4K PNG: art_Short_8K_reference_4K.png
+[2026-09-14 08:52:13] [converterTests] [INFO] Full step: NFT assets
+[2026-09-14 08:52:13] [converterTests] [INFO] Full step: 2K PNG
+[2026-09-14 08:52:13] [converterTests] [INFO] Skip existing 2K PNG: art_Short_8K_reference_2K.png
+[2026-09-14 08:52:13] [converterTests] [INFO] Full step: 3K PNG
+[2026-09-14 08:52:13] [converterTests] [INFO] Skip existing 3K PNG: art_Short_8K_reference_3K.png
+[2026-09-14 08:52:13] [converterTests] [INFO] Full step: 3K JPG deliverables
+[2026-09-14 08:52:13] [converterTests] [INFO] Skip existing NFT set: art_Short_8K_reference
+[2026-09-14 08:52:13] [converterTests] [INFO] Full step: 8K JPG deliverables
+[2026-09-14 08:52:13] [converterTests] [INFO] Skip existing 1MB JPG: art_Short_8K_reference_3K_1MB.jpg
+[2026-09-14 08:52:13] [converterTests] [INFO] Skip existing 1MB JPG: art_Short_8K_reference_8K_1MB.jpg
+[2026-09-14 08:52:13] [converterTests] [INFO] Skip existing 5MB JPG: art_Short_8K_reference_3K_5MB.jpg
+[2026-09-14 08:52:13] [converterTests] [INFO] Skip existing 2MB JPG: art_Short_8K_reference_8K_2MB.jpg
+[2026-09-14 08:52:13] [converterTests] [INFO] Skip existing 20MB JPG: art_Short_8K_reference_8K_20MB.jpg
+[2026-09-14 08:52:13] [converterTests] [INFO] PNG -> JPG: art_Short_8K_reference_2K.png
+[2026-09-14 08:52:13] [converterTests] [INFO] Created JPG image: art_Short_8K_reference_2K.jpg
+[2026-09-14 08:52:13] [converterTests] [INFO] PNG -> JPG: art_Short_8K_reference_3K.png
+[2026-09-14 08:52:13] [converterTests] [INFO] Created JPG image: art_Short_8K_reference_3K.jpg
+[2026-09-14 08:52:13] [converterTests] [INFO] PNG -> JPG: art_Short_8K_reference_4K.png
+[2026-09-14 08:52:13] [converterTests] [INFO] Created JPG image: art_Short_8K_reference_4K.jpg
+[2026-09-14 08:52:13] [converterTests] [INFO] PNG -> JPG: art_Short_8K_reference_8K.png
+[2026-09-14 08:52:13] [converterTests] [INFO] Created JPG image: art_Short_8K_reference_8K.jpg
+[2026-09-14 08:52:13] [converterTests] [INFO] PNG -> JPG: art_Short_8K_reference_NFT2K.png
+[2026-09-14 08:52:13] [converterTests] [INFO] Created JPG image: art_Short_8K_reference_NFT2K.jpg
+[2026-09-14 08:52:13] [converterTests] [INFO] PNG -> JPG: art_Short_8K_reference_NFT3K.png
+[2026-09-14 08:52:13] [converterTests] [INFO] Created JPG image: art_Short_8K_reference_NFT3K.jpg
+[2026-09-14 08:52:13] [converterTests] [INFO] PNG -> JPG: art_Short_8K_reference_NFT8K.png
+[2026-09-14 08:52:14] [converterTests] [INFO] Created JPG image: art_Short_8K_reference_NFT8K.jpg
+[2026-09-14 08:52:14] [converterTests] [INFO] PNG -> JPG: art_Short_8K_reference.png
+[2026-09-14 08:52:14] [converterTests] [INFO] Created JPG image: art_Short_8K_reference.jpg
+Test Case '-[converterTests.PipelineIntegrationTests testImageBatchActionsSkipPortraitShortStills]' passed (0.828 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testImageConversionsAndDerivativesProduceVerifiedOutputs]' started.
+[2026-09-14 08:52:14] [converterTests] [INFO] Created PNG: cover.png
+[2026-09-14 08:52:15] [converterTests] [INFO] Created PNG: scan.png
+[2026-09-14 08:52:15] [converterTests] [INFO] Created JPG image: poster.jpg
+[2026-09-14 08:52:15] [converterTests] [INFO] Created 8K PNG: poster_8K.png
+[2026-09-14 08:52:16] [converterTests] [INFO] Created 4K PNG: poster_4K.png
+[2026-09-14 08:52:16] [converterTests] [INFO] Created NFT set: poster
+[2026-09-14 08:52:17] [converterTests] [INFO] Created 3K PNG: poster_3K.png
+[2026-09-14 08:52:17] [converterTests] [INFO] Created 2K PNG: poster_2K.png
+[2026-09-14 08:52:18] [converterTests] [INFO] Created 1MB JPG: poster_8K_1MB.jpg
+Test Case '-[converterTests.PipelineIntegrationTests testImageConversionsAndDerivativesProduceVerifiedOutputs]' passed (4.319 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testImageOutputsAreNormalizedToSRGB]' started.
+[2026-09-14 08:52:18] [converterTests] [INFO] Created PNG: cmyk_source.png
+Test Case '-[converterTests.PipelineIntegrationTests testImageOutputsAreNormalizedToSRGB]' passed (0.497 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testImagePreflightDecodesEachFileVersionOnce]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testImagePreflightDecodesEachFileVersionOnce]' passed (1.018 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testLoudnessContinueOnErrorNormalizesRemainingFilesThenSummarizes]' started.
+[2026-09-14 08:52:20] [converterTests] [INFO] Loudness normalize a.wav: integrated target=-12 LUFS
+[2026-09-14 08:52:22] [converterTests] [INFO] Created loudness-normalized media: a_loudness_m12LUFS.wav [integrated=-12.05 LUFS gain=9.75 dB]
+[2026-09-14 08:52:22] [converterTests] [INFO] Loudness normalize b.wav: integrated target=-12 LUFS
+[2026-09-14 08:52:22] [converterTests] [ERROR] Loudness normalize failed for b.wav: WAV format mismatch for /private/var/folders/k5/fzyk9mb96rqbc6_vnxv5mh3h0000gn/T/converter-tests.6DB0E95C-DC04-4E1A-9F0F-E45357C0C5A6/Output/b.wav (got='' expected='WAVE')
+[2026-09-14 08:52:22] [converterTests] [INFO] Loudness normalize c.wav: integrated target=-12 LUFS
+[2026-09-14 08:52:25] [converterTests] [INFO] Created loudness-normalized media: c_loudness_m12LUFS.wav [integrated=-11.95 LUFS gain=9.65 dB]
+Test Case '-[converterTests.PipelineIntegrationTests testLoudnessContinueOnErrorNormalizesRemainingFilesThenSummarizes]' passed (6.567 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testLoudnessDoesNotApplyBassBoost]' started.
+[2026-09-14 08:52:29] [converterTests] [INFO] Created loudness-normalized media: two_tone_loudness_m12LUFS.wav [integrated=-12.05 LUFS gain=4.35 dB]
+[2026-09-14 08:52:31] [converterTests] [INFO] Created bass-adjusted media: two_tone_bass.wav
+Test Case '-[converterTests.PipelineIntegrationTests testLoudnessDoesNotApplyBassBoost]' passed (5.798 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testLoudnessNormalizeKeepsPeakConstrainedMP4Transparent]' started.
+[2026-09-14 08:52:36] [converterTests] [WARN] Created closest-safe loudness media without compression: peak_limited_loudness_m12LUFS.mp4 [integrated=-14.85 LUFS target=-12.00 gain=1.56 dB requested=4.35 dB peak=-2.56 dBFS]
+Test Case '-[converterTests.PipelineIntegrationTests testLoudnessNormalizeKeepsPeakConstrainedMP4Transparent]' passed (5.268 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testLoudnessNormalizeProcessesAudioAndMP4Inputs]' started.
+[2026-09-14 08:52:37] [converterTests] [INFO] Loudness normalize level_flac.flac: integrated target=-12 LUFS
+[2026-09-14 08:52:40] [converterTests] [INFO] Created loudness-normalized media: level_flac_loudness_m12LUFS.flac [integrated=-12.05 LUFS gain=9.75 dB]
+[2026-09-14 08:52:40] [converterTests] [INFO] Loudness normalize level_m4a.m4a: integrated target=-12 LUFS
+[2026-09-14 08:52:43] [converterTests] [INFO] Created loudness-normalized media: level_m4a_loudness_m12LUFS.m4a [integrated=-12.00 LUFS gain=6.79 dB]
+[2026-09-14 08:52:43] [converterTests] [INFO] Loudness normalize level_mp3.mp3: integrated target=-12 LUFS
+[2026-09-14 08:52:46] [converterTests] [INFO] Created loudness-normalized media: level_mp3_loudness_m12LUFS.mp3 [integrated=-12.05 LUFS gain=4.05 dB]
+[2026-09-14 08:52:46] [converterTests] [INFO] Loudness normalize level_video.mp4: integrated target=-12 LUFS
+[2026-09-14 08:52:49] [converterTests] [INFO] Created loudness-normalized media: level_video_loudness_m12LUFS.mp4 [integrated=-12.05 LUFS gain=9.75 dB]
+[2026-09-14 08:52:49] [converterTests] [INFO] Loudness normalize level_wav.wav: integrated target=-12 LUFS
+[2026-09-14 08:52:52] [converterTests] [INFO] Created loudness-normalized media: level_wav_loudness_m12LUFS.wav [integrated=-12.05 LUFS gain=15.75 dB]
+[2026-09-14 08:52:52] [converterTests] [INFO] Loudness normalize complete: processed=5 failed=0
+Test Case '-[converterTests.PipelineIntegrationTests testLoudnessNormalizeProcessesAudioAndMP4Inputs]' passed (18.902 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testLoudnessPreservingQCPolicyMeasuresOnlyTheLeadingLimitDurationSeconds]' started.
+[2026-09-14 08:52:59] [converterTests] [INFO] Source already exceeds delivery QC on: true peak -0.57 dBTP (limit -1.00). Verifying the render does not worsen these, rather than altering the audio.
+[2026-09-14 08:52:59] [converterTests] [INFO] Source already exceeds delivery QC on: true peak -0.57 dBTP (limit -1.00). Verifying the render does not worsen these, rather than altering the audio.
+Test Case '-[converterTests.PipelineIntegrationTests testLoudnessPreservingQCPolicyMeasuresOnlyTheLeadingLimitDurationSeconds]' passed (3.097 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testLoudnessPreservingQCPolicyRebasesOnlyTheBreachedTruePeakCeiling]' started.
+[2026-09-14 08:53:01] [converterTests] [INFO] Source already exceeds delivery QC on: true peak -0.57 dBTP (limit -1.00). Verifying the render does not worsen these, rather than altering the audio.
+Test Case '-[converterTests.PipelineIntegrationTests testLoudnessPreservingQCPolicyRebasesOnlyTheBreachedTruePeakCeiling]' passed (1.599 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testLoudnessPreservingQCPolicyReturnsTheInputPolicyForACleanSource]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testLoudnessPreservingQCPolicyReturnsTheInputPolicyForACleanSource]' passed (1.550 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testLoudnessStopsAtFirstFailureWithoutContinueOnError]' started.
+[2026-09-14 08:53:02] [converterTests] [INFO] Loudness normalize a.wav: integrated target=-12 LUFS
+[2026-09-14 08:53:05] [converterTests] [INFO] Created loudness-normalized media: a_loudness_m12LUFS.wav [integrated=-12.05 LUFS gain=9.75 dB]
+[2026-09-14 08:53:05] [converterTests] [INFO] Loudness normalize b.wav: integrated target=-12 LUFS
+[2026-09-14 08:53:05] [converterTests] [ERROR] Loudness normalize failed for b.wav: WAV format mismatch for /private/var/folders/k5/fzyk9mb96rqbc6_vnxv5mh3h0000gn/T/converter-tests.0C75D2AA-2FB8-4870-A9AA-26B07021D226/Output/b.wav (got='' expected='WAVE')
+Test Case '-[converterTests.PipelineIntegrationTests testLoudnessStopsAtFirstFailureWithoutContinueOnError]' passed (3.367 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testLoudScanReportsFourSummaryLines]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testLoudScanReportsFourSummaryLines]' passed (1.816 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testLUFSRebaseMovesOnlyTheBreachedBound]' started.
+[2026-09-14 08:53:09] [converterTests] [INFO] Source already exceeds delivery QC on: integrated loudness -25.25 LUFS (minimum -20.00). Verifying the render does not worsen these, rather than altering the audio.
+[2026-09-14 08:53:10] [converterTests] [INFO] Source already exceeds delivery QC on: true peak 0.01 dBTP (limit 0.00); integrated loudness -0.15 LUFS (maximum -4.00). Verifying the render does not worsen these, rather than altering the audio.
+Test Case '-[converterTests.PipelineIntegrationTests testLUFSRebaseMovesOnlyTheBreachedBound]' passed (2.517 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testMainVideoRenderFallsBackToSoftwareEncoder]' started.
+[2026-09-14 08:53:11] [converterTests] [INFO] Main video encoders: libx264
+[2026-09-14 08:53:13] [converterTests] [INFO] Created MP4: track_8K.mp4 [encoder=libx264]
+Test Case '-[converterTests.PipelineIntegrationTests testMainVideoRenderFallsBackToSoftwareEncoder]' passed (3.615 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testMasterCanonicalWAVFallsBackWhenTwoPassMeasurementIsOutOfRange]' started.
+[2026-09-14 08:53:14] [converterTests] [INFO] Normalize WAV before mastering: too_hot.wav
+[2026-09-14 08:53:14] [converterTests] [INFO] Normalize WAV: too_hot.wav
+[2026-09-14 08:53:16] [converterTests] [INFO] Master WAV: too_hot.wav
+[2026-09-14 08:53:16] [converterTests] [WARN] Two-pass mastering measurement out of range for too_hot.wav; using one-pass loudnorm fallback
+[2026-09-14 08:53:17] [converterTests] [INFO] Mastered WAV: too_hot.wav [one-pass]
+Test Case '-[converterTests.PipelineIntegrationTests testMasterCanonicalWAVFallsBackWhenTwoPassMeasurementIsOutOfRange]' passed (4.118 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testMasterCanonicalWAVRemediatesOutOfPolicyLoudness]' started.
+[2026-09-14 08:53:18] [converterTests] [INFO] Normalize WAV before mastering: needs_master.wav
+[2026-09-14 08:53:18] [converterTests] [INFO] Normalize WAV: needs_master.wav
+[2026-09-14 08:53:20] [converterTests] [INFO] Master WAV: needs_master.wav
+[2026-09-14 08:53:21] [converterTests] [INFO] Mastered WAV: needs_master.wav [two-pass]
+Test Case '-[converterTests.PipelineIntegrationTests testMasterCanonicalWAVRemediatesOutOfPolicyLoudness]' passed (4.417 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testMasterCommandProducesMasteredOutputsWithinPolicy]' started.
+[2026-09-14 08:53:22] [converterTests] [INFO] Master needs_master.wav: target=-40 LUFS
+[2026-09-14 08:53:24] [converterTests] [INFO] Master WAV: .converter-tmp.node4_local.45792.84aca444-1a6e-4aa2-92b0-80fa44ffa07a.needs_master_master_source.C17A8C45-28A4-4FD8-854D-32EC9AF593D9.wav
+[2026-09-14 08:53:25] [converterTests] [INFO] Mastered WAV: .converter-tmp.node4_local.45792.84aca444-1a6e-4aa2-92b0-80fa44ffa07a.needs_master_master_source.C17A8C45-28A4-4FD8-854D-32EC9AF593D9.wav [two-pass]
+[2026-09-14 08:53:26] [converterTests] [INFO] Created mastered media: needs_master_mastered.wav
+[2026-09-14 08:53:26] [converterTests] [INFO] Master complete: processed=1 failed=0
+Test Case '-[converterTests.PipelineIntegrationTests testMasterCommandProducesMasteredOutputsWithinPolicy]' passed (4.850 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testMP3CleanDoesNotEnforceDeliveryQCOnStreamCopyCleanup]' started.
+[2026-09-14 08:53:28] [converterTests] [INFO] Cleaned MP3 metadata: hot_artwork_track.mp3
+Test Case '-[converterTests.PipelineIntegrationTests testMP3CleanDoesNotEnforceDeliveryQCOnStreamCopyCleanup]' passed (2.100 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testMP3CleanIsAStreamCopyThatPreservesTheAudio]' started.
+[2026-09-14 08:53:30] [converterTests] [INFO] Cleaned MP3 metadata: tagged_441.mp3
+Test Case '-[converterTests.PipelineIntegrationTests testMP3CleanIsAStreamCopyThatPreservesTheAudio]' passed (1.649 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testMP3CleanRemovesArtworkAndExtraStreams]' started.
+[2026-09-14 08:53:32] [converterTests] [INFO] Cleaned MP3 metadata: artwork_track.mp3
+Test Case '-[converterTests.PipelineIntegrationTests testMP3CleanRemovesArtworkAndExtraStreams]' passed (2.018 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testMP3HashAcceptsArtworkAndNonProjectBitrateMP3]' started.
+[2026-09-14 08:53:33] [converterTests] [INFO] Hash MP3 filenames
+[2026-09-14 08:53:33] [converterTests] [INFO] Renamed mp3: hash_artwork_track.mp3 -> 1199DB3B.mp3
+Test Case '-[converterTests.PipelineIntegrationTests testMP3HashAcceptsArtworkAndNonProjectBitrateMP3]' passed (0.548 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testMP4ToShortDoesNotReingestItsOwnShortDeliverables]' started.
+[2026-09-14 08:53:34] [converterTests] [INFO] MP4 -> Short: clip.mp4
+[2026-09-14 08:53:35] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-14 08:53:37] [converterTests] [INFO] Created short MP4: clip_Short.mp4 [encoder=libx264]
+Test Case '-[converterTests.PipelineIntegrationTests testMP4ToShortDoesNotReingestItsOwnShortDeliverables]' passed (4.269 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testMP4ToShortUsesTheConfiguredScaler]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testMP4ToShortUsesTheConfiguredScaler]' passed (0.002 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testNFTToShortAcceptsPortrait8KPNGWithoutLandscapeMainRender]' started.
+[2026-09-14 08:53:38] [converterTests] [INFO] NFT -> Short source audio: song.flac
+[2026-09-14 08:53:38] [converterTests] [INFO] NFT -> Short source image: Vertical_8K.png
+[2026-09-14 08:53:39] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-14 08:53:41] [converterTests] [INFO] Created portrait short MP4: song_8K_Short.mp4 [encoder=libx264]
+[2026-09-14 08:53:42] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-14 08:53:45] [converterTests] [INFO] Created portrait short MP4: song_8K_Short_FullSong.mp4 [encoder=libx264]
+[2026-09-14 08:53:45] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-14 08:53:47] [converterTests] [INFO] Created portrait short MP4 (centre cut): song_8K_Short_CenterCut.mp4 [encoder=libx264]
+[2026-09-14 08:53:47] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-14 08:53:49] [converterTests] [INFO] Created portrait short MP4 (centre cut): song_8K_Short_FullSong_CenterCut.mp4 [encoder=libx264]
+Test Case '-[converterTests.PipelineIntegrationTests testNFTToShortAcceptsPortrait8KPNGWithoutLandscapeMainRender]' passed (12.966 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testNFTToShortBuildsShortFromGenericAudioAndNFTImage]' started.
+[2026-09-14 08:53:51] [converterTests] [INFO] Short step: create NFT8K image
+[2026-09-14 08:53:51] [converterTests] [INFO] Created 8K PNG: poster_8K.png
+[2026-09-14 08:53:51] [converterTests] [INFO] Created 4K PNG: poster_4K.png
+[2026-09-14 08:53:52] [converterTests] [INFO] Created NFT set: poster
+[2026-09-14 08:53:52] [converterTests] [INFO] NFT -> Short source audio: song.aac
+[2026-09-14 08:53:52] [converterTests] [INFO] NFT -> Short source image: poster_NFT8K.png
+[2026-09-14 08:53:53] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-14 08:53:56] [converterTests] [INFO] Created portrait short MP4: song_8K_Short.mp4 [encoder=libx264]
+[2026-09-14 08:53:57] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-14 08:53:59] [converterTests] [INFO] Created portrait short MP4: song_8K_Short_FullSong.mp4 [encoder=libx264]
+[2026-09-14 08:53:59] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-14 08:54:01] [converterTests] [INFO] Created portrait short MP4 (centre cut): song_8K_Short_CenterCut.mp4 [encoder=libx264]
+[2026-09-14 08:54:01] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-14 08:54:03] [converterTests] [INFO] Created portrait short MP4 (centre cut): song_8K_Short_FullSong_CenterCut.mp4 [encoder=libx264]
+Test Case '-[converterTests.PipelineIntegrationTests testNFTToShortBuildsShortFromGenericAudioAndNFTImage]' passed (14.535 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testNFTToShortComparesAgainstTrimmedSourceSegmentLoudness]' started.
+[2026-09-14 08:54:05] [converterTests] [INFO] Short step: create NFT8K image
+[2026-09-14 08:54:05] [converterTests] [INFO] Created 8K PNG: poster_8K.png
+[2026-09-14 08:54:06] [converterTests] [INFO] Created 4K PNG: poster_4K.png
+[2026-09-14 08:54:06] [converterTests] [INFO] Created NFT set: poster
+[2026-09-14 08:54:07] [converterTests] [INFO] NFT -> Short source audio: dynamic_loudness.mp3
+[2026-09-14 08:54:07] [converterTests] [INFO] NFT -> Short source image: poster_NFT8K.png
+[2026-09-14 08:54:08] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-14 08:54:10] [converterTests] [INFO] Created portrait short MP4: dynamic_loudness_8K_Short.mp4 [encoder=libx264]
+[2026-09-14 08:54:11] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-14 08:54:13] [converterTests] [INFO] Created portrait short MP4: dynamic_loudness_8K_Short_FullSong.mp4 [encoder=libx264]
+[2026-09-14 08:54:13] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-14 08:54:16] [converterTests] [INFO] Created portrait short MP4 (centre cut): dynamic_loudness_8K_Short_CenterCut.mp4 [encoder=libx264]
+[2026-09-14 08:54:16] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-14 08:54:18] [converterTests] [INFO] Created portrait short MP4 (centre cut): dynamic_loudness_8K_Short_FullSong_CenterCut.mp4 [encoder=libx264]
+Test Case '-[converterTests.PipelineIntegrationTests testNFTToShortComparesAgainstTrimmedSourceSegmentLoudness]' passed (13.133 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testNFTToShortPreservesSourceLoudnessOnLandscapePath]' started.
+[2026-09-14 08:54:18] [converterTests] [INFO] Short step: create NFT8K image
+[2026-09-14 08:54:19] [converterTests] [INFO] Created 8K PNG: poster_8K.png
+[2026-09-14 08:54:19] [converterTests] [INFO] Created 4K PNG: poster_4K.png
+[2026-09-14 08:54:20] [converterTests] [INFO] Created NFT set: poster
+[2026-09-14 08:54:20] [converterTests] [INFO] NFT -> Short source audio: loud_song.flac
+[2026-09-14 08:54:20] [converterTests] [INFO] NFT -> Short source image: poster_NFT8K.png
+[2026-09-14 08:54:21] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-14 08:54:24] [converterTests] [INFO] Created portrait short MP4: loud_song_8K_Short.mp4 [encoder=libx264]
+[2026-09-14 08:54:25] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-14 08:54:27] [converterTests] [INFO] Created portrait short MP4: loud_song_8K_Short_FullSong.mp4 [encoder=libx264]
+[2026-09-14 08:54:27] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-14 08:54:30] [converterTests] [INFO] Created portrait short MP4 (centre cut): loud_song_8K_Short_CenterCut.mp4 [encoder=libx264]
+[2026-09-14 08:54:30] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-14 08:54:32] [converterTests] [INFO] Created portrait short MP4 (centre cut): loud_song_8K_Short_FullSong_CenterCut.mp4 [encoder=libx264]
+Test Case '-[converterTests.PipelineIntegrationTests testNFTToShortPreservesSourceLoudnessOnLandscapePath]' passed (14.298 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testNFTToShortPreservesSourceLoudnessOnPortraitPath]' started.
+[2026-09-14 08:54:33] [converterTests] [INFO] NFT -> Short source audio: hot_song.mp3
+[2026-09-14 08:54:33] [converterTests] [INFO] NFT -> Short source image: Vertical_8K.png
+[2026-09-14 08:54:34] [converterTests] [INFO] Source already exceeds delivery QC on: true peak -0.34 dBTP (limit -1.00). Verifying the render does not worsen these, rather than altering the audio.
+[2026-09-14 08:54:34] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-14 08:54:37] [converterTests] [INFO] Created portrait short MP4: hot_song_8K_Short.mp4 [encoder=libx264]
+[2026-09-14 08:54:38] [converterTests] [INFO] Source already exceeds delivery QC on: true peak -0.34 dBTP (limit -1.00). Verifying the render does not worsen these, rather than altering the audio.
+[2026-09-14 08:54:38] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-14 08:54:41] [converterTests] [INFO] Created portrait short MP4: hot_song_8K_Short_FullSong.mp4 [encoder=libx264]
+[2026-09-14 08:54:41] [converterTests] [INFO] Source already exceeds delivery QC on: true peak -0.34 dBTP (limit -1.00). Verifying the render does not worsen these, rather than altering the audio.
+[2026-09-14 08:54:41] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-14 08:54:43] [converterTests] [INFO] Created portrait short MP4 (centre cut): hot_song_8K_Short_CenterCut.mp4 [encoder=libx264]
+[2026-09-14 08:54:43] [converterTests] [INFO] Source already exceeds delivery QC on: true peak -0.34 dBTP (limit -1.00). Verifying the render does not worsen these, rather than altering the audio.
+[2026-09-14 08:54:43] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-14 08:54:45] [converterTests] [INFO] Created portrait short MP4 (centre cut): hot_song_8K_Short_FullSong_CenterCut.mp4 [encoder=libx264]
+Test Case '-[converterTests.PipelineIntegrationTests testNFTToShortPreservesSourceLoudnessOnPortraitPath]' passed (13.766 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testNoiseAddsLeadingAndTrailingNoiseToAudioMedia]' started.
+[2026-09-14 08:54:47] [converterTests] [INFO] Add noise noise_flac.flac: before=0.500 silence=2 after=0.500 level=-12 LUFS
+[2026-09-14 08:54:53] [converterTests] [INFO] Created noise-padded media: noise_flac_noise_0_5s.flac
+[2026-09-14 08:54:53] [converterTests] [INFO] Add noise noise_m4a.m4a: before=0.500 silence=2 after=0.500 level=-12 LUFS
+[2026-09-14 08:55:00] [converterTests] [INFO] Created noise-padded media: noise_m4a_noise_0_5s.m4a
+[2026-09-14 08:55:00] [converterTests] [INFO] Add noise noise_mp3.mp3: before=0.500 silence=2 after=0.500 level=-12 LUFS
+[2026-09-14 08:55:06] [converterTests] [INFO] Created noise-padded media: noise_mp3_noise_0_5s.mp3
+[2026-09-14 08:55:06] [converterTests] [INFO] Add noise noise_video.mp4: before=0.500 silence=2 after=0.500 level=-12 LUFS
+[2026-09-14 08:55:11] [converterTests] [INFO] Noise MP4 video encoders: hevc_videotoolbox, libx264
+[2026-09-14 08:55:13] [converterTests] [INFO] Created noise-padded media: noise_video_noise_0_5s.mp4
+[2026-09-14 08:55:13] [converterTests] [INFO] Add noise noise_wav.wav: before=0.500 silence=2 after=0.500 level=-12 LUFS
+[2026-09-14 08:55:19] [converterTests] [INFO] Created noise-padded media: noise_wav_noise_0_5s.wav
+Test Case '-[converterTests.PipelineIntegrationTests testNoiseAddsLeadingAndTrailingNoiseToAudioMedia]' passed (40.037 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testNoiseIgnoresPreviouslyGeneratedNoiseOutputs]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testNoiseIgnoresPreviouslyGeneratedNoiseOutputs]' passed (0.143 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testNoiseOutputIsReproducibleAcrossReruns]' started.
+[2026-09-14 08:55:33] [converterTests] [INFO] Created noise-padded media: repeat_flac_noise_0_5s.flac
+[2026-09-14 08:55:39] [converterTests] [INFO] Created noise-padded media: repeat_flac_noise_0_5s.flac
+[2026-09-14 08:55:46] [converterTests] [INFO] Created noise-padded media: repeat_wav_noise_0_5s.wav
+[2026-09-14 08:55:52] [converterTests] [INFO] Created noise-padded media: repeat_wav_noise_0_5s.wav
+Test Case '-[converterTests.PipelineIntegrationTests testNoiseOutputIsReproducibleAcrossReruns]' passed (25.271 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testNoisePaddingStaysAtTargetAfterFLACDeliveryEncode]' started.
+[2026-09-14 08:55:59] [converterTests] [INFO] Created noise-padded media: delivery_noise_noise_6s.flac
+Test Case '-[converterTests.PipelineIntegrationTests testNoisePaddingStaysAtTargetAfterFLACDeliveryEncode]' passed (9.196 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testNoisePaddingVerifierRejectsSilentProgramme]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testNoisePaddingVerifierRejectsSilentProgramme]' passed (1.616 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testNoiseSegmentUsesDynamicLoudnormForProductionDurations]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testNoiseSegmentUsesDynamicLoudnormForProductionDurations]' passed (1.653 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testPaddedMP4EncoderLadderReportsEveryFailedRung]' started.
+[2026-09-14 08:56:06] [converterTests] [INFO] Silence MP4 video encoders: libx264, libx265
+[2026-09-14 08:56:06] [converterTests] [WARN] silence MP4 video encoder failed (libx264): Command failed: /opt/homebrew/bin/ffmpeg -hide_banner -nostdin -v error -y -i /var/folders/k5/fzyk9mb96rqbc6_vnxv5mh3h0000gn/T/converter-tests.36E2996B-E6FD-4436-8789-FDD10FCE471A/Output/clip.mp4 -i /var/folders/k5/fzyk9mb96rqbc6_vnxv5mh3h0000gn/T/converter-tests.36E2996B-E6FD-4436-8789-FDD10FCE471A/Output/.converter-tmp.node4_local.45792.af2d37dd-b4e9-4ee5-87ed-c6062d61566e.clip_silence_padded.47454473-761A-4A4B-B0FA-1F73576B9CB4.wav -map 0:v:0 -map 1:a:0 -vf tpad=start_duration=1.000000:stop_duration=1.000000:start_mode=clone:stop_mode=clone,format=yuv420p,setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709:range=limited -c:v libx264 -preset no_such_preset -crf 22 -pix_fmt yuv420p -color_primaries bt709 -color_trc bt709 -colorspace bt709 -color_range tv -tag:v avc1 -c:a alac -sample_fmt s32p -bits_per_raw_sample 24 -ar 48000 -ac 2 -t 3.500000 -map_metadata 0 -map_chapters 0 -movflags +faststart /var/folders/k5/fzyk9mb96rqbc6_vnxv5mh3h0000gn/T/converter-tests.36E2996B-E6FD-4436-8789-FDD10FCE471A/Output/.converter-tmp.node4_local.45792.af2d37dd-b4e9-4ee5-87ed-c6062d61566e.clip_silence_1s.88F0D0B8-04C4-4AEF-85BE-A64368321A3F.mp4 | [out#0/mp4 @ 0x9cac4c180] Nothing was written into output file, because at least one of its streams received no packets.
+[2026-09-14 08:56:06] [converterTests] [WARN] silence MP4 video encoder failed (libx265): Command failed: /opt/homebrew/bin/ffmpeg -hide_banner -nostdin -v error -y -i /var/folders/k5/fzyk9mb96rqbc6_vnxv5mh3h0000gn/T/converter-tests.36E2996B-E6FD-4436-8789-FDD10FCE471A/Output/clip.mp4 -i /var/folders/k5/fzyk9mb96rqbc6_vnxv5mh3h0000gn/T/converter-tests.36E2996B-E6FD-4436-8789-FDD10FCE471A/Output/.converter-tmp.node4_local.45792.af2d37dd-b4e9-4ee5-87ed-c6062d61566e.clip_silence_padded.47454473-761A-4A4B-B0FA-1F73576B9CB4.wav -map 0:v:0 -map 1:a:0 -vf tpad=start_duration=1.000000:stop_duration=1.000000:start_mode=clone:stop_mode=clone,format=yuv420p,setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709:range=limited -c:v libx265 -preset no_such_preset -crf 22 -pix_fmt yuv420p -color_primaries bt709 -color_trc bt709 -colorspace bt709 -color_range tv -tag:v hvc1 -c:a alac -sample_fmt s32p -bits_per_raw_sample 24 -ar 48000 -ac 2 -t 3.500000 -map_metadata 0 -map_chapters 0 -movflags +faststart /var/folders/k5/fzyk9mb96rqbc6_vnxv5mh3h0000gn/T/converter-tests.36E2996B-E6FD-4436-8789-FDD10FCE471A/Output/.converter-tmp.node4_local.45792.af2d37dd-b4e9-4ee5-87ed-c6062d61566e.clip_silence_1s.88F0D0B8-04C4-4AEF-85BE-A64368321A3F.mp4 | [out#0/mp4 @ 0xc80c08780] Nothing was written into output file, because at least one of its streams received no packets.
+Test Case '-[converterTests.PipelineIntegrationTests testPaddedMP4EncoderLadderReportsEveryFailedRung]' passed (2.180 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testPortraitShortStillsMatchTheirRenderFraming]' started.
+[2026-09-14 08:56:06] [converterTests] [INFO] Profile: youtube_master
+[2026-09-14 08:56:06] [converterTests] [INFO] Scheduler profile: total=3 image=2 audio=2 video=1
+[2026-09-14 08:56:07] [converterTests] [INFO] Created portrait still: art_Short_8K.png
+[2026-09-14 08:56:07] [converterTests] [INFO] Created 1MB JPG: art_Short_8K_1MB.jpg
+[2026-09-14 08:56:07] [converterTests] [INFO] Created 2MB JPG: art_Short_8K_2MB.jpg
+[2026-09-14 08:56:08] [converterTests] [INFO] Created portrait still: art_Short_CenterCut_8K.png
+[2026-09-14 08:56:08] [converterTests] [INFO] Created 1MB JPG: art_Short_CenterCut_8K_1MB.jpg
+[2026-09-14 08:56:08] [converterTests] [INFO] Created 2MB JPG: art_Short_CenterCut_8K_2MB.jpg
+Test Case '-[converterTests.PipelineIntegrationTests testPortraitShortStillsMatchTheirRenderFraming]' passed (2.335 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testProbeCacheInvalidatesWhenFileFingerprintChanges]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testProbeCacheInvalidatesWhenFileFingerprintChanges]' passed (0.280 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testPublishTempReplacesExistingDestination]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testPublishTempReplacesExistingDestination]' passed (0.003 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testRejectsEmptyAudioInputWithoutPublishingOutputs]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testRejectsEmptyAudioInputWithoutPublishingOutputs]' passed (0.002 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testRejectsEmptyImageInputWithoutPublishingOutputs]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testRejectsEmptyImageInputWithoutPublishingOutputs]' passed (0.002 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testRejectsFLACExtensionWithMP3Payload]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testRejectsFLACExtensionWithMP3Payload]' passed (0.143 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testRejectsJPEGExtensionWithPNGPayload]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testRejectsJPEGExtensionWithPNGPayload]' passed (0.200 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testRejectsM4AExtensionWithMP3Payload]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testRejectsM4AExtensionWithMP3Payload]' passed (0.133 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testRejectsMP3ExtensionWithWAVPayload]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testRejectsMP3ExtensionWithWAVPayload]' passed (0.133 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testRejectsMP4ExtensionWithImagePayload]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testRejectsMP4ExtensionWithImagePayload]' passed (0.144 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testRejectsPNGExtensionWithJPEGPayload]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testRejectsPNGExtensionWithJPEGPayload]' passed (0.206 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testRejectsSilentMP3Input]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testRejectsSilentMP3Input]' passed (0.349 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testRejectsStereoImbalancedOutputWhenPolicyIsStrict]' started.
+[2026-09-14 08:56:13] [converterTests] [INFO] Created M4A: imbalanced.m4a
+Test Case '-[converterTests.PipelineIntegrationTests testRejectsStereoImbalancedOutputWhenPolicyIsStrict]' passed (2.702 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testRejectsWAVBinaryGarbage]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testRejectsWAVBinaryGarbage]' passed (0.003 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testRunCapsCapturedOutputAt64MiBOnBothStreams]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testRunCapsCapturedOutputAt64MiBOnBothStreams]' passed (7.866 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testRunCapturedOutputCapBoundaryKeepsExactCapAndDropsOneByteOver]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testRunCapturedOutputCapBoundaryKeepsExactCapAndDropsOneByteOver]' passed (6.445 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testRunDrainsLargeChildOutputWithoutDeadlock]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testRunDrainsLargeChildOutputWithoutDeadlock]' passed (0.210 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testRunGivesChildrenNoStdin]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testRunGivesChildrenNoStdin]' passed (0.072 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testRunHandlesLargeStderrWithoutDeadlock]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testRunHandlesLargeStderrWithoutDeadlock]' passed (0.424 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testRunHandlesRepeatedLaunchesWithoutPipeHandleExhaustion]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testRunHandlesRepeatedLaunchesWithoutPipeHandleExhaustion]' passed (27.555 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testRunTimeoutDoesNotWaitForGrandchildHoldingThePipe]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testRunTimeoutDoesNotWaitForGrandchildHoldingThePipe]' passed (1.073 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testRunTimeoutEscalatesToSIGKILLWhenChildIgnoresSIGTERM]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testRunTimeoutEscalatesToSIGKILLWhenChildIgnoresSIGTERM]' passed (8.035 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testSchedulerRespectsResourceClassLimits]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testSchedulerRespectsResourceClassLimits]' passed (3.393 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testShortAcceptsGenericAudioOnlyInputFormat]' started.
+[2026-09-14 08:57:08] [converterTests] [INFO] Short source audio: song.aac
+[2026-09-14 08:57:08] [converterTests] [INFO] Short source image: poster.png
+[2026-09-14 08:57:10] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-14 08:57:12] [converterTests] [INFO] Created portrait short MP4: song_8K_Short.mp4 [encoder=libx264]
+[2026-09-14 08:57:13] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-14 08:57:15] [converterTests] [INFO] Created portrait short MP4: song_8K_Short_FullSong.mp4 [encoder=libx264]
+[2026-09-14 08:57:15] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-14 08:57:17] [converterTests] [INFO] Created portrait short MP4 (centre cut): song_8K_Short_CenterCut.mp4 [encoder=libx264]
+[2026-09-14 08:57:18] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-14 08:57:20] [converterTests] [INFO] Created portrait short MP4 (centre cut): song_8K_Short_FullSong_CenterCut.mp4 [encoder=libx264]
+Test Case '-[converterTests.PipelineIntegrationTests testShortAcceptsGenericAudioOnlyInputFormat]' passed (13.039 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testShortBuildsLongSongFullSongVariant]' started.
+[2026-09-14 08:57:22] [converterTests] [INFO] Short source audio: song.mp3
+[2026-09-14 08:57:22] [converterTests] [INFO] Short source image: poster.png
+[2026-09-14 08:57:25] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-14 08:57:33] [converterTests] [INFO] Created portrait short MP4: song_8K_Short.mp4 [encoder=libx264]
+[2026-09-14 08:57:37] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-14 08:57:48] [converterTests] [INFO] Created portrait short MP4: song_8K_Short_FullSong.mp4 [encoder=libx264]
+[2026-09-14 08:57:48] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-14 08:57:54] [converterTests] [INFO] Created portrait short MP4 (centre cut): song_8K_Short_CenterCut.mp4 [encoder=libx264]
+[2026-09-14 08:57:54] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-14 08:58:02] [converterTests] [INFO] Created portrait short MP4 (centre cut): song_8K_Short_FullSong_CenterCut.mp4 [encoder=libx264]
+Test Case '-[converterTests.PipelineIntegrationTests testShortBuildsLongSongFullSongVariant]' passed (47.933 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testShortBuildsOnlyPortraitMP4FromDirectImageAndAudio]' started.
+[2026-09-14 08:58:09] [converterTests] [INFO] Short source audio: song.flac
+[2026-09-14 08:58:09] [converterTests] [INFO] Short source image: poster.png
+[2026-09-14 08:58:11] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-14 08:58:13] [converterTests] [INFO] Created portrait short MP4: song_8K_Short.mp4 [encoder=libx264]
+[2026-09-14 08:58:14] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-14 08:58:16] [converterTests] [INFO] Created portrait short MP4: song_8K_Short_FullSong.mp4 [encoder=libx264]
+[2026-09-14 08:58:16] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-14 08:58:18] [converterTests] [INFO] Created portrait short MP4 (centre cut): song_8K_Short_CenterCut.mp4 [encoder=libx264]
+[2026-09-14 08:58:18] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-14 08:58:21] [converterTests] [INFO] Created portrait short MP4 (centre cut): song_8K_Short_FullSong_CenterCut.mp4 [encoder=libx264]
+Test Case '-[converterTests.PipelineIntegrationTests testShortBuildsOnlyPortraitMP4FromDirectImageAndAudio]' passed (13.350 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testShortFromHotMP3IsNotRejectedForClippedSamplesItInherits]' started.
+[2026-09-14 08:58:23] [converterTests] [INFO] Short source audio: hot_master.mp3
+[2026-09-14 08:58:23] [converterTests] [INFO] Short source image: poster.png
+[2026-09-14 08:58:24] [converterTests] [INFO] Source already exceeds delivery QC on: clipped samples 18239 (limit 0). Verifying the render does not worsen these, rather than altering the audio.
+[2026-09-14 08:58:24] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-14 08:58:27] [converterTests] [INFO] Created portrait short MP4: hot_master_8K_Short.mp4 [encoder=libx264]
+[2026-09-14 08:58:27] [converterTests] [INFO] Source already exceeds delivery QC on: clipped samples 18239 (limit 0). Verifying the render does not worsen these, rather than altering the audio.
+[2026-09-14 08:58:27] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-14 08:58:29] [converterTests] [INFO] Created portrait short MP4 (centre cut): hot_master_8K_Short_CenterCut.mp4 [encoder=libx264]
+Test Case '-[converterTests.PipelineIntegrationTests testShortFromHotMP3IsNotRejectedForClippedSamplesItInherits]' passed (7.465 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testShortMP4OutputStemsDoNotRepeatShortSuffixes]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testShortMP4OutputStemsDoNotRepeatShortSuffixes]' passed (0.002 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testShortRendersNarrowPortraitMP4Inputs]' started.
+[2026-09-14 08:58:30] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-14 08:58:33] [converterTests] [INFO] Created short MP4: tall_source_Short.mp4 [encoder=libx264]
+Test Case '-[converterTests.PipelineIntegrationTests testShortRendersNarrowPortraitMP4Inputs]' passed (3.696 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testShortVideoHardCapsAt58SecondsEvenIfConfigRequestsMore]' started.
+[2026-09-14 08:58:36] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-14 08:58:42] [converterTests] [INFO] Created short MP4: long_source_Short.mp4 [encoder=libx264]
+Test Case '-[converterTests.PipelineIntegrationTests testShortVideoHardCapsAt58SecondsEvenIfConfigRequestsMore]' passed (9.417 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testShortVideoRenderFallsBackToSoftwareEncoder]' started.
+[2026-09-14 08:58:44] [converterTests] [INFO] Main video encoders: hevc_videotoolbox, libx264
+[2026-09-14 08:58:46] [converterTests] [INFO] Created MP4: track_8K.mp4 [encoder=hevc_videotoolbox]
+[2026-09-14 08:58:46] [converterTests] [INFO] Short video encoders: libx264
+[2026-09-14 08:58:49] [converterTests] [INFO] Created short MP4: track_8K_Short.mp4 [encoder=libx264]
+Test Case '-[converterTests.PipelineIntegrationTests testShortVideoRenderFallsBackToSoftwareEncoder]' passed (6.467 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testSilenceAddsLeadingAndTrailingPaddingToWAVFLACAndMP4]' started.
+[2026-09-14 08:58:50] [converterTests] [INFO] Add silence pad_flac.flac: before=0.500 after=0.500
+[2026-09-14 08:58:52] [converterTests] [INFO] Created silence-padded media: pad_flac_silence_0_5s.flac
+[2026-09-14 08:58:52] [converterTests] [INFO] Add silence pad_video.mp4: before=0.500 after=0.500
+[2026-09-14 08:58:54] [converterTests] [INFO] Silence MP4 video encoders: hevc_videotoolbox, libx264
+[2026-09-14 08:58:56] [converterTests] [INFO] Created silence-padded media: pad_video_silence_0_5s.mp4
+[2026-09-14 08:58:56] [converterTests] [INFO] Add silence pad_wav.wav: before=0.500 after=0.500
+[2026-09-14 08:58:58] [converterTests] [INFO] Created silence-padded media: pad_wav_silence_0_5s.wav
+Test Case '-[converterTests.PipelineIntegrationTests testSilenceAddsLeadingAndTrailingPaddingToWAVFLACAndMP4]' passed (11.968 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testSilenceIgnoresPreviouslyGeneratedSilenceOutputs]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testSilenceIgnoresPreviouslyGeneratedSilenceOutputs]' passed (0.148 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testSilenceMP4UsesH264SafeTagForSoftwareEncoder]' started.
+[2026-09-14 08:59:02] [converterTests] [INFO] Add silence software_pad_video.mp4: before=0.500 after=0.500
+[2026-09-14 08:59:04] [converterTests] [INFO] Silence MP4 video encoders: libx264
+[2026-09-14 08:59:05] [converterTests] [INFO] Created silence-padded media: software_pad_video_silence_0_5s.mp4
+Test Case '-[converterTests.PipelineIntegrationTests testSilenceMP4UsesH264SafeTagForSoftwareEncoder]' passed (4.783 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testSilentChannelIsReportedAsStereoImbalance]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testSilentChannelIsReportedAsStereoImbalance]' passed (0.334 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testSourceSegmentQCIsMeasuredOncePerSegmentAndRate]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testSourceSegmentQCIsMeasuredOncePerSegmentAndRate]' passed (4.101 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testTailFadeProcessesMP3WAVAndFLACWithoutTruncating]' started.
+[2026-09-14 08:59:11] [converterTests] [INFO] Fade tail tail_flac.flac: duration=0.500
+[2026-09-14 08:59:13] [converterTests] [INFO] Created faded audio: tail_flac_faded_0.5s.flac
+[2026-09-14 08:59:13] [converterTests] [INFO] Fade tail tail_mp3.mp3: duration=0.500
+[2026-09-14 08:59:16] [converterTests] [INFO] Created faded audio: tail_mp3_faded_0.5s.mp3
+[2026-09-14 08:59:16] [converterTests] [INFO] Fade tail tail_wav.wav: duration=0.500
+[2026-09-14 08:59:18] [converterTests] [INFO] Created faded audio: tail_wav_faded_0.5s.wav
+Test Case '-[converterTests.PipelineIntegrationTests testTailFadeProcessesMP3WAVAndFLACWithoutTruncating]' passed (8.999 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testUnifiedHashIgnoresNestedDirectories]' started.
+[2026-09-14 08:59:20] [converterTests] [INFO] Hash WAV, FLAC, MP3, and MP4 filenames
+[2026-09-14 08:59:20] [converterTests] [WARN] No .wav, .flac, .mp3, or .mp4 files found in '/var/folders/k5/fzyk9mb96rqbc6_vnxv5mh3h0000gn/T/converter-tests.DAB9DAD0-2ACF-496E-B61C-E4742698709D/Output'.
+Test Case '-[converterTests.PipelineIntegrationTests testUnifiedHashIgnoresNestedDirectories]' passed (0.078 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testUnifiedHashRenamesWAVFLACMP3AndMP4Together]' started.
+[2026-09-14 08:59:20] [converterTests] [INFO] Hash WAV, FLAC, MP3, and MP4 filenames
+[2026-09-14 08:59:21] [converterTests] [INFO] Renamed wav: mix_wave.wav -> A6552CB3.wav
+[2026-09-14 08:59:21] [converterTests] [INFO] Renamed flac: mix_flac.flac -> 5CDF3EE5.flac
+[2026-09-14 08:59:21] [converterTests] [INFO] Renamed mp3: mix_mp3.mp3 -> 1199DB3B.mp3
+[2026-09-14 08:59:21] [converterTests] [INFO] Renamed mp4: mix_video.mp4 -> 2B06BCBF.mp4
+[2026-09-14 08:59:21] [converterTests] [INFO] Hash rename complete: renamed=4/4 failed=0
+Test Case '-[converterTests.PipelineIntegrationTests testUnifiedHashRenamesWAVFLACMP3AndMP4Together]' passed (2.354 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testVisualSubsCreatesVerifiedPNGViaPublishedOutput]' started.
+[2026-09-14 08:59:22] [converterTests] [INFO] Created visualsubs PNG: /var/folders/k5/fzyk9mb96rqbc6_vnxv5mh3h0000gn/T/converter-tests.F5E381FE-43A1-476B-9C36-246BCB9504EE/Output/dots.png
+Test Case '-[converterTests.PipelineIntegrationTests testVisualSubsCreatesVerifiedPNGViaPublishedOutput]' passed (0.351 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testVisualSubsReservesCenterMarkerAgainstRandomDots]' started.
+[2026-09-14 08:59:23] [converterTests] [INFO] Created visualsubs PNG: /var/folders/k5/fzyk9mb96rqbc6_vnxv5mh3h0000gn/T/converter-tests.1505344F-9D88-4DB9-B166-6D23610E8B1A/Output/center_guard.png
+Test Case '-[converterTests.PipelineIntegrationTests testVisualSubsReservesCenterMarkerAgainstRandomDots]' passed (0.283 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testWAVHashAcceptsNonStandardRIFFInput]' started.
+[2026-09-14 08:59:23] [converterTests] [INFO] Hash WAV filenames
+[2026-09-14 08:59:23] [converterTests] [INFO] Renamed wav: plain_hash.wav -> A6552CB3.wav
+Test Case '-[converterTests.PipelineIntegrationTests testWAVHashAcceptsNonStandardRIFFInput]' passed (0.632 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testWAVToM4AAcceptsNonStandardRIFFInput]' started.
+[2026-09-14 08:59:26] [converterTests] [INFO] Created M4A: plain_input.m4a
+Test Case '-[converterTests.PipelineIntegrationTests testWAVToM4AAcceptsNonStandardRIFFInput]' passed (3.318 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testWAVToMP3ContinueOnErrorConvertsRemainingFilesThenSummarizes]' started.
+[2026-09-14 08:59:27] [converterTests] [INFO] WAV -> MP3: a.wav
+[2026-09-14 08:59:29] [converterTests] [INFO] Created MP3: a.mp3
+[2026-09-14 08:59:29] [converterTests] [INFO] WAV -> MP3: b.wav
+[2026-09-14 08:59:29] [converterTests] [ERROR] WAV format mismatch for /private/var/folders/k5/fzyk9mb96rqbc6_vnxv5mh3h0000gn/T/converter-tests.BA5EC465-EAC8-4457-89A4-E961229CED72/Output/b.wav (got='' expected='WAVE')
+[2026-09-14 08:59:29] [converterTests] [INFO] WAV -> MP3: c.wav
+[2026-09-14 08:59:31] [converterTests] [INFO] Created MP3: c.mp3
+Test Case '-[converterTests.PipelineIntegrationTests testWAVToMP3ContinueOnErrorConvertsRemainingFilesThenSummarizes]' passed (5.533 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testWAVToMP3StopsAtFirstFailureWithoutContinueOnError]' started.
+[2026-09-14 08:59:32] [converterTests] [INFO] WAV -> MP3: a.wav
+[2026-09-14 08:59:35] [converterTests] [INFO] Created MP3: a.mp3
+[2026-09-14 08:59:35] [converterTests] [INFO] WAV -> MP3: b.wav
+[2026-09-14 08:59:35] [converterTests] [ERROR] WAV format mismatch for /private/var/folders/k5/fzyk9mb96rqbc6_vnxv5mh3h0000gn/T/converter-tests.7D435AE4-A7D5-4C03-B82B-56C98F535E39/Output/b.wav (got='' expected='WAVE')
+Test Case '-[converterTests.PipelineIntegrationTests testWAVToMP3StopsAtFirstFailureWithoutContinueOnError]' passed (2.799 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testWorkspaceIgnoresHostDirectoryAndDebugOverrides]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testWorkspaceIgnoresHostDirectoryAndDebugOverrides]' passed (0.002 seconds).
+Test Suite 'PipelineIntegrationTests' passed at 2026-09-14 08:59:35.541.
+	 Executed 126 tests, with 0 failures (0 unexpected) in 666.076 (666.090) seconds
+Test Suite 'converterTests' started at 2026-09-14 08:59:35.541.
+Test Case '-[converterTests.converterTests testAlbumActionParsesAndSortsNaturallyIgnoringExtension]' started.
+Test Case '-[converterTests.converterTests testAlbumActionParsesAndSortsNaturallyIgnoringExtension]' passed (0.002 seconds).
+Test Case '-[converterTests.converterTests testAlbumCandidatesCollapseSameStemFamiliesAndSkipDerivedOutputs]' started.
+[2026-09-14 08:59:35] [converterTests] [WARN] Album track 01.flac has same-stem conversions beside it; ignoring 01.wav, 01.mp3.
+Test Case '-[converterTests.converterTests testAlbumCandidatesCollapseSameStemFamiliesAndSkipDerivedOutputs]' passed (0.001 seconds).
+Test Case '-[converterTests.converterTests testAlbumFileFlagRejectionNamesAlbumTxtAndDirectoryCommands]' started.
+Test Case '-[converterTests.converterTests testAlbumFileFlagRejectionNamesAlbumTxtAndDirectoryCommands]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testAlbumTrackSortParsesOnlyASCIIDigitPrefixes]' started.
+Test Case '-[converterTests.converterTests testAlbumTrackSortParsesOnlyASCIIDigitPrefixes]' passed (0.001 seconds).
+Test Case '-[converterTests.converterTests testArchivalSuffixOnlySkipsAudioThatSitsBesideItsSource]' started.
+[2026-09-14 08:59:35] [converterTests] [INFO] Source audio renamed: Mirage_bass_80Hz_4dB_RF64.flac -> 1_source.flac
+Test Case '-[converterTests.converterTests testArchivalSuffixOnlySkipsAudioThatSitsBesideItsSource]' passed (0.001 seconds).
+Test Case '-[converterTests.converterTests testArchiveProfileIsNoLongerAcceptedOrAdvertised]' started.
+Test Case '-[converterTests.converterTests testArchiveProfileIsNoLongerAcceptedOrAdvertised]' passed (0.002 seconds).
+Test Case '-[converterTests.converterTests testAstatsMetricsFailClosedAndTreatSilentChannelAsInfiniteImbalance]' started.
+Test Case '-[converterTests.converterTests testAstatsMetricsFailClosedAndTreatSilentChannelAsInfiniteImbalance]' passed (0.001 seconds).
+Test Case '-[converterTests.converterTests testAstatsParserIgnoresOtherFiltersSharingTheSameStderr]' started.
+Test Case '-[converterTests.converterTests testAstatsParserIgnoresOtherFiltersSharingTheSameStderr]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testAsyncSemaphoreCancellationBeforeSuspensionStillThrows]' started.
+Test Case '-[converterTests.converterTests testAsyncSemaphoreCancellationBeforeSuspensionStillThrows]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testAsyncSemaphoreCancellationResumesOnlyTheCancelledWaiter]' started.
+Test Case '-[converterTests.converterTests testAsyncSemaphoreCancellationResumesOnlyTheCancelledWaiter]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testAsyncSemaphoreSignalRacingCancellationLeavesNoMarkerBehind]' started.
+Test Case '-[converterTests.converterTests testAsyncSemaphoreSignalRacingCancellationLeavesNoMarkerBehind]' passed (0.006 seconds).
+Test Case '-[converterTests.converterTests testAsyncSemaphoreWaitFastPathRefusesCancelledTask]' started.
+Test Case '-[converterTests.converterTests testAsyncSemaphoreWaitFastPathRefusesCancelledTask]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testAsyncSemaphoreWithPermitCapsConcurrencyAndReleasesOnThrow]' started.
+Test Case '-[converterTests.converterTests testAsyncSemaphoreWithPermitCapsConcurrencyAndReleasesOnThrow]' passed (0.121 seconds).
+Test Case '-[converterTests.converterTests testAsyncSemaphoreWithPermitRefusesCancelledTask]' started.
+Test Case '-[converterTests.converterTests testAsyncSemaphoreWithPermitRefusesCancelledTask]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testAudioConversionRefusesToWriteOverItsSource]' started.
+Test Case '-[converterTests.converterTests testAudioConversionRefusesToWriteOverItsSource]' passed (0.002 seconds).
+Test Case '-[converterTests.converterTests testBassParsesDefaultsAndManualValues]' started.
+Test Case '-[converterTests.converterTests testBassParsesDefaultsAndManualValues]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testBassRejectsInvalidArguments]' started.
+Test Case '-[converterTests.converterTests testBassRejectsInvalidArguments]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testBuiltInFastPreviewProfileOverridesRenderDefaults]' started.
+Test Case '-[converterTests.converterTests testBuiltInFastPreviewProfileOverridesRenderDefaults]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testCancellingAPermittedOperationTerminatesItsChildProcess]' started.
+Test Case '-[converterTests.converterTests testCancellingAPermittedOperationTerminatesItsChildProcess]' passed (0.319 seconds).
+Test Case '-[converterTests.converterTests testCanonicalPCMComparisonScansWholeFileAndEnforcesPerSampleTolerance]' started.
+Test Case '-[converterTests.converterTests testCanonicalPCMComparisonScansWholeFileAndEnforcesPerSampleTolerance]' passed (0.046 seconds).
+Test Case '-[converterTests.converterTests testCanonicalPCMSampleDecodingAndLengthBoundaries]' started.
+Test Case '-[converterTests.converterTests testCanonicalPCMSampleDecodingAndLengthBoundaries]' passed (0.003 seconds).
+Test Case '-[converterTests.converterTests testCleanActionEntryPointPreservesUserFiles]' started.
+[2026-09-14 08:59:36] [converterTests] [INFO] Profile: youtube_master
+[2026-09-14 08:59:36] [converterTests] [INFO] Scheduler profile: total=3 image=2 audio=2 video=1
+[2026-09-14 08:59:36] [converterTests] [WARN] Recovered previous version from publish backup: /var/folders/k5/fzyk9mb96rqbc6_vnxv5mh3h0000gn/T/FD62C84A-3566-4245-BE2C-B6CC20559437/lost.wav
+[2026-09-14 08:59:36] [converterTests] [INFO] Removed transient file: .x.normalized.wav
+[2026-09-14 08:59:36] [converterTests] [INFO] Removed transient file: .x.normalized
+Test Case '-[converterTests.converterTests testCleanActionEntryPointPreservesUserFiles]' passed (0.006 seconds).
+Test Case '-[converterTests.converterTests testCleanTransientsRemovesOnlyHiddenNormalizedFiles]' started.
+[2026-09-14 08:59:36] [converterTests] [INFO] Removed transient file: .x.normalized.wav
+[2026-09-14 08:59:36] [converterTests] [INFO] Removed transient file: .x.normalized
+Test Case '-[converterTests.converterTests testCleanTransientsRemovesOnlyHiddenNormalizedFiles]' passed (0.003 seconds).
+Test Case '-[converterTests.converterTests testCLIRejectsNonFiniteSharpnessValue]' started.
+Test Case '-[converterTests.converterTests testCLIRejectsNonFiniteSharpnessValue]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testCLIRejectsZeroSeedUnboundedSharpnessRepeatedActionsAndOptionLikeValues]' started.
+Test Case '-[converterTests.converterTests testCLIRejectsZeroSeedUnboundedSharpnessRepeatedActionsAndOptionLikeValues]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testConfigFileStartingWithUTF8BOMAppliesItsFirstKey]' started.
+Test Case '-[converterTests.converterTests testConfigFileStartingWithUTF8BOMAppliesItsFirstKey]' passed (0.002 seconds).
+Test Case '-[converterTests.converterTests testConfigRangeRulesAcceptTheirBoundaryValues]' started.
+Test Case '-[converterTests.converterTests testConfigRangeRulesAcceptTheirBoundaryValues]' passed (0.017 seconds).
+Test Case '-[converterTests.converterTests testContainsChunkRejectsMalformedRIFFStructures]' started.
+Test Case '-[converterTests.converterTests testContainsChunkRejectsMalformedRIFFStructures]' passed (0.002 seconds).
+Test Case '-[converterTests.converterTests testContainsChunkWalksChunksInsteadOfScanningBytes]' started.
+Test Case '-[converterTests.converterTests testContainsChunkWalksChunksInsteadOfScanningBytes]' passed (0.002 seconds).
+Test Case '-[converterTests.converterTests testCRC32IsIndependentOfReadChunkBoundaries]' started.
+Test Case '-[converterTests.converterTests testCRC32IsIndependentOfReadChunkBoundaries]' passed (0.032 seconds).
+Test Case '-[converterTests.converterTests testCRC32MatchesReferenceImplementationAcrossChunkBoundaries]' started.
+Test Case '-[converterTests.converterTests testCRC32MatchesReferenceImplementationAcrossChunkBoundaries]' passed (0.010 seconds).
+Test Case '-[converterTests.converterTests testDependencyBootstrapEnrichesPathWithHomebrewLocations]' started.
+Test Case '-[converterTests.converterTests testDependencyBootstrapEnrichesPathWithHomebrewLocations]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testDependencyManifestMatchesCurrentRuntimeTools]' started.
+Test Case '-[converterTests.converterTests testDependencyManifestMatchesCurrentRuntimeTools]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testDependencyProbeGivesToolsNoStdin]' started.
+Test Case '-[converterTests.converterTests testDependencyProbeGivesToolsNoStdin]' passed (0.814 seconds).
+Test Case '-[converterTests.converterTests testDerivedMediaPredicatesRecogniseRepeatedPaddingMarkers]' started.
+Test Case '-[converterTests.converterTests testDerivedMediaPredicatesRecogniseRepeatedPaddingMarkers]' passed (0.005 seconds).
+Test Case '-[converterTests.converterTests testEncoderLadderReportsEveryRungAndStopsOnEncoderIndependentFailure]' started.
+[2026-09-14 08:59:36] [converterTests] [WARN] test encoder failed (a): a exploded
+[2026-09-14 08:59:36] [converterTests] [WARN] test encoder failed (b): b exploded
+[2026-09-14 08:59:36] [converterTests] [WARN] test encoder failed (c): c exploded
+[2026-09-14 08:59:36] [converterTests] [WARN] test encoder failed (a): audio wrong
+[2026-09-14 08:59:36] [converterTests] [WARN] test: skipping remaining encoders — this failure is not encoder-related.
+[2026-09-14 08:59:36] [converterTests] [WARN] test encoder failed (a): no
+Test Case '-[converterTests.converterTests testEncoderLadderReportsEveryRungAndStopsOnEncoderIndependentFailure]' passed (0.001 seconds).
+Test Case '-[converterTests.converterTests testEnsureWritableDirectoryRejectsARegularFile]' started.
+Test Case '-[converterTests.converterTests testEnsureWritableDirectoryRejectsARegularFile]' passed (0.002 seconds).
+Test Case '-[converterTests.converterTests testEveryConfigRuleRejectsAnInvalidValueNamingTheKey]' started.
+Test Case '-[converterTests.converterTests testEveryConfigRuleRejectsAnInvalidValueNamingTheKey]' passed (0.088 seconds).
+Test Case '-[converterTests.converterTests testEverySupportedConfigKeyIsDocumentedInRepositoryConfigWithItsDefault]' started.
+Test Case '-[converterTests.converterTests testEverySupportedConfigKeyIsDocumentedInRepositoryConfigWithItsDefault]' passed (0.001 seconds).
+Test Case '-[converterTests.converterTests testExplicitPathsMustStayDirectlyInOutput]' started.
+Test Case '-[converterTests.converterTests testExplicitPathsMustStayDirectlyInOutput]' passed (0.001 seconds).
+Test Case '-[converterTests.converterTests testFadeActionsUseDefaultNormalCurve]' started.
+Test Case '-[converterTests.converterTests testFadeActionsUseDefaultNormalCurve]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testFadeCutParsesCutAndFadeDurations]' started.
+Test Case '-[converterTests.converterTests testFadeCutParsesCutAndFadeDurations]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testFadeCutRejectsMissingArguments]' started.
+Test Case '-[converterTests.converterTests testFadeCutRejectsMissingArguments]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testFadeFLACAliasNoLongerFallsThroughToFullRun]' started.
+Test Case '-[converterTests.converterTests testFadeFLACAliasNoLongerFallsThroughToFullRun]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testFadeOutParsesFlexibleTimeArguments]' started.
+Test Case '-[converterTests.converterTests testFadeOutParsesFlexibleTimeArguments]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testFadeOutRejectsMissingArguments]' started.
+Test Case '-[converterTests.converterTests testFadeOutRejectsMissingArguments]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testFadeOutRejectsTooManyArguments]' started.
+Test Case '-[converterTests.converterTests testFadeOutRejectsTooManyArguments]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testFlexibleTimecodeParsingAcceptsSupportedFormsAndRejectsInvalidBounds]' started.
+Test Case '-[converterTests.converterTests testFlexibleTimecodeParsingAcceptsSupportedFormsAndRejectsInvalidBounds]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testFullRunImageBaseNameStripsStackedDerivedSuffixes]' started.
+Test Case '-[converterTests.converterTests testFullRunImageBaseNameStripsStackedDerivedSuffixes]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testFullRunRenamesItsSourceAudioToOneSource]' started.
+[2026-09-14 08:59:37] [converterTests] [INFO] Source audio renamed: Mirage_bass_80Hz_4dB_RF64.flac -> 1_source.flac
+[2026-09-14 08:59:37] [converterTests] [WARN] Full pipeline found multiple same-stem audio files; auto-selecting 1_source.flac and ignoring derived companions.
+Test Case '-[converterTests.converterTests testFullRunRenamesItsSourceAudioToOneSource]' passed (0.002 seconds).
+Test Case '-[converterTests.converterTests testFullRunRenamesTheWholeSourceFamilyAndKeepsRerunsStable]' started.
+[2026-09-14 08:59:37] [converterTests] [WARN] Full pipeline found multiple same-stem audio files; auto-selecting song.flac and ignoring derived companions.
+[2026-09-14 08:59:37] [converterTests] [INFO] Source audio renamed: song.flac -> 1_source.flac
+[2026-09-14 08:59:37] [converterTests] [INFO] Source audio renamed: song.wav -> 1_source.wav
+[2026-09-14 08:59:37] [converterTests] [INFO] Source audio renamed: song_BW64.wav -> 1_source_BW64.wav
+[2026-09-14 08:59:37] [converterTests] [INFO] Source audio renamed: song_RF64.flac -> 1_source_RF64.flac
+[2026-09-14 08:59:37] [converterTests] [WARN] Full pipeline found multiple same-stem audio files; auto-selecting 1_source.flac and ignoring derived companions.
+Test Case '-[converterTests.converterTests testFullRunRenamesTheWholeSourceFamilyAndKeepsRerunsStable]' passed (0.001 seconds).
+Test Case '-[converterTests.converterTests testFullRunSourceImagesRejectTwoLandscapeMasters]' started.
+Test Case '-[converterTests.converterTests testFullRunSourceImagesRejectTwoLandscapeMasters]' passed (0.279 seconds).
+Test Case '-[converterTests.converterTests testFullRunSourceImagesSplitByOrientation]' started.
+Test Case '-[converterTests.converterTests testFullRunSourceImagesSplitByOrientation]' passed (0.400 seconds).
+Test Case '-[converterTests.converterTests testGrayscaleOutputSatisfiesAnSRGBExpectation]' started.
+Test Case '-[converterTests.converterTests testGrayscaleOutputSatisfiesAnSRGBExpectation]' passed (0.001 seconds).
+Test Case '-[converterTests.converterTests testHashActionsDefaultToProjectOutputDirectory]' started.
+Test Case '-[converterTests.converterTests testHashActionsDefaultToProjectOutputDirectory]' passed (0.001 seconds).
+Test Case '-[converterTests.converterTests testHelpListAndMatrixSkipRuntimeDependencyBootstrap]' started.
+Test Case '-[converterTests.converterTests testHelpListAndMatrixSkipRuntimeDependencyBootstrap]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testHelpTextDistinguishesAlbumTxtAndDirectoryAlbumBuilds]' started.
+Test Case '-[converterTests.converterTests testHelpTextDistinguishesAlbumTxtAndDirectoryAlbumBuilds]' passed (0.001 seconds).
+Test Case '-[converterTests.converterTests testHelpTextMentionsFullRunContract]' started.
+Test Case '-[converterTests.converterTests testHelpTextMentionsFullRunContract]' passed (0.007 seconds).
+Test Case '-[converterTests.converterTests testHomebrewInstallerIsPinnedAndIntegrityChecked]' started.
+Test Case '-[converterTests.converterTests testHomebrewInstallerIsPinnedAndIntegrityChecked]' passed (0.141 seconds).
+Test Case '-[converterTests.converterTests testInstallerSubprocessReportsStderrAndTimesOut]' started.
+Test Case '-[converterTests.converterTests testInstallerSubprocessReportsStderrAndTimesOut]' passed (1.567 seconds).
+Test Case '-[converterTests.converterTests testInvalidLoudnormConfigTargetIsRejectedDuringLoad]' started.
+Test Case '-[converterTests.converterTests testInvalidLoudnormConfigTargetIsRejectedDuringLoad]' passed (0.010 seconds).
+Test Case '-[converterTests.converterTests testInvalidStringConfigIsRejectedDuringLoad]' started.
+Test Case '-[converterTests.converterTests testInvalidStringConfigIsRejectedDuringLoad]' passed (0.006 seconds).
+Test Case '-[converterTests.converterTests testLoudnessFallbackAcceptsMediaValidQCIssuesOnly]' started.
+Test Case '-[converterTests.converterTests testLoudnessFallbackAcceptsMediaValidQCIssuesOnly]' passed (0.002 seconds).
+Test Case '-[converterTests.converterTests testLoudnessFallbackOnlyExcusesAnInherentTruePeak]' started.
+Test Case '-[converterTests.converterTests testLoudnessFallbackOnlyExcusesAnInherentTruePeak]' passed (0.001 seconds).
+Test Case '-[converterTests.converterTests testLoudnessFiltersRejectBassAndEQFilters]' started.
+Test Case '-[converterTests.converterTests testLoudnessFiltersRejectBassAndEQFilters]' passed (0.003 seconds).
+Test Case '-[converterTests.converterTests testLoudnessParsesTargetLUFS]' started.
+Test Case '-[converterTests.converterTests testLoudnessParsesTargetLUFS]' passed (0.001 seconds).
+Test Case '-[converterTests.converterTests testLoudnessRejectsInvalidTargets]' started.
+Test Case '-[converterTests.converterTests testLoudnessRejectsInvalidTargets]' passed (0.001 seconds).
+Test Case '-[converterTests.converterTests testLoudnormArgumentClampsAreInclusiveAtTheExactBounds]' started.
+Test Case '-[converterTests.converterTests testLoudnormArgumentClampsAreInclusiveAtTheExactBounds]' passed (0.001 seconds).
+Test Case '-[converterTests.converterTests testLoudnormArgumentRoundingNeverLeavesTheAcceptedRange]' started.
+Test Case '-[converterTests.converterTests testLoudnormArgumentRoundingNeverLeavesTheAcceptedRange]' passed (0.333 seconds).
+Test Case '-[converterTests.converterTests testLoudnormArgumentsStayInsideFFmpegsAcceptedRanges]' started.
+Test Case '-[converterTests.converterTests testLoudnormArgumentsStayInsideFFmpegsAcceptedRanges]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testLoudnormJSONParsingIgnoresBracesInInputMetadata]' started.
+Test Case '-[converterTests.converterTests testLoudnormJSONParsingIgnoresBracesInInputMetadata]' passed (0.001 seconds).
+Test Case '-[converterTests.converterTests testLoudnormJSONParsingToleratesSurroundingFilterOutput]' started.
+Test Case '-[converterTests.converterTests testLoudnormJSONParsingToleratesSurroundingFilterOutput]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testMasterAndFLACAlbumCandidatesSkipDerivedOutputs]' started.
+Test Case '-[converterTests.converterTests testMasterAndFLACAlbumCandidatesSkipDerivedOutputs]' passed (0.001 seconds).
+Test Case '-[converterTests.converterTests testMatrixInitializationDoesNotRequireProjectOutputDirectory]' started.
+Test Case '-[converterTests.converterTests testMatrixInitializationDoesNotRequireProjectOutputDirectory]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testMatrixTextMentionsCompletedAudioAndImageGraph]' started.
+Test Case '-[converterTests.converterTests testMatrixTextMentionsCompletedAudioAndImageGraph]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testMissingAlbumFileErrorPointsAtTheExampleTemplate]' started.
+Test Case '-[converterTests.converterTests testMissingAlbumFileErrorPointsAtTheExampleTemplate]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testMissingSourceAudioErrorNamesWhatWasSkipped]' started.
+[2026-09-14 08:59:39] [converterTests] [INFO] Source audio renamed: Mirage.mp3 -> 1_source.mp3
+[2026-09-14 08:59:39] [converterTests] [INFO] Source audio renamed: Mirage_RF64.wav -> 1_source_RF64.wav
+Test Case '-[converterTests.converterTests testMissingSourceAudioErrorNamesWhatWasSkipped]' passed (0.002 seconds).
+Test Case '-[converterTests.converterTests testNFTToShortFlagParsesAndOldMP3ToShortFlagIsRejected]' started.
+Test Case '-[converterTests.converterTests testNFTToShortFlagParsesAndOldMP3ToShortFlagIsRejected]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testNoArgumentsShowHelpInsteadOfFullRun]' started.
+Test Case '-[converterTests.converterTests testNoArgumentsShowHelpInsteadOfFullRun]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testNoiseParsesDefaultAndExplicitDuration]' started.
+Test Case '-[converterTests.converterTests testNoiseParsesDefaultAndExplicitDuration]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testNoiseRejectsInvalidArguments]' started.
+Test Case '-[converterTests.converterTests testNoiseRejectsInvalidArguments]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testNonFiniteConfigDoubleIsRejectedDuringLoad]' started.
+Test Case '-[converterTests.converterTests testNonFiniteConfigDoubleIsRejectedDuringLoad]' passed (0.002 seconds).
+Test Case '-[converterTests.converterTests testNumericFormattingAndBitrateParsingUseStableFFmpegForms]' started.
+Test Case '-[converterTests.converterTests testNumericFormattingAndBitrateParsingUseStableFFmpegForms]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testOrphanCleanupLeavesOtherHostsTempFilesAlone]' started.
+Test Case '-[converterTests.converterTests testOrphanCleanupLeavesOtherHostsTempFilesAlone]' passed (0.001 seconds).
+Test Case '-[converterTests.converterTests testOutputFileIsOnlyAcceptedBySingleOutputActions]' started.
+Test Case '-[converterTests.converterTests testOutputFileIsOnlyAcceptedBySingleOutputActions]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testOutputNamingAndSuffixHelpersAreStable]' started.
+Test Case '-[converterTests.converterTests testOutputNamingAndSuffixHelpersAreStable]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testParserRejectsDeprecatedInputOverrideFlags]' started.
+Test Case '-[converterTests.converterTests testParserRejectsDeprecatedInputOverrideFlags]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testParserRejectsRecursiveDiscoveryFlag]' started.
+Test Case '-[converterTests.converterTests testParserRejectsRecursiveDiscoveryFlag]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testParserRejectsRemovedJPEGAliasFlags]' started.
+Test Case '-[converterTests.converterTests testParserRejectsRemovedJPEGAliasFlags]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testProcessRunnerNamesSignalDeaths]' started.
+Test Case '-[converterTests.converterTests testProcessRunnerNamesSignalDeaths]' passed (0.071 seconds).
+Test Case '-[converterTests.converterTests testProjectLoudnessDefaultsAreMinus12LUFS]' started.
+Test Case '-[converterTests.converterTests testProjectLoudnessDefaultsAreMinus12LUFS]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testPublishBackupRecoveryRemovesStaleBackupWhenDestinationExists]' started.
+Test Case '-[converterTests.converterTests testPublishBackupRecoveryRemovesStaleBackupWhenDestinationExists]' passed (0.001 seconds).
+Test Case '-[converterTests.converterTests testPublishBackupRecoveryRestoresMissingDestination]' started.
+[2026-09-14 08:59:39] [converterTests] [WARN] Recovered previous version from publish backup: /var/folders/k5/fzyk9mb96rqbc6_vnxv5mh3h0000gn/T/converter-test-FC261543-74BC-4E08-9B1A-349B07A7EA38/song.mp3
+Test Case '-[converterTests.converterTests testPublishBackupRecoveryRestoresMissingDestination]' passed (0.001 seconds).
+Test Case '-[converterTests.converterTests testPublishTempKeepsDestinationWhenBackupMoveFails]' started.
+Test Case '-[converterTests.converterTests testPublishTempKeepsDestinationWhenBackupMoveFails]' passed (0.006 seconds).
+Test Case '-[converterTests.converterTests testPublishTempLeavesNoBackupBehind]' started.
+Test Case '-[converterTests.converterTests testPublishTempLeavesNoBackupBehind]' passed (0.002 seconds).
+Test Case '-[converterTests.converterTests testPublishTempRestoresPreviousVersionWhenTempMoveFails]' started.
+Test Case '-[converterTests.converterTests testPublishTempRestoresPreviousVersionWhenTempMoveFails]' passed (0.003 seconds).
+Test Case '-[converterTests.converterTests testRepositoryConfigKeysAreSupportedAndTheFileLoadsWithoutWarnings]' started.
+Test Case '-[converterTests.converterTests testRepositoryConfigKeysAreSupportedAndTheFileLoadsWithoutWarnings]' passed (0.001 seconds).
+Test Case '-[converterTests.converterTests testRequireDirectChildHandlesAbsolutePathsInsideAndOutsideOutDir]' started.
+Test Case '-[converterTests.converterTests testRequireDirectChildHandlesAbsolutePathsInsideAndOutsideOutDir]' passed (0.001 seconds).
+Test Case '-[converterTests.converterTests testRequireDirectChildRejectsRelativeEscapesSubfoldersAndSymlinkedSubfolders]' started.
+Test Case '-[converterTests.converterTests testRequireDirectChildRejectsRelativeEscapesSubfoldersAndSymlinkedSubfolders]' passed (0.002 seconds).
+Test Case '-[converterTests.converterTests testRequireDirectChildResolvesSymlinkedOutDirOnBothSides]' started.
+Test Case '-[converterTests.converterTests testRequireDirectChildResolvesSymlinkedOutDirOnBothSides]' passed (0.001 seconds).
+Test Case '-[converterTests.converterTests testResolveFullAudioPrefersHighestQualitySameStemSource]' started.
+[2026-09-14 08:59:39] [converterTests] [WARN] Full pipeline found multiple same-stem audio files; auto-selecting song.flac and ignoring derived companions.
+[2026-09-14 08:59:39] [converterTests] [INFO] Source audio renamed: song.flac -> 1_source.flac
+[2026-09-14 08:59:39] [converterTests] [INFO] Source audio renamed: song.mp3 -> 1_source.mp3
+[2026-09-14 08:59:39] [converterTests] [INFO] Source audio renamed: song.wav -> 1_source.wav
+[2026-09-14 08:59:39] [converterTests] [INFO] Source audio renamed: song_BW64.flac -> 1_source_BW64.flac
+[2026-09-14 08:59:39] [converterTests] [INFO] Source audio renamed: song_RF64.wav -> 1_source_RF64.wav
+Test Case '-[converterTests.converterTests testResolveFullAudioPrefersHighestQualitySameStemSource]' passed (0.002 seconds).
+Test Case '-[converterTests.converterTests testResolveFullImageCollapsesItsOwnDerivedOutputsOnRerun]' started.
+[2026-09-14 08:59:40] [converterTests] [WARN] Square source image '9_NFT3K.png' is treated as the landscape master; it will be fitted into a 7680x4320 frame.
+[2026-09-14 08:59:40] [converterTests] [WARN] Square source image '9_NFT8K.png' is treated as the landscape master; it will be fitted into a 7680x4320 frame.
+[2026-09-14 08:59:40] [converterTests] [WARN] Full pipeline found multiple same-stem images; auto-selecting 9_8K.png and ignoring derived companions.
+[2026-09-14 08:59:40] [converterTests] [WARN] Square source image '9_NFT3K.png' is treated as the landscape master; it will be fitted into a 7680x4320 frame.
+[2026-09-14 08:59:40] [converterTests] [WARN] Square source image '9_NFT8K.png' is treated as the landscape master; it will be fitted into a 7680x4320 frame.
+[2026-09-14 08:59:41] [converterTests] [WARN] Full pipeline found multiple same-stem images; auto-selecting 9.png and ignoring derived companions.
+Test Case '-[converterTests.converterTests testResolveFullImageCollapsesItsOwnDerivedOutputsOnRerun]' passed (1.105 seconds).
+Test Case '-[converterTests.converterTests testResolveFullImageStillRejectsTwoDistinctSources]' started.
+Test Case '-[converterTests.converterTests testResolveFullImageStillRejectsTwoDistinctSources]' passed (0.399 seconds).
+Test Case '-[converterTests.converterTests testSchedulerProfileKeepsExpectedConcurrencyCaps]' started.
+Test Case '-[converterTests.converterTests testSchedulerProfileKeepsExpectedConcurrencyCaps]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testShortClipSecondsAcceptsTimecodesAndRejectsNonPositiveOrMalformedValues]' started.
+Test Case '-[converterTests.converterTests testShortClipSecondsAcceptsTimecodesAndRejectsNonPositiveOrMalformedValues]' passed (0.018 seconds).
+Test Case '-[converterTests.converterTests testShortDurationHelpersClampToInputDurationConfigAndHardLimit]' started.
+Test Case '-[converterTests.converterTests testShortDurationHelpersClampToInputDurationConfigAndHardLimit]' passed (0.003 seconds).
+Test Case '-[converterTests.converterTests testShortFillModesUseDistinctTempStemsAndSuffixes]' started.
+Test Case '-[converterTests.converterTests testShortFillModesUseDistinctTempStemsAndSuffixes]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testShortMP4StemsCoverLetterboxedAndCenterCutVariants]' started.
+Test Case '-[converterTests.converterTests testShortMP4StemsCoverLetterboxedAndCenterCutVariants]' passed (0.001 seconds).
+Test Case '-[converterTests.converterTests testSilenceParsesDefaultAndExplicitDuration]' started.
+Test Case '-[converterTests.converterTests testSilenceParsesDefaultAndExplicitDuration]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testSilenceRejectsInvalidArguments]' started.
+Test Case '-[converterTests.converterTests testSilenceRejectsInvalidArguments]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testStaticLoudnessGainNeverAttenuatesQuietPeakConstrainedAudio]' started.
+Test Case '-[converterTests.converterTests testStaticLoudnessGainNeverAttenuatesQuietPeakConstrainedAudio]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testStringAndURLHelpersNormalizeNamesWithoutFileSystemAccess]' started.
+Test Case '-[converterTests.converterTests testStringAndURLHelpersNormalizeNamesWithoutFileSystemAccess]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testTailFadeParsesDefaultAndExplicitDuration]' started.
+Test Case '-[converterTests.converterTests testTailFadeParsesDefaultAndExplicitDuration]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testTailFadeRejectsTooManyArguments]' started.
+Test Case '-[converterTests.converterTests testTailFadeRejectsTooManyArguments]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testTimecodeRejectsAbsurdDurationsAndFFmpegNumberNeverTraps]' started.
+Test Case '-[converterTests.converterTests testTimecodeRejectsAbsurdDurationsAndFFmpegNumberNeverTraps]' passed (0.003 seconds).
+Test Case '-[converterTests.converterTests testTimecodeRejectsEmptyColonSeparatedComponents]' started.
+Test Case '-[converterTests.converterTests testTimecodeRejectsEmptyColonSeparatedComponents]' passed (0.000 seconds).
+Test Case '-[converterTests.converterTests testUnitMakeToolIgnoresHostConfigAndDebugOverrides]' started.
+Test Case '-[converterTests.converterTests testUnitMakeToolIgnoresHostConfigAndDebugOverrides]' passed (0.001 seconds).
+Test Case '-[converterTests.converterTests testUnknownConfigKeyIsReportedAtWarnLevelNamingKeyAndFile]' started.
+Test Case '-[converterTests.converterTests testUnknownConfigKeyIsReportedAtWarnLevelNamingKeyAndFile]' passed (0.003 seconds).
+Test Case '-[converterTests.converterTests testUnknownOptionsAndStrayPositionalsAreRejected]' started.
+Test Case '-[converterTests.converterTests testUnknownOptionsAndStrayPositionalsAreRejected]' passed (0.001 seconds).
+Test Case '-[converterTests.converterTests testUnusableInstalledToolsAreNamedWithTheirReason]' started.
+Test Case '-[converterTests.converterTests testUnusableInstalledToolsAreNamedWithTheirReason]' passed (0.635 seconds).
+Test Case '-[converterTests.converterTests testValidateRejectsH264VideoToolboxPrimaryAboveVideoToolboxSessionLimit]' started.
+Test Case '-[converterTests.converterTests testValidateRejectsH264VideoToolboxPrimaryAboveVideoToolboxSessionLimit]' passed (0.021 seconds).
+Test Case '-[converterTests.converterTests testVerifyCodecMapsEncoderFamilies]' started.
+Test Case '-[converterTests.converterTests testVerifyCodecMapsEncoderFamilies]' passed (0.001 seconds).
+Test Case '-[converterTests.converterTests testWAVHeaderRejectsTruncatedWAVXAndMismatchedContainers]' started.
+Test Case '-[converterTests.converterTests testWAVHeaderRejectsTruncatedWAVXAndMismatchedContainers]' passed (0.003 seconds).
+Test Case '-[converterTests.converterTests testYouTubeShortProfileKeepsLibx264PrimaryAtPortrait8K]' started.
+Test Case '-[converterTests.converterTests testYouTubeShortProfileKeepsLibx264PrimaryAtPortrait8K]' passed (0.001 seconds).
+Test Case '-[converterTests.converterTests testYouTubeShortProfileKeepsProjectMinus12LUFSTarget]' started.
+Test Case '-[converterTests.converterTests testYouTubeShortProfileKeepsProjectMinus12LUFSTarget]' passed (0.000 seconds).
+Test Suite 'converterTests' passed at 2026-09-14 08:59:42.101.
+	 Executed 125 tests, with 0 failures (0 unexpected) in 6.549 (6.560) seconds
+Test Suite 'converterPackageTests.xctest' passed at 2026-09-14 08:59:42.101.
+	 Executed 251 tests, with 0 failures (0 unexpected) in 672.624 (672.650) seconds
+Test Suite 'All tests' passed at 2026-09-14 08:59:42.101.
+	 Executed 251 tests, with 0 failures (0 unexpected) in 672.624 (672.651) seconds
+◇ Test run started.
+↳ Testing Library Version: 1902
+↳ Target Platform: arm64e-apple-macos14.0
+✔ Test run with 0 tests in 0 suites passed after 0.001 seconds.

@@ -2,15 +2,15 @@
 
 Session: `2026-09-13` · branch `audit/2026-09-13` · baseline commit `4bb136a`
 
-**known-total:100 done:73 open:27 blocked:0 new-this-session:100**
+**known-total:100 done:75 open:25 blocked:0 new-this-session:100**
 
 | status | count |
 |---|---|
 | START | 25 |
 | PROGRESS | 0 |
-| TEST | 2 |
+| TEST | 0 |
 | AUDIT | 0 |
-| DONE | 73 |
+| DONE | 75 |
 | BLOCKED | 0 |
 
 Status gates: START (reproduced/proven + expected behaviour written) → PROGRESS (diff) → TEST (failing-before/passing-after test pasted, full suite green, no new warnings) → AUDIT (cold re-read, all scanners re-run, no baseline regression, no new placeholder) → DONE (committed atomically). BLOCKED needs reason + what was tried + ≥2 options for a human.
@@ -26,7 +26,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 
 _none_
 
-## Open S2 / S3 (25)
+## Open S2 / S3 (23)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
@@ -43,7 +43,6 @@ _none_
 | #0073 | S2 | converter (lint) | AUDIT/baseline/swiftlint-by-rule-4bb136a.txt | swiftlint baseline 533 (56 error-level): fix the actionable rules; structural rules deferred with rationale | style | START |  |
 | #0074 | S2 | converter (dead code) | Sources/converter/Actions.swift:114; ImagePipeline.swift:26-27; ProcessRunner.swift:78; ValidationPipeline.swift:857; Tests/IntegrationTestSupport.swift:32 | periphery-flagged unused declarations (6 unused, 15 assign-only) — prove reachability, then remove or retain with reason | dead | START |  |
 | #0075 | S2 | converter (dead code) | Sources/converter/PipelineCore.swift:347,357-362; Actions.swift:105-110,794-808; BW64Bridge/bw64_bridge.cpp:95; LosslessAudioPipeline.swift:9,30,173-174; AudioPipeline.swift:160-162,264,1955 | Dead branches, tautological guards, dead parameters, redundant discards | dead | START |  |
-| #0080 | S3 | converter/PipelineCore | Sources/converter/PipelineCore.swift:323-344,271 | Orphan-temp detection keys on local PID only; synced directories across hosts | logic | TEST | 1613e77 |
 | #0086 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:1378,1694-1706 | Magic bytes-per-sample and missing free-space check on the BW64 path | style | START |  |
 | #0088 | S3 | converter/Config+VideoPipeline | Sources/converter/VideoPipeline.swift:230,240,244; Config.swift:393,397 | Config colour/scale-filter values spliced into the filter graph with only non-empty validation | unsafe | START |  |
 | #0089 | S3 | converter/VideoPipeline | Sources/converter/VideoPipeline.swift:334,386,467 | ALAC M4A decoded and re-encoded for every video although stream copy is bit-transparent | perf | START |  |
@@ -54,9 +53,8 @@ _none_
 | #0096 | S3 | converterTests | Sources/Tests/converterTests/converterTests.swift:108-115 | SchedulerProfile tested via its summary string | test | START |  |
 | #0097 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:1902-1911 | -doctor has only a no-throw happy path | test | START |  |
 | #0098 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:529,534 | Exact ffmpeg bass filter string pinned without a stated reason | test | START |  |
-| #0100 | S3 | converter/Actions | Sources/converter/Actions.swift (normalizedFullRunSource / resolveFullAudio) | Full-run source is renamed before preflight; a corrupt source loses its original name in the error | logic | TEST | 8ede5fd |
 
-## Done (73)
+## Done (75)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
@@ -124,6 +122,7 @@ _none_
 | #0077 | S3 | converter/DependencyBootstrap | Sources/converter/DependencyBootstrap.swift:77-82 | Post-install failure message lists nothing when a tool is present but non-functional | logic | DONE | 2c71af1 |
 | #0078 | S3 | converter/PipelineCore | Sources/converter/PipelineCore.swift:372-379 | ensureWritableDirectory accepts a regular file at OUT_DIR | logic | DONE | 9a721d9 |
 | #0079 | S3 | converter/ProcessRunner | Sources/converter/ProcessRunner.swift:156-160 | Signal deaths reported as ordinary exit codes | incomplete | DONE | 9a721d9 |
+| #0080 | S3 | converter/PipelineCore | Sources/converter/PipelineCore.swift:323-344,271 | Orphan-temp detection keys on local PID only; synced directories across hosts | logic | DONE | 1613e77 |
 | #0081 | S3 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:203-210 | LUFS rebase widens the tolerance symmetrically | logic | DONE | bccf942 |
 | #0082 | S3 | repo/docs | config.txt; wiki Configuration | PREFLIGHT_SECONDS, DURATION_TOLERANCE_SEC, CRC_CHUNK_BYTES supported but undocumented | docs | DONE | bbf40ef |
 | #0083 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:905 | Noise seed is Int.random; reruns not reproducible | logic | DONE | ee37ce5 |
@@ -133,6 +132,7 @@ _none_
 | #0091 | S3 | repo | .gitignore:2 | Stale .converter_bw64_writer ignore entry | dead | DONE | 557dbe0 |
 | #0092 | S3 | repo/docs | docs/FORMATS.md | Maintenance commands and -fadeflac alias missing from FORMATS.md | docs | DONE | 557dbe0 |
 | #0099 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:34,1967 | Test target compiles with two warnings (bare 'Error' existential, unused 'wav' binding) | style | DONE | 9343977 |
+| #0100 | S3 | converter/Actions | Sources/converter/Actions.swift (normalizedFullRunSource / resolveFullAudio) | Full-run source is renamed before preflight; a corrupt source loses its original name in the error | logic | DONE | 8ede5fd |
 
 ## Full records
 
@@ -1075,7 +1075,7 @@ _none_
 - **evidence-after:** AUDIT/evidence/0078-0079-before.log (fixes not applied: signal death reported as 'exit code 11'; the regular file did not throw); AUDIT/evidence/0078-0079-after.log (both tests pass). swiftlint 531/56, no new violations. Full suite (AUDIT/evidence/0053-0092-fullsuite.txt): 238 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** 9a721d9
 
-### #0080 · S3 · TEST · Orphan-temp detection keys on local PID only; synced directories across hosts
+### #0080 · S3 · DONE · Orphan-temp detection keys on local PID only; synced directories across hosts
 
 - **project/module:** converter/PipelineCore
 - **file:line:** Sources/converter/PipelineCore.swift:323-344,271
@@ -1084,7 +1084,7 @@ _none_
 - **discovered-by:** reviewer C-13
 - **evidence-before:** AUDIT/findings/L2-core-runtime.md C-13
 - **fix-summary:** Temp files carry a host token (<host>.<pid>.<uuid>) and orphan cleanup only reclaims temps whose token matches this machine; untokenized legacy names are left alone. Test fixtures updated to the new format.
-- **evidence-after:** AUDIT/evidence/0080-before.log (PID-only parsing reclaimed an untokenized temp with a dead PID); AUDIT/evidence/0080-after.log (testOrphanCleanupLeavesOtherHostsTempFilesAlone, the three Orphan sweeps and ten Clean tests pass). swiftlint 526/56, no new violations.
+- **evidence-after:** AUDIT/evidence/0080-before.log (PID-only parsing reclaimed an untokenized temp with a dead PID); AUDIT/evidence/0080-after.log (testOrphanCleanupLeavesOtherHostsTempFilesAlone, the three Orphan sweeps and ten Clean tests pass). swiftlint 526/56, no new violations. Full suite (AUDIT/evidence/0080-0100-fullsuite.txt): 251 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** 1613e77
 
 ### #0081 · S3 · DONE · LUFS rebase widens the tolerance symmetrically
@@ -1287,7 +1287,7 @@ _none_
 - **commit sha:** 9343977
 - **notes:** Phase E requires zero warnings across all targets.
 
-### #0100 · S3 · TEST · Full-run source is renamed before preflight; a corrupt source loses its original name in the error
+### #0100 · S3 · DONE · Full-run source is renamed before preflight; a corrupt source loses its original name in the error
 
 - **project/module:** converter/Actions
 - **file:line:** Sources/converter/Actions.swift (normalizedFullRunSource / resolveFullAudio)
@@ -1296,7 +1296,7 @@ _none_
 - **discovered-by:** reviewer X-3 (sub-point), split out of #0022
 - **evidence-before:** resolveFullAudio renames the family, then fullAudioPreparation preflights; a file that fails preflight is reported under its new 1_source name. Cosmetic: no data is lost, the file is intact under the new name.
 - **fix-summary:** stepFull preflights the sole discovered source before resolveFullAudio renames it, and fullAudioPreparation skips the duplicate preflight for the normalized 1_source name; the rename helper remains a pure resolver.
-- **evidence-after:** AUDIT/evidence/0100-before.log (fix stashed: the error named 1_source.mp3 and the source had been renamed); AUDIT/evidence/0100-after.log (testFullRunPreflightsTheSourceBeforeRenamingIt passes; all 24 'Full' tests green). swiftlint 528/56, no new violations.
+- **evidence-after:** AUDIT/evidence/0100-before.log (fix stashed: the error named 1_source.mp3 and the source had been renamed); AUDIT/evidence/0100-after.log (testFullRunPreflightsTheSourceBeforeRenamingIt passes; all 24 'Full' tests green). swiftlint 528/56, no new violations. Full suite (AUDIT/evidence/0080-0100-fullsuite.txt): 251 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** 8ede5fd
 - **notes:** Not folded into #0022 because the naming unit tests use empty placeholder files and would all need real media if preflight moved ahead of the rename; needs its own design (probe-only preflight of the chosen file before renaming).
 
