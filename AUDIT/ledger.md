@@ -2,15 +2,15 @@
 
 Session: `2026-09-13` · branch `audit/2026-09-13` · baseline commit `4bb136a`
 
-**known-total:100 done:91 open:9 blocked:0 new-this-session:100**
+**known-total:100 done:94 open:6 blocked:0 new-this-session:100**
 
 | status | count |
 |---|---|
 | START | 6 |
 | PROGRESS | 0 |
-| TEST | 3 |
+| TEST | 0 |
 | AUDIT | 0 |
-| DONE | 91 |
+| DONE | 94 |
 | BLOCKED | 0 |
 
 Status gates: START (reproduced/proven + expected behaviour written) → PROGRESS (diff) → TEST (failing-before/passing-after test pasted, full suite green, no new warnings) → AUDIT (cold re-read, all scanners re-run, no baseline regression, no new placeholder) → DONE (committed atomically). BLOCKED needs reason + what was tried + ≥2 options for a human.
@@ -26,19 +26,16 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 
 _none_
 
-## Open S2 / S3 (7)
+## Open S2 / S3 (4)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
 | #0051 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:992,1170,1029,508 | Redundant padding verification, uncached ffmpeg -filters, per-file ladder resolution | perf | START |  |
 | #0058 | S2 | repo | converter (binary); docs/KNOWN_GOOD_VERSIONS.md | Checked-in release binary has no verifiable provenance (no SHA-256, adhoc signature, no tag) | deps | START |  |
 | #0059 | S2 | repo/CI | .github/workflows/ci.yml:24,27-32,39-40 | CI not reproducible: unpinned action, latest-Xcode selection, unpinned brew formulae | deps | START |  |
-| #0061 | S2 | BW64Bridge | Sources/BW64Bridge/bw64_bridge.cpp:125-141,161 | Bridge does not bound channels; libbw64 uint16 blockAlignment wraps to heap overflow (unreachable via config today) | unsafe | TEST | de57d52 |
-| #0062 | S2 | BW64Bridge/Package | Sources/Package.swift:35-37; ThirdParty/libbw64/bw64/reader.hpp:220,225,227 | Strict C++ flags (-Wall -Wextra -Werror) fail on three benign sign-compare warnings in vendored libbw64 | deps | TEST | de57d52 |
 | #0073 | S2 | converter (lint) | AUDIT/baseline/swiftlint-by-rule-4bb136a.txt | swiftlint baseline 533 (56 error-level): fix the actionable rules; structural rules deferred with rationale | style | START |  |
-| #0086 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:1378,1694-1706 | Magic bytes-per-sample and missing free-space check on the BW64 path | style | TEST | f68aa6d |
 
-## Done (91)
+## Done (94)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
@@ -97,6 +94,8 @@ _none_
 | #0056 | S2 | converter/VideoPipeline | Sources/converter/VideoPipeline.swift:399-404 | shortenMP4 upscales with ffmpeg's default scaler instead of the configured flags | bug | DONE | dc65cd5 |
 | #0057 | S2 | converter/Actions | Sources/converter/Actions.swift:278-286; PipelineCore.swift:646 | Orientation classification ignores EXIF orientation; square images silently treated as landscape | bug | DONE | 0a98ca1 |
 | #0060 | S2 | repo | album.txt; Sources/converter/AudioPipeline.swift:2063 | Personal track list committed as the production album.txt | placeholder | DONE | bef61c4 |
+| #0061 | S2 | BW64Bridge | Sources/BW64Bridge/bw64_bridge.cpp:125-141,161 | Bridge does not bound channels; libbw64 uint16 blockAlignment wraps to heap overflow (unreachable via config today) | unsafe | DONE | de57d52 |
+| #0062 | S2 | BW64Bridge/Package | Sources/Package.swift:35-37; ThirdParty/libbw64/bw64/reader.hpp:220,225,227 | Strict C++ flags (-Wall -Wextra -Werror) fail on three benign sign-compare warnings in vendored libbw64 | deps | DONE | de57d52 |
 | #0063 | S2 | converterTests+Config | Sources/Tests/converterTests/converterTests.swift:128-140; Config.swift:400; VideoPipeline.swift:269 | SHORT_MP4_CLIP_SECONDS validated with Double() but consumed via parseFlexibleTimecode; test sets a value validate() rejects | test | DONE | 17816b6 |
 | #0064 | S2 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:1860-1900 | Scheduler-limit test can pass vacuously | test | DONE | 588bb0b |
 | #0065 | S2 | converterTests | Sources/Tests/converterTests/converterTests.swift:1473-1550 | AsyncSemaphore tests rely on sleeps for ordering and hang instead of failing on a leaked permit | test | DONE | 7508e7a |
@@ -119,6 +118,7 @@ _none_
 | #0083 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:905 | Noise seed is Int.random; reruns not reproducible | logic | DONE | ee37ce5 |
 | #0084 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:53-77 | Derived-media predicates use the first _silence_/_noise_ occurrence | logic | DONE | 724d350 |
 | #0085 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:1850-1854 | Track-number parse uses Unicode isNumber and can overflow | logic | DONE | 6a674bc |
+| #0086 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:1378,1694-1706 | Magic bytes-per-sample and missing free-space check on the BW64 path | style | DONE | f68aa6d |
 | #0087 | S3 | converter/CLI | Sources/converter/CLI.swift:231-260 | CLI inconsistencies: --seed 0, unbounded --sharpness, repeated action flags, option values beginning with -- | logic | DONE | ee8d65d |
 | #0088 | S3 | converter/Config+VideoPipeline | Sources/converter/VideoPipeline.swift:230,240,244; Config.swift:393,397 | Config colour/scale-filter values spliced into the filter graph with only non-empty validation | unsafe | DONE | 720de01 |
 | #0089 | S3 | converter/VideoPipeline | Sources/converter/VideoPipeline.swift:334,386,467 | ALAC M4A decoded and re-encoded for every video although stream copy is bit-transparent | perf | DONE | a721ba6 |
@@ -873,7 +873,7 @@ _none_
 - **commit sha:** bef61c4
 - **notes:** album.example.txt + ignore album.txt + loader message.
 
-### #0061 · S2 · TEST · Bridge does not bound channels; libbw64 uint16 blockAlignment wraps to heap overflow (unreachable via config today)
+### #0061 · S2 · DONE · Bridge does not bound channels; libbw64 uint16 blockAlignment wraps to heap overflow (unreachable via config today)
 
 - **project/module:** BW64Bridge
 - **file:line:** Sources/BW64Bridge/bw64_bridge.cpp:125-141,161
@@ -882,10 +882,10 @@ _none_
 - **discovered-by:** reviewer B-8
 - **evidence-before:** AUDIT/findings/L0-L3-bridge-repo.md B-8
 - **fix-summary:** #0061 the bridge rejects a channels/bit-depth combination whose WAV block alignment would overflow libbw64's uint16; #0062 the vendored sign-compare diagnostics are suppressed around the libbw64 include only, so the strict -Wall -Wextra -Werror build now succeeds.
-- **evidence-after:** AUDIT/evidence/0061-0062-before.log (strict build failed with three reader.hpp sign-compare errors; the 16384-channel call was accepted); AUDIT/evidence/0061-0062-after.log (strict build 0 errors; four BW64 tests pass).
+- **evidence-after:** AUDIT/evidence/0061-0062-before.log (strict build failed with three reader.hpp sign-compare errors; the 16384-channel call was accepted); AUDIT/evidence/0061-0062-after.log (strict build 0 errors; four BW64 tests pass). Full suite (AUDIT/evidence/0061-0086-fullsuite.txt): 261 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** de57d52
 
-### #0062 · S2 · TEST · Strict C++ flags (-Wall -Wextra -Werror) fail on three benign sign-compare warnings in vendored libbw64
+### #0062 · S2 · DONE · Strict C++ flags (-Wall -Wextra -Werror) fail on three benign sign-compare warnings in vendored libbw64
 
 - **project/module:** BW64Bridge/Package
 - **file:line:** Sources/Package.swift:35-37; ThirdParty/libbw64/bw64/reader.hpp:220,225,227
@@ -894,7 +894,7 @@ _none_
 - **discovered-by:** baseline §3; reviewer B-9
 - **evidence-before:** AUDIT/baseline.md build table; AUDIT/findings/L0-L3-bridge-repo.md B-9
 - **fix-summary:** #0061 the bridge rejects a channels/bit-depth combination whose WAV block alignment would overflow libbw64's uint16; #0062 the vendored sign-compare diagnostics are suppressed around the libbw64 include only, so the strict -Wall -Wextra -Werror build now succeeds.
-- **evidence-after:** AUDIT/evidence/0061-0062-before.log (strict build failed with three reader.hpp sign-compare errors; the 16384-channel call was accepted); AUDIT/evidence/0061-0062-after.log (strict build 0 errors; four BW64 tests pass).
+- **evidence-after:** AUDIT/evidence/0061-0062-before.log (strict build failed with three reader.hpp sign-compare errors; the 16384-channel call was accepted); AUDIT/evidence/0061-0062-after.log (strict build 0 errors; four BW64 tests pass). Full suite (AUDIT/evidence/0061-0086-fullsuite.txt): 261 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** de57d52
 - **notes:** Decision: document a minimal vendored patch (explicit casts + tellg<0 check) in PATCHES.md, or compile vendored headers as system headers; keep -Werror on first-party C++.
 
@@ -1175,7 +1175,7 @@ _none_
 - **evidence-after:** AUDIT/evidence/0085-before.log (1 failure: '3½ x' sorted after '10 y'); AUDIT/evidence/0085-after.log (new test + both existing album sort tests, 3 pass). swiftlint 533/56. Full suite (AUDIT/evidence/0039-0085-fullsuite.txt): 235 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** 6a674bc
 
-### #0086 · S3 · TEST · Magic bytes-per-sample and missing free-space check on the BW64 path
+### #0086 · S3 · DONE · Magic bytes-per-sample and missing free-space check on the BW64 path
 
 - **project/module:** converter/AudioPipeline
 - **file:line:** Sources/converter/AudioPipeline.swift:1378,1694-1706
@@ -1184,7 +1184,7 @@ _none_
 - **discovered-by:** reviewer A-14
 - **evidence-before:** AUDIT/findings/L2-audio.md A-14
 - **fix-summary:** Names the pinned 24-bit staging width, adds estimateBW64Bytes covering the raw f32le temp and the BW64 output, and shares requireFreeSpace between the WAV and BW64 paths - the BW64 variant now checks space before writing the raw PCM.
-- **evidence-after:** AUDIT/evidence/0086-before.log (single-pass mutation fails the estimate test); AUDIT/evidence/0086-after.log (five BW64 tests pass). swiftlint 523/56.
+- **evidence-after:** AUDIT/evidence/0086-before.log (single-pass mutation fails the estimate test); AUDIT/evidence/0086-after.log (five BW64 tests pass). swiftlint 523/56. Full suite (AUDIT/evidence/0061-0086-fullsuite.txt): 261 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** f68aa6d
 
 ### #0087 · S3 · DONE · CLI inconsistencies: --seed 0, unbounded --sharpness, repeated action flags, option values beginning with --
