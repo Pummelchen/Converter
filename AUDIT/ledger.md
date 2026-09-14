@@ -2,15 +2,15 @@
 
 Session: `2026-09-13` · branch `audit/2026-09-13` · baseline commit `4bb136a`
 
-**known-total:100 done:63 open:37 blocked:0 new-this-session:100**
+**known-total:100 done:66 open:34 blocked:0 new-this-session:100**
 
 | status | count |
 |---|---|
 | START | 34 |
 | PROGRESS | 0 |
-| TEST | 3 |
+| TEST | 0 |
 | AUDIT | 0 |
-| DONE | 63 |
+| DONE | 66 |
 | BLOCKED | 0 |
 
 Status gates: START (reproduced/proven + expected behaviour written) → PROGRESS (diff) → TEST (failing-before/passing-after test pasted, full suite green, no new warnings) → AUDIT (cold re-read, all scanners re-run, no baseline regression, no new placeholder) → DONE (committed atomically). BLOCKED needs reason + what was tried + ≥2 options for a human.
@@ -26,7 +26,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 
 _none_
 
-## Open S2 / S3 (35)
+## Open S2 / S3 (32)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
@@ -34,13 +34,10 @@ _none_
 | #0041 | S2 | converter/DependencyBootstrap | Sources/converter/DependencyBootstrap.swift:216-248 | Installer subprocesses have no timeout and discard diagnostics | incomplete | START |  |
 | #0050 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:327-336,367-387,591-600 | Loudness fallback publishes any true-peak breach with a misleading 'closest-safe' label | logic | START |  |
 | #0051 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:992,1170,1029,508 | Redundant padding verification, uncached ffmpeg -filters, per-file ladder resolution | perf | START |  |
-| #0054 | S2 | converter/Actions | Sources/converter/Actions.swift:1254 | -mp4toshort re-ingests the pipeline's own _Short_CenterCut/_FullSong outputs | bug | TEST | 8e78584 |
 | #0055 | S2 | converter/ImagePipeline | Sources/converter/ImagePipeline.swift:329-336 | Fitted portrait still double-sharpens derived masters and user Vertical_8K.png | logic | START |  |
 | #0056 | S2 | converter/VideoPipeline | Sources/converter/VideoPipeline.swift:399-404 | shortenMP4 upscales with ffmpeg's default scaler instead of the configured flags | bug | START |  |
-| #0057 | S2 | converter/Actions | Sources/converter/Actions.swift:278-286; PipelineCore.swift:646 | Orientation classification ignores EXIF orientation; square images silently treated as landscape | bug | TEST | 0a98ca1 |
 | #0058 | S2 | repo | converter (binary); docs/KNOWN_GOOD_VERSIONS.md | Checked-in release binary has no verifiable provenance (no SHA-256, adhoc signature, no tag) | deps | START |  |
 | #0059 | S2 | repo/CI | .github/workflows/ci.yml:24,27-32,39-40 | CI not reproducible: unpinned action, latest-Xcode selection, unpinned brew formulae | deps | START |  |
-| #0060 | S2 | repo | album.txt; Sources/converter/AudioPipeline.swift:2063 | Personal track list committed as the production album.txt | placeholder | TEST | bef61c4 |
 | #0061 | S2 | BW64Bridge | Sources/BW64Bridge/bw64_bridge.cpp:125-141,161 | Bridge does not bound channels; libbw64 uint16 blockAlignment wraps to heap overflow (unreachable via config today) | unsafe | START |  |
 | #0062 | S2 | BW64Bridge/Package | Sources/Package.swift:35-37; ThirdParty/libbw64/bw64/reader.hpp:220,225,227 | Strict C++ flags (-Wall -Wextra -Werror) fail on three benign sign-compare warnings in vendored libbw64 | deps | START |  |
 | #0066 | S2 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:1627-1637,1738-1748 | Full-pipeline tests require hevc_videotoolbox; fail on hosts without HW HEVC | test | START |  |
@@ -66,7 +63,7 @@ _none_
 | #0098 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:529,534 | Exact ffmpeg bass filter string pinned without a stated reason | test | START |  |
 | #0100 | S3 | converter/Actions | Sources/converter/Actions.swift (normalizedFullRunSource / resolveFullAudio) | Full-run source is renamed before preflight; a corrupt source loses its original name in the error | logic | START |  |
 
-## Done (63)
+## Done (66)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
@@ -117,6 +114,9 @@ _none_
 | #0049 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:2104-2113 | -flactoalbum concatenates the pipeline's own derived/archival FLACs | logic | DONE | 8fac9dc |
 | #0052 | S2 | converter/ImagePipeline | Sources/converter/ValidationPipeline.swift:391 (preflightImageInput call sites) | Full-decode image preflight of the same master repeated ~10x per run | perf | DONE | fbefda6 |
 | #0053 | S2 | converter/Support | Sources/converter/Support.swift:308 | M:SS timecode parsing drops empty components; empty-component guard unreachable | logic | DONE | c79f502 |
+| #0054 | S2 | converter/Actions | Sources/converter/Actions.swift:1254 | -mp4toshort re-ingests the pipeline's own _Short_CenterCut/_FullSong outputs | bug | DONE | 8e78584 |
+| #0057 | S2 | converter/Actions | Sources/converter/Actions.swift:278-286; PipelineCore.swift:646 | Orientation classification ignores EXIF orientation; square images silently treated as landscape | bug | DONE | 0a98ca1 |
+| #0060 | S2 | repo | album.txt; Sources/converter/AudioPipeline.swift:2063 | Personal track list committed as the production album.txt | placeholder | DONE | bef61c4 |
 | #0063 | S2 | converterTests+Config | Sources/Tests/converterTests/converterTests.swift:128-140; Config.swift:400; VideoPipeline.swift:269 | SHORT_MP4_CLIP_SECONDS validated with Double() but consumed via parseFlexibleTimecode; test sets a value validate() rejects | test | DONE | 17816b6 |
 | #0064 | S2 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:1860-1900 | Scheduler-limit test can pass vacuously | test | DONE | 588bb0b |
 | #0065 | S2 | converterTests | Sources/Tests/converterTests/converterTests.swift:1473-1550 | AsyncSemaphore tests rely on sleeps for ordering and hang instead of failing on a leaked permit | test | DONE | 7508e7a |
@@ -783,7 +783,7 @@ _none_
 - **evidence-after:** AUDIT/evidence/0053-before.log (fix not applied: 8 failures — 7 'did not throw' plus ':' rejected with the wrong message); AUDIT/evidence/0053-after.log (4 timecode tests pass). swiftlint 531/56, no new violations. Full suite (AUDIT/evidence/0053-0092-fullsuite.txt): 238 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** c79f502
 
-### #0054 · S2 · TEST · -mp4toshort re-ingests the pipeline's own _Short_CenterCut/_FullSong outputs
+### #0054 · S2 · DONE · -mp4toshort re-ingests the pipeline's own _Short_CenterCut/_FullSong outputs
 
 - **project/module:** converter/Actions
 - **file:line:** Sources/converter/Actions.swift:1254
@@ -792,7 +792,7 @@ _none_
 - **discovered-by:** reviewer X-9
 - **evidence-before:** AUDIT/findings/L2-video-image-actions-cli.md X-9
 - **fix-summary:** VideoPipeline.isShortMP4Deliverable recognises every short deliverable by the embedded '_Short' marker, and stepMP4ToShort uses it so a rerun no longer re-ingests _Short_CenterCut / _Short_FullSong outputs.
-- **evidence-after:** AUDIT/evidence/0054-before.log (fix stashed: clip_Short_CenterCut_Short.mp4 and clip_Short_FullSong_Short.mp4 are produced); AUDIT/evidence/0054-after.log (test passes; only clip_Short.mp4 is written). swiftlint 531/56, no new violations.
+- **evidence-after:** AUDIT/evidence/0054-before.log (fix stashed: clip_Short_CenterCut_Short.mp4 and clip_Short_FullSong_Short.mp4 are produced); AUDIT/evidence/0054-after.log (test passes; only clip_Short.mp4 is written). swiftlint 531/56, no new violations. Full suite (AUDIT/evidence/0054-0060-fullsuite.txt): 242 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** 8e78584
 
 ### #0055 · S2 · START · Fitted portrait still double-sharpens derived masters and user Vertical_8K.png
@@ -813,7 +813,7 @@ _none_
 - **discovered-by:** reviewer X-11
 - **evidence-before:** AUDIT/findings/L2-video-image-actions-cli.md X-11
 
-### #0057 · S2 · TEST · Orientation classification ignores EXIF orientation; square images silently treated as landscape
+### #0057 · S2 · DONE · Orientation classification ignores EXIF orientation; square images silently treated as landscape
 
 - **project/module:** converter/Actions
 - **file:line:** Sources/converter/Actions.swift:278-286; PipelineCore.swift:646
@@ -822,7 +822,7 @@ _none_
 - **discovered-by:** reviewer X-12
 - **evidence-before:** AUDIT/findings/L2-video-image-actions-cli.md X-12
 - **fix-summary:** ImageProbe reads magick %[orientation]; displayedWidth/displayedHeight transpose orientations 5-8 and imageDimensions returns displayed geometry, so an EXIF-rotated phone JPEG is classified as portrait. Square sources are warned about and used as the landscape source.
-- **evidence-after:** AUDIT/evidence/0057-before.log (production fix stashed: full-run selection fails with 'exactly one landscape source image'); AUDIT/evidence/0057-after.log (testFullRunClassifiesEXIFRotatedJPEGByDisplayedOrientation and testFullRunTreatsASquareSourceAsTheLandscapeImage pass). swiftlint 531/56, no new violations.
+- **evidence-after:** AUDIT/evidence/0057-before.log (production fix stashed: full-run selection fails with 'exactly one landscape source image'); AUDIT/evidence/0057-after.log (testFullRunClassifiesEXIFRotatedJPEGByDisplayedOrientation and testFullRunTreatsASquareSourceAsTheLandscapeImage pass). swiftlint 531/56, no new violations. Full suite (AUDIT/evidence/0054-0060-fullsuite.txt): 242 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** 0a98ca1
 
 ### #0058 · S2 · START · Checked-in release binary has no verifiable provenance (no SHA-256, adhoc signature, no tag)
@@ -845,7 +845,7 @@ _none_
 - **evidence-before:** AUDIT/findings/L0-L3-bridge-repo.md B-6
 - **notes:** Pin checkout SHA, DEVELOPER_DIR, version guard.
 
-### #0060 · S2 · TEST · Personal track list committed as the production album.txt
+### #0060 · S2 · DONE · Personal track list committed as the production album.txt
 
 - **project/module:** repo
 - **file:line:** album.txt; Sources/converter/AudioPipeline.swift:2063
@@ -854,7 +854,7 @@ _none_
 - **discovered-by:** reviewer B-7
 - **evidence-before:** AUDIT/findings/L0-L3-bridge-repo.md B-7
 - **fix-summary:** Renames the personal album.txt to album.example.txt (documented template), git-ignores album.txt, and makes the missing-album-file error point at the template; README and docs/FORMATS.md updated.
-- **evidence-after:** AUDIT/evidence/0060-before.log (fix stashed: 'Missing album file: <path>' with no template reference); AUDIT/evidence/0060-after.log (testMissingAlbumFileErrorPointsAtTheExampleTemplate passes; git check-ignore -v album.txt reports .gitignore:2). swiftlint 531/56, no new violations.
+- **evidence-after:** AUDIT/evidence/0060-before.log (fix stashed: 'Missing album file: <path>' with no template reference); AUDIT/evidence/0060-after.log (testMissingAlbumFileErrorPointsAtTheExampleTemplate passes; git check-ignore -v album.txt reports .gitignore:2). swiftlint 531/56, no new violations. Full suite (AUDIT/evidence/0054-0060-fullsuite.txt): 242 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** bef61c4
 - **notes:** album.example.txt + ignore album.txt + loader message.
 
