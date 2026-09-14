@@ -1,0 +1,12 @@
+$ git stash push -- Sources/converter/Config.swift   # fix NOT applied
+$ swift test --package-path Sources --filter testEveryConfigRuleRejectsAnInvalidValueNamingTheKey
+/Users/node4/Downloads/Converter/Converter/Sources/Tests/converterTests/converterTests.swift:1754: error: -[converterTests.converterTests testEveryConfigRuleRejectsAnInvalidValueNamingTheKey] : XCTAssertThrowsError failed: did not throw an error - VIDEO_MP4_SCALE_FILTER=bogus must be rejected
+/Users/node4/Downloads/Converter/Converter/Sources/Tests/converterTests/converterTests.swift:1754: error: -[converterTests.converterTests testEveryConfigRuleRejectsAnInvalidValueNamingTheKey] : XCTAssertThrowsError failed: did not throw an error - VIDEO_MP4_SCALE_FILTER=lanczos,scale=1:1 must be rejected
+/Users/node4/Downloads/Converter/Converter/Sources/Tests/converterTests/converterTests.swift:1754: error: -[converterTests.converterTests testEveryConfigRuleRejectsAnInvalidValueNamingTheKey] : XCTAssertThrowsError failed: did not throw an error - VIDEO_COLOR_PRIMARIES=bt709,x=1 must be rejected
+/Users/node4/Downloads/Converter/Converter/Sources/Tests/converterTests/converterTests.swift:1754: error: -[converterTests.converterTests testEveryConfigRuleRejectsAnInvalidValueNamingTheKey] : XCTAssertThrowsError failed: did not throw an error - VIDEO_COLOR_TRANSFER=bt709:y must be rejected
+/Users/node4/Downloads/Converter/Converter/Sources/Tests/converterTests/converterTests.swift:1754: error: -[converterTests.converterTests testEveryConfigRuleRejectsAnInvalidValueNamingTheKey] : XCTAssertThrowsError failed: did not throw an error - VIDEO_COLOR_SPACE=bt709 z must be rejected
+/Users/node4/Downloads/Converter/Converter/Sources/Tests/converterTests/converterTests.swift:1754: error: -[converterTests.converterTests testEveryConfigRuleRejectsAnInvalidValueNamingTheKey] : XCTAssertThrowsError failed: did not throw an error - VIDEO_COLOR_RANGE=wide must be rejected
+Test Case '-[converterTests.converterTests testEveryConfigRuleRejectsAnInvalidValueNamingTheKey]' failed (0.122 seconds).
+	 Executed 1 test, with 6 failures (0 unexpected) in 0.122 (0.122) seconds
+	 Executed 1 test, with 6 failures (0 unexpected) in 0.122 (0.122) seconds
+	 Executed 1 test, with 6 failures (0 unexpected) in 0.122 (0.123) seconds

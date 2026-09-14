@@ -1,0 +1,6 @@
+$ swift test --package-path Sources --filter testEveryConfigRuleRejectsAnInvalidValueNamingTheKey   # fix applied
+	 Executed 1 test, with 0 failures (0 unexpected) in 0.065 (0.065) seconds
+	 Executed 1 test, with 0 failures (0 unexpected) in 0.065 (0.066) seconds
+
+$ swift test --package-path Sources --filter Config
+	 Executed 14 tests, with 0 failures (0 unexpected) in 13.070 (13.071) seconds

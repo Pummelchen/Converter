@@ -407,14 +407,14 @@ struct ProjectConfig {
         )
         try requirePositive(videoMP4Width, "VIDEO_MP4_WIDTH")
         try requirePositive(videoMP4Height, "VIDEO_MP4_HEIGHT")
-        try requireNonEmpty(videoMP4ScaleFilter, "VIDEO_MP4_SCALE_FILTER")
+        try requireAllowedValue(videoMP4ScaleFilter, allowedScaleFilters, "VIDEO_MP4_SCALE_FILTER")
         try requireNonEmpty(videoMP4PixelFormat, "VIDEO_MP4_PIXEL_FORMAT")
         try requireNonEmpty(videoMP4Tag, "VIDEO_MP4_TAG")
         try requireNonEmpty(videoMP4VerifyCodec, "VIDEO_MP4_VERIFY_CODEC")
-        try requireNonEmpty(videoColorPrimaries, "VIDEO_COLOR_PRIMARIES")
-        try requireNonEmpty(videoColorTransfer, "VIDEO_COLOR_TRANSFER")
-        try requireNonEmpty(videoColorSpace, "VIDEO_COLOR_SPACE")
-        try requireNonEmpty(videoColorRange, "VIDEO_COLOR_RANGE")
+        try requireFilterToken(videoColorPrimaries, "VIDEO_COLOR_PRIMARIES")
+        try requireFilterToken(videoColorTransfer, "VIDEO_COLOR_TRANSFER")
+        try requireFilterToken(videoColorSpace, "VIDEO_COLOR_SPACE")
+        try requireAllowedValue(videoColorRange, allowedColorRanges, "VIDEO_COLOR_RANGE")
         // configuredShortClipSeconds reads this value through parseFlexibleTimecode, so the same parser
         // decides what is valid here: "58", "0:58" and "1:30" alike, capped by maximumTimecodeSeconds.
         // Validating with Double() instead rejected every MM:SS value the consumer would have accepted.
@@ -549,6 +549,33 @@ private func requireLoudnormTarget(_ value: Double, _ name: String) throws {
 private func requireNonEmpty(_ value: String, _ name: String) throws {
     if value.trimmed.isEmpty {
         throw AppError("\(name) must not be empty")
+    }
+}
+
+// Config values are spliced verbatim into ffmpeg filter graphs, so the tunables that end up in a
+// graph are restricted to what ffmpeg actually defines instead of merely being non-empty (#0088).
+private let allowedScaleFilters: Set<String> = [
+    "fast_bilinear", "bilinear", "bicubic", "experimental", "neighbor", "area", "bicublin",
+    "gauss", "sinc", "lanczos", "spline", "spline16", "spline36"
+]
+
+// ffmpegFilterRangeValue maps tv/pc onto the filter spelling; both spellings are accepted.
+private let allowedColorRanges: Set<String> = ["tv", "pc", "limited", "full"]
+
+private func requireAllowedValue(_ value: String, _ allowed: Set<String>, _ name: String) throws {
+    try requireNonEmpty(value, name)
+    guard allowed.contains(value.lowercasedASCII) else {
+        throw AppError("\(name) must be one of \(allowed.sorted().joined(separator: ", ")) (got '\(value)')")
+    }
+}
+
+// A colour property is a bare ffmpeg token; anything outside letters, digits and underscores
+// (a comma or colon above all) could splice another filter into the graph.
+private func requireFilterToken(_ value: String, _ name: String) throws {
+    try requireNonEmpty(value, name)
+    let allowed = Set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_".unicodeScalars)
+    guard value.unicodeScalars.allSatisfy({ allowed.contains($0) }) else {
+        throw AppError("\(name) must be an ffmpeg token of letters, digits and underscores (got '\(value)')")
     }
 }
 
