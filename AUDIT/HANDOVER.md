@@ -136,7 +136,17 @@ against the working tree and `origin` on 2026-09-14 06:58 WIB.
   **#0030** (README, CLI help, CONTRIBUTING, `docs/FORMATS.md`, `docs/KNOWN_GOOD_VERSIONS.md` and
   the wiki now describe the `1_source` rename, which actions change loudness, the
   `min(SHORT_MP4_CLIP_SECONDS, 58)` cap, the `album.txt` error semantics and opt-in auto-install).
-- Ledger after batch 16: **done 99 · open 1 · blocked 0** — only S0 **#0006** (Phase E) remains.
+- Ledger after batch 16: **done 99 · open 1 · blocked 0**.
+- **Audit complete (2026-09-14): 100 / 100 DONE, 0 open, 0 blocked.** Batch 17 closed S0 **#0006**
+  (Phase E) by verifying the frozen tree independently: a fresh clone of `audit/2026-09-13` at
+  `ad135db` on `node1` (Mac Mini M2, 8 GB, macOS 26.6.2, Xcode 26.6, Swift 6.3.3) built clean under
+  `-warnings-as-errors`, built clean under the strict C++ flags, verified
+  `docs/converter.sha256`, and ran the full suite green (263 tests, 0 failures, 676 s). The clone
+  was removed afterwards (`AUDIT/evidence/0006-phase-e-node1.log`).
+- The audit branch is a fast-forward ahead of `main`, so the release step is simply merging it.
+- Final state: 263 tests green on two machines, swiftlint 472/19 (all structural), first-party
+  strict C++ clean, CI pinned and reproducible, and the shipped binary rebuilt from the audited
+  source with recorded provenance.
 - Remaining 3: **#0051** (redundant padding verification — up to 8 ffmpeg decodes on the staging
   WAV and again on the deliverable; `ffmpeg -filters` spawned per file; ladder resolved per file.
   Needs a recording-tool wrapper in `IntegrationTestSupport` that logs argv and execs the real
