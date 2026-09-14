@@ -30,7 +30,7 @@ _none_
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
-| #0050 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:327-336,367-387,591-600 | Loudness fallback publishes any true-peak breach with a misleading 'closest-safe' label | logic | TEST |  |
+| #0050 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:327-336,367-387,591-600 | Loudness fallback publishes any true-peak breach with a misleading 'closest-safe' label | logic | TEST | 8828888 |
 | #0051 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:992,1170,1029,508 | Redundant padding verification, uncached ffmpeg -filters, per-file ladder resolution | perf | START |  |
 | #0058 | S2 | repo | converter (binary); docs/KNOWN_GOOD_VERSIONS.md | Checked-in release binary has no verifiable provenance (no SHA-256, adhoc signature, no tag) | deps | START |  |
 | #0059 | S2 | repo/CI | .github/workflows/ci.yml:24,27-32,39-40 | CI not reproducible: unpinned action, latest-Xcode selection, unpinned brew formulae | deps | START |  |
@@ -757,6 +757,7 @@ _none_
 - **evidence-before:** AUDIT/findings/L2-audio.md A-9
 - **fix-summary:** A fallback may excuse a true-peak issue only when truePeak <= sourcePeak + appliedGain + 0.3 dB (MP3) / 0.1 dB (lossless); loudnessFallbackReason(result:) derives the warning label from the issue set, and both the loudness and album paths use it.
 - **evidence-after:** AUDIT/evidence/0050-before.log (guard disabled: the added-peak plan and the lossless near-ceiling result were accepted); AUDIT/evidence/0050-after.log (testLoudnessFallbackAcceptsMediaValidQCIssuesOnly and testLoudnessFallbackOnlyExcusesAnInherentTruePeak pass; testLoudnessNormalizeKeepsPeakConstrainedMP4Transparent passes). swiftlint 528/56, no new violations.
+- **commit sha:** 8828888
 
 ### #0051 · S2 · START · Redundant padding verification, uncached ffmpeg -filters, per-file ladder resolution
 
