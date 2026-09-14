@@ -35,7 +35,7 @@ _none_
 | #0050 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:327-336,367-387,591-600 | Loudness fallback publishes any true-peak breach with a misleading 'closest-safe' label | logic | START |  |
 | #0051 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:992,1170,1029,508 | Redundant padding verification, uncached ffmpeg -filters, per-file ladder resolution | perf | START |  |
 | #0055 | S2 | converter/ImagePipeline | Sources/converter/ImagePipeline.swift:329-336 | Fitted portrait still double-sharpens derived masters and user Vertical_8K.png | logic | START |  |
-| #0056 | S2 | converter/VideoPipeline | Sources/converter/VideoPipeline.swift:399-404 | shortenMP4 upscales with ffmpeg's default scaler instead of the configured flags | bug | TEST |  |
+| #0056 | S2 | converter/VideoPipeline | Sources/converter/VideoPipeline.swift:399-404 | shortenMP4 upscales with ffmpeg's default scaler instead of the configured flags | bug | TEST | dc65cd5 |
 | #0058 | S2 | repo | converter (binary); docs/KNOWN_GOOD_VERSIONS.md | Checked-in release binary has no verifiable provenance (no SHA-256, adhoc signature, no tag) | deps | START |  |
 | #0059 | S2 | repo/CI | .github/workflows/ci.yml:24,27-32,39-40 | CI not reproducible: unpinned action, latest-Xcode selection, unpinned brew formulae | deps | START |  |
 | #0061 | S2 | BW64Bridge | Sources/BW64Bridge/bw64_bridge.cpp:125-141,161 | Bridge does not bound channels; libbw64 uint16 blockAlignment wraps to heap overflow (unreachable via config today) | unsafe | START |  |
@@ -814,6 +814,7 @@ _none_
 - **evidence-before:** AUDIT/findings/L2-video-image-actions-cli.md X-11
 - **fix-summary:** The -mp4toshort filter graph is built by VideoPipeline.mp4ToShortVideoFilter(), whose scale step now carries flags=<VIDEO_MP4_SCALE_FILTER>+accurate_rnd+full_chroma_int like every other render path.
 - **evidence-after:** AUDIT/evidence/0056-before.log (filter was 'scale=90:160,format=...' with no flags); AUDIT/evidence/0056-after.log (testMP4ToShortUsesTheConfiguredScaler passes). swiftlint 531/56, no new violations.
+- **commit sha:** dc65cd5
 
 ### #0057 · S2 · DONE · Orientation classification ignores EXIF orientation; square images silently treated as landscape
 
