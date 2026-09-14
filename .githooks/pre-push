@@ -1,0 +1,14 @@
+#!/bin/sh
+# Refuse to push a tree with uncommitted tracked changes.
+#
+# A batch audit commit stages only the paths its caller lists, so one forgotten file leaves exactly
+# this state; pushing then hides the omission until someone re-checks out. Enable the hook with:
+#   git config core.hooksPath .githooks
+dirty=$(git status --porcelain --untracked-files=no)
+if [ -n "$dirty" ]; then
+  echo "pre-push: working tree has uncommitted tracked changes:" >&2
+  echo "$dirty" >&2
+  echo "Commit or stash them first. (Override once with: git push --no-verify)" >&2
+  exit 1
+fi
+exit 0

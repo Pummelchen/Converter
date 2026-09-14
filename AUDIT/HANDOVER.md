@@ -223,3 +223,30 @@ Gotchas learned:
 - Homebrew self-install is pinned + SHA-256 verified (update both constants together).
 - Unknown options and stray positionals are errors.
 - Licence: **MIT** (owner chose it on `main`; adopted here by the `4bd292e` merge).
+
+## Session close-out decisions (2026-09-14, after 100/100)
+
+1. **Merge shape — fast-forward, no PR retro-fit, no history rewrite.** The audit branch was a
+   linear descendant of `main` (0 commits behind), so `--ff-only` merged it without a merge commit
+   and without losing any information. `main` had already been published, and rewriting it to
+   imitate a pull request would trade real history for a cosmetic review artifact; the ledger plus
+   the per-task commit messages (What/Why/Evidence) are the review record. CI on `main` is green at
+   `a194fe8`.
+2. **The audit branch was deleted** (remote and local) once Phase E had verified it and `main`
+   contained every one of its commits (`git rev-list --count origin/audit/2026-09-13..main == 0`).
+   A merged branch only invites drift. The ledger's `branch` field now records `main`, and
+   `audited_commit` records the verified tip.
+3. **The 19 structural lint violations were deliberately NOT refactored.** Splitting
+   `Actions.swift`, `AudioPipeline.swift` and `ValidationPipeline.swift`, or unwinding hot loops to
+   satisfy a complexity counter, is a behaviour-bearing change with no functional benefit and real
+   regression risk in the media pipeline. Instead `scripts/lint-budget.sh` and
+   `scripts/lint-budget.json` turn the baseline into a version-aware ratchet enforced in CI:
+   violations may not grow, the per-rule delta is printed, and a swiftlint upgrade warns instead of
+   failing the build.
+4. **The ffmpeg-counting test no longer prints on success.** The count stays in the assertion
+   message together with the captured argv list, so a failure is diagnosable without adding noise
+   to the suite output.
+5. **The "forgotten file" slip is guarded twice.** `AUDIT/tools/commit_one.py` and `commit_task.py`
+   refuse to commit when a tracked file is modified but unstaged (`AUDIT_ALLOW_DIRTY=1` overrides),
+   and the committed `.githooks/pre-push` refuses to push a dirty tree. Enable it once per clone
+   with `git config core.hooksPath .githooks`.

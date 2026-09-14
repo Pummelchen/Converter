@@ -1207,7 +1207,6 @@ final class PipelineIntegrationTests: XCTestCase {
         XCTAssertFalse(invocations.isEmpty, "the recorder saw no ffmpeg runs")
         // One padding verification instead of two costs 40 invocations here (47 before the fix),
         // so the bound sits between the two levels rather than pinning an exact implementation.
-        print("ffmpeg invocations for one -noise file: \(invocations.count)")
         XCTAssertLessThanOrEqual(
             invocations.count, 44,
             "unexpected ffmpeg invocation count: \(invocations.count) — \(invocations)"

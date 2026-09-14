@@ -67,6 +67,30 @@ behind that decision.
 - Config schema changes need tests for parsing, profile overlay, and invalid values.
 - CLI changes need parser/help-text tests; removed flags must keep their actionable rejection errors.
 
+## Lint gate
+
+`scripts/lint-budget.sh` runs swiftlint over `Sources/converter` and `Sources/Tests` and compares
+the result with `scripts/lint-budget.json` (currently 471 violations, 19 error-level). It fails when
+violations grow and prints the per-rule delta. The structural rules (`file_length`,
+`type_body_length`, `function_body_length`, `cyclomatic_complexity`) and the 120-character
+`line_length` preference are accepted debt, recorded with their rationale in the `#0073` commit;
+the budget is a ratchet, so lower it when violations are removed and never raise it silently. A
+swiftlint version change is reported as a warning instead of a failure — re-record the budget with
+`scripts/lint-budget.sh --write` after reviewing the delta.
+
+## Committing
+
+`.githooks/pre-push` refuses to push a branch with uncommitted tracked changes, which catches the
+"one file was left out of a batch commit" mistake. Enable it once per clone:
+
+```bash
+git config core.hooksPath .githooks
+```
+
+The audit's batch helpers (`AUDIT/tools/commit_one.py`, `commit_task.py`) enforce the same rule at
+commit time and refuse to commit when a tracked file is modified but unstaged; set
+`AUDIT_ALLOW_DIRTY=1` only when that is deliberate.
+
 ## Documentation sync
 
 Keep these consistent with any behavior change:

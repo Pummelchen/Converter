@@ -48,12 +48,18 @@ jobs:
           swift --version | grep -q 'Swift version 6.3.3' \
             || { echo "This package requires Swift 6.3.3 (see Sources/Package.swift)"; exit 1; }
 
-      - name: Install media toolchain (ffmpeg, imagemagick)
+      - name: Install media toolchain (ffmpeg, imagemagick) and swiftlint
         run: |
-          brew install ffmpeg imagemagick
+          brew install ffmpeg imagemagick swiftlint
           ffmpeg -version | head -1
           ffprobe -version | head -1
           magick -version | head -1
+          swiftlint version
+
+      # Ratchet, not a rewrite: fails only when violations grow beyond scripts/lint-budget.json.
+      # A swiftlint version change is reported but does not fail the build.
+      - name: Lint budget (no new violations)
+        run: scripts/lint-budget.sh
 
       - name: Build (warnings are errors)
         run: swift build --package-path Sources -Xswiftc -warnings-as-errors

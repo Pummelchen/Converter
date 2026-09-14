@@ -1,6 +1,6 @@
 {
   "session": "2026-09-13",
-  "branch": "audit/2026-09-13",
+  "branch": "main",
   "baseline_commit": "4bb136a",
   "tasks": [
     {
@@ -1705,5 +1705,7 @@
       "notes": "Not folded into #0022 because the naming unit tests use empty placeholder files and would all need real media if preflight moved ahead of the rename; needs its own design (probe-only preflight of the chosen file before renaming)."
     }
   ],
-  "handover": "AUDIT/HANDOVER.md"
+  "handover": "AUDIT/HANDOVER.md",
+  "audited_commit": "a194fe8b46a601e930ec715e88d9af9b58d635e1",
+  "closure": "Audit closed 2026-09-14: 100/100 DONE. audit/2026-09-13 was fast-forwarded into main (no merge commit, no history rewrite) and deleted after Phase E verification on node1; this record now lives on main."
 }
