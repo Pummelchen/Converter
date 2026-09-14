@@ -535,9 +535,11 @@ struct CLIOptions {
               Horizontal_8K.png for the main MP4 and optional Vertical_8K.png for the short MP4.
             - If both Horizontal_8K.png and Vertical_8K.png are present, full run renders the main MP4 first,
               then renders the short directly from Vertical_8K.png.
-            - If Vertical_8K.png is absent, full run uses or creates *_NFT8K.png for the short MP4,
-              centering it in the portrait frame with black top/bottom padding.
-            - Exactly 1 source audio file: .flac or .wav or .mp3
+            - If Vertical_8K.png is absent, a discovered portrait source image is used for the fitted
+              short; failing that, *_NFT8K.png is used or created, centered in the portrait frame
+              with black top/bottom padding.
+            - Exactly 1 source audio file: .flac or .wav or .mp3. It is renamed to 1_source.<ext>
+              (with its _RF64/_BW64 companions) before the run, and every deliverable is named 1.*.
           Full-run result:
             - Image deliverables: 8K/4K PNG, NFT PNGs, 3K/2K PNG, JPG exports, and both portrait
               short framings as stills: *_Short_8K.png / *_Short_CenterCut_8K.png plus _1MB/_2MB JPGs
@@ -545,6 +547,7 @@ struct CLIOptions {
             - Audio/video deliverables: WAV, M4A, MP3, main MP4, and four portrait shorts:
               _8K_Short.mp4 (fitted, black padding) and _8K_Short_CenterCut.mp4 (centre of the 8K
               master, fills the frame); each gains a _FullSong companion when the audio is longer
+              than the cap, min(SHORT_MP4_CLIP_SECONDS, 58) seconds
             - External audio deliverables: *_RF64.flac, *_RF64.wav, *_BW64.wav
               These archival companions are delivery-only and are not reused as full-run source inputs.
 
@@ -737,7 +740,8 @@ struct CLIOptions {
             FILE must resolve directly inside OUT_DIR; subfolders are rejected.
           --overwrite
           --keep-full-name
-            Full source stems are now preserved by default for output safety.
+            Keep trailing derivative markers such as _8K/_4K/_3K/_2K in image output stems.
+            Default: those known markers are stripped before the new suffix is added.
           --lowercase-prefix
           --no-recursive
             Accepted for compatibility; scanning is always limited to the current SRC_DIR/Output folder.

@@ -9,7 +9,7 @@ git clone https://github.com/Pummelchen/Converter.git
 cd Converter
 brew install ffmpeg imagemagick        # runtime media tools
 swift build --package-path Sources     # build
-swift test --package-path Sources      # run all tests (159 tests, ~7.5 min)
+swift test --package-path Sources      # run all tests (263 tests, ~11 min)
 ```
 
 Requires Swift tools 6.3.3+ (Swift language mode 6) and macOS 15+, matching the `.macOS(.v15)` platform in `Sources/Package.swift`. See the [wiki](https://github.com/Pummelchen/Converter/wiki) for command reference and configuration details.
@@ -56,7 +56,9 @@ behind that decision.
 - Preserve direct-child path containment for explicit input/output paths (no subfolder or absolute-path escapes).
 - Preserve hidden run-scoped temp files, backup-based publishing, and verify-before-publish behavior.
 - Do not weaken media validation/QC thresholds or loudness-preservation semantics without calling it out explicitly.
-- Operational commands may auto-install missing Homebrew formulae; do not broaden install/network behavior without review.
+- Missing Homebrew formulae are installed **only** when `CONVERTER_AUTO_INSTALL_DEPS=1` is set
+  (off by default; the Homebrew installer download is pinned and SHA-256 verified); do not broaden
+  install/network behavior without review.
 
 ## Tests
 

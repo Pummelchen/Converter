@@ -27,7 +27,10 @@ Source images are identified by orientation, not by filename:
 - **one landscape image** — required, any size, upscaled to the 8K master
 - **one portrait image** — optional, any size, used for the fitted shorts
 
-Every generated file is named after the audio file, so one release keeps one prefix throughout. Your source files keep their own names.
+The full run renames its single source audio to `1_source.<ext>` — and moves the whole companion
+family (`*_RF64`, `*_BW64`) with it — so every deliverable is named after the release (`1.wav`,
+`1.mp3`, `1_8K.mp4`, …) and the untouched original always sits beside them as `1_source.<ext>`.
+Batch actions name each output after its own source file instead.
 
 `Output/` is both the input and output directory. Discovery is non-recursive, and the directory is meant to be cleared between runs.
 
@@ -41,7 +44,9 @@ Every generated file is named after the audio file, so one release keeps one pre
 | Archival | `*_RF64.flac`, `*_RF64.wav`, `*_BW64.wav` |
 | Video | main MP4 (7680×4320) + four portrait shorts (4320×7680) |
 
-The four shorts give you both framings, each with a full-length companion when the song runs past the 58-second cap:
+The four shorts give you both framings, each with a full-length companion when the song runs past
+the cap — `min(SHORT_MP4_CLIP_SECONDS, 58)` seconds, so lowering the configured cap also lowers the
+companion threshold:
 
 - `_8K_Short.mp4` — image fitted inside the frame, padded with black
 - `_8K_Short_CenterCut.mp4` — centre of the 8K master cropped to fill the frame, no padding
@@ -61,7 +66,10 @@ Both framings are also saved as stills, so the artwork is usable without pulling
 
 ## Behaviour worth knowing
 
-- **Loudness is preserved, never silently changed.** Only `-master` and `-loudness` alter audio.
+- **Loudness is preserved unless you ask for a change.** Only `-master`, `-loudness` and `-album`
+  (per-track normalization) change loudness. The processing actions (`-bass`, `-fade`, `-fadecut`,
+  `-fadeout`, `-fadewav`, `-noise`, `-silence`, `-mp3clean`) change the audio only in the way their
+  name says.
 - **Existing outputs are verified and reused.** Pass `--overwrite` to force a rebuild.
 - **Nothing is installed behind your back.** Missing tools fail with an actionable error.
 
@@ -83,7 +91,7 @@ Requires Swift tools 6.3.3+ and macOS 15+. The package lives in `Sources/`, so e
 ```bash
 swift build --package-path Sources -c release
 cp Sources/.build/arm64-apple-macosx/release/converter ./converter && chmod +x ./converter
-swift test --package-path Sources     # 159 tests, ~7.5 min
+swift test --package-path Sources     # 263 tests, ~11 min
 ```
 
 A prebuilt `converter` binary ships at the repository root. CI runs the build and full suite on every push and PR to `main` ([ci.yml](./.github/workflows/ci.yml)).

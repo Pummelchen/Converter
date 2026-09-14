@@ -40,7 +40,7 @@ JPEG scanning accepts both `.jpg` and `.jpeg`; JPEG outputs are written with `.j
 | Command | Input | Output |
 |---|---|---|
 | `-m4atomp4` | exactly 1 `*_8K.png` + exactly 1 `.m4a` | main MP4 (HEVC ladder, 7680x4320, ALAC audio) |
-| `-short` | exactly 1 image (`.png`/`.jpg`/`.jpeg`) + exactly 1 audio-only file supported by ffmpeg | `_8K_Short.mp4` (H264 ladder, 4320x7680) with the image fitted and black padding, plus `_8K_Short_CenterCut.mp4` cropping the centre of the 8K master to fill the frame; both capped at 58 s, each with a `_FullSong` variant when the audio is longer |
+| `-short` | exactly 1 image (`.png`/`.jpg`/`.jpeg`) + exactly 1 audio-only file supported by ffmpeg | `_8K_Short.mp4` (H264 ladder, 4320x7680) with the image fitted and black padding, plus `_8K_Short_CenterCut.mp4` cropping the centre of the 8K master to fill the frame; both capped at `min(SHORT_MP4_CLIP_SECONDS, 58)` s, each with a `_FullSong` variant when the audio is longer |
 | `-nfttoshort` | any single audio-only file supported by ffmpeg + `Vertical_8K.png` or existing/derived `*_NFT8K.png` (or any single image as fallback) | `_8K_Short.mp4` portrait clip plus `_8K_Short_CenterCut.mp4` filling the frame from the centre of the 8K master; both capped at 58 s, source loudness preserved, each with a `_FullSong` variant when the audio is longer |
 | `-mp4toshort` | one or more `.mp4` | `_Short.mp4` portrait clips, capped at 58 s |
 
@@ -56,7 +56,7 @@ JPEG scanning accepts both `.jpg` and `.jpeg`; JPEG outputs are written with `.j
 | `-mp3toalbum` | `album.txt` listing `.mp3` tracks | RF64 `album_from_mp3.rf64.wav` (listed order, no normalization) |
 | `-flactoalbum` | all `.flac` in `SRC_DIR`, natural numeric order | RF64 `album.wav` (no normalization) |
 
-`album.txt` supports `#` comments and blank lines; entries may omit the extension; missing tracks are skipped with a warning. `album.txt` is a per-user file and is git-ignored — copy `album.example.txt` to `album.txt` and list your own tracks. Archival companions (`*_RF64.*`, `*_BW64.*`) are delivery-only and excluded from source selection in full runs.
+`album.txt` supports `#` comments and blank lines; entries may omit the extension. A listed track that cannot be used is an **error** — the build fails rather than publishing a shorter album; with `--continue-on-error` the usable tracks are still joined and the failures are reported in the summary. `album.txt` is a per-user file and is git-ignored — copy `album.example.txt` to `album.txt` and list your own tracks. Archival companions (`*_RF64.*`, `*_BW64.*`) are delivery-only and excluded from source selection in full runs.
 
 ## Audio processing actions (batch over SRC_DIR)
 

@@ -43,6 +43,26 @@ whole-file canonical PCM comparison, merged QC/image probes, and the shared vide
 
 Note: ffmpeg 9.0.1 is a major-version step up from the 8.1.2 recorded above and passes the full suite.
 
+## Recorded environment (2026-09-14)
+
+Validation after the pre-production audit (`AUDIT/ledger.md`, 100 tasks): verify-before-publish
+hardening, cancellation-aware fan-outs, host-scoped temp files, EXIF-oriented image classification,
+ALAC stream copy into videos, the bridged BW64 writer's bounds, and a clean strict-C++ build.
+
+| Component | Version | Notes |
+|---|---|---|
+| macOS | 26.6.2 (25G83) | Apple Silicon (`arm64`) |
+| Xcode | 26.6 (17F113) | |
+| Swift | 6.3.3 (`swiftlang-6.3.3.1.3`) | swift-driver 1.148.6 |
+| ffmpeg / ffprobe | 9.0.1 | Homebrew formula `ffmpeg` |
+| ImageMagick (`magick`) | 7.1.2-31 Q16-HDRI aarch64 | Homebrew formula `imagemagick` |
+| swiftlint | 0.65.1 | 472 violations, 19 error-level (all structural; see `AUDIT/evidence/0073-swiftlint-after.txt`) |
+
+- `swift build --package-path Sources` — success, clean under `-warnings-as-errors`
+- `swift build --package-path Sources -c release -Xswiftc -warnings-as-errors -Xcc -Wall -Xcc -Wextra -Xcc -Werror` — success
+- `swift test --package-path Sources` — 263 tests, 0 failures (~11 min)
+- Release binary rebuilt from `7abe547`; size, SHA-256 and signature recorded in `docs/BINARY_PROVENANCE.md`.
+
 ### Real-media validation (2026-08-13)
 
 `-full` run on a production master — 48 kHz/24-bit FLAC, 3:28, −9.35 LUFS, −0.85 dBTP, with
