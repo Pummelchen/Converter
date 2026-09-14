@@ -1315,7 +1315,7 @@ extension ConverterTool {
     }
 
     func stepMP4ToShort() throws {
-        let files = try files(in: cli.srcDir, matchingExtensions: ["mp4"]).filter { !$0.stem.hasSuffix("_Short") }
+        let files = try files(in: cli.srcDir, matchingExtensions: ["mp4"]).filter { !isShortMP4Deliverable($0) }
         _ = try processBatch(files: files, emptyMessage: "No .mp4 files found in '\(cli.srcDir.path)'.", failWhenEmpty: false) { file in
             self.logger.info("MP4 -> Short: \(file.basename)")
             return try self.shortenMP4(file, audioQCPolicy: self.config.shortFormAudioQCPolicy)

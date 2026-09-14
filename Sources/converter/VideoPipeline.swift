@@ -278,6 +278,13 @@ extension ConverterTool {
         stem.hasSuffix("_Short") ? stem : "\(stem)_Short"
     }
 
+    // -mp4toshort derives <stem>_Short plus the _CenterCut and _FullSong framings, so every
+    // deliverable carries the "_Short" marker. Testing only for a trailing "_Short" re-ingested
+    // the companions and produced a fresh nested deliverable on every rerun.
+    func isShortMP4Deliverable(_ file: URL) -> Bool {
+        file.stem.contains("_Short")
+    }
+
     func portraitShortMP4Stem(forAudioStem stem: String) -> String {
         if stem.hasSuffix("_8K_Short") {
             return stem

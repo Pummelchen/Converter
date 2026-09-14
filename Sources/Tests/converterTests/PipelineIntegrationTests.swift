@@ -464,6 +464,26 @@ final class PipelineIntegrationTests: XCTestCase {
         XCTAssertEqual(tool.portraitShortMP4Stem(forAudioStem: "song_8K_Short"), "song_8K_Short")
     }
 
+    // audit #0054: -mp4toshort derives _Short plus the _CenterCut/_FullSong framings. The old
+    // filter only skipped a trailing "_Short", so a rerun re-ingested its own companions and
+    // produced clip_Short_CenterCut_Short.mp4 and friends.
+    func testMP4ToShortDoesNotReingestItsOwnShortDeliverables() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe"])
+
+        _ = try workspace.createVideoMP4(name: "clip", duration: 1.5)
+        _ = try workspace.createVideoMP4(name: "clip_Short_CenterCut", duration: 1.5)
+        _ = try workspace.createVideoMP4(name: "clip_Short_FullSong", duration: 1.5)
+
+        let tool = try workspace.makeTool(arguments: ["-mp4toshort"])
+        try tool.stepMP4ToShort()
+
+        let names = try FileManager.default.contentsOfDirectory(atPath: workspace.output.path).sorted()
+        XCTAssertTrue(names.contains("clip_Short.mp4"), "the source clip was not shortened: \(names)")
+        XCTAssertFalse(names.contains("clip_Short_CenterCut_Short.mp4"), "own short re-ingested: \(names)")
+        XCTAssertFalse(names.contains("clip_Short_FullSong_Short.mp4"), "own short re-ingested: \(names)")
+    }
+
     func testAudioConversionMatrixProducesVerifiedOutputs() throws {
         let workspace = try IntegrationWorkspace()
         try workspace.requireCommands(["ffmpeg", "ffprobe"])

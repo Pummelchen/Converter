@@ -1,0 +1,8 @@
+$ git stash push -- Sources/converter/VideoPipeline.swift Sources/converter/Actions.swift   # fix NOT applied
+$ swift test --package-path Sources --filter testMP4ToShortDoesNotReingestItsOwnShortDeliverables
+/Users/node4/Downloads/Converter/Converter/Sources/Tests/converterTests/PipelineIntegrationTests.swift:483: error: -[converterTests.PipelineIntegrationTests testMP4ToShortDoesNotReingestItsOwnShortDeliverables] : XCTAssertFalse failed - own short re-ingested: ["clip.mp4", "clip_Short.mp4", "clip_Short_CenterCut.mp4", "clip_Short_CenterCut_Short.mp4", "clip_Short_FullSong.mp4", "clip_Short_FullSong_Short.mp4"]
+/Users/node4/Downloads/Converter/Converter/Sources/Tests/converterTests/PipelineIntegrationTests.swift:484: error: -[converterTests.PipelineIntegrationTests testMP4ToShortDoesNotReingestItsOwnShortDeliverables] : XCTAssertFalse failed - own short re-ingested: ["clip.mp4", "clip_Short.mp4", "clip_Short_CenterCut.mp4", "clip_Short_CenterCut_Short.mp4", "clip_Short_FullSong.mp4", "clip_Short_FullSong_Short.mp4"]
+Test Case '-[converterTests.PipelineIntegrationTests testMP4ToShortDoesNotReingestItsOwnShortDeliverables]' failed (11.682 seconds).
+	 Executed 1 test, with 2 failures (0 unexpected) in 11.682 (11.682) seconds
+	 Executed 1 test, with 2 failures (0 unexpected) in 11.682 (11.682) seconds
+	 Executed 1 test, with 2 failures (0 unexpected) in 11.682 (11.683) seconds
