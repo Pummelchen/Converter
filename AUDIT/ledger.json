@@ -1276,7 +1276,7 @@
       "evidence_before": "AUDIT/findings/L2-core-runtime.md C-10; L2-video-image-actions-cli.md X-17; L0-L3-bridge-repo.md B-15; L2-audio.md A-15",
       "fix_summary": "Removes the tautological m4a guard, the dead writeBext/FLAC override parameters, the redundant ffmpeg switch and fullRunImageRank's unreachable fallback, simplifies the bw64 size ternary, labels the shared audio preflight per action, and caps the album duration tolerance below the inter-track gap (with a test).",
       "evidence_after": "testAlbumDurationToleranceIsStrictlyBelowTheGapItMustDetect passes; Album/Bass/Master/Loudness/BW64/FullRun suites pass; swiftlint 523/56; first-party strict C++ clean.",
-      "commit": "",
+      "commit": "2609059",
       "notes": ""
     },
     {

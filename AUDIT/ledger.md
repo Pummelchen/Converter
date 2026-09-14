@@ -37,7 +37,7 @@ _none_
 | #0062 | S2 | BW64Bridge/Package | Sources/Package.swift:35-37; ThirdParty/libbw64/bw64/reader.hpp:220,225,227 | Strict C++ flags (-Wall -Wextra -Werror) fail on three benign sign-compare warnings in vendored libbw64 | deps | START |  |
 | #0073 | S2 | converter (lint) | AUDIT/baseline/swiftlint-by-rule-4bb136a.txt | swiftlint baseline 533 (56 error-level): fix the actionable rules; structural rules deferred with rationale | style | START |  |
 | #0074 | S2 | converter (dead code) | Sources/converter/Actions.swift:114; ImagePipeline.swift:26-27; ProcessRunner.swift:78; ValidationPipeline.swift:857; Tests/IntegrationTestSupport.swift:32 | periphery-flagged unused declarations (6 unused, 15 assign-only) — prove reachability, then remove or retain with reason | dead | TEST | dc15b65 |
-| #0075 | S2 | converter (dead code) | Sources/converter/PipelineCore.swift:347,357-362; Actions.swift:105-110,794-808; BW64Bridge/bw64_bridge.cpp:95; LosslessAudioPipeline.swift:9,30,173-174; AudioPipeline.swift:160-162,264,1955 | Dead branches, tautological guards, dead parameters, redundant discards | dead | TEST |  |
+| #0075 | S2 | converter (dead code) | Sources/converter/PipelineCore.swift:347,357-362; Actions.swift:105-110,794-808; BW64Bridge/bw64_bridge.cpp:95; LosslessAudioPipeline.swift:9,30,173-174; AudioPipeline.swift:160-162,264,1955 | Dead branches, tautological guards, dead parameters, redundant discards | dead | TEST | 2609059 |
 | #0086 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:1378,1694-1706 | Magic bytes-per-sample and missing free-space check on the BW64 path | style | START |  |
 
 ## Done (89)
@@ -1046,6 +1046,7 @@ _none_
 - **evidence-before:** AUDIT/findings/L2-core-runtime.md C-10; L2-video-image-actions-cli.md X-17; L0-L3-bridge-repo.md B-15; L2-audio.md A-15
 - **fix-summary:** Removes the tautological m4a guard, the dead writeBext/FLAC override parameters, the redundant ffmpeg switch and fullRunImageRank's unreachable fallback, simplifies the bw64 size ternary, labels the shared audio preflight per action, and caps the album duration tolerance below the inter-track gap (with a test).
 - **evidence-after:** testAlbumDurationToleranceIsStrictlyBelowTheGapItMustDetect passes; Album/Bass/Master/Loudness/BW64/FullRun suites pass; swiftlint 523/56; first-party strict C++ clean.
+- **commit sha:** 2609059
 
 ### #0076 · S3 · DONE · cancelledBeforeSuspension can retain a marker for an already-resumed waiter
 
