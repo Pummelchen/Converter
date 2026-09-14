@@ -2,25 +2,24 @@
 
 Session: `2026-09-13` · branch `audit/2026-09-13` · baseline commit `4bb136a`
 
-**known-total:100 done:98 open:2 blocked:0 new-this-session:100**
+**known-total:100 done:99 open:1 blocked:0 new-this-session:100**
 
 | status | count |
 |---|---|
 | START | 1 |
 | PROGRESS | 0 |
-| TEST | 1 |
+| TEST | 0 |
 | AUDIT | 0 |
-| DONE | 98 |
+| DONE | 99 |
 | BLOCKED | 0 |
 
 Status gates: START (reproduced/proven + expected behaviour written) → PROGRESS (diff) → TEST (failing-before/passing-after test pasted, full suite green, no new warnings) → AUDIT (cold re-read, all scanners re-run, no baseline regression, no new placeholder) → DONE (committed atomically). BLOCKED needs reason + what was tried + ≥2 options for a human.
 
-## Open S0 / S1 (2)
+## Open S0 / S1 (1)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
 | #0006 | S0 | repo | node1 (fresh clone) | Phase E: independent verification from a fresh clone on node1 | test | START |  |
-| #0030 | S1 | repo/docs | README.md:25,59; Sources/converter/CLI.swift:461-481,664-665; CONTRIBUTING.md:59; wiki Home/Full-Run-Contract | README, CLI help, CONTRIBUTING and wiki contradict actual behaviour (source rename, audio alteration, portrait input, --keep-full-name, 58 s, auto-install wording) | docs | TEST | 13aeb25 |
 
 ## Blocked (0)
 
@@ -30,7 +29,7 @@ _none_
 
 _none_
 
-## Done (98)
+## Done (99)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
@@ -59,6 +58,7 @@ _none_
 | #0027 | S1 | repo/docs | SECURITY.md:1-21 | SECURITY.md is the unedited GitHub template with fictitious versions | placeholder | DONE | a4203f8 |
 | #0028 | S1 | repo/docs | README.md:94; Sources/ThirdParty/libbw64 | No third-party attribution/provenance for vendored Apache-2.0 libbw64 | deps | DONE | a40e56a |
 | #0029 | S1 | repo | LICENSE (missing) | Repository has no LICENSE file | deps | DONE | 420315e |
+| #0030 | S1 | repo/docs | README.md:25,59; Sources/converter/CLI.swift:461-481,664-665; CONTRIBUTING.md:59; wiki Home/Full-Run-Contract | README, CLI help, CONTRIBUTING and wiki contradict actual behaviour (source rename, audio alteration, portrait input, --keep-full-name, 58 s, auto-install wording) | docs | DONE | 13aeb25 |
 | #0031 | S1 | converterTests | Sources/Tests/converterTests/IntegrationTestSupport.swift:25,133-143 | Integration workspace inherits OUTPUT_DIR/SRC_DIR/OUT_DIR/CONFIG_FILE/DEBUG from the host shell | test | DONE | d047f82 |
 | #0032 | S1 | converterTests | Sources/converter/PipelineCore.swift:487-505 | publishTemp restore-on-failure branch has no test | test | DONE | f4d018d |
 | #0033 | S1 | converterTests | Sources/converter/PipelineCore.swift:551-561 | requireDirectChild never tested with .., symlinks, absolute paths | test | DONE | 1682212 |
@@ -505,7 +505,7 @@ _none_
 - **notes:** License text is the owner's decision — expected BLOCKED with options. Owner: repository maintainer (Pummelchen).
 - **blocked-reason:** Choosing a licence is the repository owner's legal decision, not an engineering one; the audit must not pick one. Tried: confirmed no LICENSE exists anywhere in history (git log --all --diff-filter=A -- 'LICENSE*' is empty) and that the only licence text in the tree is libbw64's Apache-2.0. Options for the owner: (1) MIT or Apache-2.0 for a permissive tool (Apache-2.0 pairs naturally with the vendored libbw64 and adds an explicit patent grant); (2) GPL-3.0 if derivatives must stay open; (3) keep it proprietary — then state 'All rights reserved' in README and remove the CONTRIBUTING invitation for outside PRs, or add a contributor licence statement. Once decided: add LICENSE at the root, name it in README, and note the inbound=outbound rule in CONTRIBUTING.
 
-### #0030 · S1 · TEST · README, CLI help, CONTRIBUTING and wiki contradict actual behaviour (source rename, audio alteration, portrait input, --keep-full-name, 58 s, auto-install wording)
+### #0030 · S1 · DONE · README, CLI help, CONTRIBUTING and wiki contradict actual behaviour (source rename, audio alteration, portrait input, --keep-full-name, 58 s, auto-install wording)
 
 - **project/module:** repo/docs
 - **file:line:** README.md:25,59; Sources/converter/CLI.swift:461-481,664-665; CONTRIBUTING.md:59; wiki Home/Full-Run-Contract
@@ -514,7 +514,7 @@ _none_
 - **discovered-by:** reviewer B-4, X-15, B-14
 - **evidence-before:** AUDIT/findings/L0-L3-bridge-repo.md B-4,B-14; L2-video-image-actions-cli.md X-15
 - **fix-summary:** README, CLI help, CONTRIBUTING, docs/FORMATS.md and docs/KNOWN_GOOD_VERSIONS.md now describe the source rename, the loudness-changing actions, the min(SHORT_MP4_CLIP_SECONDS, 58) cap, the album.txt error semantics and the opt-in auto-install; the wiki pages received the same corrections in a separate commit.
-- **evidence-after:** Stale-claim sweep clean; seven help-text tests pass; full suite recorded below.
+- **evidence-after:** Stale-claim sweep clean; seven help-text tests pass; full suite recorded below. Full suite (AUDIT/evidence/0030-fullsuite.txt): 263 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** 13aeb25
 - **notes:** Do after the behavioural fixes so docs describe the final state.
 
