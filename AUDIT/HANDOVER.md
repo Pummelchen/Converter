@@ -51,9 +51,16 @@ against the working tree and `origin` on 2026-09-14 06:58 WIB.
   classified by stored pixels, not displayed geometry; squares now warn), **#0060** (the author's
   personal `album.txt` replaced by a documented, git-ignored `album.example.txt`).
 - Ledger after batch 3: **done 66 · open 34 · blocked 0**.
-- Next planned batch: **#0056** (`shortenMP4` scaler flags), **#0040** (cancel sibling external
-  processes), **#0041** (installer timeout + diagnostics), **#0055** (fitted still double-sharpens),
-  **#0050/#0051** (loudness fallback labelling, redundant probes).
+- Batch 4 DONE after a 245-test full suite: **#0056** (`-mp4toshort` used ffmpeg's default
+  scaler), **#0055** (fitted portrait still sharpened already-processed masters and a user
+  `Vertical_8K.png`), **#0041** (installer subprocesses had no timeout and discarded stderr;
+  installer runner now lives in `Sources/converter/DependencyInstaller.swift`).
+- Ledger after batch 4: **done 69 · open 31 · blocked 0**. swiftlint is 530/56 (one below the
+  531 baseline).
+- Next planned batch: **#0040** (cancellation must terminate sibling external processes),
+  **#0050** (loudness fallback mislabels a true-peak breach), **#0051** (redundant padding
+  verification / uncached `ffmpeg -filters`), **#0086** (BW64 magic byte width + free-space
+  check), **#0087** (CLI value validation).
 
 ## Exactly where to continue
 
