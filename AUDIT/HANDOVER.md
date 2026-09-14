@@ -84,13 +84,20 @@ against the working tree and `origin` on 2026-09-14 06:58 WIB.
   into a 96 kHz WAV and re-encoded it for all five videos; a stream copy is now used when the
   source already matches the project's ALAC sample format, raw bit depth, rate and channels).
 - Ledger after batch 9: **done 78 · open 22 · blocked 0**. swiftlint is 526/56.
-- Next planned batch (test quality, mostly test-only changes — use a deliberate mutation to show
-  the weak test passes and the strengthened one fails): **#0069** (bare `XCTAssertThrowsError` on
-  a garbage MP3), **#0096** (SchedulerProfile asserted through its summary string), **#0095**
-  (progress-event count pinned to `== 6`), **#0093** (10 s wall-clock budget on the shell-loop
-  test), **#0094** (help-text tests couple to prose), **#0098** (bass filter string pinned
-  without a stated reason). Then **#0074/#0075** (dead code), **#0066–#0068** (test gaps), and
-  S0 **#0006** (Phase E on `node1`) once the tree is frozen.
+- Batch 10 (test quality) DONE after a 253-test full suite: **#0069** (bare `XCTAssertThrowsError`
+  accepted any error), **#0093** (10 s wall-clock budget on the drain test), **#0094** (help-text
+  tests pinned whole prose sentences), **#0095** (progress-event count pinned the batching),
+  **#0096** (scheduler caps asserted through a summary string), **#0098** (bass filter string
+  pinned without a stated reason). Mutation evidence for #0069 in
+  `AUDIT/evidence/0069-mutation.log`.
+- Ledger after batch 10: **done 84 · open 16 · blocked 0**. swiftlint is 525/56.
+- Next planned batch: the remaining test gaps **#0066** (full-pipeline tests require
+  `hevc_videotoolbox`), **#0067** (fade-out QC fixture never proves it is out of policy — capture
+  `deliveryAudioQCPolicy`), **#0068** (mastering fallback path never observed — capture the
+  "one-pass loudnorm fallback" log via `captureStandardError`), **#0072** (short-cap boundary),
+  **#0097** (`-doctor` has only a happy path); then dead code **#0074/#0075**, **#0073** (lint),
+  **#0061/#0062** (bridge), **#0058/#0059** (binary + CI provenance), and finally **#0030** (docs
+  sync) + S0 **#0006** (Phase E on `node1`).
 - Investigated but deliberately deferred: **#0086** (the 3-byte width in `estimateWAVBytes` is
   latent because `Config.validate` pins `WAV_CODEC` to `pcm_s24le`; only the BW64 free-space gap
   is real — fold it into a later perf/validation pass), **#0051** (needs a counting runner to
