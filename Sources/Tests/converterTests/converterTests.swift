@@ -332,6 +332,37 @@ final class converterTests: XCTestCase {
         )
     }
 
+    // audit #0080: orphan detection trusted the PID in the temp name, so a working directory
+    // synced between machines (Dropbox/iCloud) let this host delete another host's live temp
+    // because that PID does not exist locally.
+    func testOrphanCleanupLeavesOtherHostsTempFilesAlone() throws {
+        let workspace = try IntegrationWorkspace()
+        let tool = try workspace.makeTool(arguments: ["-full"])
+        let deadPID = Int32(999_999)
+
+        func temp(_ token: String, _ pid: Int32) -> URL {
+            workspace.output.appendingPathComponent(".converter-tmp.\(token).\(pid).abcd.song.wav")
+        }
+
+        XCTAssertTrue(
+            tool.isOrphanedConverterTempFile(temp(ConverterTool.hostToken, deadPID)),
+            "this host's temp with a dead PID is reclaimable"
+        )
+        XCTAssertFalse(
+            tool.isOrphanedConverterTempFile(temp("other_host", deadPID)),
+            "another host's temp must never be reclaimed"
+        )
+        // A name written before the host token existed carries no proof that it is local.
+        XCTAssertFalse(
+            tool.isOrphanedConverterTempFile(temp("\(deadPID)", 4242)),
+            "an untokenized temp must not be reclaimed on PID alone"
+        )
+        XCTAssertFalse(
+            tool.isOrphanedConverterTempFile(temp(ConverterTool.hostToken, getpid())),
+            "a live PID on this host is never orphaned"
+        )
+    }
+
     func testNumericFormattingAndBitrateParsingUseStableFFmpegForms() throws {
         XCTAssertEqual(ffmpegNumber(5), "5")
         XCTAssertEqual(ffmpegNumber(-12.5), "-12.5")
@@ -3031,7 +3062,7 @@ final class converterTests: XCTestCase {
 
         let transients = [".x.normalized.wav", ".x.normalized"]
         let survivors = [
-            "song.normalized.wav", ".song.wav.publish-backup", ".converter-tmp.1.foo",
+            "song.normalized.wav", ".song.wav.publish-backup", ".converter-tmp.\(ConverterTool.hostToken).1.foo",
             "song.wav", "notes.log", "mix.w64", ".DS_Store"
         ]
         for name in transients + survivors {
@@ -3079,9 +3110,10 @@ final class converterTests: XCTestCase {
         XCTAssertEqual(tool.cli.action, .clean)
 
         // PID 1 (launchd) is always alive; Int32.max is never a live PID, so that temp is orphaned.
-        let orphanTemp = ".converter-tmp.\(Int32.max).orphan"
+        let orphanTemp = ".converter-tmp.\(ConverterTool.hostToken).\(Int32.max).orphan"
         let untouched = [
-            "song.normalized.wav", "song.wav", "notes.log", "mix.w64", ".DS_Store", ".converter-tmp.1.foo"
+            "song.normalized.wav", "song.wav", "notes.log", "mix.w64", ".DS_Store",
+            ".converter-tmp.\(ConverterTool.hostToken).1.foo"
         ]
         let removed = [".x.normalized.wav", ".x.normalized", ".song.wav.publish-backup", orphanTemp]
         for name in untouched + removed {

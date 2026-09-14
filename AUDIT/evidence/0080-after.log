@@ -1,0 +1,9 @@
+$ swift test --package-path Sources --filter testOrphanCleanupLeavesOtherHostsTempFilesAlone   # fix applied
+	 Executed 1 test, with 0 failures (0 unexpected) in 0.008 (0.008) seconds
+	 Executed 1 test, with 0 failures (0 unexpected) in 0.008 (0.009) seconds
+
+$ swift test --package-path Sources --filter 'Orphan'   # existing #0038 sweeps, fixtures moved to the host-token format
+	 Executed 3 tests, with 0 failures (0 unexpected) in 0.177 (0.179) seconds
+
+$ swift test --package-path Sources --filter Clean
+	 Executed 10 tests, with 0 failures (0 unexpected) in 7.571 (7.573) seconds

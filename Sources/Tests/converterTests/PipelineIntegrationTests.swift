@@ -353,9 +353,10 @@ final class PipelineIntegrationTests: XCTestCase {
     func testCleanupTempsRemovesRunScopedHiddenTempFiles() throws {
         let workspace = try IntegrationWorkspace()
         let tool = try workspace.makeTool(arguments: ["-full"])
-        let runScopedTemp = workspace.output.appendingPathComponent(".converter-tmp.\(tool.runToken).mainmp4.hevc_videotoolbox.1234.mp4")
-        let orphanedTemp = workspace.output.appendingPathComponent(".converter-tmp.999999.mainmp4.hevc_videotoolbox.1234.mp4")
-        let foreignTemp = workspace.output.appendingPathComponent(".converter-tmp.foreign.mainmp4.hevc_videotoolbox.1234.mp4")
+        func temp(_ name: String) -> URL { workspace.output.appendingPathComponent(name) }
+        let runScopedTemp = temp(".converter-tmp.\(tool.runToken).mainmp4.1234.mp4")
+        let orphanedTemp = temp(".converter-tmp.\(ConverterTool.hostToken).999999.mainmp4.1234.mp4")
+        let foreignTemp = temp(".converter-tmp.foreign.mainmp4.1234.mp4")
         try Data("current-run-temp".utf8).write(to: runScopedTemp)
         try Data("orphaned-temp".utf8).write(to: orphanedTemp)
         try Data("foreign-temp".utf8).write(to: foreignTemp)
@@ -396,14 +397,14 @@ final class PipelineIntegrationTests: XCTestCase {
             try Data(name.utf8).write(to: url)
             return url
         }
-        let selfTemp = try temp(".converter-tmp.\(getpid()).mainmp4.libx264.1.mp4")
-        let parentTemp = try temp(".converter-tmp.\(getppid()).mainmp4.libx264.2.mp4")
-        let launchdTemp = try temp(".converter-tmp.1.mainmp4.libx264.3.mp4")
-        let childTemp = try temp(".converter-tmp.\(child.processIdentifier).mainmp4.libx264.4.mp4")
-        let notAPIDTemp = try temp(".converter-tmp.notapid.x")
+        let selfTemp = try temp(".converter-tmp.\(ConverterTool.hostToken).\(getpid()).a.mp4")
+        let parentTemp = try temp(".converter-tmp.\(ConverterTool.hostToken).\(getppid()).b.mp4")
+        let launchdTemp = try temp(".converter-tmp.\(ConverterTool.hostToken).1.c.mp4")
+        let childTemp = try temp(".converter-tmp.\(ConverterTool.hostToken).\(child.processIdentifier).d.mp4")
+        let notAPIDTemp = try temp(".converter-tmp.\(ConverterTool.hostToken).notapid.x")
         let bareTemp = try temp(".converter-tmp.")
-        let unprefixedTemp = try temp("converter-tmp.999999.mainmp4.libx264.5.mp4")
-        let deadTemp = try temp(".converter-tmp.999999.mainmp4.libx264.6.mp4")
+        let unprefixedTemp = try temp("converter-tmp.999999.e.mp4")
+        let deadTemp = try temp(".converter-tmp.\(ConverterTool.hostToken).999999.f.mp4")
 
         XCTAssertFalse(tool.isOrphanedConverterTempFile(selfTemp))
         XCTAssertFalse(tool.isOrphanedConverterTempFile(parentTemp))
@@ -445,8 +446,9 @@ final class PipelineIntegrationTests: XCTestCase {
             }
         }
         let childPID = child.processIdentifier
-        let childTemp = workspace.output.appendingPathComponent(".converter-tmp.\(childPID).mainmp4.libx264.1.mp4")
-        let selfTemp = workspace.output.appendingPathComponent(".converter-tmp.\(getpid()).mainmp4.libx264.2.mp4")
+        func temp(_ name: String) -> URL { workspace.output.appendingPathComponent(name) }
+        let childTemp = temp(".converter-tmp.\(ConverterTool.hostToken).\(childPID).a.mp4")
+        let selfTemp = temp(".converter-tmp.\(ConverterTool.hostToken).\(getpid()).b.mp4")
         try Data("child-temp".utf8).write(to: childTemp)
         try Data("self-temp".utf8).write(to: selfTemp)
 

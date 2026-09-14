@@ -296,6 +296,12 @@ final class ConverterTool: Sendable {
     let audioJobs: AsyncSemaphore
     let videoJobs: AsyncSemaphore
     let runToken: String
+    // Identifies the machine that created a temp file. A synced working directory can carry
+    // another host's live temps, whose PIDs are meaningless here (#0080).
+    static let hostToken: String = {
+        let safe = ProcessInfo.processInfo.hostName.map { $0.isLetter || $0.isNumber ? $0 : "_" }
+        return String(safe.prefix(24))
+    }()
     private let encoderSetLock = Mutex<Set<String>?>(nil)
 
     // The scheduler profile follows the machine unless a caller pins one (tests exercise the
@@ -320,7 +326,7 @@ final class ConverterTool: Sendable {
         self.imageJobs = AsyncSemaphore(value: profile.image)
         self.audioJobs = AsyncSemaphore(value: profile.audio)
         self.videoJobs = AsyncSemaphore(value: profile.video)
-        self.runToken = "\(ProcessInfo.processInfo.processIdentifier).\(UUID().uuidString.lowercasedASCII)"
+        self.runToken = "\(Self.hostToken).\(ProcessInfo.processInfo.processIdentifier).\(UUID().uuidString.lowercasedASCII)"
     }
 
     func cleanupTemps() {
@@ -378,11 +384,13 @@ final class ConverterTool: Sendable {
         guard basename.hasPrefix(prefix) else {
             return false
         }
-        let remainder = basename.dropFirst(prefix.count)
-        guard let rawPID = remainder.split(separator: ".", maxSplits: 1).first,
-              let pid = Int32(rawPID),
-              pid != getpid()
-        else {
+        let fields = basename.dropFirst(prefix.count).split(separator: ".", maxSplits: 3)
+        guard fields.count >= 2, fields[0] == Self.hostToken else {
+            // A temp without this host's token was written by another machine through a synced
+            // directory, where its PID means nothing here (#0080); leave it alone.
+            return false
+        }
+        guard let pid = Int32(fields[1]), pid != getpid() else {
             return false
         }
         return !processExists(pid)
