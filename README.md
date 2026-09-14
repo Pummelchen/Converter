@@ -99,7 +99,7 @@ Auto-install is **off by default**; a missing formula produces an error telling 
 - `Sources/` — Swift package, tests, vendored libbw64, in-process BW64 bridge
 - `Output/` — working directory for inputs and generated outputs
 - `config.txt` — quality, render, loudness and profile settings ([reference](https://github.com/Pummelchen/Converter/wiki/Configuration))
-- `album.txt` — track order for `-wavtoalbum` / `-mp3toalbum`
+- `album.example.txt` — template for `album.txt`, the track order for `-wavtoalbum` / `-mp3toalbum` (copy it to `album.txt`; the user file is git-ignored)
 - `converter` — prebuilt Apple Silicon release binary
 
 ## License

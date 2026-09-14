@@ -1,0 +1,16 @@
+# Track order for -wavtoalbum and -mp3toalbum.
+#
+# Copy this file to album.txt and list your tracks in the order they should be joined.
+# album.txt is git-ignored, so your own order file is never committed by accident.
+#
+# Rules:
+#   - Each line is one track, resolved inside SRC_DIR (default Output/).
+#   - The file extension may be omitted.
+#   - Blank lines and lines starting with '#' are ignored.
+#   - Every listed track must be usable; a typo fails the build instead of producing a
+#     silently shorter album.
+#
+# Example:
+#   1_intro
+#   2_theme
+#   3_finale

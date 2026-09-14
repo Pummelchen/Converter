@@ -1,0 +1,7 @@
+$ git stash push -- Sources/converter/AudioPipeline.swift   # fix NOT applied (album.txt also renamed)
+$ swift test --package-path Sources --filter testMissingAlbumFileErrorPointsAtTheExampleTemplate
+/Users/node4/Downloads/Converter/Converter/Sources/Tests/converterTests/converterTests.swift:215: error: -[converterTests.converterTests testMissingAlbumFileErrorPointsAtTheExampleTemplate] : XCTAssertTrue failed - unexpected message: Missing album file: /var/folders/k5/fzyk9mb96rqbc6_vnxv5mh3h0000gn/T/108C5CC3-FF5F-436C-8402-0A675D7036C1/album.txt
+Test Case '-[converterTests.converterTests testMissingAlbumFileErrorPointsAtTheExampleTemplate]' failed (0.048 seconds).
+	 Executed 1 test, with 1 failure (0 unexpected) in 0.048 (0.049) seconds
+	 Executed 1 test, with 1 failure (0 unexpected) in 0.048 (0.049) seconds
+	 Executed 1 test, with 1 failure (0 unexpected) in 0.048 (0.049) seconds

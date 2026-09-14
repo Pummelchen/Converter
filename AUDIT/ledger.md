@@ -6,9 +6,9 @@ Session: `2026-09-13` · branch `audit/2026-09-13` · baseline commit `4bb136a`
 
 | status | count |
 |---|---|
-| START | 35 |
+| START | 34 |
 | PROGRESS | 0 |
-| TEST | 2 |
+| TEST | 3 |
 | AUDIT | 0 |
 | DONE | 63 |
 | BLOCKED | 0 |
@@ -40,7 +40,7 @@ _none_
 | #0057 | S2 | converter/Actions | Sources/converter/Actions.swift:278-286; PipelineCore.swift:646 | Orientation classification ignores EXIF orientation; square images silently treated as landscape | bug | TEST | 0a98ca1 |
 | #0058 | S2 | repo | converter (binary); docs/KNOWN_GOOD_VERSIONS.md | Checked-in release binary has no verifiable provenance (no SHA-256, adhoc signature, no tag) | deps | START |  |
 | #0059 | S2 | repo/CI | .github/workflows/ci.yml:24,27-32,39-40 | CI not reproducible: unpinned action, latest-Xcode selection, unpinned brew formulae | deps | START |  |
-| #0060 | S2 | repo | album.txt; Sources/converter/AudioPipeline.swift:2063 | Personal track list committed as the production album.txt | placeholder | START |  |
+| #0060 | S2 | repo | album.txt; Sources/converter/AudioPipeline.swift:2063 | Personal track list committed as the production album.txt | placeholder | TEST |  |
 | #0061 | S2 | BW64Bridge | Sources/BW64Bridge/bw64_bridge.cpp:125-141,161 | Bridge does not bound channels; libbw64 uint16 blockAlignment wraps to heap overflow (unreachable via config today) | unsafe | START |  |
 | #0062 | S2 | BW64Bridge/Package | Sources/Package.swift:35-37; ThirdParty/libbw64/bw64/reader.hpp:220,225,227 | Strict C++ flags (-Wall -Wextra -Werror) fail on three benign sign-compare warnings in vendored libbw64 | deps | START |  |
 | #0066 | S2 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:1627-1637,1738-1748 | Full-pipeline tests require hevc_videotoolbox; fail on hosts without HW HEVC | test | START |  |
@@ -845,7 +845,7 @@ _none_
 - **evidence-before:** AUDIT/findings/L0-L3-bridge-repo.md B-6
 - **notes:** Pin checkout SHA, DEVELOPER_DIR, version guard.
 
-### #0060 · S2 · START · Personal track list committed as the production album.txt
+### #0060 · S2 · TEST · Personal track list committed as the production album.txt
 
 - **project/module:** repo
 - **file:line:** album.txt; Sources/converter/AudioPipeline.swift:2063
@@ -853,6 +853,8 @@ _none_
 - **host-used:** local
 - **discovered-by:** reviewer B-7
 - **evidence-before:** AUDIT/findings/L0-L3-bridge-repo.md B-7
+- **fix-summary:** Renames the personal album.txt to album.example.txt (documented template), git-ignores album.txt, and makes the missing-album-file error point at the template; README and docs/FORMATS.md updated.
+- **evidence-after:** AUDIT/evidence/0060-before.log (fix stashed: 'Missing album file: <path>' with no template reference); AUDIT/evidence/0060-after.log (testMissingAlbumFileErrorPointsAtTheExampleTemplate passes; git check-ignore -v album.txt reports .gitignore:2). swiftlint 531/56, no new violations.
 - **notes:** album.example.txt + ignore album.txt + loader message.
 
 ### #0061 · S2 · START · Bridge does not bound channels; libbw64 uint16 blockAlignment wraps to heap overflow (unreachable via config today)

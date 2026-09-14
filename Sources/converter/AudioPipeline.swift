@@ -2307,7 +2307,10 @@ extension ConverterTool {
     func buildAlbumFromAlbumFile(extension ext: String, defaultOutputName: String) throws -> URL {
         let albumPath = cli.scriptDirectory.appendingPathComponent("album.txt")
         guard fileManager.fileExists(atPath: albumPath.path) else {
-            throw AppError("Missing album file: \(albumPath.path)")
+            throw AppError(
+                "Missing album file: \(albumPath.path). "
+                + "Copy album.example.txt to album.txt and list your tracks in join order."
+            )
         }
         let text = try String(contentsOf: albumPath, encoding: .utf8)
         let resolved = try resolveAlbumFileEntries(text, extension: ext)

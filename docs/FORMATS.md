@@ -56,7 +56,7 @@ JPEG scanning accepts both `.jpg` and `.jpeg`; JPEG outputs are written with `.j
 | `-mp3toalbum` | `album.txt` listing `.mp3` tracks | RF64 `album_from_mp3.rf64.wav` (listed order, no normalization) |
 | `-flactoalbum` | all `.flac` in `SRC_DIR`, natural numeric order | RF64 `album.wav` (no normalization) |
 
-`album.txt` supports `#` comments and blank lines; entries may omit the extension; missing tracks are skipped with a warning. Archival companions (`*_RF64.*`, `*_BW64.*`) are delivery-only and excluded from source selection in full runs.
+`album.txt` supports `#` comments and blank lines; entries may omit the extension; missing tracks are skipped with a warning. `album.txt` is a per-user file and is git-ignored — copy `album.example.txt` to `album.txt` and list your own tracks. Archival companions (`*_RF64.*`, `*_BW64.*`) are delivery-only and excluded from source selection in full runs.
 
 ## Audio processing actions (batch over SRC_DIR)
 

@@ -201,6 +201,23 @@ final class converterTests: XCTestCase {
         XCTAssertNoThrow(try tool.ensureWritableDirectory(tempDirectory))
     }
 
+    // audit #0060: album.txt is a per-user order file and is git-ignored, so a fresh checkout has
+    // none; the error has to point at the committed template instead of only naming the path.
+    func testMissingAlbumFileErrorPointsAtTheExampleTemplate() throws {
+        let tempDirectory = FileManager.default.temporaryDirectory
+            .appendingPathComponent(UUID().uuidString, isDirectory: true)
+        try FileManager.default.createDirectory(at: tempDirectory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: tempDirectory) }
+
+        let tool = try makeTool(tempDirectory: tempDirectory, arguments: ["-wavtoalbum"])
+        XCTAssertThrowsError(
+            try tool.buildAlbumFromAlbumFile(extension: "wav", defaultOutputName: "album.rf64.wav")
+        ) { error in
+            let message = (error as? AppError)?.message ?? error.localizedDescription
+            XCTAssertTrue(message.contains("album.example.txt"), "unexpected message: \(message)")
+        }
+    }
+
     func testNumericFormattingAndBitrateParsingUseStableFFmpegForms() throws {
         XCTAssertEqual(ffmpegNumber(5), "5")
         XCTAssertEqual(ffmpegNumber(-12.5), "-12.5")
