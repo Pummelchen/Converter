@@ -2,15 +2,15 @@
 
 Session: `2026-09-13` · branch `audit/2026-09-13` · baseline commit `4bb136a`
 
-**known-total:100 done:89 open:11 blocked:0 new-this-session:100**
+**known-total:100 done:91 open:9 blocked:0 new-this-session:100**
 
 | status | count |
 |---|---|
 | START | 9 |
 | PROGRESS | 0 |
-| TEST | 2 |
+| TEST | 0 |
 | AUDIT | 0 |
-| DONE | 89 |
+| DONE | 91 |
 | BLOCKED | 0 |
 
 Status gates: START (reproduced/proven + expected behaviour written) → PROGRESS (diff) → TEST (failing-before/passing-after test pasted, full suite green, no new warnings) → AUDIT (cold re-read, all scanners re-run, no baseline regression, no new placeholder) → DONE (committed atomically). BLOCKED needs reason + what was tried + ≥2 options for a human.
@@ -26,7 +26,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 
 _none_
 
-## Open S2 / S3 (9)
+## Open S2 / S3 (7)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
@@ -36,11 +36,9 @@ _none_
 | #0061 | S2 | BW64Bridge | Sources/BW64Bridge/bw64_bridge.cpp:125-141,161 | Bridge does not bound channels; libbw64 uint16 blockAlignment wraps to heap overflow (unreachable via config today) | unsafe | START |  |
 | #0062 | S2 | BW64Bridge/Package | Sources/Package.swift:35-37; ThirdParty/libbw64/bw64/reader.hpp:220,225,227 | Strict C++ flags (-Wall -Wextra -Werror) fail on three benign sign-compare warnings in vendored libbw64 | deps | START |  |
 | #0073 | S2 | converter (lint) | AUDIT/baseline/swiftlint-by-rule-4bb136a.txt | swiftlint baseline 533 (56 error-level): fix the actionable rules; structural rules deferred with rationale | style | START |  |
-| #0074 | S2 | converter (dead code) | Sources/converter/Actions.swift:114; ImagePipeline.swift:26-27; ProcessRunner.swift:78; ValidationPipeline.swift:857; Tests/IntegrationTestSupport.swift:32 | periphery-flagged unused declarations (6 unused, 15 assign-only) — prove reachability, then remove or retain with reason | dead | TEST | dc15b65 |
-| #0075 | S2 | converter (dead code) | Sources/converter/PipelineCore.swift:347,357-362; Actions.swift:105-110,794-808; BW64Bridge/bw64_bridge.cpp:95; LosslessAudioPipeline.swift:9,30,173-174; AudioPipeline.swift:160-162,264,1955 | Dead branches, tautological guards, dead parameters, redundant discards | dead | TEST | 2609059 |
 | #0086 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:1378,1694-1706 | Magic bytes-per-sample and missing free-space check on the BW64 path | style | START |  |
 
-## Done (89)
+## Done (91)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
@@ -109,6 +107,8 @@ _none_
 | #0070 | S2 | converterTests | Sources/Tests/converterTests/converterTests.swift:737-749 | LoudnormArgument clamping untested at the exact bounds | test | DONE | e33815c |
 | #0071 | S2 | converter/Config+tests | Sources/converter/Config.swift:319-452 | Config validation gaps (ranges, empty strings, zero byte targets, CRC chunk bound, negative message) and only 3 keys tested | test | DONE | 87c940b |
 | #0072 | S2 | converter/VideoPipeline+tests | Sources/converter/VideoPipeline.swift:284-300,456-458; Actions.swift:875-876 | Short-cap boundary untested and duration thresholds inconsistent between short paths | test | DONE | 7fd628f |
+| #0074 | S2 | converter (dead code) | Sources/converter/Actions.swift:114; ImagePipeline.swift:26-27; ProcessRunner.swift:78; ValidationPipeline.swift:857; Tests/IntegrationTestSupport.swift:32 | periphery-flagged unused declarations (6 unused, 15 assign-only) — prove reachability, then remove or retain with reason | dead | DONE | dc15b65 |
+| #0075 | S2 | converter (dead code) | Sources/converter/PipelineCore.swift:347,357-362; Actions.swift:105-110,794-808; BW64Bridge/bw64_bridge.cpp:95; LosslessAudioPipeline.swift:9,30,173-174; AudioPipeline.swift:160-162,264,1955 | Dead branches, tautological guards, dead parameters, redundant discards | dead | DONE | 2609059 |
 | #0076 | S3 | converter/Support | Sources/converter/Support.swift:122-126 | cancelledBeforeSuspension can retain a marker for an already-resumed waiter | logic | DONE | 24e52d7 |
 | #0077 | S3 | converter/DependencyBootstrap | Sources/converter/DependencyBootstrap.swift:77-82 | Post-install failure message lists nothing when a tool is present but non-functional | logic | DONE | 2c71af1 |
 | #0078 | S3 | converter/PipelineCore | Sources/converter/PipelineCore.swift:372-379 | ensureWritableDirectory accepts a regular file at OUT_DIR | logic | DONE | 9a721d9 |
@@ -1023,7 +1023,7 @@ _none_
 - **evidence-before:** AUDIT/baseline.md linters table
 - **notes:** Keep swiftlint default rules (no config that lowers strictness). Fix the actionable rules (identifier_name, for_where, syntactic_sugar, optional_data_string_conversion, large_tuple, type_name, function_parameter_count where clean, inclusive_language). Structural rules (line_length, file_length, type_body_length, function_body_length, cyclomatic_complexity) are deferred: fixing them means splitting files/functions, which the no-drive-by-refactor rule forbids inside fix commits; recorded as deferred with owner = maintainer. Total count must never exceed the 533 baseline.
 
-### #0074 · S2 · TEST · periphery-flagged unused declarations (6 unused, 15 assign-only) — prove reachability, then remove or retain with reason
+### #0074 · S2 · DONE · periphery-flagged unused declarations (6 unused, 15 assign-only) — prove reachability, then remove or retain with reason
 
 - **project/module:** converter (dead code)
 - **file:line:** Sources/converter/Actions.swift:114; ImagePipeline.swift:26-27; ProcessRunner.swift:78; ValidationPipeline.swift:857; Tests/IntegrationTestSupport.swift:32
@@ -1032,11 +1032,11 @@ _none_
 - **discovered-by:** baseline periphery; reviewers X-16, C-10
 - **evidence-before:** AUDIT/baseline/periphery-4bb136a.txt
 - **fix-summary:** Deletes rankedFullRunImageCandidates, the 4-arg decodeAudioToCanonicalPCM overload, ProcessRunner.fileManager, RIFFChunkWalker.first(_:), aipixResizeArguments' unused filter/colorSpace params, and two test-side dead declarations; records why projectRoot and the assignOnlyProperty records are retained.
-- **evidence-after:** AUDIT/evidence/0074-0075-periphery-before.csv (31 findings, 8 unused) vs 0074-0075-periphery-after.csv (23 findings, 0 unused); LoudnessFallback/Chunk/ContinueOnError/Image suites pass; swiftlint 524/56.
+- **evidence-after:** AUDIT/evidence/0074-0075-periphery-before.csv (31 findings, 8 unused) vs 0074-0075-periphery-after.csv (23 findings, 0 unused); LoudnessFallback/Chunk/ContinueOnError/Image suites pass; swiftlint 524/56. Full suite (AUDIT/evidence/0074-0075-fullsuite.txt): 259 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** dc15b65
 - **notes:** §6: proof of non-reachability across dynamic dispatch/tests/@testable before deletion.
 
-### #0075 · S2 · TEST · Dead branches, tautological guards, dead parameters, redundant discards
+### #0075 · S2 · DONE · Dead branches, tautological guards, dead parameters, redundant discards
 
 - **project/module:** converter (dead code)
 - **file:line:** Sources/converter/PipelineCore.swift:347,357-362; Actions.swift:105-110,794-808; BW64Bridge/bw64_bridge.cpp:95; LosslessAudioPipeline.swift:9,30,173-174; AudioPipeline.swift:160-162,264,1955
@@ -1045,7 +1045,7 @@ _none_
 - **discovered-by:** reviewers C-10, X-17, B-15, A-15
 - **evidence-before:** AUDIT/findings/L2-core-runtime.md C-10; L2-video-image-actions-cli.md X-17; L0-L3-bridge-repo.md B-15; L2-audio.md A-15
 - **fix-summary:** Removes the tautological m4a guard, the dead writeBext/FLAC override parameters, the redundant ffmpeg switch and fullRunImageRank's unreachable fallback, simplifies the bw64 size ternary, labels the shared audio preflight per action, and caps the album duration tolerance below the inter-track gap (with a test).
-- **evidence-after:** testAlbumDurationToleranceIsStrictlyBelowTheGapItMustDetect passes; Album/Bass/Master/Loudness/BW64/FullRun suites pass; swiftlint 523/56; first-party strict C++ clean.
+- **evidence-after:** testAlbumDurationToleranceIsStrictlyBelowTheGapItMustDetect passes; Album/Bass/Master/Loudness/BW64/FullRun suites pass; swiftlint 523/56; first-party strict C++ clean. Full suite (AUDIT/evidence/0074-0075-fullsuite.txt): 259 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** 2609059
 
 ### #0076 · S3 · DONE · cancelledBeforeSuspension can retain a marker for an already-resumed waiter
