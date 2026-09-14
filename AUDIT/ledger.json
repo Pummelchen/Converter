@@ -1531,7 +1531,7 @@
       "evidence_before": "AUDIT/findings/L0-L3-bridge-repo.md B-10",
       "fix_summary": "The C ABI interleaves the numeric options between the two path parameters so a swap no longer compiles, and requireOptions canonicalises both paths and refuses equal input/output. Swift caller and header updated.",
       "evidence_after": "AUDIT/evidence/0090-before.log (fix stashed: same-path call truncated the raw PCM from 38400 to 92 bytes); AUDIT/evidence/0090-after.log (testBW64WriterRefusesTheSameInputAndOutputPath and all three BW64 tests pass). swiftlint 526/56; first-party strict C++ clean.",
-      "commit": "",
+      "commit": "0af4a09",
       "notes": ""
     },
     {
