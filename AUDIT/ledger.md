@@ -2,15 +2,15 @@
 
 Session: `2026-09-13` · branch `audit/2026-09-13` · baseline commit `4bb136a`
 
-**known-total:100 done:58 open:42 blocked:0 new-this-session:100**
+**known-total:100 done:63 open:37 blocked:0 new-this-session:100**
 
 | status | count |
 |---|---|
 | START | 37 |
 | PROGRESS | 0 |
-| TEST | 5 |
+| TEST | 0 |
 | AUDIT | 0 |
-| DONE | 58 |
+| DONE | 63 |
 | BLOCKED | 0 |
 
 Status gates: START (reproduced/proven + expected behaviour written) → PROGRESS (diff) → TEST (failing-before/passing-after test pasted, full suite green, no new warnings) → AUDIT (cold re-read, all scanners re-run, no baseline regression, no new placeholder) → DONE (committed atomically). BLOCKED needs reason + what was tried + ≥2 options for a human.
@@ -26,7 +26,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 
 _none_
 
-## Open S2 / S3 (40)
+## Open S2 / S3 (35)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
@@ -34,7 +34,6 @@ _none_
 | #0041 | S2 | converter/DependencyBootstrap | Sources/converter/DependencyBootstrap.swift:216-248 | Installer subprocesses have no timeout and discard diagnostics | incomplete | START |  |
 | #0050 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:327-336,367-387,591-600 | Loudness fallback publishes any true-peak breach with a misleading 'closest-safe' label | logic | START |  |
 | #0051 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:992,1170,1029,508 | Redundant padding verification, uncached ffmpeg -filters, per-file ladder resolution | perf | START |  |
-| #0053 | S2 | converter/Support | Sources/converter/Support.swift:308 | M:SS timecode parsing drops empty components; empty-component guard unreachable | logic | TEST | c79f502 |
 | #0054 | S2 | converter/Actions | Sources/converter/Actions.swift:1254 | -mp4toshort re-ingests the pipeline's own _Short_CenterCut/_FullSong outputs | bug | START |  |
 | #0055 | S2 | converter/ImagePipeline | Sources/converter/ImagePipeline.swift:329-336 | Fitted portrait still double-sharpens derived masters and user Vertical_8K.png | logic | START |  |
 | #0056 | S2 | converter/VideoPipeline | Sources/converter/VideoPipeline.swift:399-404 | shortenMP4 upscales with ffmpeg's default scaler instead of the configured flags | bug | START |  |
@@ -53,16 +52,12 @@ _none_
 | #0074 | S2 | converter (dead code) | Sources/converter/Actions.swift:114; ImagePipeline.swift:26-27; ProcessRunner.swift:78; ValidationPipeline.swift:857; Tests/IntegrationTestSupport.swift:32 | periphery-flagged unused declarations (6 unused, 15 assign-only) — prove reachability, then remove or retain with reason | dead | START |  |
 | #0075 | S2 | converter (dead code) | Sources/converter/PipelineCore.swift:347,357-362; Actions.swift:105-110,794-808; BW64Bridge/bw64_bridge.cpp:95; LosslessAudioPipeline.swift:9,30,173-174; AudioPipeline.swift:160-162,264,1955 | Dead branches, tautological guards, dead parameters, redundant discards | dead | START |  |
 | #0077 | S3 | converter/DependencyBootstrap | Sources/converter/DependencyBootstrap.swift:77-82 | Post-install failure message lists nothing when a tool is present but non-functional | logic | START |  |
-| #0078 | S3 | converter/PipelineCore | Sources/converter/PipelineCore.swift:372-379 | ensureWritableDirectory accepts a regular file at OUT_DIR | logic | TEST | 9a721d9 |
-| #0079 | S3 | converter/ProcessRunner | Sources/converter/ProcessRunner.swift:156-160 | Signal deaths reported as ordinary exit codes | incomplete | TEST | 9a721d9 |
 | #0080 | S3 | converter/PipelineCore | Sources/converter/PipelineCore.swift:323-344,271 | Orphan-temp detection keys on local PID only; synced directories across hosts | logic | START |  |
 | #0086 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:1378,1694-1706 | Magic bytes-per-sample and missing free-space check on the BW64 path | style | START |  |
 | #0087 | S3 | converter/CLI | Sources/converter/CLI.swift:231-260 | CLI inconsistencies: --seed 0, unbounded --sharpness, repeated action flags, option values beginning with -- | logic | START |  |
 | #0088 | S3 | converter/Config+VideoPipeline | Sources/converter/VideoPipeline.swift:230,240,244; Config.swift:393,397 | Config colour/scale-filter values spliced into the filter graph with only non-empty validation | unsafe | START |  |
 | #0089 | S3 | converter/VideoPipeline | Sources/converter/VideoPipeline.swift:334,386,467 | ALAC M4A decoded and re-encoded for every video although stream copy is bit-transparent | perf | START |  |
 | #0090 | S3 | BW64Bridge | Sources/BW64Bridge/include/bw64_bridge.h:14-22 | Easily swappable C ABI parameters (swapped paths would truncate the input) | style | START |  |
-| #0091 | S3 | repo | .gitignore:2 | Stale .converter_bw64_writer ignore entry | dead | TEST | 557dbe0 |
-| #0092 | S3 | repo/docs | docs/FORMATS.md | Maintenance commands and -fadeflac alias missing from FORMATS.md | docs | TEST | 557dbe0 |
 | #0093 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:30-50 | 10 s wall-clock budget on a 40 000-iteration shell loop | test | START |  |
 | #0094 | S3 | converterTests | Sources/Tests/converterTests/converterTests.swift:189-230,1297-1309 | Help-text tests couple to prose sentences | test | START |  |
 | #0095 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:613-619 | Progress-event count pinned to implementation | test | START |  |
@@ -71,7 +66,7 @@ _none_
 | #0098 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:529,534 | Exact ffmpeg bass filter string pinned without a stated reason | test | START |  |
 | #0100 | S3 | converter/Actions | Sources/converter/Actions.swift (normalizedFullRunSource / resolveFullAudio) | Full-run source is renamed before preflight; a corrupt source loses its original name in the error | logic | START |  |
 
-## Done (58)
+## Done (63)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
@@ -121,17 +116,22 @@ _none_
 | #0048 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:94-97; Actions.swift:1071 | -master is not idempotent (re-masters its own _mastered outputs) | logic | DONE | 8fac9dc |
 | #0049 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:2104-2113 | -flactoalbum concatenates the pipeline's own derived/archival FLACs | logic | DONE | 8fac9dc |
 | #0052 | S2 | converter/ImagePipeline | Sources/converter/ValidationPipeline.swift:391 (preflightImageInput call sites) | Full-decode image preflight of the same master repeated ~10x per run | perf | DONE | fbefda6 |
+| #0053 | S2 | converter/Support | Sources/converter/Support.swift:308 | M:SS timecode parsing drops empty components; empty-component guard unreachable | logic | DONE | c79f502 |
 | #0063 | S2 | converterTests+Config | Sources/Tests/converterTests/converterTests.swift:128-140; Config.swift:400; VideoPipeline.swift:269 | SHORT_MP4_CLIP_SECONDS validated with Double() but consumed via parseFlexibleTimecode; test sets a value validate() rejects | test | DONE | 17816b6 |
 | #0064 | S2 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:1860-1900 | Scheduler-limit test can pass vacuously | test | DONE | 588bb0b |
 | #0065 | S2 | converterTests | Sources/Tests/converterTests/converterTests.swift:1473-1550 | AsyncSemaphore tests rely on sleeps for ordering and hang instead of failing on a leaked permit | test | DONE | 7508e7a |
 | #0070 | S2 | converterTests | Sources/Tests/converterTests/converterTests.swift:737-749 | LoudnormArgument clamping untested at the exact bounds | test | DONE | e33815c |
 | #0071 | S2 | converter/Config+tests | Sources/converter/Config.swift:319-452 | Config validation gaps (ranges, empty strings, zero byte targets, CRC chunk bound, negative message) and only 3 keys tested | test | DONE | 87c940b |
 | #0076 | S3 | converter/Support | Sources/converter/Support.swift:122-126 | cancelledBeforeSuspension can retain a marker for an already-resumed waiter | logic | DONE | 24e52d7 |
+| #0078 | S3 | converter/PipelineCore | Sources/converter/PipelineCore.swift:372-379 | ensureWritableDirectory accepts a regular file at OUT_DIR | logic | DONE | 9a721d9 |
+| #0079 | S3 | converter/ProcessRunner | Sources/converter/ProcessRunner.swift:156-160 | Signal deaths reported as ordinary exit codes | incomplete | DONE | 9a721d9 |
 | #0081 | S3 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:203-210 | LUFS rebase widens the tolerance symmetrically | logic | DONE | bccf942 |
 | #0082 | S3 | repo/docs | config.txt; wiki Configuration | PREFLIGHT_SECONDS, DURATION_TOLERANCE_SEC, CRC_CHUNK_BYTES supported but undocumented | docs | DONE | bbf40ef |
 | #0083 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:905 | Noise seed is Int.random; reruns not reproducible | logic | DONE | ee37ce5 |
 | #0084 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:53-77 | Derived-media predicates use the first _silence_/_noise_ occurrence | logic | DONE | 724d350 |
 | #0085 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:1850-1854 | Track-number parse uses Unicode isNumber and can overflow | logic | DONE | 6a674bc |
+| #0091 | S3 | repo | .gitignore:2 | Stale .converter_bw64_writer ignore entry | dead | DONE | 557dbe0 |
+| #0092 | S3 | repo/docs | docs/FORMATS.md | Maintenance commands and -fadeflac alias missing from FORMATS.md | docs | DONE | 557dbe0 |
 | #0099 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:34,1967 | Test target compiles with two warnings (bare 'Error' existential, unused 'wav' binding) | style | DONE | 9343977 |
 
 ## Full records
@@ -771,7 +771,7 @@ _none_
 - **evidence-after:** AUDIT/evidence/0052-before.log (4 decodes for 4 preflights), 0052-after.log (1; rewritten file re-decoded once); swiftlint 533/56. Full suite (AUDIT/evidence/validation-group-fullsuite.txt): 226 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** fbefda6
 
-### #0053 · S2 · TEST · M:SS timecode parsing drops empty components; empty-component guard unreachable
+### #0053 · S2 · DONE · M:SS timecode parsing drops empty components; empty-component guard unreachable
 
 - **project/module:** converter/Support
 - **file:line:** Sources/converter/Support.swift:308
@@ -780,7 +780,7 @@ _none_
 - **discovered-by:** reviewer X-8
 - **evidence-before:** AUDIT/findings/L2-video-image-actions-cli.md X-8
 - **fix-summary:** parseFlexibleTimecode splits on ':' with omittingEmptySubsequences:false, so empty colon-separated fields reach the parseTimecodeComponent guard instead of being dropped and silently reparsed as a shorter duration.
-- **evidence-after:** AUDIT/evidence/0053-before.log (fix not applied: 8 failures — 7 'did not throw' plus ':' rejected with the wrong message); AUDIT/evidence/0053-after.log (4 timecode tests pass). swiftlint 531/56, no new violations.
+- **evidence-after:** AUDIT/evidence/0053-before.log (fix not applied: 8 failures — 7 'did not throw' plus ':' rejected with the wrong message); AUDIT/evidence/0053-after.log (4 timecode tests pass). swiftlint 531/56, no new violations. Full suite (AUDIT/evidence/0053-0092-fullsuite.txt): 238 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** c79f502
 
 ### #0054 · S2 · START · -mp4toshort re-ingests the pipeline's own _Short_CenterCut/_FullSong outputs
@@ -1024,7 +1024,7 @@ _none_
 - **discovered-by:** reviewer C-9
 - **evidence-before:** AUDIT/findings/L2-core-runtime.md C-9
 
-### #0078 · S3 · TEST · ensureWritableDirectory accepts a regular file at OUT_DIR
+### #0078 · S3 · DONE · ensureWritableDirectory accepts a regular file at OUT_DIR
 
 - **project/module:** converter/PipelineCore
 - **file:line:** Sources/converter/PipelineCore.swift:372-379
@@ -1033,10 +1033,10 @@ _none_
 - **discovered-by:** reviewer C-11
 - **evidence-before:** AUDIT/findings/L2-core-runtime.md C-11
 - **fix-summary:** #0078 ensureWritableDirectory rejects a regular file at the directory path with 'Not a directory' instead of letting isWritableFile accept it. #0079 ProcessResult carries terminationSignal and ProcessRunner.failureDetail names a signal death ('killed by signal N (SIGNAME)') instead of reporting the raw number as an exit code.
-- **evidence-after:** AUDIT/evidence/0078-0079-before.log (fixes not applied: signal death reported as 'exit code 11'; the regular file did not throw); AUDIT/evidence/0078-0079-after.log (both tests pass). swiftlint 531/56, no new violations.
+- **evidence-after:** AUDIT/evidence/0078-0079-before.log (fixes not applied: signal death reported as 'exit code 11'; the regular file did not throw); AUDIT/evidence/0078-0079-after.log (both tests pass). swiftlint 531/56, no new violations. Full suite (AUDIT/evidence/0053-0092-fullsuite.txt): 238 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** 9a721d9
 
-### #0079 · S3 · TEST · Signal deaths reported as ordinary exit codes
+### #0079 · S3 · DONE · Signal deaths reported as ordinary exit codes
 
 - **project/module:** converter/ProcessRunner
 - **file:line:** Sources/converter/ProcessRunner.swift:156-160
@@ -1045,7 +1045,7 @@ _none_
 - **discovered-by:** reviewer C-12
 - **evidence-before:** AUDIT/findings/L2-core-runtime.md C-12
 - **fix-summary:** #0078 ensureWritableDirectory rejects a regular file at the directory path with 'Not a directory' instead of letting isWritableFile accept it. #0079 ProcessResult carries terminationSignal and ProcessRunner.failureDetail names a signal death ('killed by signal N (SIGNAME)') instead of reporting the raw number as an exit code.
-- **evidence-after:** AUDIT/evidence/0078-0079-before.log (fixes not applied: signal death reported as 'exit code 11'; the regular file did not throw); AUDIT/evidence/0078-0079-after.log (both tests pass). swiftlint 531/56, no new violations.
+- **evidence-after:** AUDIT/evidence/0078-0079-before.log (fixes not applied: signal death reported as 'exit code 11'; the regular file did not throw); AUDIT/evidence/0078-0079-after.log (both tests pass). swiftlint 531/56, no new violations. Full suite (AUDIT/evidence/0053-0092-fullsuite.txt): 238 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** 9a721d9
 
 ### #0080 · S3 · START · Orphan-temp detection keys on local PID only; synced directories across hosts
@@ -1163,7 +1163,7 @@ _none_
 - **discovered-by:** reviewer B-10; clang-tidy
 - **evidence-before:** AUDIT/findings/L0-L3-bridge-repo.md B-10
 
-### #0091 · S3 · TEST · Stale .converter_bw64_writer ignore entry
+### #0091 · S3 · DONE · Stale .converter_bw64_writer ignore entry
 
 - **project/module:** repo
 - **file:line:** .gitignore:2
@@ -1172,10 +1172,10 @@ _none_
 - **discovered-by:** reviewer B-11
 - **evidence-before:** AUDIT/findings/L0-L3-bridge-repo.md B-11
 - **fix-summary:** #0091 removes the dead .converter_bw64_writer ignore entry. #0092 documents -doctor, -clean, -matrix, -list and -help in a new docs/FORMATS.md maintenance table and notes the -fadeflac alias for -fade.
-- **evidence-after:** AUDIT/evidence/0091-0092-before.log (only .gitignore and audit prose referenced .converter_bw64_writer; FORMATS.md documented no maintenance command and no -fadeflac); AUDIT/evidence/0091-0092-after.log (no source/config reference remains; the new table and alias are present).
+- **evidence-after:** AUDIT/evidence/0091-0092-before.log (only .gitignore and audit prose referenced .converter_bw64_writer; FORMATS.md documented no maintenance command and no -fadeflac); AUDIT/evidence/0091-0092-after.log (no source/config reference remains; the new table and alias are present). Full suite (AUDIT/evidence/0053-0092-fullsuite.txt): 238 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** 557dbe0
 
-### #0092 · S3 · TEST · Maintenance commands and -fadeflac alias missing from FORMATS.md
+### #0092 · S3 · DONE · Maintenance commands and -fadeflac alias missing from FORMATS.md
 
 - **project/module:** repo/docs
 - **file:line:** docs/FORMATS.md
@@ -1184,7 +1184,7 @@ _none_
 - **discovered-by:** reviewer B-12
 - **evidence-before:** AUDIT/findings/L0-L3-bridge-repo.md B-12
 - **fix-summary:** #0091 removes the dead .converter_bw64_writer ignore entry. #0092 documents -doctor, -clean, -matrix, -list and -help in a new docs/FORMATS.md maintenance table and notes the -fadeflac alias for -fade.
-- **evidence-after:** AUDIT/evidence/0091-0092-before.log (only .gitignore and audit prose referenced .converter_bw64_writer; FORMATS.md documented no maintenance command and no -fadeflac); AUDIT/evidence/0091-0092-after.log (no source/config reference remains; the new table and alias are present).
+- **evidence-after:** AUDIT/evidence/0091-0092-before.log (only .gitignore and audit prose referenced .converter_bw64_writer; FORMATS.md documented no maintenance command and no -fadeflac); AUDIT/evidence/0091-0092-after.log (no source/config reference remains; the new table and alias are present). Full suite (AUDIT/evidence/0053-0092-fullsuite.txt): 238 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** 557dbe0
 
 ### #0093 · S3 · START · 10 s wall-clock budget on a 40 000-iteration shell loop
