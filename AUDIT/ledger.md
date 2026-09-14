@@ -2,15 +2,15 @@
 
 Session: `2026-09-13` · branch `audit/2026-09-13` · baseline commit `4bb136a`
 
-**known-total:100 done:95 open:5 blocked:0 new-this-session:100**
+**known-total:100 done:97 open:3 blocked:0 new-this-session:100**
 
 | status | count |
 |---|---|
 | START | 3 |
 | PROGRESS | 0 |
-| TEST | 2 |
+| TEST | 0 |
 | AUDIT | 0 |
-| DONE | 95 |
+| DONE | 97 |
 | BLOCKED | 0 |
 
 Status gates: START (reproduced/proven + expected behaviour written) → PROGRESS (diff) → TEST (failing-before/passing-after test pasted, full suite green, no new warnings) → AUDIT (cold re-read, all scanners re-run, no baseline regression, no new placeholder) → DONE (committed atomically). BLOCKED needs reason + what was tried + ≥2 options for a human.
@@ -26,15 +26,13 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 
 _none_
 
-## Open S2 / S3 (3)
+## Open S2 / S3 (1)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
 | #0051 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:992,1170,1029,508 | Redundant padding verification, uncached ffmpeg -filters, per-file ladder resolution | perf | START |  |
-| #0058 | S2 | repo | converter (binary); docs/KNOWN_GOOD_VERSIONS.md | Checked-in release binary has no verifiable provenance (no SHA-256, adhoc signature, no tag) | deps | TEST | f3bef99 |
-| #0059 | S2 | repo/CI | .github/workflows/ci.yml:24,27-32,39-40 | CI not reproducible: unpinned action, latest-Xcode selection, unpinned brew formulae | deps | TEST | f3bef99 |
 
-## Done (95)
+## Done (97)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
@@ -92,6 +90,8 @@ _none_
 | #0055 | S2 | converter/ImagePipeline | Sources/converter/ImagePipeline.swift:329-336 | Fitted portrait still double-sharpens derived masters and user Vertical_8K.png | logic | DONE | 56536a3 |
 | #0056 | S2 | converter/VideoPipeline | Sources/converter/VideoPipeline.swift:399-404 | shortenMP4 upscales with ffmpeg's default scaler instead of the configured flags | bug | DONE | dc65cd5 |
 | #0057 | S2 | converter/Actions | Sources/converter/Actions.swift:278-286; PipelineCore.swift:646 | Orientation classification ignores EXIF orientation; square images silently treated as landscape | bug | DONE | 0a98ca1 |
+| #0058 | S2 | repo | converter (binary); docs/KNOWN_GOOD_VERSIONS.md | Checked-in release binary has no verifiable provenance (no SHA-256, adhoc signature, no tag) | deps | DONE | f3bef99 |
+| #0059 | S2 | repo/CI | .github/workflows/ci.yml:24,27-32,39-40 | CI not reproducible: unpinned action, latest-Xcode selection, unpinned brew formulae | deps | DONE | f3bef99 |
 | #0060 | S2 | repo | album.txt; Sources/converter/AudioPipeline.swift:2063 | Personal track list committed as the production album.txt | placeholder | DONE | bef61c4 |
 | #0061 | S2 | BW64Bridge | Sources/BW64Bridge/bw64_bridge.cpp:125-141,161 | Bridge does not bound channels; libbw64 uint16 blockAlignment wraps to heap overflow (unreachable via config today) | unsafe | DONE | de57d52 |
 | #0062 | S2 | BW64Bridge/Package | Sources/Package.swift:35-37; ThirdParty/libbw64/bw64/reader.hpp:220,225,227 | Strict C++ flags (-Wall -Wextra -Werror) fail on three benign sign-compare warnings in vendored libbw64 | deps | DONE | de57d52 |
@@ -840,7 +840,7 @@ _none_
 - **evidence-after:** AUDIT/evidence/0057-before.log (production fix stashed: full-run selection fails with 'exactly one landscape source image'); AUDIT/evidence/0057-after.log (testFullRunClassifiesEXIFRotatedJPEGByDisplayedOrientation and testFullRunTreatsASquareSourceAsTheLandscapeImage pass). swiftlint 531/56, no new violations. Full suite (AUDIT/evidence/0054-0060-fullsuite.txt): 242 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** 0a98ca1
 
-### #0058 · S2 · TEST · Checked-in release binary has no verifiable provenance (no SHA-256, adhoc signature, no tag)
+### #0058 · S2 · DONE · Checked-in release binary has no verifiable provenance (no SHA-256, adhoc signature, no tag)
 
 - **project/module:** repo
 - **file:line:** converter (binary); docs/KNOWN_GOOD_VERSIONS.md
@@ -849,11 +849,11 @@ _none_
 - **discovered-by:** reviewer B-5
 - **evidence-before:** AUDIT/findings/L0-L3-bridge-repo.md B-5
 - **fix-summary:** #0058 the committed release binary is rebuilt from the audited source and its size/SHA-256/signature/source commit are recorded in docs/BINARY_PROVENANCE.md + docs/converter.sha256, with a CI checksum gate; #0059 CI pins actions/checkout by SHA, asserts Swift 6.3.3, drops the unpinned brew update, limits permissions and adds the strict C++ build.
-- **evidence-after:** AUDIT/evidence/0058-0059-after.log (checksum OK; Swift 6.3.3 assertion; warnings-as-errors build; strict C++ release build; ./converter -doctor on the rebuilt binary).
+- **evidence-after:** AUDIT/evidence/0058-0059-after.log (checksum OK; Swift 6.3.3 assertion; warnings-as-errors build; strict C++ release build; ./converter -doctor on the rebuilt binary). Full suite (AUDIT/evidence/0058-0059-fullsuite.txt): 261 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** f3bef99
 - **notes:** Record sha256 per rebuild; CI release build + help diff. Removal from git is a maintainer decision (deferred note).
 
-### #0059 · S2 · TEST · CI not reproducible: unpinned action, latest-Xcode selection, unpinned brew formulae
+### #0059 · S2 · DONE · CI not reproducible: unpinned action, latest-Xcode selection, unpinned brew formulae
 
 - **project/module:** repo/CI
 - **file:line:** .github/workflows/ci.yml:24,27-32,39-40
@@ -862,7 +862,7 @@ _none_
 - **discovered-by:** reviewer B-6
 - **evidence-before:** AUDIT/findings/L0-L3-bridge-repo.md B-6
 - **fix-summary:** #0058 the committed release binary is rebuilt from the audited source and its size/SHA-256/signature/source commit are recorded in docs/BINARY_PROVENANCE.md + docs/converter.sha256, with a CI checksum gate; #0059 CI pins actions/checkout by SHA, asserts Swift 6.3.3, drops the unpinned brew update, limits permissions and adds the strict C++ build.
-- **evidence-after:** AUDIT/evidence/0058-0059-after.log (checksum OK; Swift 6.3.3 assertion; warnings-as-errors build; strict C++ release build; ./converter -doctor on the rebuilt binary).
+- **evidence-after:** AUDIT/evidence/0058-0059-after.log (checksum OK; Swift 6.3.3 assertion; warnings-as-errors build; strict C++ release build; ./converter -doctor on the rebuilt binary). Full suite (AUDIT/evidence/0058-0059-fullsuite.txt): 261 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** f3bef99
 - **notes:** Pin checkout SHA, DEVELOPER_DIR, version guard.
 
