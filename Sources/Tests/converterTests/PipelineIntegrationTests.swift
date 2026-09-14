@@ -58,6 +58,35 @@ final class PipelineIntegrationTests: XCTestCase {
         XCTAssertNil(resolved.portrait)
     }
 
+    // audit #0100: the full run renamed the source to 1_source.<ext> before validating it, so a
+    // corrupt source both lost its original name in the error and stayed renamed after the run
+    // failed.
+    func testFullRunPreflightsTheSourceBeforeRenamingIt() async throws {
+        let workspace = try IntegrationWorkspace()
+        let broken = try workspace.writeGarbageFile(name: "broken_source", ext: "mp3")
+
+        let tool = try workspace.makeTool(arguments: ["-full"])
+        do {
+            try await tool.stepFull()
+            XCTFail("a corrupt source must fail the run")
+        } catch {
+            let message = (error as? AppError)?.message ?? error.localizedDescription
+            XCTAssertTrue(
+                message.contains("broken_source.mp3"),
+                "the error must name the source the user supplied: \(message)"
+            )
+        }
+
+        XCTAssertTrue(
+            FileManager.default.fileExists(atPath: broken.path),
+            "a failed run must leave the source under its original name"
+        )
+        XCTAssertFalse(
+            FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("1_source.mp3").path),
+            "the source must not have been renamed"
+        )
+    }
+
     // Large stderr output used to risk pipe-buffer deadlock; this keeps that path under test.
     func testRunHandlesLargeStderrWithoutDeadlock() throws {
         let workspace = try IntegrationWorkspace()

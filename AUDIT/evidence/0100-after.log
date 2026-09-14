@@ -1,0 +1,8 @@
+$ swift test --package-path Sources --filter testFullRunPreflightsTheSourceBeforeRenamingIt   # fix applied
+Test Case '-[converterTests.PipelineIntegrationTests testFullRunPreflightsTheSourceBeforeRenamingIt]' passed (0.032 seconds).
+	 Executed 1 test, with 0 failures (0 unexpected) in 0.032 (0.032) seconds
+	 Executed 1 test, with 0 failures (0 unexpected) in 0.032 (0.032) seconds
+	 Executed 1 test, with 0 failures (0 unexpected) in 0.032 (0.033) seconds
+
+$ swift test --package-path Sources --filter Full   # 24 naming/rename/full-run tests still green
+	 Executed 24 tests, with 0 failures (0 unexpected) in 167.791 (167.795) seconds

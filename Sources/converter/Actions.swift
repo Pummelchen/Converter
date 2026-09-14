@@ -619,9 +619,12 @@ extension ConverterTool {
     // itself (bit-exact FLAC), or the internal WAV decoded from an MP3.
     func fullAudioPreparation(sourceAudio: URL, releaseStem: String) async throws -> AudioArtifacts {
         let ext = sourceAudio.pathExtension.lowercasedASCII
+        // resolveFullAudio already validated the source before renaming it to `1_source`, so the
+        // normalized file must not be preflighted twice (#0100).
+        let alreadyPreflighted = sourceAudio.stem == Self.fullRunReleaseName + Self.fullRunSourceSuffix
         switch ext {
         case "flac":
-            try preflightFLACInput(sourceAudio)
+            if !alreadyPreflighted { try preflightFLACInput(sourceAudio) }
             logger.info("Full step: external RF64/BW64 audio deliverables")
             async let archivalTask: Void = withAudioPermit {
                 try self.generateExternalArchivalVariants(baseName: releaseStem, highQualitySource: sourceAudio)
@@ -632,7 +635,7 @@ extension ConverterTool {
             async let mp3Task: URL = withAudioPermit { try self.convertAudioToMP3(wav, outputStem: releaseStem) }
             return AudioArtifacts(source: sourceAudio, wav: wav, m4a: try await m4aTask, mp3: try await mp3Task)
         case "mp3":
-            try preflightMP3Input(sourceAudio)
+            if !alreadyPreflighted { try preflightMP3Input(sourceAudio) }
             let wav = try await withAudioPermit { try self.convertAudioToWAV(sourceAudio, outputStem: releaseStem) }
             logger.info("Full step: external RF64/BW64 audio deliverables")
             async let archivalTask: Void = withAudioPermit {
@@ -645,7 +648,7 @@ extension ConverterTool {
             }
             return AudioArtifacts(source: sourceAudio, wav: wav, m4a: try await m4aTask, mp3: try await mp3Task)
         case "wav":
-            try preflightWAVInput(sourceAudio)
+            if !alreadyPreflighted { try preflightWAVInput(sourceAudio) }
             logger.info("Full step: external RF64/BW64 audio deliverables")
             async let archivalTask: Void = withAudioPermit {
                 try self.generateExternalArchivalVariants(baseName: releaseStem, highQualitySource: sourceAudio)
@@ -724,10 +727,22 @@ extension ConverterTool {
 
     func stepFull() async throws {
         logger.info("Full pipeline start")
+        // Validate the discovered source before resolveFullAudio renames it to 1_source: a corrupt
+        // file must fail under the name the user supplied, and a failed run must not leave the
+        // folder renamed (#0100).
+        try preflightSoleFullRunSourceIfAny()
         let audio = try resolveFullAudio()
         logger.info("Source audio: \(audio.basename)")
         try await runFullProductionPipeline(sourceAudio: audio)
         logger.info("Full pipeline complete")
+    }
+
+    // The candidate count is resolveFullAudio's business; here a folder with anything other than
+    // exactly one source is left for it to report.
+    func preflightSoleFullRunSourceIfAny() throws {
+        let candidates = try rankedFullRunAudioCandidates()
+        guard candidates.count == 1 else { return }
+        try preflightAudioSourceForTranscode(candidates[0])
     }
 
     func stepAlbum() async throws {

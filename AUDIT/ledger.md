@@ -6,9 +6,9 @@ Session: `2026-09-13` · branch `audit/2026-09-13` · baseline commit `4bb136a`
 
 | status | count |
 |---|---|
-| START | 27 |
+| START | 26 |
 | PROGRESS | 0 |
-| TEST | 0 |
+| TEST | 1 |
 | AUDIT | 0 |
 | DONE | 73 |
 | BLOCKED | 0 |
@@ -54,7 +54,7 @@ _none_
 | #0096 | S3 | converterTests | Sources/Tests/converterTests/converterTests.swift:108-115 | SchedulerProfile tested via its summary string | test | START |  |
 | #0097 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:1902-1911 | -doctor has only a no-throw happy path | test | START |  |
 | #0098 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:529,534 | Exact ffmpeg bass filter string pinned without a stated reason | test | START |  |
-| #0100 | S3 | converter/Actions | Sources/converter/Actions.swift (normalizedFullRunSource / resolveFullAudio) | Full-run source is renamed before preflight; a corrupt source loses its original name in the error | logic | START |  |
+| #0100 | S3 | converter/Actions | Sources/converter/Actions.swift (normalizedFullRunSource / resolveFullAudio) | Full-run source is renamed before preflight; a corrupt source loses its original name in the error | logic | TEST |  |
 
 ## Done (73)
 
@@ -1284,7 +1284,7 @@ _none_
 - **commit sha:** 9343977
 - **notes:** Phase E requires zero warnings across all targets.
 
-### #0100 · S3 · START · Full-run source is renamed before preflight; a corrupt source loses its original name in the error
+### #0100 · S3 · TEST · Full-run source is renamed before preflight; a corrupt source loses its original name in the error
 
 - **project/module:** converter/Actions
 - **file:line:** Sources/converter/Actions.swift (normalizedFullRunSource / resolveFullAudio)
@@ -1292,5 +1292,7 @@ _none_
 - **host-used:** local
 - **discovered-by:** reviewer X-3 (sub-point), split out of #0022
 - **evidence-before:** resolveFullAudio renames the family, then fullAudioPreparation preflights; a file that fails preflight is reported under its new 1_source name. Cosmetic: no data is lost, the file is intact under the new name.
+- **fix-summary:** stepFull preflights the sole discovered source before resolveFullAudio renames it, and fullAudioPreparation skips the duplicate preflight for the normalized 1_source name; the rename helper remains a pure resolver.
+- **evidence-after:** AUDIT/evidence/0100-before.log (fix stashed: the error named 1_source.mp3 and the source had been renamed); AUDIT/evidence/0100-after.log (testFullRunPreflightsTheSourceBeforeRenamingIt passes; all 24 'Full' tests green). swiftlint 528/56, no new violations.
 - **notes:** Not folded into #0022 because the naming unit tests use empty placeholder files and would all need real media if preflight moved ahead of the rename; needs its own design (probe-only preflight of the chosen file before renaming).
 

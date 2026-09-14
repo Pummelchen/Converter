@@ -1,0 +1,8 @@
+$ git stash push -- Sources/converter/Actions.swift   # fix NOT applied
+$ swift test --package-path Sources --filter testFullRunPreflightsTheSourceBeforeRenamingIt
+/Users/node4/Downloads/Converter/Converter/Sources/Tests/converterTests/PipelineIntegrationTests.swift:80: error: -[converterTests.PipelineIntegrationTests testFullRunPreflightsTheSourceBeforeRenamingIt] : XCTAssertTrue failed - a failed run must leave the source under its original name
+/Users/node4/Downloads/Converter/Converter/Sources/Tests/converterTests/PipelineIntegrationTests.swift:84: error: -[converterTests.PipelineIntegrationTests testFullRunPreflightsTheSourceBeforeRenamingIt] : XCTAssertFalse failed - the source must not have been renamed
+Test Case '-[converterTests.PipelineIntegrationTests testFullRunPreflightsTheSourceBeforeRenamingIt]' failed (0.063 seconds).
+	 Executed 1 test, with 3 failures (0 unexpected) in 0.063 (0.063) seconds
+	 Executed 1 test, with 3 failures (0 unexpected) in 0.063 (0.063) seconds
+	 Executed 1 test, with 3 failures (0 unexpected) in 0.063 (0.064) seconds
