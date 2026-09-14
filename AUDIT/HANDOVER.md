@@ -98,13 +98,23 @@ against the working tree and `origin` on 2026-09-14 06:58 WIB.
   `IntegrationTestSupport`), **#0072** (`needsFullSongCompanion` extracted; cap boundaries
   58/58.005/58.02 tested), **#0097** (three `-doctor` failure tests).
 - Ledger after batch 11: **done 89 · open 11 · blocked 0**.
-- Remaining 11: **#0074/#0075** (dead code — candidates verified: `rankedFullRunImageCandidates`,
-  the 4-argument `decodeAudioToCanonicalPCM` overload, `ProcessRunner.fileManager` and
-  `aipixResizeArguments`' unused `filter`/`colorSpace` params are genuinely unreachable;
-  `projectRoot` and the 15 `assignOnlyProperty` hits are used and must be retained with a reason),
-  **#0073** (swiftlint baseline), **#0061/#0062** (bridge channel bound, strict C++ on vendored
-  headers), **#0058/#0059** (binary + CI provenance), **#0086** (BW64 free-space), **#0051**
-  (redundant probes), **#0030** (docs sync), then S0 **#0006** (Phase E on `node1`).
+- Batch 12 (dead code) DONE after a 259-test full suite: **#0074** (removed eight unreachable
+  declarations periphery proves dead, including `rankedFullRunImageCandidates`, the 4-argument
+  `decodeAudioToCanonicalPCM`, `ProcessRunner.fileManager`, `RIFFChunkWalker.first(_:)` and
+  `aipixResizeArguments`' unused params; the `projectRoot` and `assignOnlyProperty` records are
+  retained with a recorded reason), **#0075** (tautological `.m4a` guard, dead `writeBext`/FLAC
+  override parameters, redundant ffmpeg switch, the unreachable `fullRunImageRank` fallback, the
+  bridge's dead size ternary, the mislabelled shared audio preflight, and the album duration
+  tolerance — now `min(DURATION_TOLERANCE_SEC, ALBUM_SILENCE_SECS / 2)`, below the 2 s gap it
+  exists to detect).
+- Ledger after batch 12: **done 91 · open 9 · blocked 0**. swiftlint is 523/56.
+- Remaining 9: **#0073** (swiftlint actionable rules — the 56 error-level violations break down as
+  line_length 26, identifier_name 8, file_length 6, type_body_length 6, function_body_length 4,
+  cyclomatic_complexity 3, function_parameter_count 1, large_tuple 1, type_name 1; the 399
+  line_length warnings and the body/file-length rules are structural and must be deferred with a
+  written rationale), **#0061/#0062** (bridge channel bound, strict C++ on vendored headers),
+  **#0058/#0059** (binary + CI provenance), **#0086** (BW64 free space), **#0051** (redundant
+  probes), **#0030** (docs sync), then S0 **#0006** (Phase E on `node1`).
 - Investigated but deliberately deferred: **#0086** (the 3-byte width in `estimateWAVBytes` is
   latent because `Config.validate` pins `WAV_CODEC` to `pcm_s24le`; only the BW64 free-space gap
   is real — fold it into a later perf/validation pass), **#0051** (needs a counting runner to
