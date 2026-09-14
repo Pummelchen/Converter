@@ -57,10 +57,16 @@ against the working tree and `origin` on 2026-09-14 06:58 WIB.
   installer runner now lives in `Sources/converter/DependencyInstaller.swift`).
 - Ledger after batch 4: **done 69 · open 31 · blocked 0**. swiftlint is 530/56 (one below the
   531 baseline).
-- Next planned batch: **#0040** (cancellation must terminate sibling external processes),
-  **#0050** (loudness fallback mislabels a true-peak breach), **#0051** (redundant padding
-  verification / uncached `ffmpeg -filters`), **#0086** (BW64 magic byte width + free-space
-  check), **#0087** (CLI value validation).
+- Batch 5 DONE after a 247-test full suite: **#0040** (a cancelled fan-out left sibling
+  ffmpeg/magick processes running; ProcessRunner now tracks live children and the permit helpers
+  terminate them on cancellation), **#0087** (CLI accepted `--seed 0`, unbounded `--sharpness`,
+  a second action flag and option-like option values).
+- Ledger after batch 5: **done 71 · open 29 · blocked 0**.
+- Next planned batch: **#0050** (fallback publishes a true-peak breach with a "closest-safe"
+  label — see `AUDIT/findings/L2-audio.md` A-9 for the intended inherent-peak rule and the MP3
+  headroom), **#0051** (redundant padding verification / uncached `ffmpeg -filters`), **#0086**
+  (BW64 magic byte width + free-space check), plus the S3 cleanup tasks (#0090, #0091 done,
+  #0080, #0077).
 
 ## Exactly where to continue
 
