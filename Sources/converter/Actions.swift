@@ -129,11 +129,14 @@ extension ConverterTool {
         for suffix in ["_1MB", "_2MB", "_5MB", "_20MB"] where stem.hasSuffix(suffix) {
             return 99
         }
-        let derivedOrder = ["_NFT8K", "_NFT3K", "_NFT2K", "_8K", "_4K", "_3K", "_2K"]
-        for (index, suffix) in derivedOrder.enumerated() where stem.hasSuffix(suffix) {
-            // Prefer the largest usable rendition: _8K before the NFT squares and smaller sizes.
-            let preference = ["_8K": 1, "_4K": 2, "_3K": 3, "_2K": 4, "_NFT8K": 5, "_NFT3K": 6, "_NFT2K": 7]
-            return preference[suffix] ?? (index + 1)
+        // Ordered so the NFT markers are tested before the plain _8K they also end with; the
+        // ranks are part of the same list so no fallback branch can be unreachable (#0075).
+        let derivedOrder: [(suffix: String, rank: Int)] = [
+            ("_NFT8K", 5), ("_NFT3K", 6), ("_NFT2K", 7),
+            ("_8K", 1), ("_4K", 2), ("_3K", 3), ("_2K", 4)
+        ]
+        for entry in derivedOrder where stem.hasSuffix(entry.suffix) {
+            return entry.rank
         }
         return 0
     }

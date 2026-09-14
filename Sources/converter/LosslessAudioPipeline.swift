@@ -6,7 +6,7 @@ extension ConverterTool {
         state.unregister(tempFile: temp)
     }
 
-    func internalWAVArguments(input: URL, output: URL, filter: String? = nil, duration: Double? = nil, writeBext: Bool? = nil) -> [String] {
+    func internalWAVArguments(input: URL, output: URL, filter: String? = nil, duration: Double? = nil) -> [String] {
         var args = [
             "-hide_banner", "-nostdin", "-v", "error", "-y"
         ]
@@ -27,7 +27,7 @@ extension ConverterTool {
             "-c:a", config.wavCodec,
             "-f", "wav",
             "-rf64", "always",
-            "-write_bext", writeBext == false ? "0" : String(config.wavWriteBext),
+            "-write_bext", String(config.wavWriteBext),
             output.path
         ]
         return args
@@ -170,13 +170,11 @@ extension ConverterTool {
     func encodeInternalWAVToFLAC(
         _ wav: URL,
         output: URL,
-        sampleRate: Int? = nil,
-        channels: Int? = nil,
         qcPolicy: AudioQCPolicy? = nil
     ) throws {
         try verifyWAVStandard(wav, qcPolicy: nil)
-        let outputSampleRate = sampleRate ?? config.flacSampleRate
-        let outputChannels = channels ?? config.flacChannels
+        let outputSampleRate = config.flacSampleRate
+        let outputChannels = config.flacChannels
         _ = try runner.run("ffmpeg", [
             "-hide_banner", "-nostdin", "-v", "error", "-y",
             "-i", wav.path,

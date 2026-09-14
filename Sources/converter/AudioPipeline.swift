@@ -184,9 +184,6 @@ extension ConverterTool {
         case "mp3":
             try preflightMP3Input(source, requireNoVideo: false)
         case "m4a":
-            guard source.pathExtension.lowercasedASCII == "m4a" else {
-                throw AppError("Expected .m4a input: \(source.path)")
-            }
             try preflightAudioInput(
                 source,
                 expectedContainerTokens: ["m4a", "mp4", "ipod", "mov"],
@@ -260,7 +257,9 @@ extension ConverterTool {
         }
     }
 
-    func preflightAudioMediaSource(_ source: URL) throws {
+    // The label names the action that asked, so a rejected extension does not blame "bass" when
+    // the caller was -loudness, -master or -loudscan (#0075).
+    func preflightAudioMediaSource(_ source: URL, label: String) throws {
         switch source.pathExtension.lowercasedASCII {
         case "flac":
             try preflightFLACInput(source, requireNoVideo: false)
@@ -285,7 +284,7 @@ extension ConverterTool {
                 requireAudible: true
             )
         default:
-            throw AppError("Unsupported bass source type: \(source.path)")
+            throw AppError("Unsupported \(label) source type: \(source.path)")
         }
     }
 
@@ -445,7 +444,7 @@ extension ConverterTool {
     }
 
     func loudnessMeasurement(for file: URL) throws -> LoudnessScanEntry {
-        try preflightAudioMediaSource(file)
+        try preflightAudioMediaSource(file, label: "loudscan")
         let result = try audioQCResult(for: file, policy: loudnessPolicy(targetLUFS: config.audioQCTargetLUFS, tolerance: 99))
         guard let integrated = result.metrics.integratedLUFS, integrated.isFinite else {
             throw AppError("Unable to measure integrated loudness for \(file.path)")
@@ -569,7 +568,7 @@ extension ConverterTool {
     }
 
     func bassBoostMedia(_ source: URL, spec: BassBoostSpec) throws -> URL {
-        try preflightAudioMediaSource(source)
+        try preflightAudioMediaSource(source, label: "bass")
         let filters = try ffmpegFilterSet()
         guard filters.contains("bass") else {
             throw AppError("Required ffmpeg filter is not available: bass")
@@ -623,7 +622,7 @@ extension ConverterTool {
     }
 
     func loudnessNormalizeMedia(_ source: URL, spec: LoudnessSpec) throws -> URL {
-        try preflightAudioMediaSource(source)
+        try preflightAudioMediaSource(source, label: "loudness")
         let policy = loudnessPolicy(targetLUFS: spec.targetLUFS)
         let output = cli.outDir
             .appendingPathComponent(source.stem + loudnessOutputSuffix(for: spec))
@@ -689,7 +688,7 @@ extension ConverterTool {
     }
 
     func masterMedia(_ source: URL) throws -> URL {
-        try preflightAudioMediaSource(source)
+        try preflightAudioMediaSource(source, label: "master")
         let output = cli.outDir
             .appendingPathComponent("\(source.stem)_mastered")
             .appendingPathExtension(source.pathExtension.lowercasedASCII)
@@ -2281,7 +2280,7 @@ extension ConverterTool {
                 return sum + duration
             } + Double(max(entries.count - 1, 0)) * Double(config.albumSilenceSecs)
             + (cli.trailingSilence ? Double(config.albumSilenceSecs) : 0)
-            try verifyDuration(temp, expectedSeconds: expectedDuration, label: "album WAV")
+            try verifyDuration(temp, expectedSeconds: expectedDuration, label: "album WAV", tolerance: albumDurationToleranceSeconds())
             try publishTemp(temp, to: output)
             logger.info("Created album WAV: \(output.path)")
             return output
@@ -2290,6 +2289,13 @@ extension ConverterTool {
             state.unregister(tempFile: temp)
             throw error
         }
+    }
+
+    // A dropped inter-track gap makes the album exactly albumSilenceSecs shorter, so the
+    // tolerance must stay strictly below that gap; the configured tolerance alone (2 s by
+    // default) equalled it and let a missing gap verify as a valid album (#0075).
+    func albumDurationToleranceSeconds() -> Double {
+        min(config.durationToleranceSec, Double(config.albumSilenceSecs) / 2)
     }
 
     // Resolves the tracks listed in album.txt. A listed track that cannot be used is an error:

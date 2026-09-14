@@ -1108,6 +1108,26 @@ final class PipelineIntegrationTests: XCTestCase {
         XCTAssertEqual(progressEvents.last?.reportLines.count, 4)
     }
 
+    // audit #0075: the album duration tolerance equalled the inter-track gap it had to detect, so
+    // an album whose gap was dropped was exactly 2 s short and still verified as valid.
+    func testAlbumDurationToleranceIsStrictlyBelowTheGapItMustDetect() throws {
+        let workspace = try IntegrationWorkspace()
+
+        try workspace.overwriteConfig(
+            IntegrationWorkspace.defaultConfig + "\nALBUM_SILENCE_SECS=2\nDURATION_TOLERANCE_SEC=2\n"
+        )
+        let tool = try workspace.makeTool(arguments: ["-album"])
+        XCTAssertEqual(tool.albumDurationToleranceSeconds(), 1.0, accuracy: 0.0001)
+        XCTAssertLessThan(tool.albumDurationToleranceSeconds(), Double(tool.config.albumSilenceSecs))
+
+        // A tighter configured tolerance is still honoured.
+        try workspace.overwriteConfig(
+            IntegrationWorkspace.defaultConfig + "\nALBUM_SILENCE_SECS=2\nDURATION_TOLERANCE_SEC=0.5\n"
+        )
+        let tight = try workspace.makeTool(arguments: ["-album"])
+        XCTAssertEqual(tight.albumDurationToleranceSeconds(), 0.5, accuracy: 0.0001)
+    }
+
     func testLoudnessNormalizeProcessesAudioAndMP4Inputs() throws {
         let workspace = try IntegrationWorkspace()
         try workspace.requireCommands(["ffmpeg", "ffprobe"])

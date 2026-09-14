@@ -92,7 +92,9 @@ void forceBW64Container(const std::string& path, std::uint64_t dataBytes) {
     stream.seekp(12);
     writeLE(stream, fourCC("ds64"));
     writeLE(stream, placeholderSize);
-    writeLE(stream, static_cast<std::uint64_t>(fileSize >= 8 ? fileSize - 8 : 0));
+    // requireHeaderSize() already rejected anything shorter than a full header, so the size
+    // can never underflow here.
+    writeLE(stream, static_cast<std::uint64_t>(fileSize - 8));
     writeLE(stream, dataBytes);
     writeLE(stream, static_cast<std::uint64_t>(0));
     writeLE(stream, static_cast<std::uint32_t>(0));
