@@ -44,7 +44,7 @@ _none_
 | #0074 | S2 | converter (dead code) | Sources/converter/Actions.swift:114; ImagePipeline.swift:26-27; ProcessRunner.swift:78; ValidationPipeline.swift:857; Tests/IntegrationTestSupport.swift:32 | periphery-flagged unused declarations (6 unused, 15 assign-only) — prove reachability, then remove or retain with reason | dead | START |  |
 | #0075 | S2 | converter (dead code) | Sources/converter/PipelineCore.swift:347,357-362; Actions.swift:105-110,794-808; BW64Bridge/bw64_bridge.cpp:95; LosslessAudioPipeline.swift:9,30,173-174; AudioPipeline.swift:160-162,264,1955 | Dead branches, tautological guards, dead parameters, redundant discards | dead | START |  |
 | #0086 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:1378,1694-1706 | Magic bytes-per-sample and missing free-space check on the BW64 path | style | START |  |
-| #0089 | S3 | converter/VideoPipeline | Sources/converter/VideoPipeline.swift:334,386,467 | ALAC M4A decoded and re-encoded for every video although stream copy is bit-transparent | perf | TEST |  |
+| #0089 | S3 | converter/VideoPipeline | Sources/converter/VideoPipeline.swift:334,386,467 | ALAC M4A decoded and re-encoded for every video although stream copy is bit-transparent | perf | TEST | a721ba6 |
 | #0093 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:30-50 | 10 s wall-clock budget on a 40 000-iteration shell loop | test | START |  |
 | #0094 | S3 | converterTests | Sources/Tests/converterTests/converterTests.swift:189-230,1297-1309 | Help-text tests couple to prose sentences | test | START |  |
 | #0095 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:613-619 | Progress-event count pinned to implementation | test | START |  |
@@ -1191,6 +1191,7 @@ _none_
 - **evidence-before:** AUDIT/findings/L2-video-image-actions-cli.md X-21
 - **fix-summary:** VideoEncodeSpec.audioStreamCopy makes mp4RenderTail emit -c:a copy; canStreamCopyAudioIntoVideo matches ALAC + project sample format + raw bit depth + rate + channels, and the three render paths skip the internal WAV decode/re-encode when it holds.
 - **evidence-after:** AUDIT/evidence/0089-before.log (predicate forced false: the standard ALAC source is not copied); AUDIT/evidence/0089-after.log (testVideoRenderStreamCopiesAnAlreadyStandardALACSource passes). swiftlint 526/56, no new violations.
+- **commit sha:** a721ba6
 
 ### #0090 · S3 · DONE · Easily swappable C ABI parameters (swapped paths would truncate the input)
 

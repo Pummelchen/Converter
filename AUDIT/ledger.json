@@ -1514,7 +1514,7 @@
       "evidence_before": "AUDIT/findings/L2-video-image-actions-cli.md X-21",
       "fix_summary": "VideoEncodeSpec.audioStreamCopy makes mp4RenderTail emit -c:a copy; canStreamCopyAudioIntoVideo matches ALAC + project sample format + raw bit depth + rate + channels, and the three render paths skip the internal WAV decode/re-encode when it holds.",
       "evidence_after": "AUDIT/evidence/0089-before.log (predicate forced false: the standard ALAC source is not copied); AUDIT/evidence/0089-after.log (testVideoRenderStreamCopiesAnAlreadyStandardALACSource passes). swiftlint 526/56, no new violations.",
-      "commit": "",
+      "commit": "a721ba6",
       "notes": ""
     },
     {
