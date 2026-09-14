@@ -102,6 +102,10 @@ struct ProjectConfig {
     var albumSilenceSecs = 2
     var wavFadeDur = 10
 
+    // Sharpening beyond this cannot be justified visually and costs minutes per image; the
+    // effective sigma is (value - 1) * 2, so 10 is already ~18.
+    static let maximumAIPixSharpness = 10.0
+
     static let supportedKeys: Set<String> = [
         "PROFILE",
         "PREFLIGHT_SECONDS", "DURATION_TOLERANCE_SEC", "CRC_CHUNK_BYTES",
@@ -455,6 +459,12 @@ struct ProjectConfig {
         try requireRange(imagePNGToJPEGQuality, 1 ... 100, "IMAGE_PNG_TO_JPEG_QUALITY")
         if imageAIPixSharpness < 0 {
             throw AppError("IMAGE_AIPIX_SHARPNESS must be >= 0")
+        }
+        if imageAIPixSharpness > Self.maximumAIPixSharpness {
+            throw AppError(
+                "IMAGE_AIPIX_SHARPNESS must be <= \(Self.maximumAIPixSharpness); "
+                + "the effective sigma is (value - 1) * 2 and larger values cost minutes per image"
+            )
         }
         try requireNonEmpty(imageAIPixFilter, "IMAGE_AIPIX_FILTER")
         // Both are ImageMagick's own 0-9 zlib level scale.

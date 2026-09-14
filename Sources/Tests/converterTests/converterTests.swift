@@ -266,6 +266,48 @@ final class converterTests: XCTestCase {
         }
     }
 
+    // audit #0087: the parser accepted several inputs that contradict its own contracts:
+    // --seed 0 despite "positive integer", an unbounded --sharpness, a second action flag that
+    // silently won, and an option-like token stored as a flag's value.
+    func testCLIRejectsZeroSeedUnboundedSharpnessRepeatedActionsAndOptionLikeValues() throws {
+        let root = URL(fileURLWithPath: "/tmp/converter-test")
+        func parse(_ arguments: [String]) throws -> CLIOptions {
+            try CLIOptions.parse(arguments: arguments, environment: [:], scriptDirectory: root, scriptName: "converter")
+        }
+
+        XCTAssertThrowsError(try parse(["-aipix", "--seed", "0"])) { error in
+            XCTAssertTrue(
+                error.localizedDescription.contains("--seed"),
+                "unexpected message: \(error.localizedDescription)"
+            )
+        }
+        XCTAssertThrowsError(try parse(["-aipix", "--sharpness", "100"])) { error in
+            XCTAssertTrue(
+                error.localizedDescription.contains("--sharpness"),
+                "unexpected message: \(error.localizedDescription)"
+            )
+        }
+        XCTAssertThrowsError(try parse(["-full", "-album"])) { error in
+            XCTAssertTrue(
+                error.localizedDescription.contains("Only one action"),
+                "unexpected message: \(error.localizedDescription)"
+            )
+        }
+        XCTAssertThrowsError(try parse(["-m4atomp4", "--output-file", "--overwrite"])) { error in
+            XCTAssertTrue(
+                error.localizedDescription.contains("Missing value for --output-file"),
+                "unexpected message: \(error.localizedDescription)"
+            )
+        }
+
+        // The same flags in the intended order still parse.
+        let options = try parse(["-m4atomp4", "--output-file", "release.mp4", "--overwrite", "--seed", "7"])
+        XCTAssertEqual(options.action, .m4atomp4)
+        XCTAssertEqual(options.outputFile, "release.mp4")
+        XCTAssertTrue(options.overwrite)
+        XCTAssertEqual(options.seed, 7)
+    }
+
     func testNumericFormattingAndBitrateParsingUseStableFFmpegForms() throws {
         XCTAssertEqual(ffmpegNumber(5), "5")
         XCTAssertEqual(ffmpegNumber(-12.5), "-12.5")

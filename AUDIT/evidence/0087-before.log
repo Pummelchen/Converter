@@ -1,0 +1,10 @@
+$ git stash push -- Sources/converter/CLI.swift Sources/converter/Config.swift   # fix NOT applied
+$ swift test --package-path Sources --filter testCLIRejectsZeroSeedUnboundedSharpnessRepeatedActionsAndOptionLikeValues
+/Users/node4/Downloads/Converter/Converter/Sources/Tests/converterTests/converterTests.swift:278: error: -[converterTests.converterTests testCLIRejectsZeroSeedUnboundedSharpnessRepeatedActionsAndOptionLikeValues] : XCTAssertThrowsError failed: did not throw an error
+/Users/node4/Downloads/Converter/Converter/Sources/Tests/converterTests/converterTests.swift:281: error: -[converterTests.converterTests testCLIRejectsZeroSeedUnboundedSharpnessRepeatedActionsAndOptionLikeValues] : XCTAssertThrowsError failed: did not throw an error
+/Users/node4/Downloads/Converter/Converter/Sources/Tests/converterTests/converterTests.swift:284: error: -[converterTests.converterTests testCLIRejectsZeroSeedUnboundedSharpnessRepeatedActionsAndOptionLikeValues] : XCTAssertThrowsError failed: did not throw an error
+/Users/node4/Downloads/Converter/Converter/Sources/Tests/converterTests/converterTests.swift:290: error: -[converterTests.converterTests testCLIRejectsZeroSeedUnboundedSharpnessRepeatedActionsAndOptionLikeValues] : XCTAssertThrowsError failed: did not throw an error
+Test Case '-[converterTests.converterTests testCLIRejectsZeroSeedUnboundedSharpnessRepeatedActionsAndOptionLikeValues]' failed (0.049 seconds).
+	 Executed 1 test, with 4 failures (0 unexpected) in 0.049 (0.049) seconds
+	 Executed 1 test, with 4 failures (0 unexpected) in 0.049 (0.049) seconds
+	 Executed 1 test, with 4 failures (0 unexpected) in 0.049 (0.050) seconds

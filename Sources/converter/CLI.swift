@@ -132,88 +132,106 @@ struct CLIOptions {
             guard next < arguments.count else {
                 throw AppError("Missing value for \(flag)")
             }
+            let value = arguments[next]
+            // A value that looks like another option means the flag was left without one
+            // (`--output-file --overwrite` used to store "--overwrite" as a filename).
+            guard !value.hasPrefix("--") else {
+                throw AppError("Missing value for \(flag): '\(value)' looks like another option.")
+            }
             index += 1
-            return arguments[next]
+            return value
+        }
+
+        // Exactly one action selects the run; a second action flag used to win silently.
+        var actionFlag: String?
+        func select(_ action: Action, _ flag: String) throws {
+            if let existing = actionFlag, existing != flag {
+                throw AppError(
+                    "Only one action may be given; got '\(existing)' and '\(flag)'. Run \(scriptName) -help."
+                )
+            }
+            actionFlag = flag
+            options.action = action
         }
 
         while index < arguments.count {
             let argument = arguments[index]
             switch argument {
             case "-bass":
-                options.action = .bass
+                try select(.bass, argument)
             case "-album":
-                options.action = .album
+                try select(.album, argument)
             case "-doctor":
-                options.action = .doctor
+                try select(.doctor, argument)
             case "-fade", "-fadeflac":
-                options.action = .fade
+                try select(.fade, argument)
             case "-fadecut":
-                options.action = .fadecut
+                try select(.fadecut, argument)
             case "-fadeout":
-                options.action = .fadeout
+                try select(.fadeout, argument)
             case "--hash", "-hash":
-                options.action = .hash
+                try select(.hash, argument)
             case "-loudness":
-                options.action = .loudness
+                try select(.loudness, argument)
             case "-master":
-                options.action = .master
+                try select(.master, argument)
             case "-loudscan", "-loundscan":
-                options.action = .loudscan
+                try select(.loudscan, argument)
             case "-noise":
-                options.action = .noise
+                try select(.noise, argument)
             case "-silence":
-                options.action = .silence
+                try select(.silence, argument)
             case "-short":
-                options.action = .short
+                try select(.short, argument)
             case "-full", "-run":
-                options.action = .full
+                try select(.full, argument)
             case "-run_pix":
-                options.action = .runPix
-            case "-aipix": options.action = .aipix
-            case "-clean": options.action = .clean
-            case "-fadewav": options.action = .fadewav
-            case "-flactoalbum": options.action = .flactoalbum
-            case "-flactohash": options.action = .flactohash
-            case "-flactom4a": options.action = .flactom4a
-            case "-flactomp3": options.action = .flactomp3
-            case "-flactowav": options.action = .flactowav
-            case "-jpgtopng": options.action = .jpgtopng
+                try select(.runPix, argument)
+            case "-aipix": try select(.aipix, argument)
+            case "-clean": try select(.clean, argument)
+            case "-fadewav": try select(.fadewav, argument)
+            case "-flactoalbum": try select(.flactoalbum, argument)
+            case "-flactohash": try select(.flactohash, argument)
+            case "-flactom4a": try select(.flactom4a, argument)
+            case "-flactomp3": try select(.flactomp3, argument)
+            case "-flactowav": try select(.flactowav, argument)
+            case "-jpgtopng": try select(.jpgtopng, argument)
             case "-jpegtopng":
                 throw AppError("-jpegtopng was removed. Use -jpgtopng; it reads both .jpg and .jpeg inputs.")
-            case "-m4atomp4": options.action = .m4atomp4
-            case "-m4atoflac": options.action = .m4atoflac
-            case "-m4atomp3": options.action = .m4atomp3
-            case "-m4atowav": options.action = .m4atowav
-            case "-matrix", "--matrix": options.action = .matrix
-            case "-mp3clean": options.action = .mp3clean
-            case "-mp3toalbum": options.action = .mp3toalbum
-            case "-mp3toflac": options.action = .mp3toflac
-            case "-mp3tohash": options.action = .mp3tohash
-            case "-mp3tom4a": options.action = .mp3tom4a
+            case "-m4atomp4": try select(.m4atomp4, argument)
+            case "-m4atoflac": try select(.m4atoflac, argument)
+            case "-m4atomp3": try select(.m4atomp3, argument)
+            case "-m4atowav": try select(.m4atowav, argument)
+            case "-matrix", "--matrix": try select(.matrix, argument)
+            case "-mp3clean": try select(.mp3clean, argument)
+            case "-mp3toalbum": try select(.mp3toalbum, argument)
+            case "-mp3toflac": try select(.mp3toflac, argument)
+            case "-mp3tohash": try select(.mp3tohash, argument)
+            case "-mp3tom4a": try select(.mp3tom4a, argument)
             case "-mp3toshort":
                 throw AppError("-mp3toshort was renamed. Use -nfttoshort; it accepts any single audio-only file supported by ffmpeg.")
-            case "-mp3towav": options.action = .mp3towav
-            case "-mp4toshort": options.action = .mp4toshort
-            case "-nfttoshort": options.action = .nfttoshort
-            case "-pngto2k": options.action = .pngto2k
-            case "-pngto3k": options.action = .pngto3k
-            case "-pngto3k1mb": options.action = .pngto3k1mb
-            case "-pngto3k5mb": options.action = .pngto3k5mb
+            case "-mp3towav": try select(.mp3towav, argument)
+            case "-mp4toshort": try select(.mp4toshort, argument)
+            case "-nfttoshort": try select(.nfttoshort, argument)
+            case "-pngto2k": try select(.pngto2k, argument)
+            case "-pngto3k": try select(.pngto3k, argument)
+            case "-pngto3k1mb": try select(.pngto3k1mb, argument)
+            case "-pngto3k5mb": try select(.pngto3k5mb, argument)
             case "-pngtojpeg":
                 throw AppError("-pngtojpeg was removed. Use -pngtojpg; converter writes JPEG outputs with the preferred .jpg extension.")
-            case "-pngtojpg": options.action = .pngtojpg
-            case "-pngtonft": options.action = .pngtonft
-            case "-pngtojpg1mb": options.action = .pngtojpg1mb
-            case "-pngtojpg2mb": options.action = .pngtojpg2mb
-            case "-pngtojpg20mb": options.action = .pngtojpg20mb
-            case "-visualsubs": options.action = .visualsubs
-            case "-wavtoalbum": options.action = .wavtoalbum
-            case "-wavtoflac": options.action = .wavtoflac
-            case "-wavtohash": options.action = .wavtohash
-            case "-wavtom4a": options.action = .wavtom4a
-            case "-wavtomp3": options.action = .wavtomp3
-            case "-help", "--help": options.action = .help
-            case "-list", "--list": options.action = .list
+            case "-pngtojpg": try select(.pngtojpg, argument)
+            case "-pngtonft": try select(.pngtonft, argument)
+            case "-pngtojpg1mb": try select(.pngtojpg1mb, argument)
+            case "-pngtojpg2mb": try select(.pngtojpg2mb, argument)
+            case "-pngtojpg20mb": try select(.pngtojpg20mb, argument)
+            case "-visualsubs": try select(.visualsubs, argument)
+            case "-wavtoalbum": try select(.wavtoalbum, argument)
+            case "-wavtoflac": try select(.wavtoflac, argument)
+            case "-wavtohash": try select(.wavtohash, argument)
+            case "-wavtom4a": try select(.wavtom4a, argument)
+            case "-wavtomp3": try select(.wavtomp3, argument)
+            case "-help", "--help": try select(.help, argument)
+            case "-list", "--list": try select(.list, argument)
             case "--config":
                 options.configFile = URL(fileURLWithPath: try requireValue(argument))
             case "--profile":
@@ -253,8 +271,12 @@ struct CLIOptions {
             case "--trailing-silence":
                 options.trailingSilence = true
             case "--sharpness":
-                guard let value = Double(try requireValue(argument)), value.isFinite else {
-                    throw AppError("--sharpness requires a finite numeric value")
+                guard let value = Double(try requireValue(argument)), value.isFinite,
+                      value >= 0, value <= ProjectConfig.maximumAIPixSharpness
+                else {
+                    throw AppError(
+                        "--sharpness requires a finite value between 0 and \(ProjectConfig.maximumAIPixSharpness)"
+                    )
                 }
                 options.sharpnessOverride = value
             case "--sleep-seconds":
@@ -278,7 +300,7 @@ struct CLIOptions {
                 }
                 options.maxAttempts = value
             case "--seed":
-                guard let value = UInt64(try requireValue(argument)) else {
+                guard let value = UInt64(try requireValue(argument)), value > 0 else {
                     throw AppError("--seed requires a positive integer")
                 }
                 options.seed = value
