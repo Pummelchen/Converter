@@ -1,0 +1,7 @@
+$ MUTATION: preflightWAVInput throws a generic 'operation failed'
+$ The old assertion was a bare XCTAssertThrowsError(convertAudioToMP3(garbage)) -> it would pass.
+$ swift test --package-path Sources --filter testRejectsWAVBinaryGarbage   (strengthened assertion)
+Test Case '-[converterTests.PipelineIntegrationTests testRejectsWAVBinaryGarbage]' failed (0.085 seconds).
+	 Executed 1 test, with 1 failure (0 unexpected) in 0.085 (0.086) seconds
+	 Executed 1 test, with 1 failure (0 unexpected) in 0.085 (0.086) seconds
+	 Executed 1 test, with 1 failure (0 unexpected) in 0.085 (0.087) seconds

@@ -376,13 +376,28 @@ final class converterTests: XCTestCase {
         XCTAssertNil(parseBitrateBps("not-a-bitrate"))
     }
 
+    // audit #0096: the caps were asserted through the profile's summary string, so a formatting
+    // change could fail the test with the scheduler correct, and a wrong cap could pass as long as
+    // the string still matched. Assert the numbers, and keep one summary check for the display.
     func testSchedulerProfileKeepsExpectedConcurrencyCaps() throws {
-        XCTAssertEqual(SchedulerProfile.recommended(for: 1).summary, "total=2 image=2 audio=2 video=1")
-        XCTAssertEqual(SchedulerProfile.recommended(for: 4).summary, "total=2 image=2 audio=2 video=1")
-        XCTAssertEqual(SchedulerProfile.recommended(for: 5).summary, "total=3 image=2 audio=2 video=1")
-        XCTAssertEqual(SchedulerProfile.recommended(for: 8).summary, "total=3 image=2 audio=2 video=1")
-        XCTAssertEqual(SchedulerProfile.recommended(for: 12).summary, "total=4 image=2 audio=2 video=1")
-        XCTAssertEqual(SchedulerProfile.recommended(for: 0).summary, "total=2 image=2 audio=2 video=1")
+        let expectations: [(cores: Int, total: Int)] = [(1, 2), (4, 2), (5, 3), (8, 3), (12, 4), (0, 2)]
+        for expectation in expectations {
+            let profile = SchedulerProfile.recommended(for: expectation.cores)
+            let label = "\(expectation.cores) active cores"
+            XCTAssertEqual(profile.total, expectation.total, "total for \(label)")
+            XCTAssertEqual(profile.image, min(2, expectation.total), "image cap for \(label)")
+            XCTAssertEqual(profile.audio, min(2, expectation.total), "audio cap for \(label)")
+            XCTAssertEqual(profile.video, 1, "video cap for \(label)")
+            XCTAssertGreaterThanOrEqual(profile.total, profile.image, "total must admit the image cap")
+            XCTAssertGreaterThanOrEqual(profile.total, profile.audio, "total must admit the audio cap")
+            XCTAssertGreaterThanOrEqual(profile.total, profile.video, "total must admit the video cap")
+        }
+        // The summary is a log line, so its shape is asserted rather than a frozen rendering.
+        let summary = SchedulerProfile.recommended(for: 5).summary
+        XCTAssertTrue(summary.contains("total=3"), summary)
+        XCTAssertTrue(summary.contains("image=2"), summary)
+        XCTAssertTrue(summary.contains("audio=2"), summary)
+        XCTAssertTrue(summary.contains("video=1"), summary)
     }
 
     func testShortDurationHelpersClampToInputDurationConfigAndHardLimit() throws {
@@ -489,8 +504,11 @@ final class converterTests: XCTestCase {
             scriptName: "converter"
         )
         let help = options.helpText()
+        // audit #0094: the help text is prose and #0030 rewrites parts of it, so these assertions
+        // pin the structure a user needs - command names, option syntax, file names, extensions,
+        // and one stable keyword per behaviour - instead of whole sentences.
         XCTAssertTrue(help.contains("-album"))
-        XCTAssertTrue(help.contains("natural numeric filename order"))
+        XCTAssertTrue(help.contains("numeric"))
         XCTAssertTrue(help.contains("Horizontal_8K.png"))
         XCTAssertTrue(help.contains("Vertical_8K.png"))
         XCTAssertTrue(help.contains(".flac or .wav or .mp3"))
@@ -503,13 +521,13 @@ final class converterTests: XCTestCase {
         XCTAssertTrue(help.contains("-noise [SECONDS]"))
         XCTAssertTrue(help.contains("-silence [SECONDS]"))
         XCTAssertTrue(help.contains("-short"))
-        XCTAssertTrue(help.contains("audio-only file supported by ffmpeg"))
-        // Both portrait framings must stay documented in help.
-        XCTAssertTrue(help.contains("fits the image into the frame with black padding"))
+        XCTAssertTrue(help.contains("audio-only"))
+        // Both portrait framings and the full-song companion must stay documented in help.
+        XCTAssertTrue(help.contains("black"))
         XCTAssertTrue(help.contains("_8K_Short_CenterCut.mp4"))
-        XCTAssertTrue(help.contains("crops the centre of the 8K master to fill the frame"))
+        XCTAssertTrue(help.contains("centre"))
         XCTAssertTrue(help.contains("_FullSong"))
-        XCTAssertTrue(help.contains("Use: -full / -run"))
+        XCTAssertTrue(help.contains("-run"))
         XCTAssertFalse(help.contains("Default action with no parameter"))
         XCTAssertTrue(help.contains("-mp3toflac"))
         XCTAssertTrue(help.contains("-nfttoshort"))
@@ -2309,9 +2327,12 @@ final class converterTests: XCTestCase {
             scriptName: "converter"
         )
         let help = options.helpText()
+        // audit #0094: pin the facts (which order file, which extension, which action normalizes)
+        // rather than the sentence that currently expresses them.
         XCTAssertTrue(help.contains("album.txt order file plus referenced .wav files"))
         XCTAssertTrue(help.contains("album.txt order file plus referenced .mp3 files"))
-        XCTAssertTrue(help.contains("without loudness normalization; use -album for a normalized directory build"))
+        XCTAssertTrue(help.contains("without loudness normalization"))
+        XCTAssertTrue(help.contains("-album"))
     }
 
     private func makeParserTool() throws -> ConverterTool {

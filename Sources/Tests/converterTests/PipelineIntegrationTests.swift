@@ -136,7 +136,10 @@ final class PipelineIntegrationTests: XCTestCase {
             semaphore.signal()
         }
 
-        XCTAssertEqual(semaphore.wait(timeout: .now() + 10), .success, "ProcessRunner.run timed out while draining stderr.")
+        // audit #0093: the 10 s budget was a performance assertion on a shared machine. What this
+        // test proves is that draining a chatty child cannot deadlock; the stderr assertion below
+        // is what does that, and the timeout only has to stop an infinite hang.
+        XCTAssertEqual(semaphore.wait(timeout: .now() + 120), .success, "ProcessRunner.run timed out while draining stderr.")
         let processResult = try XCTUnwrap(outcome.load()).get()
         XCTAssertTrue(processResult.stderr.contains("noisy-line-39999"))
     }
@@ -802,7 +805,16 @@ final class PipelineIntegrationTests: XCTestCase {
         let workspace = try IntegrationWorkspace()
         let garbage = try workspace.writeGarbageFile(name: "broken", ext: "wav")
         let tool = try workspace.makeTool(arguments: ["-wavtomp3"])
-        XCTAssertThrowsError(try tool.convertAudioToMP3(garbage))
+        // audit #0069: a bare XCTAssertThrowsError accepted any failure at all - a missing tool or
+        // a wrong output path would have satisfied it. The error must name the file as unusable WAV.
+        XCTAssertThrowsError(try tool.convertAudioToMP3(garbage)) { error in
+            let message = (error as? AppError)?.message ?? error.localizedDescription
+            XCTAssertTrue(
+                message.lowercased().contains("wav") || message.lowercased().contains("riff")
+                    || message.lowercased().contains("header"),
+                "unexpected message: \(message)"
+            )
+        }
     }
 
     func testRejectsMP4ExtensionWithImagePayload() throws {
@@ -983,12 +995,20 @@ final class PipelineIntegrationTests: XCTestCase {
         let tool = try workspace.makeTool(arguments: ["-bass", "60", "7.5"])
         XCTAssertEqual(try tool.cli.bassBoostSpec(), BassBoostSpec(frequencyHz: 60, gainDB: 7.5))
         XCTAssertEqual(tool.bassOutputSuffix(for: try tool.cli.bassBoostSpec()), "_bass_60Hz_7_5dB")
-        XCTAssertEqual(tool.bassFilter(for: try tool.cli.bassBoostSpec()), "bass=f=60:g=7.5:t=h:w=60:p=2:precision=f64")
+        // audit #0098: the exact ffmpeg filter string is pinned on purpose - it is the contract
+        // handed to ffmpeg, so any change to it (order, precision, width/type) must be deliberate.
+        // The parsed components are asserted too, so a failure says which part moved.
+        let filter = tool.bassFilter(for: try tool.cli.bassBoostSpec())
+        XCTAssertEqual(filter, "bass=f=60:g=7.5:t=h:w=60:p=2:precision=f64")
+        XCTAssertTrue(filter.hasPrefix("bass=f=60:g=7.5:"))
+        XCTAssertTrue(filter.hasSuffix(":p=2:precision=f64"))
 
         let cutTool = try workspace.makeTool(arguments: ["-bass", "80", "-5"])
         XCTAssertEqual(try cutTool.cli.bassBoostSpec(), BassBoostSpec(frequencyHz: 80, gainDB: -5))
         XCTAssertEqual(cutTool.bassOutputSuffix(for: try cutTool.cli.bassBoostSpec()), "_bass_80Hz_m5dB")
-        XCTAssertEqual(cutTool.bassFilter(for: try cutTool.cli.bassBoostSpec()), "bass=f=80:g=-5:t=h:w=80:p=2:precision=f64")
+        let cutFilter = cutTool.bassFilter(for: try cutTool.cli.bassBoostSpec())
+        XCTAssertEqual(cutFilter, "bass=f=80:g=-5:t=h:w=80:p=2:precision=f64")
+        XCTAssertTrue(cutFilter.hasPrefix("bass=f=80:g=-5:"))
     }
 
     func testBassNegativeGainReducesLowBandEnergy() throws {
@@ -1067,9 +1087,12 @@ final class PipelineIntegrationTests: XCTestCase {
         XCTAssertTrue(lines[3].contains("Top 3 loudest average:"))
         XCTAssertTrue(lines[1].contains("quiet_scan.wav"))
         XCTAssertTrue(lines[2].contains("loud_scan.mp3"))
-        XCTAssertEqual(progressEvents.count, 6)
-        XCTAssertEqual(progressEvents.filter { $0.isMeasuring }.count, 3)
+        // audit #0095: pinning the event count (== 6) pinned the batching implementation. What
+        // matters is one measuring and one reporting event per file, delivered in order, with a
+        // counter that only moves forward to the total.
+        XCTAssertEqual(progressEvents.filter(\.isMeasuring).count, 3)
         XCTAssertEqual(progressEvents.filter { !$0.isMeasuring }.count, 3)
+        XCTAssertEqual(progressEvents.map(\.processedFiles), progressEvents.map(\.processedFiles).sorted())
         XCTAssertEqual(progressEvents.first?.processedFiles, 0)
         XCTAssertEqual(progressEvents.first?.totalFiles, 3)
         XCTAssertEqual(progressEvents.last?.processedFiles, 3)
