@@ -2,15 +2,15 @@
 
 Session: `2026-09-13` · branch `audit/2026-09-13` · baseline commit `4bb136a`
 
-**known-total:100 done:66 open:34 blocked:0 new-this-session:100**
+**known-total:100 done:69 open:31 blocked:0 new-this-session:100**
 
 | status | count |
 |---|---|
 | START | 31 |
 | PROGRESS | 0 |
-| TEST | 3 |
+| TEST | 0 |
 | AUDIT | 0 |
-| DONE | 66 |
+| DONE | 69 |
 | BLOCKED | 0 |
 
 Status gates: START (reproduced/proven + expected behaviour written) → PROGRESS (diff) → TEST (failing-before/passing-after test pasted, full suite green, no new warnings) → AUDIT (cold re-read, all scanners re-run, no baseline regression, no new placeholder) → DONE (committed atomically). BLOCKED needs reason + what was tried + ≥2 options for a human.
@@ -26,16 +26,13 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 
 _none_
 
-## Open S2 / S3 (32)
+## Open S2 / S3 (29)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
 | #0040 | S2 | converter/ProcessRunner | Sources/converter/ProcessRunner.swift:145; Actions.swift:615-619 | Cancellation does not terminate sibling external processes after a fan-out failure | unsafe | START |  |
-| #0041 | S2 | converter/DependencyBootstrap | Sources/converter/DependencyBootstrap.swift:216-248 | Installer subprocesses have no timeout and discard diagnostics | incomplete | TEST | a0649e9 |
 | #0050 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:327-336,367-387,591-600 | Loudness fallback publishes any true-peak breach with a misleading 'closest-safe' label | logic | START |  |
 | #0051 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:992,1170,1029,508 | Redundant padding verification, uncached ffmpeg -filters, per-file ladder resolution | perf | START |  |
-| #0055 | S2 | converter/ImagePipeline | Sources/converter/ImagePipeline.swift:329-336 | Fitted portrait still double-sharpens derived masters and user Vertical_8K.png | logic | TEST | 56536a3 |
-| #0056 | S2 | converter/VideoPipeline | Sources/converter/VideoPipeline.swift:399-404 | shortenMP4 upscales with ffmpeg's default scaler instead of the configured flags | bug | TEST | dc65cd5 |
 | #0058 | S2 | repo | converter (binary); docs/KNOWN_GOOD_VERSIONS.md | Checked-in release binary has no verifiable provenance (no SHA-256, adhoc signature, no tag) | deps | START |  |
 | #0059 | S2 | repo/CI | .github/workflows/ci.yml:24,27-32,39-40 | CI not reproducible: unpinned action, latest-Xcode selection, unpinned brew formulae | deps | START |  |
 | #0061 | S2 | BW64Bridge | Sources/BW64Bridge/bw64_bridge.cpp:125-141,161 | Bridge does not bound channels; libbw64 uint16 blockAlignment wraps to heap overflow (unreachable via config today) | unsafe | START |  |
@@ -63,7 +60,7 @@ _none_
 | #0098 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:529,534 | Exact ffmpeg bass filter string pinned without a stated reason | test | START |  |
 | #0100 | S3 | converter/Actions | Sources/converter/Actions.swift (normalizedFullRunSource / resolveFullAudio) | Full-run source is renamed before preflight; a corrupt source loses its original name in the error | logic | START |  |
 
-## Done (66)
+## Done (69)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
@@ -104,6 +101,7 @@ _none_
 | #0002 | S2 | repo/AUDIT | AUDIT/environment.md | Phase A: environment record and audit tooling install (§1/§1b) | docs | DONE | 5fa6546 |
 | #0003 | S2 | repo/AUDIT | AUDIT/baseline.md | Phase A: baseline metrics at 4bb136a (§3) | docs | DONE | 2184906 |
 | #0039 | S2 | converter/Support | Sources/converter/Support.swift:97-101,141-147 | AsyncSemaphore grants permits to already-cancelled tasks | perf | DONE | 15fbfbb |
+| #0041 | S2 | converter/DependencyBootstrap | Sources/converter/DependencyBootstrap.swift:216-248 | Installer subprocesses have no timeout and discard diagnostics | incomplete | DONE | a0649e9 |
 | #0042 | S2 | converter/ProcessRunner | Sources/converter/ProcessRunner.swift:112-124 | Child stdin inherited from the terminal | unsafe | DONE | 2ed4463 |
 | #0043 | S2 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:683-691,1013-1028 | containsChunk is a 64 KiB substring scan, not a RIFF chunk walk | unsafe | DONE | 9bc41f4 |
 | #0044 | S2 | converter/Config | Sources/converter/Config.swift:203-205 | archive profile is a no-op placeholder | placeholder | DONE | fa443f1 |
@@ -115,6 +113,8 @@ _none_
 | #0052 | S2 | converter/ImagePipeline | Sources/converter/ValidationPipeline.swift:391 (preflightImageInput call sites) | Full-decode image preflight of the same master repeated ~10x per run | perf | DONE | fbefda6 |
 | #0053 | S2 | converter/Support | Sources/converter/Support.swift:308 | M:SS timecode parsing drops empty components; empty-component guard unreachable | logic | DONE | c79f502 |
 | #0054 | S2 | converter/Actions | Sources/converter/Actions.swift:1254 | -mp4toshort re-ingests the pipeline's own _Short_CenterCut/_FullSong outputs | bug | DONE | 8e78584 |
+| #0055 | S2 | converter/ImagePipeline | Sources/converter/ImagePipeline.swift:329-336 | Fitted portrait still double-sharpens derived masters and user Vertical_8K.png | logic | DONE | 56536a3 |
+| #0056 | S2 | converter/VideoPipeline | Sources/converter/VideoPipeline.swift:399-404 | shortenMP4 upscales with ffmpeg's default scaler instead of the configured flags | bug | DONE | dc65cd5 |
 | #0057 | S2 | converter/Actions | Sources/converter/Actions.swift:278-286; PipelineCore.swift:646 | Orientation classification ignores EXIF orientation; square images silently treated as landscape | bug | DONE | 0a98ca1 |
 | #0060 | S2 | repo | album.txt; Sources/converter/AudioPipeline.swift:2063 | Personal track list committed as the production album.txt | placeholder | DONE | bef61c4 |
 | #0063 | S2 | converterTests+Config | Sources/Tests/converterTests/converterTests.swift:128-140; Config.swift:400; VideoPipeline.swift:269 | SHORT_MP4_CLIP_SECONDS validated with Double() but consumed via parseFlexibleTimecode; test sets a value validate() rejects | test | DONE | 17816b6 |
@@ -633,7 +633,7 @@ _none_
 - **discovered-by:** reviewer X-14
 - **evidence-before:** AUDIT/findings/L2-video-image-actions-cli.md X-14
 
-### #0041 · S2 · TEST · Installer subprocesses have no timeout and discard diagnostics
+### #0041 · S2 · DONE · Installer subprocesses have no timeout and discard diagnostics
 
 - **project/module:** converter/DependencyBootstrap
 - **file:line:** Sources/converter/DependencyBootstrap.swift:216-248
@@ -642,7 +642,7 @@ _none_
 - **discovered-by:** reviewer C-6
 - **evidence-before:** AUDIT/findings/L2-core-runtime.md C-6
 - **fix-summary:** DependencyBootstrapper.runSilent is internal, captures bounded stderr, sets stdin to /dev/null and escalates SIGTERM->SIGKILL after a timeout; Homebrew installs set HOMEBREW_NO_AUTO_UPDATE=1 and the installer download is bounded. The installer runner lives in DependencyInstaller.swift.
-- **evidence-after:** AUDIT/evidence/0041-before.log (old body behind a signature shim: stderr lost, hung stub ran 10.6 s despite timeoutSeconds: 1); AUDIT/evidence/0041-after.log (testInstallerSubprocessReportsStderrAndTimesOut passes in 1.27 s). swiftlint 530/56, one fewer than baseline.
+- **evidence-after:** AUDIT/evidence/0041-before.log (old body behind a signature shim: stderr lost, hung stub ran 10.6 s despite timeoutSeconds: 1); AUDIT/evidence/0041-after.log (testInstallerSubprocessReportsStderrAndTimesOut passes in 1.27 s). swiftlint 530/56, one fewer than baseline. Full suite (AUDIT/evidence/0041-0056-fullsuite.txt): 245 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** a0649e9
 
 ### #0042 · S2 · DONE · Child stdin inherited from the terminal
@@ -798,7 +798,7 @@ _none_
 - **evidence-after:** AUDIT/evidence/0054-before.log (fix stashed: clip_Short_CenterCut_Short.mp4 and clip_Short_FullSong_Short.mp4 are produced); AUDIT/evidence/0054-after.log (test passes; only clip_Short.mp4 is written). swiftlint 531/56, no new violations. Full suite (AUDIT/evidence/0054-0060-fullsuite.txt): 242 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** 8e78584
 
-### #0055 · S2 · TEST · Fitted portrait still double-sharpens derived masters and user Vertical_8K.png
+### #0055 · S2 · DONE · Fitted portrait still double-sharpens derived masters and user Vertical_8K.png
 
 - **project/module:** converter/ImagePipeline
 - **file:line:** Sources/converter/ImagePipeline.swift:329-336
@@ -807,10 +807,10 @@ _none_
 - **discovered-by:** reviewer X-10
 - **evidence-before:** AUDIT/findings/L2-video-image-actions-cli.md X-10
 - **fix-summary:** The fitted portrait still is sharpened only when its source is the raw discovered portrait; FullRunImageArtifacts.shortVideoImageIsRawArtwork distinguishes it from Vertical_8K.png and the generated NFT8K, which are used as-is. The magick argv moves into portraitShortStillsArguments(...).
-- **evidence-after:** AUDIT/evidence/0055-before.log (Vertical_8K.png received '-sharpen 0x0.200'); AUDIT/evidence/0055-after.log (testFittedPortraitStillOnlySharpensRawArtwork passes; testPortraitShortStillsMatchTheirRenderFraming still passes). swiftlint 531/56, no new violations.
+- **evidence-after:** AUDIT/evidence/0055-before.log (Vertical_8K.png received '-sharpen 0x0.200'); AUDIT/evidence/0055-after.log (testFittedPortraitStillOnlySharpensRawArtwork passes; testPortraitShortStillsMatchTheirRenderFraming still passes). swiftlint 531/56, no new violations. Full suite (AUDIT/evidence/0041-0056-fullsuite.txt): 245 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** 56536a3
 
-### #0056 · S2 · TEST · shortenMP4 upscales with ffmpeg's default scaler instead of the configured flags
+### #0056 · S2 · DONE · shortenMP4 upscales with ffmpeg's default scaler instead of the configured flags
 
 - **project/module:** converter/VideoPipeline
 - **file:line:** Sources/converter/VideoPipeline.swift:399-404
@@ -819,7 +819,7 @@ _none_
 - **discovered-by:** reviewer X-11
 - **evidence-before:** AUDIT/findings/L2-video-image-actions-cli.md X-11
 - **fix-summary:** The -mp4toshort filter graph is built by VideoPipeline.mp4ToShortVideoFilter(), whose scale step now carries flags=<VIDEO_MP4_SCALE_FILTER>+accurate_rnd+full_chroma_int like every other render path.
-- **evidence-after:** AUDIT/evidence/0056-before.log (filter was 'scale=90:160,format=...' with no flags); AUDIT/evidence/0056-after.log (testMP4ToShortUsesTheConfiguredScaler passes). swiftlint 531/56, no new violations.
+- **evidence-after:** AUDIT/evidence/0056-before.log (filter was 'scale=90:160,format=...' with no flags); AUDIT/evidence/0056-after.log (testMP4ToShortUsesTheConfiguredScaler passes). swiftlint 531/56, no new violations. Full suite (AUDIT/evidence/0041-0056-fullsuite.txt): 245 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** dc65cd5
 
 ### #0057 · S2 · DONE · Orientation classification ignores EXIF orientation; square images silently treated as landscape
