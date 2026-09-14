@@ -30,7 +30,7 @@ _none_
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
-| #0051 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:992,1170,1029,508 | Redundant padding verification, uncached ffmpeg -filters, per-file ladder resolution | perf | TEST |  |
+| #0051 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:992,1170,1029,508 | Redundant padding verification, uncached ffmpeg -filters, per-file ladder resolution | perf | TEST | 637c890 |
 
 ## Done (97)
 
@@ -769,6 +769,7 @@ _none_
 - **evidence-before:** AUDIT/findings/L2-audio.md A-10
 - **fix-summary:** Removes the duplicated padding verification from the noise staging WAV, caches the ffmpeg filter set and the resolved encoder ladders per run, and adds a recording-tool helper plus two counting tests.
 - **evidence-after:** AUDIT/evidence/0051-before.log (47 ffmpeg invocations per -noise file and two -filters probes per 2-file batch) vs AUDIT/evidence/0051-after.log (40 invocations and one probe; both tests pass). swiftlint 471/19.
+- **commit sha:** 637c890
 
 ### #0052 · S2 · DONE · Full-decode image preflight of the same master repeated ~10x per run
 
