@@ -2,15 +2,15 @@
 
 Session: `2026-09-13` · branch `audit/2026-09-13` · baseline commit `4bb136a`
 
-**known-total:100 done:75 open:25 blocked:0 new-this-session:100**
+**known-total:100 done:77 open:23 blocked:0 new-this-session:100**
 
 | status | count |
 |---|---|
 | START | 23 |
 | PROGRESS | 0 |
-| TEST | 2 |
+| TEST | 0 |
 | AUDIT | 0 |
-| DONE | 75 |
+| DONE | 77 |
 | BLOCKED | 0 |
 
 Status gates: START (reproduced/proven + expected behaviour written) → PROGRESS (diff) → TEST (failing-before/passing-after test pasted, full suite green, no new warnings) → AUDIT (cold re-read, all scanners re-run, no baseline regression, no new placeholder) → DONE (committed atomically). BLOCKED needs reason + what was tried + ≥2 options for a human.
@@ -26,7 +26,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 
 _none_
 
-## Open S2 / S3 (23)
+## Open S2 / S3 (21)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
@@ -44,9 +44,7 @@ _none_
 | #0074 | S2 | converter (dead code) | Sources/converter/Actions.swift:114; ImagePipeline.swift:26-27; ProcessRunner.swift:78; ValidationPipeline.swift:857; Tests/IntegrationTestSupport.swift:32 | periphery-flagged unused declarations (6 unused, 15 assign-only) — prove reachability, then remove or retain with reason | dead | START |  |
 | #0075 | S2 | converter (dead code) | Sources/converter/PipelineCore.swift:347,357-362; Actions.swift:105-110,794-808; BW64Bridge/bw64_bridge.cpp:95; LosslessAudioPipeline.swift:9,30,173-174; AudioPipeline.swift:160-162,264,1955 | Dead branches, tautological guards, dead parameters, redundant discards | dead | START |  |
 | #0086 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:1378,1694-1706 | Magic bytes-per-sample and missing free-space check on the BW64 path | style | START |  |
-| #0088 | S3 | converter/Config+VideoPipeline | Sources/converter/VideoPipeline.swift:230,240,244; Config.swift:393,397 | Config colour/scale-filter values spliced into the filter graph with only non-empty validation | unsafe | TEST | 720de01 |
 | #0089 | S3 | converter/VideoPipeline | Sources/converter/VideoPipeline.swift:334,386,467 | ALAC M4A decoded and re-encoded for every video although stream copy is bit-transparent | perf | START |  |
-| #0090 | S3 | BW64Bridge | Sources/BW64Bridge/include/bw64_bridge.h:14-22 | Easily swappable C ABI parameters (swapped paths would truncate the input) | style | TEST | 0af4a09 |
 | #0093 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:30-50 | 10 s wall-clock budget on a 40 000-iteration shell loop | test | START |  |
 | #0094 | S3 | converterTests | Sources/Tests/converterTests/converterTests.swift:189-230,1297-1309 | Help-text tests couple to prose sentences | test | START |  |
 | #0095 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:613-619 | Progress-event count pinned to implementation | test | START |  |
@@ -54,7 +52,7 @@ _none_
 | #0097 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:1902-1911 | -doctor has only a no-throw happy path | test | START |  |
 | #0098 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:529,534 | Exact ffmpeg bass filter string pinned without a stated reason | test | START |  |
 
-## Done (75)
+## Done (77)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
@@ -129,6 +127,8 @@ _none_
 | #0084 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:53-77 | Derived-media predicates use the first _silence_/_noise_ occurrence | logic | DONE | 724d350 |
 | #0085 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:1850-1854 | Track-number parse uses Unicode isNumber and can overflow | logic | DONE | 6a674bc |
 | #0087 | S3 | converter/CLI | Sources/converter/CLI.swift:231-260 | CLI inconsistencies: --seed 0, unbounded --sharpness, repeated action flags, option values beginning with -- | logic | DONE | ee8d65d |
+| #0088 | S3 | converter/Config+VideoPipeline | Sources/converter/VideoPipeline.swift:230,240,244; Config.swift:393,397 | Config colour/scale-filter values spliced into the filter graph with only non-empty validation | unsafe | DONE | 720de01 |
+| #0090 | S3 | BW64Bridge | Sources/BW64Bridge/include/bw64_bridge.h:14-22 | Easily swappable C ABI parameters (swapped paths would truncate the input) | style | DONE | 0af4a09 |
 | #0091 | S3 | repo | .gitignore:2 | Stale .converter_bw64_writer ignore entry | dead | DONE | 557dbe0 |
 | #0092 | S3 | repo/docs | docs/FORMATS.md | Maintenance commands and -fadeflac alias missing from FORMATS.md | docs | DONE | 557dbe0 |
 | #0099 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:34,1967 | Test target compiles with two warnings (bare 'Error' existential, unused 'wav' binding) | style | DONE | 9343977 |
@@ -1169,7 +1169,7 @@ _none_
 - **evidence-after:** AUDIT/evidence/0087-before.log (fix stashed: --seed 0, --sharpness 100, '-full -album' and '--output-file --overwrite' were all accepted); AUDIT/evidence/0087-after.log (testCLIRejectsZeroSeedUnboundedSharpnessRepeatedActionsAndOptionLikeValues passes). swiftlint 530/56, no new violations. Full suite (AUDIT/evidence/0040-0087-fullsuite.txt): 247 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** ee8d65d
 
-### #0088 · S3 · TEST · Config colour/scale-filter values spliced into the filter graph with only non-empty validation
+### #0088 · S3 · DONE · Config colour/scale-filter values spliced into the filter graph with only non-empty validation
 
 - **project/module:** converter/Config+VideoPipeline
 - **file:line:** Sources/converter/VideoPipeline.swift:230,240,244; Config.swift:393,397
@@ -1178,7 +1178,7 @@ _none_
 - **discovered-by:** reviewer X-20
 - **evidence-before:** AUDIT/findings/L2-video-image-actions-cli.md X-20
 - **fix-summary:** VIDEO_MP4_SCALE_FILTER and VIDEO_COLOR_RANGE are validated against allow-lists and the three VIDEO_COLOR_* tokens against a letters/digits/underscore charset, so a config value cannot splice another filter into the graph.
-- **evidence-after:** AUDIT/evidence/0088-before.log (fix stashed: bogus scaler, comma/colon/space injection and an unknown range were all accepted); AUDIT/evidence/0088-after.log (testEveryConfigRuleRejectsAnInvalidValueNamingTheKey and all 14 Config tests pass). swiftlint 526/56, no new violations.
+- **evidence-after:** AUDIT/evidence/0088-before.log (fix stashed: bogus scaler, comma/colon/space injection and an unknown range were all accepted); AUDIT/evidence/0088-after.log (testEveryConfigRuleRejectsAnInvalidValueNamingTheKey and all 14 Config tests pass). swiftlint 526/56, no new violations. Full suite (AUDIT/evidence/0088-0090-fullsuite.txt): 252 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** 720de01
 
 ### #0089 · S3 · START · ALAC M4A decoded and re-encoded for every video although stream copy is bit-transparent
@@ -1190,7 +1190,7 @@ _none_
 - **discovered-by:** reviewer X-21
 - **evidence-before:** AUDIT/findings/L2-video-image-actions-cli.md X-21
 
-### #0090 · S3 · TEST · Easily swappable C ABI parameters (swapped paths would truncate the input)
+### #0090 · S3 · DONE · Easily swappable C ABI parameters (swapped paths would truncate the input)
 
 - **project/module:** BW64Bridge
 - **file:line:** Sources/BW64Bridge/include/bw64_bridge.h:14-22
@@ -1199,7 +1199,7 @@ _none_
 - **discovered-by:** reviewer B-10; clang-tidy
 - **evidence-before:** AUDIT/findings/L0-L3-bridge-repo.md B-10
 - **fix-summary:** The C ABI interleaves the numeric options between the two path parameters so a swap no longer compiles, and requireOptions canonicalises both paths and refuses equal input/output. Swift caller and header updated.
-- **evidence-after:** AUDIT/evidence/0090-before.log (fix stashed: same-path call truncated the raw PCM from 38400 to 92 bytes); AUDIT/evidence/0090-after.log (testBW64WriterRefusesTheSameInputAndOutputPath and all three BW64 tests pass). swiftlint 526/56; first-party strict C++ clean.
+- **evidence-after:** AUDIT/evidence/0090-before.log (fix stashed: same-path call truncated the raw PCM from 38400 to 92 bytes); AUDIT/evidence/0090-after.log (testBW64WriterRefusesTheSameInputAndOutputPath and all three BW64 tests pass). swiftlint 526/56; first-party strict C++ clean. Full suite (AUDIT/evidence/0088-0090-fullsuite.txt): 252 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** 0af4a09
 
 ### #0091 · S3 · DONE · Stale .converter_bw64_writer ignore entry
