@@ -91,13 +91,20 @@ against the working tree and `origin` on 2026-09-14 06:58 WIB.
   pinned without a stated reason). Mutation evidence for #0069 in
   `AUDIT/evidence/0069-mutation.log`.
 - Ledger after batch 10: **done 84 · open 16 · blocked 0**. swiftlint is 525/56.
-- Next planned batch: the remaining test gaps **#0066** (full-pipeline tests require
-  `hevc_videotoolbox`), **#0067** (fade-out QC fixture never proves it is out of policy — capture
-  `deliveryAudioQCPolicy`), **#0068** (mastering fallback path never observed — capture the
-  "one-pass loudnorm fallback" log via `captureStandardError`), **#0072** (short-cap boundary),
-  **#0097** (`-doctor` has only a happy path); then dead code **#0074/#0075**, **#0073** (lint),
-  **#0061/#0062** (bridge), **#0058/#0059** (binary + CI provenance), and finally **#0030** (docs
-  sync) + S0 **#0006** (Phase E on `node1`).
+- Batch 11 (remaining test gaps) DONE after a 258-test full suite: **#0066** (the test config paired
+  an HEVC verifier with an H.264 fallback, so every full-run test needed hardware HEVC — fallback
+  is now libx265 plus a fallback test), **#0067** (fade-out fixture now proved to breach delivery
+  QC), **#0068** (mastering fallback path observed via `captureStandardError`, now shared in
+  `IntegrationTestSupport`), **#0072** (`needsFullSongCompanion` extracted; cap boundaries
+  58/58.005/58.02 tested), **#0097** (three `-doctor` failure tests).
+- Ledger after batch 11: **done 89 · open 11 · blocked 0**.
+- Remaining 11: **#0074/#0075** (dead code — candidates verified: `rankedFullRunImageCandidates`,
+  the 4-argument `decodeAudioToCanonicalPCM` overload, `ProcessRunner.fileManager` and
+  `aipixResizeArguments`' unused `filter`/`colorSpace` params are genuinely unreachable;
+  `projectRoot` and the 15 `assignOnlyProperty` hits are used and must be retained with a reason),
+  **#0073** (swiftlint baseline), **#0061/#0062** (bridge channel bound, strict C++ on vendored
+  headers), **#0058/#0059** (binary + CI provenance), **#0086** (BW64 free-space), **#0051**
+  (redundant probes), **#0030** (docs sync), then S0 **#0006** (Phase E on `node1`).
 - Investigated but deliberately deferred: **#0086** (the 3-byte width in `estimateWAVBytes` is
   latent because `Config.validate` pins `WAV_CODEC` to `pcm_s24le`; only the BW64 free-space gap
   is real — fold it into a later perf/validation pass), **#0051** (needs a counting runner to
