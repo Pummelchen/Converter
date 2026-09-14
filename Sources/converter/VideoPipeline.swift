@@ -22,29 +22,43 @@ extension ConverterTool {
         return ["-preset", preset, "-crf", crf]
     }
 
-    private func mp4RenderTail(
-        pixelFormat: String,
-        colorPrimaries: String,
-        colorTransfer: String,
-        colorSpace: String,
-        colorRange: String,
-        tag: String?,
-        sampleRate: Int,
-        channels: Int
-    ) -> [String] {
+    private func mp4RenderTail(spec: VideoOutputSpec, tag: String?, audioStreamCopy: Bool) -> [String] {
         var args = [
-            "-pix_fmt", pixelFormat,
-            "-color_primaries", colorPrimaries,
-            "-color_trc", colorTransfer,
-            "-colorspace", colorSpace,
-            "-color_range", colorRange
+            "-pix_fmt", spec.pixelFormat,
+            "-color_primaries", config.videoColorPrimaries,
+            "-color_trc", config.videoColorTransfer,
+            "-colorspace", config.videoColorSpace,
+            "-color_range", config.videoColorRange
         ]
         if let tag {
             args += ["-tag:v", tag]
         }
-        args += alacAudioArguments(sampleRate: sampleRate, channels: channels)
+        // An already-standard ALAC source is copied bit-for-bit instead of decoded to a 96 kHz
+        // WAV and re-encoded (#0089).
+        args += audioStreamCopy
+            ? ["-c:a", "copy"]
+            : alacAudioArguments(sampleRate: spec.audioSampleRate, channels: 2)
         args += ["-shortest", "-movflags", "+faststart"]
         return args
+    }
+
+    // True when the video's audio can be stream-copied from the source instead of round-tripped
+    // through the internal WAV. The copy must satisfy the same contract the re-encode would:
+    // ALAC in the project's sample format and raw bit depth, at the render's rate and channels.
+    func canStreamCopyAudioIntoVideo(_ audioFile: URL, targetSampleRate: Int) throws -> Bool {
+        guard ["m4a", "mp4"].contains(audioFile.pathExtension.lowercasedASCII) else { return false }
+        guard try audioField(audioFile, "codec_name")?.lowercasedASCII == alacEncoderName else { return false }
+        guard try audioField(audioFile, "sample_fmt")?.lowercasedASCII == config.alacSampleFormat else { return false }
+        guard Int(try audioField(audioFile, "bits_per_raw_sample") ?? "") == config.alacBitsPerRawSample else {
+            return false
+        }
+        guard let rate = try audioField(audioFile, "sample_rate").flatMap(Int.init), rate == targetSampleRate else {
+            return false
+        }
+        guard let channels = try audioField(audioFile, "channels").flatMap(Int.init), channels == config.m4aChannels else {
+            return false
+        }
+        return true
     }
 
     private func verifyVideoRender(
@@ -145,6 +159,8 @@ extension ConverterTool {
         let tag: String?
         let tempStem: String
         let label: String
+        // When true the audio input is already the deliverable's ALAC stream and is copied.
+        let audioStreamCopy: Bool
     }
 
     private func verifyRenderedVideo(_ url: URL, spec: VideoOutputSpec, codec: String? = nil) throws {
@@ -185,16 +201,7 @@ extension ConverterTool {
                     preset: encode.softwarePreset,
                     crf: encode.softwareCRF
                 )
-                arguments += mp4RenderTail(
-                    pixelFormat: spec.pixelFormat,
-                    colorPrimaries: config.videoColorPrimaries,
-                    colorTransfer: config.videoColorTransfer,
-                    colorSpace: config.videoColorSpace,
-                    colorRange: config.videoColorRange,
-                    tag: encode.tag,
-                    sampleRate: spec.audioSampleRate,
-                    channels: 2
-                )
+                arguments += mp4RenderTail(spec: spec, tag: encode.tag, audioStreamCopy: encode.audioStreamCopy)
                 _ = try runner.run("ffmpeg", arguments + [temp.path])
                 try verifyRenderedVideo(temp, spec: spec, codec: verifyCodec(forEncoder: encoder))
                 try encoderIndependent { try publishTemp(temp, to: encode.output) }
@@ -371,11 +378,15 @@ extension ConverterTool {
             logger.info("Skip existing MP4: \(output.basename)")
             return output
         }
-        try requireFFmpegEncoder(alacEncoderName)
-
         let encoders = try requireAvailableEncoderLadder(config.videoEncoderLadder, label: "Main video")
-        let sourceWAV = try makeInternalWAV(from: audioFile, in: output.deletingLastPathComponent(), stem: "\(audioFile.stem).mainmp4.source")
-        defer { discardTempFile(sourceWAV) }
+        let streamCopy = try canStreamCopyAudioIntoVideo(audioFile, targetSampleRate: config.videoMP4AudioSampleRate)
+        if !streamCopy {
+            try requireFFmpegEncoder(alacEncoderName)
+        }
+        let sourceWAV = streamCopy
+            ? nil
+            : try makeInternalWAV(from: audioFile, in: output.deletingLastPathComponent(), stem: "\(audioFile.stem).mainmp4.source")
+        defer { sourceWAV.map(discardTempFile) }
 
         return try renderVideoWithEncoderLadder(
             VideoEncodeSpec(
@@ -385,7 +396,7 @@ extension ConverterTool {
                     "-loop", "1",
                     "-framerate", config.videoMP4InputFPS,
                     "-i", imageFile.path,
-                    "-i", sourceWAV.path,
+                    "-i", (sourceWAV ?? audioFile).path,
                     "-t", ffmpegArg("%.6f", duration)
                 ],
                 videoFilter:
@@ -398,7 +409,8 @@ extension ConverterTool {
                 softwareCRF: config.videoMP4SoftwareCRF,
                 tag: config.videoMP4Tag,
                 tempStem: "mainmp4",
-                label: "MP4"
+                label: "MP4",
+                audioStreamCopy: streamCopy
             ),
             verifying: spec
         )
@@ -416,7 +428,6 @@ extension ConverterTool {
 
     func shortenMP4(_ input: URL, audioQCPolicy: AudioQCPolicy?) throws -> URL {
         try preflightMP4Input(input, requireAudio: true, requireAudibleAudio: true)
-        try requireFFmpegEncoder(alacEncoderName)
         let shortDuration = try effectiveShortClipSeconds(for: input)
         let output = cli.outDir.appendingPathComponent(shortMP4Stem(forInputStem: input.stem)).appendingPathExtension("mp4")
 
@@ -436,8 +447,14 @@ extension ConverterTool {
             return output
         }
         let encoders = try requireAvailableEncoderLadder(config.shortVideoEncoderLadder, label: "Short video")
-        let sourceWAV = try makeInternalWAV(from: input, in: cli.outDir, stem: "\(input.stem).shortmp4.source", duration: shortDuration)
-        defer { discardTempFile(sourceWAV) }
+        let streamCopy = try canStreamCopyAudioIntoVideo(input, targetSampleRate: config.shortMP4AudioSampleRate)
+        if !streamCopy {
+            try requireFFmpegEncoder(alacEncoderName)
+        }
+        let sourceWAV = streamCopy
+            ? nil
+            : try makeInternalWAV(from: input, in: cli.outDir, stem: "\(input.stem).shortmp4.source", duration: shortDuration)
+        defer { sourceWAV.map(discardTempFile) }
 
         return try renderVideoWithEncoderLadder(
             VideoEncodeSpec(
@@ -447,7 +464,7 @@ extension ConverterTool {
                     "-ss", "0",
                     "-t", ffmpegArg("%.6f", shortDuration),
                     "-i", input.path,
-                    "-i", sourceWAV.path
+                    "-i", (sourceWAV ?? input).path
                 ],
                 videoFilter: mp4ToShortVideoFilter(),
                 encoderLadder: encoders,
@@ -456,7 +473,8 @@ extension ConverterTool {
                 softwareCRF: config.shortMP4VideoCRF,
                 tag: nil,
                 tempStem: "shortmp4",
-                label: "short MP4"
+                label: "short MP4",
+                audioStreamCopy: streamCopy
             ),
             verifying: spec
         )
@@ -496,7 +514,6 @@ extension ConverterTool {
         guard let audioDuration = try mediaDuration(audioFile) else {
             throw AppError("Unable to read numeric audio duration from: \(audioFile.path)")
         }
-        try requireFFmpegEncoder(alacEncoderName)
         let shortDuration = skipLengthCap ? audioDuration : try effectiveShortClipSeconds(forDuration: audioDuration)
         let verificationLabel = skipLengthCap ? "full-song \(fillMode.label) output" : "\(fillMode.label) output"
         let output = cli.outDir
@@ -522,8 +539,14 @@ extension ConverterTool {
         }
 
         let encoders = try requireAvailableEncoderLadder(config.shortVideoEncoderLadder, label: "Short video")
-        let sourceWAV = try makeInternalWAV(from: audioFile, in: cli.outDir, stem: "\(audioFile.stem).portraitshort.source", duration: shortDuration)
-        defer { discardTempFile(sourceWAV) }
+        let streamCopy = try canStreamCopyAudioIntoVideo(audioFile, targetSampleRate: config.shortMP4AudioSampleRate)
+        if !streamCopy {
+            try requireFFmpegEncoder(alacEncoderName)
+        }
+        let sourceWAV = streamCopy
+            ? nil
+            : try makeInternalWAV(from: audioFile, in: cli.outDir, stem: "\(audioFile.stem).portraitshort.source", duration: shortDuration)
+        defer { sourceWAV.map(discardTempFile) }
 
         return try renderVideoWithEncoderLadder(
             VideoEncodeSpec(
@@ -533,7 +556,7 @@ extension ConverterTool {
                     "-loop", "1",
                     "-framerate", config.shortMP4FPS,
                     "-i", imageFile.path,
-                    "-i", sourceWAV.path,
+                    "-i", (sourceWAV ?? audioFile).path,
                     "-t", ffmpegArg("%.6f", shortDuration)
                 ],
                 videoFilter: shortVideoFilter(mode: fillMode),
@@ -543,7 +566,8 @@ extension ConverterTool {
                 softwareCRF: config.shortMP4VideoCRF,
                 tag: nil,
                 tempStem: fillMode.tempStem,
-                label: fillMode.label
+                label: fillMode.label,
+                audioStreamCopy: streamCopy
             ),
             verifying: spec
         )

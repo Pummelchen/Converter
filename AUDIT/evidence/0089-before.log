@@ -1,0 +1,6 @@
+$ canStreamCopyAudioIntoVideo forced to false (old behaviour: always decode + re-encode)
+$ swift test --package-path Sources --filter testVideoRenderStreamCopiesAnAlreadyStandardALACSource
+Test Case '-[converterTests.PipelineIntegrationTests testVideoRenderStreamCopiesAnAlreadyStandardALACSource]' failed (3.825 seconds).
+	 Executed 1 test, with 1 failure (0 unexpected) in 3.825 (3.825) seconds
+	 Executed 1 test, with 1 failure (0 unexpected) in 3.825 (3.825) seconds
+	 Executed 1 test, with 1 failure (0 unexpected) in 3.825 (3.826) seconds

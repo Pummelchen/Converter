@@ -2785,6 +2785,59 @@ final class PipelineIntegrationTests: XCTestCase {
         )
     }
 
+    // audit #0089: every video render decoded its ALAC M4A to a 96 kHz WAV and re-encoded it,
+    // although the project's own audio is already ALAC at the MP4 rate and a stream copy is
+    // bit-identical. A successful render is itself the contract check: renderM4AToMP4 verifies
+    // the finished file's codec, rate, loudness and duration before publishing it.
+    func testVideoRenderStreamCopiesAnAlreadyStandardALACSource() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe", "magick"])
+
+        let alac = workspace.output.appendingPathComponent("alac_track.m4a")
+        _ = try workspace.runner().run("ffmpeg", [
+            "-hide_banner", "-nostdin", "-v", "error", "-y",
+            "-f", "lavfi", "-i", "sine=frequency=440:duration=1.0:sample_rate=48000",
+            "-ac", "2", "-c:a", "alac", "-ar", "48000",
+            "-sample_fmt", "s32p", "-bits_per_raw_sample", "24", alac.path
+        ])
+        // Same codec and rate but 16-bit: the copy would fail the output contract's raw bit depth.
+        let shallowALAC = workspace.output.appendingPathComponent("alac16_track.m4a")
+        _ = try workspace.runner().run("ffmpeg", [
+            "-hide_banner", "-nostdin", "-v", "error", "-y",
+            "-f", "lavfi", "-i", "sine=frequency=440:duration=1.0:sample_rate=48000",
+            "-ac", "2", "-c:a", "alac", "-ar", "48000",
+            "-sample_fmt", "s16p", "-bits_per_raw_sample", "16", shallowALAC.path
+        ])
+        let aac = try workspace.createAudio(name: "aac_track", ext: "m4a")
+        let mp3 = try workspace.createAudio(name: "mp3_track", ext: "mp3")
+
+        let tool = try workspace.makeTool(arguments: ["-m4atomp4"])
+        XCTAssertTrue(
+            try tool.canStreamCopyAudioIntoVideo(alac, targetSampleRate: tool.config.videoMP4AudioSampleRate)
+        )
+        XCTAssertFalse(try tool.canStreamCopyAudioIntoVideo(alac, targetSampleRate: 44_100))
+        XCTAssertFalse(
+            try tool.canStreamCopyAudioIntoVideo(shallowALAC, targetSampleRate: tool.config.videoMP4AudioSampleRate)
+        )
+        XCTAssertFalse(
+            try tool.canStreamCopyAudioIntoVideo(aac, targetSampleRate: tool.config.videoMP4AudioSampleRate)
+        )
+        XCTAssertFalse(
+            try tool.canStreamCopyAudioIntoVideo(mp3, targetSampleRate: tool.config.videoMP4AudioSampleRate)
+        )
+
+        let image = try workspace.createImage(name: "poster", ext: "png")
+        let output = try tool.renderM4AToMP4(imageFile: image, audioFile: alac, audioQCPolicy: nil)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: output.path))
+        try tool.verifyAudioOutput(
+            output,
+            codec: "alac",
+            sampleRate: tool.config.videoMP4AudioSampleRate,
+            channels: 2,
+            qcPolicy: nil
+        )
+    }
+
     func testShortVideoHardCapsAt58SecondsEvenIfConfigRequestsMore() throws {
         let workspace = try IntegrationWorkspace()
         try workspace.requireCommands(["ffmpeg", "ffprobe"])
