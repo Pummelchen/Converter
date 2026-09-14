@@ -288,8 +288,10 @@ final class PipelineIntegrationTests: XCTestCase {
         defer { tool.cleanupTemps() }
         try tool.initializeForExecution()
 
-        let fitted = try tool.portraitShortStills(from: square, mode: .fit, prefix: "art")
-        let centerCut = try tool.portraitShortStills(from: landscape, mode: .centerCut, prefix: "art")
+        let fitted = try tool.portraitShortStills(from: square, mode: .fit, prefix: "art", sharpenSource: true)
+        let centerCut = try tool.portraitShortStills(
+            from: landscape, mode: .centerCut, prefix: "art", sharpenSource: false
+        )
 
         XCTAssertEqual(fitted.all.map(\.lastPathComponent), ["art_Short_8K.png", "art_Short_8K_1MB.jpg", "art_Short_8K_2MB.jpg"])
         XCTAssertEqual(
@@ -497,6 +499,30 @@ final class PipelineIntegrationTests: XCTestCase {
             filter.contains("flags=\(tool.config.videoMP4ScaleFilter)+accurate_rnd+full_chroma_int"),
             "the filter must use the configured scaler: \(filter)"
         )
+    }
+
+    // audit #0055: the fitted still sharpened every source, including the already-sharpened
+    // generated NFT8K and a user Vertical_8K.png that the help promises to use as-is. Only raw
+    // discovered portrait artwork gets the sharpening pass.
+    func testFittedPortraitStillOnlySharpensRawArtwork() throws {
+        let workspace = try IntegrationWorkspace()
+        let tool = try workspace.makeTool(arguments: ["-full"])
+        let raw = workspace.output.appendingPathComponent("portrait.jpg")
+        let finished = workspace.output.appendingPathComponent("Vertical_8K.png")
+
+        let rawArguments = tool.portraitShortStillsArguments(from: raw, mode: .fit, sharpenSource: true)
+        XCTAssertTrue(rawArguments.contains("-sharpen"), "raw artwork should be sharpened: \(rawArguments)")
+
+        let finishedArguments = tool.portraitShortStillsArguments(from: finished, mode: .fit, sharpenSource: false)
+        XCTAssertFalse(
+            finishedArguments.contains("-sharpen"),
+            "a finished master must be used as-is: \(finishedArguments)"
+        )
+        XCTAssertTrue(finishedArguments.contains("-auto-orient"))
+
+        // The centre cut is derived from the already-sharpened 8K master and is never sharpened.
+        let cutArguments = tool.portraitShortStillsArguments(from: finished, mode: .centerCut, sharpenSource: false)
+        XCTAssertFalse(cutArguments.contains("-sharpen"), "a centre cut must not be sharpened: \(cutArguments)")
     }
 
     func testAudioConversionMatrixProducesVerifiedOutputs() throws {

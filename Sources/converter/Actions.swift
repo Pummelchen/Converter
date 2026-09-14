@@ -499,7 +499,9 @@ extension ConverterTool {
             }
             let generated = try await fullImagePipelineFromDirect8K(horizontal, deliveryPrefix: deliveryPrefix)
             let shortImage = vertical ?? generated.nft8K
-            return FullRunImageArtifacts(mainVideoImage: horizontal, shortVideoImage: shortImage)
+            return FullRunImageArtifacts(
+                mainVideoImage: horizontal, shortVideoImage: shortImage, shortVideoImageIsRawArtwork: false
+            )
         }
 
         if let vertical {
@@ -516,7 +518,8 @@ extension ConverterTool {
         let generated = try await fullImagePipeline(sourceImage: sources.master, deliveryPrefix: deliveryPrefix)
         return FullRunImageArtifacts(
             mainVideoImage: generated.eightK,
-            shortVideoImage: vertical ?? sources.portrait ?? generated.nft8K
+            shortVideoImage: vertical ?? sources.portrait ?? generated.nft8K,
+            shortVideoImageIsRawArtwork: vertical == nil && sources.portrait != nil
         )
     }
 
@@ -692,10 +695,15 @@ extension ConverterTool {
             logger.info("Full step: portrait short stills")
             let stillPrefix = releaseStem
             let fittedStills = try await withImagePermit {
-                try self.portraitShortStills(from: shortImage, mode: .fit, prefix: stillPrefix)
+                try self.portraitShortStills(
+                    from: shortImage, mode: .fit, prefix: stillPrefix,
+                    sharpenSource: imageArtifacts.shortVideoImageIsRawArtwork
+                )
             }
             let centerCutStills = try await withImagePermit {
-                try self.portraitShortStills(from: imageArtifacts.mainVideoImage, mode: .centerCut, prefix: stillPrefix)
+                try self.portraitShortStills(
+                    from: imageArtifacts.mainVideoImage, mode: .centerCut, prefix: stillPrefix, sharpenSource: false
+                )
             }
 
             logger.info("Full step: PNG -> Short: \(fittedStills.png.basename)")

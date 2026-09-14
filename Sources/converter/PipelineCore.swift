@@ -207,6 +207,9 @@ struct ImageArtifacts: Sendable {
 struct FullRunImageArtifacts: Sendable {
     let mainVideoImage: URL
     let shortVideoImage: URL?
+    // True only when shortVideoImage is the user's raw portrait artwork: a generated NFT8K or an
+    // explicit Vertical_8K.png is already finished and must not be sharpened again (#0055).
+    let shortVideoImageIsRawArtwork: Bool
 }
 
 struct AIPixOutputs: Sendable {

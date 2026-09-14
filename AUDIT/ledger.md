@@ -6,9 +6,9 @@ Session: `2026-09-13` · branch `audit/2026-09-13` · baseline commit `4bb136a`
 
 | status | count |
 |---|---|
-| START | 33 |
+| START | 32 |
 | PROGRESS | 0 |
-| TEST | 1 |
+| TEST | 2 |
 | AUDIT | 0 |
 | DONE | 66 |
 | BLOCKED | 0 |
@@ -34,7 +34,7 @@ _none_
 | #0041 | S2 | converter/DependencyBootstrap | Sources/converter/DependencyBootstrap.swift:216-248 | Installer subprocesses have no timeout and discard diagnostics | incomplete | START |  |
 | #0050 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:327-336,367-387,591-600 | Loudness fallback publishes any true-peak breach with a misleading 'closest-safe' label | logic | START |  |
 | #0051 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:992,1170,1029,508 | Redundant padding verification, uncached ffmpeg -filters, per-file ladder resolution | perf | START |  |
-| #0055 | S2 | converter/ImagePipeline | Sources/converter/ImagePipeline.swift:329-336 | Fitted portrait still double-sharpens derived masters and user Vertical_8K.png | logic | START |  |
+| #0055 | S2 | converter/ImagePipeline | Sources/converter/ImagePipeline.swift:329-336 | Fitted portrait still double-sharpens derived masters and user Vertical_8K.png | logic | TEST |  |
 | #0056 | S2 | converter/VideoPipeline | Sources/converter/VideoPipeline.swift:399-404 | shortenMP4 upscales with ffmpeg's default scaler instead of the configured flags | bug | TEST | dc65cd5 |
 | #0058 | S2 | repo | converter (binary); docs/KNOWN_GOOD_VERSIONS.md | Checked-in release binary has no verifiable provenance (no SHA-256, adhoc signature, no tag) | deps | START |  |
 | #0059 | S2 | repo/CI | .github/workflows/ci.yml:24,27-32,39-40 | CI not reproducible: unpinned action, latest-Xcode selection, unpinned brew formulae | deps | START |  |
@@ -795,7 +795,7 @@ _none_
 - **evidence-after:** AUDIT/evidence/0054-before.log (fix stashed: clip_Short_CenterCut_Short.mp4 and clip_Short_FullSong_Short.mp4 are produced); AUDIT/evidence/0054-after.log (test passes; only clip_Short.mp4 is written). swiftlint 531/56, no new violations. Full suite (AUDIT/evidence/0054-0060-fullsuite.txt): 242 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** 8e78584
 
-### #0055 · S2 · START · Fitted portrait still double-sharpens derived masters and user Vertical_8K.png
+### #0055 · S2 · TEST · Fitted portrait still double-sharpens derived masters and user Vertical_8K.png
 
 - **project/module:** converter/ImagePipeline
 - **file:line:** Sources/converter/ImagePipeline.swift:329-336
@@ -803,6 +803,8 @@ _none_
 - **host-used:** local
 - **discovered-by:** reviewer X-10
 - **evidence-before:** AUDIT/findings/L2-video-image-actions-cli.md X-10
+- **fix-summary:** The fitted portrait still is sharpened only when its source is the raw discovered portrait; FullRunImageArtifacts.shortVideoImageIsRawArtwork distinguishes it from Vertical_8K.png and the generated NFT8K, which are used as-is. The magick argv moves into portraitShortStillsArguments(...).
+- **evidence-after:** AUDIT/evidence/0055-before.log (Vertical_8K.png received '-sharpen 0x0.200'); AUDIT/evidence/0055-after.log (testFittedPortraitStillOnlySharpensRawArtwork passes; testPortraitShortStillsMatchTheirRenderFraming still passes). swiftlint 531/56, no new violations.
 
 ### #0056 · S2 · TEST · shortenMP4 upscales with ffmpeg's default scaler instead of the configured flags
 

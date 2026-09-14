@@ -297,6 +297,32 @@ extension ConverterTool {
     // reviewed or reused as artwork without pulling a frame out of the video. The geometry
     // mirrors the render filters: `.fit` resizes inside the frame and pads with black,
     // `.centerCut` covers the frame (`^`) and trims the overflow from the centre.
+    // Only raw artwork is sharpened here. The fitted source is often an already-processed master
+    // (the generated NFT8K) or a user-supplied Vertical_8K.png that the help promises to use
+    // as-is, and sharpening either one is a second pass over pixels that were already treated.
+    func portraitShortStillsArguments(from source: URL, mode: ShortFillMode, sharpenSource: Bool) -> [String] {
+        let width = config.shortMP4ScaleW
+        let height = config.shortMP4ScaleH
+        var arguments = [source.path, "-auto-orient"]
+        switch mode {
+        case .fit:
+            arguments += resampleArguments("\(width)x\(height)") + ["-background", "black"]
+            let sharpSigma = sharpenSource ? max(0.0, (config.imageAIPixSharpness - 1.0) * 2.0) : 0
+            if sharpSigma > 0 {
+                arguments += ["-sharpen", ffmpegArg("0x%.3f", sharpSigma)]
+            }
+        case .centerCut:
+            arguments += resampleArguments("\(width)x\(height)^")
+        }
+        arguments += [
+            "-gravity", "center",
+            "-extent", "\(width)x\(height)",
+            "-define", "png:compression-level=\(config.imageAIPixPNGCompressionLevel)",
+            "-strip"
+        ]
+        return arguments
+    }
+
     struct PortraitShortStills: Sendable {
         let png: URL
         let jpg1MB: URL
@@ -305,7 +331,9 @@ extension ConverterTool {
     }
 
     @discardableResult
-    func portraitShortStills(from source: URL, mode: ShortFillMode, prefix: String) throws -> PortraitShortStills {
+    func portraitShortStills(
+        from source: URL, mode: ShortFillMode, prefix: String, sharpenSource: Bool
+    ) throws -> PortraitShortStills {
         try preflightPNGInput(source)
         let width = config.shortMP4ScaleW
         let height = config.shortMP4ScaleH
@@ -320,30 +348,8 @@ extension ConverterTool {
         } else {
             let temp = try makeTemp(in: cli.outDir, stem: stem, ext: ".png")
             do {
-                var arguments = [
-                    source.path,
-                    "-auto-orient"
-                ]
-                switch mode {
-                case .fit:
-                    arguments += resampleArguments("\(width)x\(height)") + ["-background", "black"]
-                    // The fitted source is raw artwork scaled once, so it takes the same
-                    // sharpening the 8K master gets. The centre cut is derived from that
-                    // already-sharpened master and must not be sharpened twice.
-                    let sharpSigma = max(0.0, (config.imageAIPixSharpness - 1.0) * 2.0)
-                    if sharpSigma > 0 {
-                        arguments += ["-sharpen", ffmpegArg("0x%.3f", sharpSigma)]
-                    }
-                case .centerCut:
-                    arguments += resampleArguments("\(width)x\(height)^")
-                }
-                arguments += [
-                    "-gravity", "center",
-                    "-extent", "\(width)x\(height)",
-                    "-define", "png:compression-level=\(config.imageAIPixPNGCompressionLevel)",
-                    "-strip",
-                    temp.path
-                ]
+                let arguments = portraitShortStillsArguments(from: source, mode: mode, sharpenSource: sharpenSource)
+                    + [temp.path]
                 _ = try runner.run("magick", arguments)
                 try verifyImageOutput(temp, width: width, height: height, format: "PNG")
                 try publishTemp(temp, to: png)

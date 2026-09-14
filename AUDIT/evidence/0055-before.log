@@ -1,0 +1,6 @@
+$ swift test --package-path Sources --filter testFittedPortraitStillOnlySharpensRawArtwork   # builder ignores sharpenSource (current behaviour)
+/Users/node4/Downloads/Converter/Converter/Sources/Tests/converterTests/PipelineIntegrationTests.swift:517: error: -[converterTests.PipelineIntegrationTests testFittedPortraitStillOnlySharpensRawArtwork] : XCTAssertFalse failed - a finished master must be used as-is: ["/var/folders/k5/fzyk9mb96rqbc6_vnxv5mh3h0000gn/T/converter-tests.4340EC5E-1BFF-48E6-8C4F-C1C3D11E0040/Output/Vertical_8K.png", "-auto-orient", "-colorspace", "RGB", "-filter", "Lanczos", "-resize", "90x160", "-colorspace", "sRGB", "-background", "black", "-sharpen", "0x0.200", "-gravity", "center", "-extent", "90x160", "-define", "png:compression-level=1", "-strip"]
+Test Case '-[converterTests.PipelineIntegrationTests testFittedPortraitStillOnlySharpensRawArtwork]' failed (0.055 seconds).
+	 Executed 1 test, with 1 failure (0 unexpected) in 0.055 (0.056) seconds
+	 Executed 1 test, with 1 failure (0 unexpected) in 0.055 (0.056) seconds
+	 Executed 1 test, with 1 failure (0 unexpected) in 0.055 (0.056) seconds
