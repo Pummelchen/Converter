@@ -884,9 +884,89 @@ final class converterTests: XCTestCase {
             passed: false,
             issues: ["Audio verification failed: output appears silent"]
         )
+        // The breach is inherent: the source already peaked at -0.6, so no gain was applied.
+        let inherentPeakPlan = loudnessFallbackPlan(sourcePeakDBFS: -0.6, appliedGainDB: 0, peakConstrained: true)
 
-        XCTAssertTrue(tool.loudnessCandidateIsPublishableFallback(recoverableResult, policy: policy))
-        XCTAssertFalse(tool.loudnessCandidateIsPublishableFallback(brokenResult, policy: policy))
+        XCTAssertTrue(
+            tool.loudnessCandidateIsPublishableFallback(recoverableResult, policy: policy, plan: inherentPeakPlan)
+        )
+        XCTAssertFalse(
+            tool.loudnessCandidateIsPublishableFallback(brokenResult, policy: policy, plan: inherentPeakPlan)
+        )
+
+        // The warning names what actually limited the render.
+        XCTAssertEqual(tool.loudnessFallbackReason(result: recoverableResult), "peak-constrained")
+        XCTAssertEqual(tool.loudnessFallbackReason(result: brokenResult), "closest-safe")
+    }
+
+    // audit #0050: the fallback used to excuse every true-peak issue. It may only excuse one the
+    // render did not add - the source peak plus the gain actually applied - and MP3 gets the
+    // documented 0.3 dB of lossy-encoder headroom on top.
+    func testLoudnessFallbackOnlyExcusesAnInherentTruePeak() throws {
+        let tempDirectory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("converter-test-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: tempDirectory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: tempDirectory) }
+
+        let tool = try makeTool(tempDirectory: tempDirectory, arguments: ["-loudness"])
+        let policy = tool.loudnessPolicy(targetLUFS: -12)
+        let addedPeakPlan = loudnessFallbackPlan(sourcePeakDBFS: -1.5, appliedGainDB: 0.5, peakConstrained: false)
+        let addedPeakResult = try loudnessFallbackResult(
+            tool: tool, policy: policy, truePeakDBTP: -0.6, peakLevelDBFS: -1.5
+        )
+
+        // -0.6 dBTP against a ceiling of -1.5 + 0.5 + 0.1 = -0.9: the render added the breach.
+        XCTAssertFalse(
+            tool.loudnessCandidateIsPublishableFallback(addedPeakResult, policy: policy, plan: addedPeakPlan)
+        )
+
+        // -0.75 dBTP is inside the lossy allowance (-0.7) but outside the lossless one (-0.9).
+        let nearCeilingResult = try loudnessFallbackResult(
+            tool: tool, policy: policy, truePeakDBTP: -0.75, peakLevelDBFS: -1.5
+        )
+        XCTAssertFalse(
+            tool.loudnessCandidateIsPublishableFallback(nearCeilingResult, policy: policy, plan: addedPeakPlan)
+        )
+        XCTAssertTrue(
+            tool.loudnessCandidateIsPublishableFallback(
+                nearCeilingResult, policy: policy, plan: addedPeakPlan, lossyOutput: true
+            )
+        )
+    }
+
+    private func loudnessFallbackPlan(
+        sourcePeakDBFS: Double, appliedGainDB: Double, peakConstrained: Bool
+    ) -> LoudnessStaticGainPlan {
+        LoudnessStaticGainPlan(
+            sourceIntegratedLUFS: -13.3,
+            sourcePeakDBFS: sourcePeakDBFS,
+            requestedGainDB: 1.3,
+            maxSafeBoostDB: 0.5,
+            appliedGainDB: appliedGainDB,
+            peakConstrained: peakConstrained
+        )
+    }
+
+    private func loudnessFallbackResult(
+        tool: ConverterTool, policy: AudioQCPolicy, truePeakDBTP: Double, peakLevelDBFS: Double
+    ) throws -> AudioQCResult {
+        let metrics = AudioQCMetrics(
+            integratedLUFS: -13.3,
+            truePeakDBTP: truePeakDBTP,
+            loudnessRange: 5,
+            dcOffset: 0,
+            stereoImbalanceDB: 0,
+            peakLevelDBFS: peakLevelDBFS,
+            clippedSamples: 0,
+            maxVolumeDBFS: peakLevelDBFS,
+            analysisLimited: false
+        )
+        return AudioQCResult(
+            policy: policy,
+            metrics: metrics,
+            passed: false,
+            issues: ["true peak \(truePeakDBTP) dBTP exceeds max -1.00"]
+        )
     }
 
     func testLoudnessRejectsInvalidTargets() throws {

@@ -348,15 +348,42 @@ extension ConverterTool {
         result.issues.filter { !isIntegratedLoudnessIssue($0) && !isTruePeakIssue($0) }
     }
 
-    func loudnessCandidateIsPublishableFallback(_ result: AudioQCResult, policy: AudioQCPolicy) -> Bool {
+    func loudnessCandidateIsPublishableFallback(
+        _ result: AudioQCResult,
+        policy: AudioQCPolicy,
+        plan: LoudnessStaticGainPlan,
+        lossyOutput: Bool = false
+    ) -> Bool {
         guard loudnessNonRecoverableIssues(result).isEmpty else {
             return false
         }
         guard let integratedLUFS = result.metrics.integratedLUFS, integratedLUFS.isFinite else {
             return false
         }
+        // A true-peak issue is only tolerable when the render did not create it (#0050).
+        if let truePeak = result.metrics.truePeakDBTP, truePeak.isFinite,
+           truePeak > loudnessFallbackTruePeakCeilingDBTP(plan: plan, lossyOutput: lossyOutput) {
+            return false
+        }
         // Bounds the fallback so a far-off-target render cannot be published silently.
         return abs(integratedLUFS - policy.targetLUFS) <= max(policy.lufsTolerance, 6.0)
+    }
+
+    // The source peak plus the gain actually applied is the highest true peak the render can
+    // legitimately show; anything above it was added by the encode. A lossy encoder may overshoot
+    // the sample peak by a fraction of a dB, so MP3 gets a small extra allowance.
+    func loudnessFallbackTruePeakCeilingDBTP(plan: LoudnessStaticGainPlan, lossyOutput: Bool) -> Double {
+        plan.sourcePeakDBFS + plan.appliedGainDB + (lossyOutput ? 0.3 : 0.1)
+    }
+
+    func loudnessOutputIsLossy(_ url: URL) -> Bool {
+        url.pathExtension.lowercasedASCII == "mp3"
+    }
+
+    // The warning label must describe what actually limited the render: a true-peak issue means
+    // the peak ceiling was reached, otherwise the render is merely closest-safe.
+    func loudnessFallbackReason(result: AudioQCResult) -> String {
+        result.issues.contains(where: isTruePeakIssue) ? "peak-constrained" : "closest-safe"
     }
 
     func loudnessQCFailureMessage(file: URL, result: AudioQCResult) -> String {
@@ -643,11 +670,13 @@ extension ConverterTool {
                 return output
             }
 
-            guard loudnessCandidateIsPublishableFallback(result, policy: policy) else {
+            guard loudnessCandidateIsPublishableFallback(
+                result, policy: policy, plan: plan, lossyOutput: loudnessOutputIsLossy(output)
+            ) else {
                 throw AppError(loudnessQCFailureMessage(file: temp, result: result))
             }
             try publishTemp(temp, to: output)
-            let reason = plan.peakConstrained ? "peak-constrained" : "closest-safe"
+            let reason = loudnessFallbackReason(result: result)
             logger.warn(
                 "Created \(reason) loudness media without compression: \(output.basename) [integrated=\(measured) LUFS target=\(String(format: "%.2f", policy.targetLUFS)) gain=\(String(format: "%.2f", plan.appliedGainDB)) dB requested=\(String(format: "%.2f", plan.requestedGainDB)) dB peak=\(String(format: "%.2f", plan.sourcePeakDBFS)) dBFS]"
             )
@@ -2151,12 +2180,16 @@ extension ConverterTool {
                 return processed
             }
 
-            guard loudnessCandidateIsPublishableFallback(result, policy: policy) else {
+            guard loudnessCandidateIsPublishableFallback(result, policy: policy, plan: plan) else {
                 discardTempFile(processed)
                 throw AppError(loudnessQCFailureMessage(file: processed, result: result))
             }
             let measured = result.metrics.integratedLUFS.map { String(format: "%.2f", $0) } ?? "unknown"
-            logger.warn("Album track peak-constrained without compression: \(source.basename) [integrated=\(measured) LUFS target=\(String(format: "%.2f", policy.targetLUFS))]")
+            let reason = loudnessFallbackReason(result: result)
+            logger.warn(
+                "Album track \(reason) without compression: \(source.basename) "
+                + "[integrated=\(measured) LUFS target=\(String(format: "%.2f", policy.targetLUFS))]"
+            )
             return processed
         } catch {
             discardTempFile(processed)

@@ -1,0 +1,8 @@
+$ true-peak guard disabled (old behaviour), signature kept so the split tests compile
+$ swift test --package-path Sources --filter LoudnessFallback
+/Users/node4/Downloads/Converter/Converter/Sources/Tests/converterTests/converterTests.swift:919: error: -[converterTests.converterTests testLoudnessFallbackOnlyExcusesAnInherentTruePeak] : XCTAssertFalse failed
+/Users/node4/Downloads/Converter/Converter/Sources/Tests/converterTests/converterTests.swift:927: error: -[converterTests.converterTests testLoudnessFallbackOnlyExcusesAnInherentTruePeak] : XCTAssertFalse failed
+Test Case '-[converterTests.converterTests testLoudnessFallbackOnlyExcusesAnInherentTruePeak]' failed (0.054 seconds).
+	 Executed 2 tests, with 2 failures (0 unexpected) in 0.056 (0.056) seconds
+	 Executed 2 tests, with 2 failures (0 unexpected) in 0.056 (0.056) seconds
+	 Executed 2 tests, with 2 failures (0 unexpected) in 0.056 (0.056) seconds

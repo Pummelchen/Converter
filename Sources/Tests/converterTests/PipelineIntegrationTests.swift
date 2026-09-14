@@ -1087,7 +1087,10 @@ final class PipelineIntegrationTests: XCTestCase {
 
         let output = try tool.loudnessNormalizeMedia(source, spec: LoudnessSpec(targetLUFS: -12))
         let result = try tool.loudnessOutputQCResult(output, source: source, policy: policy)
-        XCTAssertTrue(tool.loudnessCandidateIsPublishableFallback(result, policy: policy), result.issues.joined(separator: "; "))
+        XCTAssertTrue(
+            tool.loudnessCandidateIsPublishableFallback(result, policy: policy, plan: plan),
+            result.issues.joined(separator: "; ")
+        )
         XCTAssertGreaterThanOrEqual(result.metrics.integratedLUFS ?? -99, (sourceMetrics.integratedLUFS ?? -99) - 0.25)
         XCTAssertLessThanOrEqual(result.metrics.integratedLUFS ?? 99, policy.targetLUFS + 0.5)
         XCTAssertNoThrow(try tool.requireVideoStream(output))
