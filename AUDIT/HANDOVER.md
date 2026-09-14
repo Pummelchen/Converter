@@ -115,13 +115,20 @@ against the working tree and `origin` on 2026-09-14 06:58 WIB.
   rely on it), **#0086** (the BW64 path checks free space for the raw f32le temp plus the output
   through a shared `requireFreeSpace`, and the staging width is named).
 - Ledger after batch 13: **done 94 · open 6 · blocked 0**.
-- Remaining 6: **#0073** (swiftlint actionable rules: 26 line_length errors to wrap, 8
-  identifier_name errors in `PipelineCore`'s geometry helpers, 1 type_name — the lowercase
-  `converterTests` class, 1 large_tuple, 1 function_parameter_count in `verifyVideoRender`; the
-  structural rules — file_length 6, type_body_length 6, function_body_length 4,
-  cyclomatic_complexity 3, plus 399 line_length warnings — are deferred with the baseline
-  rationale), **#0058/#0059** (binary + CI provenance), **#0051** (redundant probes), **#0030**
-  (docs sync), then S0 **#0006** (Phase E on `node1`).
+- Batch 14 (lint) DONE after a 261-test full suite: **#0073** — the 37 non-structural
+  error-level swiftlint violations are gone (26 over-long lines wrapped, 8 `identifier_name`
+  errors in the VisualSubs geometry helpers, the `converterTests` → `ConverterTests` class rename,
+  the 4-member audio-check tuple, and the 14-parameter `verifyVideoRender` merged into the
+  spec-based `verifyRenderedVideo`; plus for_where/syntactic_sugar/optional_data_string_conversion
+  and the CRC table locals). swiftlint is now **472 total / 19 errors**, all 19 structural
+  (file_length 6, type_body_length 6, function_body_length 4, cyclomatic_complexity 3) and
+  deferred with a written rationale in the commit.
+- Ledger after batch 14: **done 95 · open 5 · blocked 0**.
+- Remaining 5: **#0058** (record the release binary's SHA-256/size/signature and verify it in CI),
+  **#0059** (pin `actions/checkout` by SHA, select a specific Xcode, stop the unpinned
+  `brew update`, add the now-passing strict C++ build step), **#0051** (redundant padding
+  verification / uncached `ffmpeg -filters` — needs a counting runner), **#0030** (docs sync,
+  deliberately last), then S0 **#0006** (Phase E independent verification on `node1`).
 - Investigated but deliberately deferred: **#0086** (the 3-byte width in `estimateWAVBytes` is
   latent because `Config.validate` pins `WAV_CODEC` to `pcm_s24le`; only the BW64 free-space gap
   is real — fold it into a later perf/validation pass), **#0051** (needs a counting runner to
