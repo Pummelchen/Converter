@@ -53,8 +53,8 @@ _none_
 | #0074 | S2 | converter (dead code) | Sources/converter/Actions.swift:114; ImagePipeline.swift:26-27; ProcessRunner.swift:78; ValidationPipeline.swift:857; Tests/IntegrationTestSupport.swift:32 | periphery-flagged unused declarations (6 unused, 15 assign-only) — prove reachability, then remove or retain with reason | dead | START |  |
 | #0075 | S2 | converter (dead code) | Sources/converter/PipelineCore.swift:347,357-362; Actions.swift:105-110,794-808; BW64Bridge/bw64_bridge.cpp:95; LosslessAudioPipeline.swift:9,30,173-174; AudioPipeline.swift:160-162,264,1955 | Dead branches, tautological guards, dead parameters, redundant discards | dead | START |  |
 | #0077 | S3 | converter/DependencyBootstrap | Sources/converter/DependencyBootstrap.swift:77-82 | Post-install failure message lists nothing when a tool is present but non-functional | logic | START |  |
-| #0078 | S3 | converter/PipelineCore | Sources/converter/PipelineCore.swift:372-379 | ensureWritableDirectory accepts a regular file at OUT_DIR | logic | TEST |  |
-| #0079 | S3 | converter/ProcessRunner | Sources/converter/ProcessRunner.swift:156-160 | Signal deaths reported as ordinary exit codes | incomplete | TEST |  |
+| #0078 | S3 | converter/PipelineCore | Sources/converter/PipelineCore.swift:372-379 | ensureWritableDirectory accepts a regular file at OUT_DIR | logic | TEST | 9a721d9 |
+| #0079 | S3 | converter/ProcessRunner | Sources/converter/ProcessRunner.swift:156-160 | Signal deaths reported as ordinary exit codes | incomplete | TEST | 9a721d9 |
 | #0080 | S3 | converter/PipelineCore | Sources/converter/PipelineCore.swift:323-344,271 | Orphan-temp detection keys on local PID only; synced directories across hosts | logic | START |  |
 | #0086 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:1378,1694-1706 | Magic bytes-per-sample and missing free-space check on the BW64 path | style | START |  |
 | #0087 | S3 | converter/CLI | Sources/converter/CLI.swift:231-260 | CLI inconsistencies: --seed 0, unbounded --sharpness, repeated action flags, option values beginning with -- | logic | START |  |
@@ -1034,6 +1034,7 @@ _none_
 - **evidence-before:** AUDIT/findings/L2-core-runtime.md C-11
 - **fix-summary:** #0078 ensureWritableDirectory rejects a regular file at the directory path with 'Not a directory' instead of letting isWritableFile accept it. #0079 ProcessResult carries terminationSignal and ProcessRunner.failureDetail names a signal death ('killed by signal N (SIGNAME)') instead of reporting the raw number as an exit code.
 - **evidence-after:** AUDIT/evidence/0078-0079-before.log (fixes not applied: signal death reported as 'exit code 11'; the regular file did not throw); AUDIT/evidence/0078-0079-after.log (both tests pass). swiftlint 531/56, no new violations.
+- **commit sha:** 9a721d9
 
 ### #0079 · S3 · TEST · Signal deaths reported as ordinary exit codes
 
@@ -1045,6 +1046,7 @@ _none_
 - **evidence-before:** AUDIT/findings/L2-core-runtime.md C-12
 - **fix-summary:** #0078 ensureWritableDirectory rejects a regular file at the directory path with 'Not a directory' instead of letting isWritableFile accept it. #0079 ProcessResult carries terminationSignal and ProcessRunner.failureDetail names a signal death ('killed by signal N (SIGNAME)') instead of reporting the raw number as an exit code.
 - **evidence-after:** AUDIT/evidence/0078-0079-before.log (fixes not applied: signal death reported as 'exit code 11'; the regular file did not throw); AUDIT/evidence/0078-0079-after.log (both tests pass). swiftlint 531/56, no new violations.
+- **commit sha:** 9a721d9
 
 ### #0080 · S3 · START · Orphan-temp detection keys on local PID only; synced directories across hosts
 

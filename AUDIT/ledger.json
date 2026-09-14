@@ -1327,7 +1327,7 @@
       "evidence_before": "AUDIT/findings/L2-core-runtime.md C-11",
       "fix_summary": "#0078 ensureWritableDirectory rejects a regular file at the directory path with 'Not a directory' instead of letting isWritableFile accept it. #0079 ProcessResult carries terminationSignal and ProcessRunner.failureDetail names a signal death ('killed by signal N (SIGNAME)') instead of reporting the raw number as an exit code.",
       "evidence_after": "AUDIT/evidence/0078-0079-before.log (fixes not applied: signal death reported as 'exit code 11'; the regular file did not throw); AUDIT/evidence/0078-0079-after.log (both tests pass). swiftlint 531/56, no new violations.",
-      "commit": "",
+      "commit": "9a721d9",
       "notes": ""
     },
     {
@@ -1344,7 +1344,7 @@
       "evidence_before": "AUDIT/findings/L2-core-runtime.md C-12",
       "fix_summary": "#0078 ensureWritableDirectory rejects a regular file at the directory path with 'Not a directory' instead of letting isWritableFile accept it. #0079 ProcessResult carries terminationSignal and ProcessRunner.failureDetail names a signal death ('killed by signal N (SIGNAME)') instead of reporting the raw number as an exit code.",
       "evidence_after": "AUDIT/evidence/0078-0079-before.log (fixes not applied: signal death reported as 'exit code 11'; the regular file did not throw); AUDIT/evidence/0078-0079-after.log (both tests pass). swiftlint 531/56, no new violations.",
-      "commit": "",
+      "commit": "9a721d9",
       "notes": ""
     },
     {
