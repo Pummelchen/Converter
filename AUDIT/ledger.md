@@ -6,9 +6,9 @@ Session: `2026-09-13` · branch `audit/2026-09-13` · baseline commit `4bb136a`
 
 | status | count |
 |---|---|
-| START | 24 |
+| START | 23 |
 | PROGRESS | 0 |
-| TEST | 1 |
+| TEST | 2 |
 | AUDIT | 0 |
 | DONE | 75 |
 | BLOCKED | 0 |
@@ -46,7 +46,7 @@ _none_
 | #0086 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:1378,1694-1706 | Magic bytes-per-sample and missing free-space check on the BW64 path | style | START |  |
 | #0088 | S3 | converter/Config+VideoPipeline | Sources/converter/VideoPipeline.swift:230,240,244; Config.swift:393,397 | Config colour/scale-filter values spliced into the filter graph with only non-empty validation | unsafe | TEST | 720de01 |
 | #0089 | S3 | converter/VideoPipeline | Sources/converter/VideoPipeline.swift:334,386,467 | ALAC M4A decoded and re-encoded for every video although stream copy is bit-transparent | perf | START |  |
-| #0090 | S3 | BW64Bridge | Sources/BW64Bridge/include/bw64_bridge.h:14-22 | Easily swappable C ABI parameters (swapped paths would truncate the input) | style | START |  |
+| #0090 | S3 | BW64Bridge | Sources/BW64Bridge/include/bw64_bridge.h:14-22 | Easily swappable C ABI parameters (swapped paths would truncate the input) | style | TEST |  |
 | #0093 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:30-50 | 10 s wall-clock budget on a 40 000-iteration shell loop | test | START |  |
 | #0094 | S3 | converterTests | Sources/Tests/converterTests/converterTests.swift:189-230,1297-1309 | Help-text tests couple to prose sentences | test | START |  |
 | #0095 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:613-619 | Progress-event count pinned to implementation | test | START |  |
@@ -1190,7 +1190,7 @@ _none_
 - **discovered-by:** reviewer X-21
 - **evidence-before:** AUDIT/findings/L2-video-image-actions-cli.md X-21
 
-### #0090 · S3 · START · Easily swappable C ABI parameters (swapped paths would truncate the input)
+### #0090 · S3 · TEST · Easily swappable C ABI parameters (swapped paths would truncate the input)
 
 - **project/module:** BW64Bridge
 - **file:line:** Sources/BW64Bridge/include/bw64_bridge.h:14-22
@@ -1198,6 +1198,8 @@ _none_
 - **host-used:** local
 - **discovered-by:** reviewer B-10; clang-tidy
 - **evidence-before:** AUDIT/findings/L0-L3-bridge-repo.md B-10
+- **fix-summary:** The C ABI interleaves the numeric options between the two path parameters so a swap no longer compiles, and requireOptions canonicalises both paths and refuses equal input/output. Swift caller and header updated.
+- **evidence-after:** AUDIT/evidence/0090-before.log (fix stashed: same-path call truncated the raw PCM from 38400 to 92 bytes); AUDIT/evidence/0090-after.log (testBW64WriterRefusesTheSameInputAndOutputPath and all three BW64 tests pass). swiftlint 526/56; first-party strict C++ clean.
 
 ### #0091 · S3 · DONE · Stale .converter_bw64_writer ignore entry
 

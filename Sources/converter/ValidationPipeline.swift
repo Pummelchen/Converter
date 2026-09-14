@@ -1228,10 +1228,10 @@ extension ConverterTool {
                 output.path.withCString { outputPath in
                     bw64_write_from_f32le_file(
                         inputPath,
-                        outputPath,
                         UInt16(channels),
                         UInt32(sampleRate),
                         UInt16(bitDepth),
+                        outputPath,
                         buffer.baseAddress,
                         buffer.count
                     )

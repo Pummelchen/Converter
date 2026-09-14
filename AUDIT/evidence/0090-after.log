@@ -1,0 +1,7 @@
+$ swift test --package-path Sources --filter testBW64WriterRefusesTheSameInputAndOutputPath   # fix applied
+	 Executed 1 test, with 0 failures (0 unexpected) in 0.092 (0.092) seconds
+	 Executed 1 test, with 0 failures (0 unexpected) in 0.092 (0.093) seconds
+	 Executed 1 test, with 0 failures (0 unexpected) in 0.092 (0.093) seconds
+
+$ swift test --package-path Sources --filter BW64
+	 Executed 3 tests, with 0 failures (0 unexpected) in 2.555 (2.556) seconds

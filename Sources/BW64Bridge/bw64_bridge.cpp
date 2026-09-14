@@ -164,6 +164,14 @@ void requireOptions(const Options& options) {
     if (options.bitDepth != 16 && options.bitDepth != 24 && options.bitDepth != 32) {
         throw std::runtime_error("bit-depth must be 16, 24, or 32");
     }
+    // The writer opens the output with truncation, so reading and writing the same file would
+    // destroy the source; canonicalise both paths so a relative alias cannot slip through.
+    std::error_code pathError;
+    const auto inputPath = std::filesystem::weakly_canonical(options.inputPath, pathError);
+    const auto outputPath = std::filesystem::weakly_canonical(options.outputPath, pathError);
+    if (!pathError && inputPath == outputPath) {
+        throw std::runtime_error("input and output paths must differ: " + options.inputPath);
+    }
 }
 
 void writeBW64FromFile(const Options& options) {
@@ -238,10 +246,10 @@ void writeError(const std::string& message, char* errorBuffer, size_t errorBuffe
 
 int bw64_write_from_f32le_file(
     const char* input_path,
-    const char* output_path,
     uint16_t channels,
     uint32_t sample_rate,
     uint16_t bit_depth,
+    const char* output_path,
     char* error_buffer,
     size_t error_buffer_size
 ) {
