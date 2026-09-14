@@ -1548,7 +1548,7 @@
       "evidence_before": "AUDIT/findings/L0-L3-bridge-repo.md B-11",
       "fix_summary": "#0091 removes the dead .converter_bw64_writer ignore entry. #0092 documents -doctor, -clean, -matrix, -list and -help in a new docs/FORMATS.md maintenance table and notes the -fadeflac alias for -fade.",
       "evidence_after": "AUDIT/evidence/0091-0092-before.log (only .gitignore and audit prose referenced .converter_bw64_writer; FORMATS.md documented no maintenance command and no -fadeflac); AUDIT/evidence/0091-0092-after.log (no source/config reference remains; the new table and alias are present).",
-      "commit": "",
+      "commit": "557dbe0",
       "notes": ""
     },
     {
@@ -1565,7 +1565,7 @@
       "evidence_before": "AUDIT/findings/L0-L3-bridge-repo.md B-12",
       "fix_summary": "#0091 removes the dead .converter_bw64_writer ignore entry. #0092 documents -doctor, -clean, -matrix, -list and -help in a new docs/FORMATS.md maintenance table and notes the -fadeflac alias for -fade.",
       "evidence_after": "AUDIT/evidence/0091-0092-before.log (only .gitignore and audit prose referenced .converter_bw64_writer; FORMATS.md documented no maintenance command and no -fadeflac); AUDIT/evidence/0091-0092-after.log (no source/config reference remains; the new table and alias are present).",
-      "commit": "",
+      "commit": "557dbe0",
       "notes": ""
     },
     {

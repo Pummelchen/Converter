@@ -61,8 +61,8 @@ _none_
 | #0088 | S3 | converter/Config+VideoPipeline | Sources/converter/VideoPipeline.swift:230,240,244; Config.swift:393,397 | Config colour/scale-filter values spliced into the filter graph with only non-empty validation | unsafe | START |  |
 | #0089 | S3 | converter/VideoPipeline | Sources/converter/VideoPipeline.swift:334,386,467 | ALAC M4A decoded and re-encoded for every video although stream copy is bit-transparent | perf | START |  |
 | #0090 | S3 | BW64Bridge | Sources/BW64Bridge/include/bw64_bridge.h:14-22 | Easily swappable C ABI parameters (swapped paths would truncate the input) | style | START |  |
-| #0091 | S3 | repo | .gitignore:2 | Stale .converter_bw64_writer ignore entry | dead | TEST |  |
-| #0092 | S3 | repo/docs | docs/FORMATS.md | Maintenance commands and -fadeflac alias missing from FORMATS.md | docs | TEST |  |
+| #0091 | S3 | repo | .gitignore:2 | Stale .converter_bw64_writer ignore entry | dead | TEST | 557dbe0 |
+| #0092 | S3 | repo/docs | docs/FORMATS.md | Maintenance commands and -fadeflac alias missing from FORMATS.md | docs | TEST | 557dbe0 |
 | #0093 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:30-50 | 10 s wall-clock budget on a 40 000-iteration shell loop | test | START |  |
 | #0094 | S3 | converterTests | Sources/Tests/converterTests/converterTests.swift:189-230,1297-1309 | Help-text tests couple to prose sentences | test | START |  |
 | #0095 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:613-619 | Progress-event count pinned to implementation | test | START |  |
@@ -1173,6 +1173,7 @@ _none_
 - **evidence-before:** AUDIT/findings/L0-L3-bridge-repo.md B-11
 - **fix-summary:** #0091 removes the dead .converter_bw64_writer ignore entry. #0092 documents -doctor, -clean, -matrix, -list and -help in a new docs/FORMATS.md maintenance table and notes the -fadeflac alias for -fade.
 - **evidence-after:** AUDIT/evidence/0091-0092-before.log (only .gitignore and audit prose referenced .converter_bw64_writer; FORMATS.md documented no maintenance command and no -fadeflac); AUDIT/evidence/0091-0092-after.log (no source/config reference remains; the new table and alias are present).
+- **commit sha:** 557dbe0
 
 ### #0092 · S3 · TEST · Maintenance commands and -fadeflac alias missing from FORMATS.md
 
@@ -1184,6 +1185,7 @@ _none_
 - **evidence-before:** AUDIT/findings/L0-L3-bridge-repo.md B-12
 - **fix-summary:** #0091 removes the dead .converter_bw64_writer ignore entry. #0092 documents -doctor, -clean, -matrix, -list and -help in a new docs/FORMATS.md maintenance table and notes the -fadeflac alias for -fade.
 - **evidence-after:** AUDIT/evidence/0091-0092-before.log (only .gitignore and audit prose referenced .converter_bw64_writer; FORMATS.md documented no maintenance command and no -fadeflac); AUDIT/evidence/0091-0092-after.log (no source/config reference remains; the new table and alias are present).
+- **commit sha:** 557dbe0
 
 ### #0093 · S3 · START · 10 s wall-clock budget on a 40 000-iteration shell loop
 
