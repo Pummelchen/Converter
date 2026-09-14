@@ -69,15 +69,18 @@ against the working tree and `origin` on 2026-09-14 06:58 WIB.
   `-version` probe).
 - Ledger after batch 6: **done 73 · open 27 · blocked 0**. swiftlint is 528/56 (three below the
   531 baseline).
+- Batch 7 DONE after a 251-test full suite: **#0100** (`stepFull` now preflights the source before
+  `resolveFullAudio` renames it to `1_source`; the rename helper stays a pure resolver so the
+  naming tests keep driving it), **#0080** (temp names carry a host token, so orphan cleanup no
+  longer deletes another machine's live temp in a synced directory).
+- Ledger after batch 7: **done 75 · open 25 · blocked 0**. swiftlint is 526/56.
 - Investigated but deliberately deferred: **#0086** (the 3-byte width in `estimateWAVBytes` is
   latent because `Config.validate` pins `WAV_CODEC` to `pcm_s24le`; only the BW64 free-space gap
   is real — fold it into a later perf/validation pass), **#0051** (needs a counting runner to
   assert fewer ffmpeg invocations).
-- Next planned batch: **#0100** (full-run rename happens before preflight, so a corrupt source
-  loses its original name — decide between preflighting first or rolling the rename back),
-  **#0080** (orphan-temp detection keys on the local PID only), **#0088** (config filter values
-  spliced into the filter graph), **#0090** (easily swappable C ABI parameters), then the
-  test-quality batch #0093–#0098.
+- Next planned batch: **#0088** (validate `VIDEO_MP4_SCALE_FILTER` / `VIDEO_COLOR_*` instead of
+  only non-empty), **#0090** (easily swappable C ABI parameters), **#0089** (ALAC audio decoded and
+  re-encoded for every video), then the test-quality batch #0093–#0098.
 
 ## Exactly where to continue
 
