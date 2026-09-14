@@ -484,6 +484,21 @@ final class PipelineIntegrationTests: XCTestCase {
         XCTAssertFalse(names.contains("clip_Short_FullSong_Short.mp4"), "own short re-ingested: \(names)")
     }
 
+    // audit #0056: -mp4toshort upscales its 9:16 crop to the portrait frame, so it must use the
+    // configured scaler; it previously fell back to ffmpeg's default bicubic.
+    func testMP4ToShortUsesTheConfiguredScaler() throws {
+        let workspace = try IntegrationWorkspace()
+        let tool = try workspace.makeTool(arguments: ["-mp4toshort"])
+
+        let filter = tool.mp4ToShortVideoFilter()
+        let scale = "scale=\(tool.config.shortMP4ScaleW):\(tool.config.shortMP4ScaleH):"
+        XCTAssertTrue(filter.contains(scale), "the filter must scale to the portrait frame: \(filter)")
+        XCTAssertTrue(
+            filter.contains("flags=\(tool.config.videoMP4ScaleFilter)+accurate_rnd+full_chroma_int"),
+            "the filter must use the configured scaler: \(filter)"
+        )
+    }
+
     func testAudioConversionMatrixProducesVerifiedOutputs() throws {
         let workspace = try IntegrationWorkspace()
         try workspace.requireCommands(["ffmpeg", "ffprobe"])

@@ -449,12 +449,7 @@ extension ConverterTool {
                     "-i", input.path,
                     "-i", sourceWAV.path
                 ],
-                videoFilter:
-                    "crop=min(iw\\,ih*9/16):ih," +
-                    "fps=\(config.shortMP4FPS)," +
-                    "scale=\(config.shortMP4ScaleW):\(config.shortMP4ScaleH)," +
-                    "format=\(config.shortMP4PixelFormat)," +
-                    colorParameterFilter(),
+                videoFilter: mp4ToShortVideoFilter(),
                 encoderLadder: encoders,
                 vtQuality: config.shortMP4VTQuality,
                 softwarePreset: config.shortMP4VideoPreset,
@@ -465,6 +460,16 @@ extension ConverterTool {
             ),
             verifying: spec
         )
+    }
+
+    // -mp4toshort crops a landscape source to 9:16 and upscales it to the portrait frame, so it
+    // needs the same configured scaler as the other short paths instead of ffmpeg's default.
+    func mp4ToShortVideoFilter() -> String {
+        "crop=min(iw\\,ih*9/16):ih," +
+        "fps=\(config.shortMP4FPS)," +
+        "scale=\(config.shortMP4ScaleW):\(config.shortMP4ScaleH):flags=\(scaleQualityFlags)," +
+        "format=\(config.shortMP4PixelFormat)," +
+        colorParameterFilter()
     }
 
     func preflightShortAudioInput(_ file: URL) throws {
