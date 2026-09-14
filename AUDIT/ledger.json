@@ -1021,7 +1021,7 @@
       "evidence_before": "AUDIT/findings/L0-L3-bridge-repo.md B-7",
       "fix_summary": "Renames the personal album.txt to album.example.txt (documented template), git-ignores album.txt, and makes the missing-album-file error point at the template; README and docs/FORMATS.md updated.",
       "evidence_after": "AUDIT/evidence/0060-before.log (fix stashed: 'Missing album file: <path>' with no template reference); AUDIT/evidence/0060-after.log (testMissingAlbumFileErrorPointsAtTheExampleTemplate passes; git check-ignore -v album.txt reports .gitignore:2). swiftlint 531/56, no new violations.",
-      "commit": "",
+      "commit": "bef61c4",
       "notes": "album.example.txt + ignore album.txt + loader message."
     },
     {
