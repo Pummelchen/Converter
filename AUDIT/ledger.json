@@ -1174,7 +1174,7 @@
       "evidence_before": "AUDIT/findings/L6-tests.md T-17",
       "fix_summary": "#0069 requires a WAV-specific error message; #0093 documents the drain test's timeout as a hang guard and raises it to 120 s; #0094 pins help structure/tokens instead of sentences; #0095 asserts progress-event semantics instead of a count; #0096 asserts scheduler caps numerically; #0098 states why the bass filter string is pinned and asserts its components.",
       "evidence_after": "AUDIT/evidence/0069-mutation.log (generic 'operation failed' mutation: strengthened assertion fails, old bare assertion would pass); AUDIT/evidence/0093-0098-after.log (six strengthened tests + seven help-text tests pass). swiftlint 525/56, no new violations.",
-      "commit": "",
+      "commit": "022bc32",
       "notes": ""
     },
     {
@@ -1582,7 +1582,7 @@
       "evidence_before": "AUDIT/findings/L6-tests.md T-24",
       "fix_summary": "#0069 requires a WAV-specific error message; #0093 documents the drain test's timeout as a hang guard and raises it to 120 s; #0094 pins help structure/tokens instead of sentences; #0095 asserts progress-event semantics instead of a count; #0096 asserts scheduler caps numerically; #0098 states why the bass filter string is pinned and asserts its components.",
       "evidence_after": "AUDIT/evidence/0069-mutation.log (generic 'operation failed' mutation: strengthened assertion fails, old bare assertion would pass); AUDIT/evidence/0093-0098-after.log (six strengthened tests + seven help-text tests pass). swiftlint 525/56, no new violations.",
-      "commit": "",
+      "commit": "022bc32",
       "notes": ""
     },
     {
@@ -1599,7 +1599,7 @@
       "evidence_before": "AUDIT/findings/L6-tests.md T-25",
       "fix_summary": "#0069 requires a WAV-specific error message; #0093 documents the drain test's timeout as a hang guard and raises it to 120 s; #0094 pins help structure/tokens instead of sentences; #0095 asserts progress-event semantics instead of a count; #0096 asserts scheduler caps numerically; #0098 states why the bass filter string is pinned and asserts its components.",
       "evidence_after": "AUDIT/evidence/0069-mutation.log (generic 'operation failed' mutation: strengthened assertion fails, old bare assertion would pass); AUDIT/evidence/0093-0098-after.log (six strengthened tests + seven help-text tests pass). swiftlint 525/56, no new violations.",
-      "commit": "",
+      "commit": "022bc32",
       "notes": ""
     },
     {
@@ -1616,7 +1616,7 @@
       "evidence_before": "AUDIT/findings/L6-tests.md T-26",
       "fix_summary": "#0069 requires a WAV-specific error message; #0093 documents the drain test's timeout as a hang guard and raises it to 120 s; #0094 pins help structure/tokens instead of sentences; #0095 asserts progress-event semantics instead of a count; #0096 asserts scheduler caps numerically; #0098 states why the bass filter string is pinned and asserts its components.",
       "evidence_after": "AUDIT/evidence/0069-mutation.log (generic 'operation failed' mutation: strengthened assertion fails, old bare assertion would pass); AUDIT/evidence/0093-0098-after.log (six strengthened tests + seven help-text tests pass). swiftlint 525/56, no new violations.",
-      "commit": "",
+      "commit": "022bc32",
       "notes": ""
     },
     {
@@ -1633,7 +1633,7 @@
       "evidence_before": "AUDIT/findings/L6-tests.md T-27",
       "fix_summary": "#0069 requires a WAV-specific error message; #0093 documents the drain test's timeout as a hang guard and raises it to 120 s; #0094 pins help structure/tokens instead of sentences; #0095 asserts progress-event semantics instead of a count; #0096 asserts scheduler caps numerically; #0098 states why the bass filter string is pinned and asserts its components.",
       "evidence_after": "AUDIT/evidence/0069-mutation.log (generic 'operation failed' mutation: strengthened assertion fails, old bare assertion would pass); AUDIT/evidence/0093-0098-after.log (six strengthened tests + seven help-text tests pass). swiftlint 525/56, no new violations.",
-      "commit": "",
+      "commit": "022bc32",
       "notes": ""
     },
     {
@@ -1667,7 +1667,7 @@
       "evidence_before": "AUDIT/findings/L6-tests.md T-29",
       "fix_summary": "#0069 requires a WAV-specific error message; #0093 documents the drain test's timeout as a hang guard and raises it to 120 s; #0094 pins help structure/tokens instead of sentences; #0095 asserts progress-event semantics instead of a count; #0096 asserts scheduler caps numerically; #0098 states why the bass filter string is pinned and asserts its components.",
       "evidence_after": "AUDIT/evidence/0069-mutation.log (generic 'operation failed' mutation: strengthened assertion fails, old bare assertion would pass); AUDIT/evidence/0093-0098-after.log (six strengthened tests + seven help-text tests pass). swiftlint 525/56, no new violations.",
-      "commit": "",
+      "commit": "022bc32",
       "notes": ""
     },
     {
