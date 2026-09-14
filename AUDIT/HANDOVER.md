@@ -130,6 +130,13 @@ against the working tree and `origin` on 2026-09-14 06:58 WIB.
   asserts Swift 6.3.3, drops the unpinned `brew update`, limits permissions and runs
   warnings-as-errors plus the strict C++ build).
 - Ledger after batch 15: **done 97 · open 3 · blocked 0**.
+- Batch 16 DONE: **#0051** (the noise staging WAV was padding-verified as well as the deliverable —
+  7 fewer ffmpeg invocations per file, 47 → 40 — and the ffmpeg filter set and encoder ladders are
+  cached per run; a `RecordingToolDirectory` helper counts real tool invocations),
+  **#0030** (README, CLI help, CONTRIBUTING, `docs/FORMATS.md`, `docs/KNOWN_GOOD_VERSIONS.md` and
+  the wiki now describe the `1_source` rename, which actions change loudness, the
+  `min(SHORT_MP4_CLIP_SECONDS, 58)` cap, the `album.txt` error semantics and opt-in auto-install).
+- Ledger after batch 16: **done 99 · open 1 · blocked 0** — only S0 **#0006** (Phase E) remains.
 - Remaining 3: **#0051** (redundant padding verification — up to 8 ffmpeg decodes on the staging
   WAV and again on the deliverable; `ffmpeg -filters` spawned per file; ladder resolved per file.
   Needs a recording-tool wrapper in `IntegrationTestSupport` that logs argv and execs the real
