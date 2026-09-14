@@ -30,7 +30,7 @@ _none_
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
-| #0040 | S2 | converter/ProcessRunner | Sources/converter/ProcessRunner.swift:145; Actions.swift:615-619 | Cancellation does not terminate sibling external processes after a fan-out failure | unsafe | TEST |  |
+| #0040 | S2 | converter/ProcessRunner | Sources/converter/ProcessRunner.swift:145; Actions.swift:615-619 | Cancellation does not terminate sibling external processes after a fan-out failure | unsafe | TEST | 56c20e8 |
 | #0050 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:327-336,367-387,591-600 | Loudness fallback publishes any true-peak breach with a misleading 'closest-safe' label | logic | START |  |
 | #0051 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:992,1170,1029,508 | Redundant padding verification, uncached ffmpeg -filters, per-file ladder resolution | perf | START |  |
 | #0058 | S2 | repo | converter (binary); docs/KNOWN_GOOD_VERSIONS.md | Checked-in release binary has no verifiable provenance (no SHA-256, adhoc signature, no tag) | deps | START |  |
@@ -634,6 +634,7 @@ _none_
 - **evidence-before:** AUDIT/findings/L2-video-image-actions-cli.md X-14
 - **fix-summary:** ProcessRunner keeps a registry of live children and terminateActiveProcesses(); the image/audio/video permit helpers run their operation under withTaskCancellationHandler and terminate the runner's children on cancel, so a failed fan-out no longer waits for sibling ffmpeg/magick jobs. run() also reports CancellationError.
 - **evidence-after:** AUDIT/evidence/0040-before.log (fix stashed: cancelled operation ran 15.01 s and succeeded); AUDIT/evidence/0040-after.log (testCancellingAPermittedOperationTerminatesItsChildProcess passes in 0.31 s). swiftlint 530/56, no new violations.
+- **commit sha:** 56c20e8
 
 ### #0041 · S2 · DONE · Installer subprocesses have no timeout and discard diagnostics
 
