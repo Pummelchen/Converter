@@ -2,15 +2,15 @@
 
 Session: `2026-09-13` · branch `audit/2026-09-13` · baseline commit `4bb136a`
 
-**known-total:100 done:69 open:31 blocked:0 new-this-session:100**
+**known-total:100 done:71 open:29 blocked:0 new-this-session:100**
 
 | status | count |
 |---|---|
 | START | 29 |
 | PROGRESS | 0 |
-| TEST | 2 |
+| TEST | 0 |
 | AUDIT | 0 |
-| DONE | 69 |
+| DONE | 71 |
 | BLOCKED | 0 |
 
 Status gates: START (reproduced/proven + expected behaviour written) → PROGRESS (diff) → TEST (failing-before/passing-after test pasted, full suite green, no new warnings) → AUDIT (cold re-read, all scanners re-run, no baseline regression, no new placeholder) → DONE (committed atomically). BLOCKED needs reason + what was tried + ≥2 options for a human.
@@ -26,11 +26,10 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 
 _none_
 
-## Open S2 / S3 (29)
+## Open S2 / S3 (27)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
-| #0040 | S2 | converter/ProcessRunner | Sources/converter/ProcessRunner.swift:145; Actions.swift:615-619 | Cancellation does not terminate sibling external processes after a fan-out failure | unsafe | TEST | 56c20e8 |
 | #0050 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:327-336,367-387,591-600 | Loudness fallback publishes any true-peak breach with a misleading 'closest-safe' label | logic | START |  |
 | #0051 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:992,1170,1029,508 | Redundant padding verification, uncached ffmpeg -filters, per-file ladder resolution | perf | START |  |
 | #0058 | S2 | repo | converter (binary); docs/KNOWN_GOOD_VERSIONS.md | Checked-in release binary has no verifiable provenance (no SHA-256, adhoc signature, no tag) | deps | START |  |
@@ -48,7 +47,6 @@ _none_
 | #0077 | S3 | converter/DependencyBootstrap | Sources/converter/DependencyBootstrap.swift:77-82 | Post-install failure message lists nothing when a tool is present but non-functional | logic | START |  |
 | #0080 | S3 | converter/PipelineCore | Sources/converter/PipelineCore.swift:323-344,271 | Orphan-temp detection keys on local PID only; synced directories across hosts | logic | START |  |
 | #0086 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:1378,1694-1706 | Magic bytes-per-sample and missing free-space check on the BW64 path | style | START |  |
-| #0087 | S3 | converter/CLI | Sources/converter/CLI.swift:231-260 | CLI inconsistencies: --seed 0, unbounded --sharpness, repeated action flags, option values beginning with -- | logic | TEST | ee8d65d |
 | #0088 | S3 | converter/Config+VideoPipeline | Sources/converter/VideoPipeline.swift:230,240,244; Config.swift:393,397 | Config colour/scale-filter values spliced into the filter graph with only non-empty validation | unsafe | START |  |
 | #0089 | S3 | converter/VideoPipeline | Sources/converter/VideoPipeline.swift:334,386,467 | ALAC M4A decoded and re-encoded for every video although stream copy is bit-transparent | perf | START |  |
 | #0090 | S3 | BW64Bridge | Sources/BW64Bridge/include/bw64_bridge.h:14-22 | Easily swappable C ABI parameters (swapped paths would truncate the input) | style | START |  |
@@ -60,7 +58,7 @@ _none_
 | #0098 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:529,534 | Exact ffmpeg bass filter string pinned without a stated reason | test | START |  |
 | #0100 | S3 | converter/Actions | Sources/converter/Actions.swift (normalizedFullRunSource / resolveFullAudio) | Full-run source is renamed before preflight; a corrupt source loses its original name in the error | logic | START |  |
 
-## Done (69)
+## Done (71)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
@@ -101,6 +99,7 @@ _none_
 | #0002 | S2 | repo/AUDIT | AUDIT/environment.md | Phase A: environment record and audit tooling install (§1/§1b) | docs | DONE | 5fa6546 |
 | #0003 | S2 | repo/AUDIT | AUDIT/baseline.md | Phase A: baseline metrics at 4bb136a (§3) | docs | DONE | 2184906 |
 | #0039 | S2 | converter/Support | Sources/converter/Support.swift:97-101,141-147 | AsyncSemaphore grants permits to already-cancelled tasks | perf | DONE | 15fbfbb |
+| #0040 | S2 | converter/ProcessRunner | Sources/converter/ProcessRunner.swift:145; Actions.swift:615-619 | Cancellation does not terminate sibling external processes after a fan-out failure | unsafe | DONE | 56c20e8 |
 | #0041 | S2 | converter/DependencyBootstrap | Sources/converter/DependencyBootstrap.swift:216-248 | Installer subprocesses have no timeout and discard diagnostics | incomplete | DONE | a0649e9 |
 | #0042 | S2 | converter/ProcessRunner | Sources/converter/ProcessRunner.swift:112-124 | Child stdin inherited from the terminal | unsafe | DONE | 2ed4463 |
 | #0043 | S2 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:683-691,1013-1028 | containsChunk is a 64 KiB substring scan, not a RIFF chunk walk | unsafe | DONE | 9bc41f4 |
@@ -130,6 +129,7 @@ _none_
 | #0083 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:905 | Noise seed is Int.random; reruns not reproducible | logic | DONE | ee37ce5 |
 | #0084 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:53-77 | Derived-media predicates use the first _silence_/_noise_ occurrence | logic | DONE | 724d350 |
 | #0085 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:1850-1854 | Track-number parse uses Unicode isNumber and can overflow | logic | DONE | 6a674bc |
+| #0087 | S3 | converter/CLI | Sources/converter/CLI.swift:231-260 | CLI inconsistencies: --seed 0, unbounded --sharpness, repeated action flags, option values beginning with -- | logic | DONE | ee8d65d |
 | #0091 | S3 | repo | .gitignore:2 | Stale .converter_bw64_writer ignore entry | dead | DONE | 557dbe0 |
 | #0092 | S3 | repo/docs | docs/FORMATS.md | Maintenance commands and -fadeflac alias missing from FORMATS.md | docs | DONE | 557dbe0 |
 | #0099 | S3 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:34,1967 | Test target compiles with two warnings (bare 'Error' existential, unused 'wav' binding) | style | DONE | 9343977 |
@@ -624,7 +624,7 @@ _none_
 - **evidence-after:** AUDIT/evidence/0039-before.log (fix stashed: no throw, closure ran, follow-up wait timed out after 1 s); AUDIT/evidence/0039-after.log (all five semaphore tests pass). swiftlint 533/56. Full suite (AUDIT/evidence/0039-0085-fullsuite.txt): 235 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** 15fbfbb
 
-### #0040 · S2 · TEST · Cancellation does not terminate sibling external processes after a fan-out failure
+### #0040 · S2 · DONE · Cancellation does not terminate sibling external processes after a fan-out failure
 
 - **project/module:** converter/ProcessRunner
 - **file:line:** Sources/converter/ProcessRunner.swift:145; Actions.swift:615-619
@@ -633,7 +633,7 @@ _none_
 - **discovered-by:** reviewer X-14
 - **evidence-before:** AUDIT/findings/L2-video-image-actions-cli.md X-14
 - **fix-summary:** ProcessRunner keeps a registry of live children and terminateActiveProcesses(); the image/audio/video permit helpers run their operation under withTaskCancellationHandler and terminate the runner's children on cancel, so a failed fan-out no longer waits for sibling ffmpeg/magick jobs. run() also reports CancellationError.
-- **evidence-after:** AUDIT/evidence/0040-before.log (fix stashed: cancelled operation ran 15.01 s and succeeded); AUDIT/evidence/0040-after.log (testCancellingAPermittedOperationTerminatesItsChildProcess passes in 0.31 s). swiftlint 530/56, no new violations.
+- **evidence-after:** AUDIT/evidence/0040-before.log (fix stashed: cancelled operation ran 15.01 s and succeeded); AUDIT/evidence/0040-after.log (testCancellingAPermittedOperationTerminatesItsChildProcess passes in 0.31 s). swiftlint 530/56, no new violations. Full suite (AUDIT/evidence/0040-0087-fullsuite.txt): 247 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** 56c20e8
 
 ### #0041 · S2 · DONE · Installer subprocesses have no timeout and discard diagnostics
@@ -1148,7 +1148,7 @@ _none_
 - **discovered-by:** reviewer A-14
 - **evidence-before:** AUDIT/findings/L2-audio.md A-14
 
-### #0087 · S3 · TEST · CLI inconsistencies: --seed 0, unbounded --sharpness, repeated action flags, option values beginning with --
+### #0087 · S3 · DONE · CLI inconsistencies: --seed 0, unbounded --sharpness, repeated action flags, option values beginning with --
 
 - **project/module:** converter/CLI
 - **file:line:** Sources/converter/CLI.swift:231-260
@@ -1157,7 +1157,7 @@ _none_
 - **discovered-by:** reviewer X-18
 - **evidence-before:** AUDIT/findings/L2-video-image-actions-cli.md X-18
 - **fix-summary:** --seed rejects 0; --sharpness is bounded by the new ProjectConfig.maximumAIPixSharpness (also enforced for IMAGE_AIPIX_SHARPNESS); a select() helper rejects a second different action flag; requireValue refuses option-like values.
-- **evidence-after:** AUDIT/evidence/0087-before.log (fix stashed: --seed 0, --sharpness 100, '-full -album' and '--output-file --overwrite' were all accepted); AUDIT/evidence/0087-after.log (testCLIRejectsZeroSeedUnboundedSharpnessRepeatedActionsAndOptionLikeValues passes). swiftlint 530/56, no new violations.
+- **evidence-after:** AUDIT/evidence/0087-before.log (fix stashed: --seed 0, --sharpness 100, '-full -album' and '--output-file --overwrite' were all accepted); AUDIT/evidence/0087-after.log (testCLIRejectsZeroSeedUnboundedSharpnessRepeatedActionsAndOptionLikeValues passes). swiftlint 530/56, no new violations. Full suite (AUDIT/evidence/0040-0087-fullsuite.txt): 247 executed, 0 failures, 0 compiler warnings.
 - **commit sha:** ee8d65d
 
 ### #0088 · S3 · START · Config colour/scale-filter values spliced into the filter graph with only non-empty validation
