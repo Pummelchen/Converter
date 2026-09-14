@@ -36,7 +36,7 @@ _none_
 | #0061 | S2 | BW64Bridge | Sources/BW64Bridge/bw64_bridge.cpp:125-141,161 | Bridge does not bound channels; libbw64 uint16 blockAlignment wraps to heap overflow (unreachable via config today) | unsafe | TEST | de57d52 |
 | #0062 | S2 | BW64Bridge/Package | Sources/Package.swift:35-37; ThirdParty/libbw64/bw64/reader.hpp:220,225,227 | Strict C++ flags (-Wall -Wextra -Werror) fail on three benign sign-compare warnings in vendored libbw64 | deps | TEST | de57d52 |
 | #0073 | S2 | converter (lint) | AUDIT/baseline/swiftlint-by-rule-4bb136a.txt | swiftlint baseline 533 (56 error-level): fix the actionable rules; structural rules deferred with rationale | style | START |  |
-| #0086 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:1378,1694-1706 | Magic bytes-per-sample and missing free-space check on the BW64 path | style | TEST |  |
+| #0086 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:1378,1694-1706 | Magic bytes-per-sample and missing free-space check on the BW64 path | style | TEST | f68aa6d |
 
 ## Done (91)
 
@@ -1185,6 +1185,7 @@ _none_
 - **evidence-before:** AUDIT/findings/L2-audio.md A-14
 - **fix-summary:** Names the pinned 24-bit staging width, adds estimateBW64Bytes covering the raw f32le temp and the BW64 output, and shares requireFreeSpace between the WAV and BW64 paths - the BW64 variant now checks space before writing the raw PCM.
 - **evidence-after:** AUDIT/evidence/0086-before.log (single-pass mutation fails the estimate test); AUDIT/evidence/0086-after.log (five BW64 tests pass). swiftlint 523/56.
+- **commit sha:** f68aa6d
 
 ### #0087 · S3 · DONE · CLI inconsistencies: --seed 0, unbounded --sharpness, repeated action flags, option values beginning with --
 

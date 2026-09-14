@@ -1463,7 +1463,7 @@
       "evidence_before": "AUDIT/findings/L2-audio.md A-14",
       "fix_summary": "Names the pinned 24-bit staging width, adds estimateBW64Bytes covering the raw f32le temp and the BW64 output, and shares requireFreeSpace between the WAV and BW64 paths - the BW64 variant now checks space before writing the raw PCM.",
       "evidence_after": "AUDIT/evidence/0086-before.log (single-pass mutation fails the estimate test); AUDIT/evidence/0086-after.log (five BW64 tests pass). swiftlint 523/56.",
-      "commit": "",
+      "commit": "f68aa6d",
       "notes": ""
     },
     {
