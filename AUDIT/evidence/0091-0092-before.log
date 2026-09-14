@@ -1,0 +1,15 @@
+$ grep -rn 'converter_bw64_writer' . --exclude-dir=.git
+./AUDIT/evidence/0091-0092-before.log:1:$ grep -rn 'converter_bw64_writer' . --exclude-dir=.git
+./AUDIT/findings/L0-L3-bridge-repo.md:40:### B-11 | S3 | .gitignore:2 | Stale `.converter_bw64_writer` entry (external writer removed)
+./AUDIT/ledger.md:64:| #0091 | S3 | repo | .gitignore:2 | Stale .converter_bw64_writer ignore entry | dead | START |  |
+./AUDIT/ledger.md:1166:### #0091 · S3 · START · Stale .converter_bw64_writer ignore entry
+./AUDIT/ledger.json:1542:      "title": "Stale .converter_bw64_writer ignore entry",
+./.gitignore:2:.converter_bw64_writer
+
+$ grep -n 'doctor\|clean\|matrix\|help\|list\|fadeflac' docs/FORMATS.md
+3:Reference for converter inputs/outputs, aligned with the CLI help (`./converter -help`) and the conversion matrix (`./converter -matrix`). Source discovery is non-recursive over `SRC_DIR` (default `Output/`); hidden files are skipped.
+5:## Audio format matrix
+20:## Image format matrix
+55:| `-wavtoalbum` | `album.txt` (project root) listing `.wav` tracks resolved in `SRC_DIR` | RF64 `album.rf64.wav` (listed order, no normalization) |
+56:| `-mp3toalbum` | `album.txt` listing `.mp3` tracks | RF64 `album_from_mp3.rf64.wav` (listed order, no normalization) |
+74:| `-mp3clean` | `.mp3` | same name, artwork/junk streams/metadata removed |

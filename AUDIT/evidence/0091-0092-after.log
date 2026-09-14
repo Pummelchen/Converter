@@ -1,0 +1,21 @@
+$ grep -rn 'converter_bw64_writer' .   # only audit prose/evidence remains
+(no source/config reference)
+
+$ sed -n '/## Maintenance/,/## Explicit/p' docs/FORMATS.md
+## Maintenance and informational commands
+
+These actions take no media input and write no deliverables; they are listed by `./converter -list`
+and described in `./converter -help`.
+
+| Command | Input | Output |
+|---|---|---|
+| `-doctor` | none required (validates toolchain, config, encoder/filter support and directories; probes current source media when present) | terminal report only; non-zero exit on a blocking problem |
+| `-clean` | none | removes transient/temp files from `OUT_DIR`; never deletes user files |
+| `-matrix` | none | prints the supported conversion matrix to the terminal |
+| `-list` | none | prints the action list |
+| `-help` | none | prints the full command and option reference |
+
+## Explicit output paths
+
+$ grep -n 'fadeflac' docs/FORMATS.md
+70:| `-fade [S]` (alias `-fadeflac`), `-fadecut C F`, `-fadeout START DUR` | `.flac`, `.wav`, `.mp3` (`.m4a` for `-fadeout`) | settings-specific: `_faded_<S>s` / `_fadecut_<C>s_<F>s` / `_fadeout_<START>s_<DUR>s` |

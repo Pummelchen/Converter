@@ -67,7 +67,7 @@ JPEG scanning accepts both `.jpg` and `.jpeg`; JPEG outputs are written with `.j
 | `-loudscan` | `.flac`, `.wav`, `.mp3`, `.m4a`, `.mp4` | terminal report only |
 | `-loudness [LUFS]` | `.flac`, `.wav`, `.mp3`, `.m4a`, `.mp4` | `_loudness_m12LUFS`-style suffix |
 | `-master` | `.flac`, `.wav`, `.mp3`, `.m4a`, `.mp4` | `_mastered` suffix; two-pass loudnorm to the mastering target, one-pass fallback |
-| `-fade [S]`, `-fadecut C F`, `-fadeout START DUR` | `.flac`, `.wav`, `.mp3` (`.m4a` for `-fadeout`) | settings-specific: `_faded_<S>s` / `_fadecut_<C>s_<F>s` / `_fadeout_<START>s_<DUR>s` |
+| `-fade [S]` (alias `-fadeflac`), `-fadecut C F`, `-fadeout START DUR` | `.flac`, `.wav`, `.mp3` (`.m4a` for `-fadeout`) | settings-specific: `_faded_<S>s` / `_fadecut_<C>s_<F>s` / `_fadeout_<START>s_<DUR>s` |
 | `-fadewav` | `.wav` | faded RF64 WAV |
 | `-noise [S]` | `.flac`, `.wav`, `.mp3`, `.m4a`, `.mp4` | `_noise_<S>s` |
 | `-silence [S]` | `.wav`, `.flac`, `.mp4` | `_silence_<S>s` |
@@ -75,6 +75,19 @@ JPEG scanning accepts both `.jpg` and `.jpeg`; JPEG outputs are written with `.j
 | Format hash actions | `-flactohash`, `-mp3tohash`, `-wavtohash` | CRC32-based filenames |
 
 Previously generated `_silence_*`/`_noise_*` outputs and archival companions are excluded from re-processing where applicable.
+
+## Maintenance and informational commands
+
+These actions take no media input and write no deliverables; they are listed by `./converter -list`
+and described in `./converter -help`.
+
+| Command | Input | Output |
+|---|---|---|
+| `-doctor` | none required (validates toolchain, config, encoder/filter support and directories; probes current source media when present) | terminal report only; non-zero exit on a blocking problem |
+| `-clean` | none | removes transient/temp files from `OUT_DIR`; never deletes user files |
+| `-matrix` | none | prints the supported conversion matrix to the terminal |
+| `-list` | none | prints the action list |
+| `-help` | none | prints the full command and option reference |
 
 ## Explicit output paths
 
