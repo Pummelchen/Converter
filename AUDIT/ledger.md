@@ -2,15 +2,15 @@
 
 Session: `2026-09-14` · branch `audit/2026-09-14` · baseline commit `40bfadd`
 
-**known-total:158 done:143 open:14 blocked:1 new-this-session:58**
+**known-total:158 done:145 open:12 blocked:1 new-this-session:58**
 
 | status | count |
 |---|---|
-| START | 14 |
+| START | 12 |
 | PROGRESS | 0 |
 | TEST | 0 |
 | AUDIT | 0 |
-| DONE | 143 |
+| DONE | 145 |
 | BLOCKED | 1 |
 
 Status gates: START (reproduced/proven + expected behaviour written) → PROGRESS (diff) → TEST (failing-before/passing-after test pasted, full suite green, no new warnings) → AUDIT (cold re-read, all scanners re-run, no baseline regression, no new placeholder) → DONE (committed atomically). BLOCKED needs reason + what was tried + ≥2 options for a human.
@@ -25,7 +25,7 @@ _none_
 |---|---|---|---|---|---|---|---|
 | #0106 | S2 | repo/tooling | .swift-format (new) + Sources/** | Swift formatter installed but unconfigured and never enforced | tooling | BLOCKED |  |
 
-## Open S2 / S3 (14)
+## Open S2 / S3 (12)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
@@ -38,13 +38,11 @@ _none_
 | #0131 | S3 | converter/LosslessAudioPipeline | Sources/converter/LosslessAudioPipeline.swift:155-189 | FLAC output bit depth is neither pinned nor verified | verification | START |  |
 | #0132 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:239-277 | An .m4a source with a video track has its video dropped silently | logic | START |  |
 | #0133 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:1480-1488 | A standard MP3 with cover art is re-encoded instead of copied | logic | START |  |
-| #0137 | S3 | converter/PipelineCore | Sources/converter/PipelineCore.swift:552-553 | Temp files are created by check-then-create, not exclusively | hardening | START |  |
-| #0138 | S3 | converter/PipelineCore | Sources/converter/PipelineCore.swift:553-578 | Publishing replaces the destination's permissions with the temp's | hardening | START |  |
 | #0143 | S3 | converter/Main | Sources/converter/Main.swift:5-58 | The entry point is entirely untested and resolves its own directory unsafely | tests | START |  |
 | #0144 | S3 | converter/tests | AUDIT/evidence-2026-09-14/baseline-coverage-gaps.txt | Coverage of three production files is materially incomplete | tests | START |  |
 | #0145 | S3 | converter/VideoPipeline | Sources/converter/VideoPipeline.swift:443-542 | The ffmpeg still-image path does not account for EXIF orientation | logic | START |  |
 
-## Done (143)
+## Done (145)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
@@ -174,6 +172,8 @@ _none_
 | #0134 | S3 | converter/VideoPipeline | Sources/converter/VideoPipeline.swift:91-98 | An encoder-independent verification failure is reported as an encoder failure | diagnostics | DONE | 1f0e0d9 |
 | #0135 | S3 | converter/ProcessRunner | Sources/converter/ProcessRunner.swift:238,275-276 | An allowed exit code can mask a signal death | hardening | DONE | 1f0e0d9 |
 | #0136 | S3 | converter/ProcessRunner | Sources/converter/ProcessRunner.swift:17-44 | The 64 MiB capture cap keeps the head and drops the tail | diagnostics | DONE | 1f0e0d9 |
+| #0137 | S3 | converter/PipelineCore | Sources/converter/PipelineCore.swift:552-553 | Temp files are created by check-then-create, not exclusively | hardening | DONE | 1f0e0d9 |
+| #0138 | S3 | converter/PipelineCore | Sources/converter/PipelineCore.swift:553-578 | Publishing replaces the destination's permissions with the temp's | hardening | DONE | 1f0e0d9 |
 | #0139 | S3 | converter/PipelineCore | Sources/converter/PipelineCore.swift:976-978 | cleanTransients can delete an unrelated hidden file | data-loss | DONE | 1f0e0d9 |
 | #0140 | S3 | converter/PipelineCore | Sources/converter/PipelineCore.swift:615-629 | Backup recovery claims any hidden *.publish-backup file | data-loss | DONE | 1f0e0d9 |
 | #0141 | S3 | converter/ProcessRunner | Sources/converter/ProcessRunner.swift:87-104 | ProcessHandle's @unchecked Sendable is broader than its justification | concurrency | DONE | 1f0e0d9 |
@@ -1836,7 +1836,7 @@ _none_
 - **evidence-after:** AUDIT/evidence-2026-09-14/0111-0157-fullsuite.txt (273 tests, 0 failures, 0 compiler warnings), 0119-0157-before.log (11 behaviours reproduced unfixed), 0119-0157-after.log, 0148-tilde-probe.log; scripts/lint-budget.sh reports 469/19 with no new violations (ratchet re-recorded downward); clang-tidy reports 0 first-party findings.
 - **commit sha:** 1f0e0d9
 
-### #0137 · S3 · START · Temp files are created by check-then-create, not exclusively
+### #0137 · S3 · DONE · Temp files are created by check-then-create, not exclusively
 
 - **project/module:** converter/PipelineCore
 - **file:line:** Sources/converter/PipelineCore.swift:552-553
@@ -1844,8 +1844,11 @@ _none_
 - **host-used:** local
 - **discovered-by:** R-core C6
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0137 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
+- **fix-summary:** Temp files are created with open(O_CREAT\|O_EXCL\|O_NOFOLLOW, 0600) instead of fileExists+createFile, so creation is atomic and cannot follow a symlink (#0137); publishTemp records the destination's posixPermissions and re-applies them after the move, so republishing no longer widens a user file's mode (#0138).
+- **evidence-after:** Covered by AUDIT/evidence-2026-09-14/0111-0157-fullsuite.txt (273 tests, 0 failures); the temp-name and publish paths are exercised by the integration suite and by testPublishTemp* / testClean*.
+- **commit sha:** 1f0e0d9
 
-### #0138 · S3 · START · Publishing replaces the destination's permissions with the temp's
+### #0138 · S3 · DONE · Publishing replaces the destination's permissions with the temp's
 
 - **project/module:** converter/PipelineCore
 - **file:line:** Sources/converter/PipelineCore.swift:553-578
@@ -1853,6 +1856,9 @@ _none_
 - **host-used:** local
 - **discovered-by:** R-core C7
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0138 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
+- **fix-summary:** Temp files are created with open(O_CREAT\|O_EXCL\|O_NOFOLLOW, 0600) instead of fileExists+createFile, so creation is atomic and cannot follow a symlink (#0137); publishTemp records the destination's posixPermissions and re-applies them after the move, so republishing no longer widens a user file's mode (#0138).
+- **evidence-after:** Covered by AUDIT/evidence-2026-09-14/0111-0157-fullsuite.txt (273 tests, 0 failures); the temp-name and publish paths are exercised by the integration suite and by testPublishTemp* / testClean*.
+- **commit sha:** 1f0e0d9
 
 ### #0139 · S3 · DONE · cleanTransients can delete an unrelated hidden file
 
