@@ -1,0 +1,24 @@
+Filename                                  Regions    Missed Regions     Cover   Functions  Missed Functions  Executed       Lines      Missed Lines     Cover    Branches   Missed Branches     Cover
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+BW64Bridge/bw64_bridge.cpp                    123                32    73.98%          12                 1    91.67%         211                64    69.67%          79                37    53.16%
+converter/Actions.swift                       790               240    69.62%         230                60    73.91%        1786               363    79.68%           0                 0         -
+converter/AsyncSemaphore.swift                 37                 2    94.59%          16                 0   100.00%          87                 4    95.40%           0                 0         -
+converter/AudioPipeline.swift                1099               241    78.07%         230                33    85.65%        2704               443    83.62%           0                 0         -
+converter/CLI.swift                           238                38    84.03%          41                 2    95.12%         742                39    94.74%           0                 0         -
+converter/Config.swift                        416                19    95.43%         120                 5    95.83%         568                26    95.42%           0                 0         -
+converter/DependencyBootstrap.swift            90                32    64.44%          32                 9    71.88%         265                82    69.06%           0                 0         -
+converter/DependencyInstaller.swift            37                 4    89.19%          18                 0   100.00%         135                 6    95.56%           0                 0         -
+converter/Diagnostics.swift                    62                 7    88.71%          18                 1    94.44%         122                 8    93.44%           0                 0         -
+converter/ImagePipeline.swift                 213                50    76.53%          39                12    69.23%         439                70    84.05%           0                 0         -
+converter/LosslessAudioPipeline.swift          79                 8    89.87%          20                 4    80.00%         218                12    94.50%           0                 0         -
+converter/Main.swift                           31                12    61.29%           9                 6    33.33%          88                29    67.05%           0                 0         -
+converter/PipelineCore.swift                  552                70    87.32%         178                12    93.26%        1082                85    92.14%           0                 0         -
+converter/ProcessRunner.swift                 112                23    79.46%          55                12    78.18%         325                31    90.46%           0                 0         -
+converter/ProcessScopes.swift                  32                 3    90.62%          24                 1    95.83%          68                 3    95.59%           0                 0         -
+converter/QualityReporting.swift                7                 0   100.00%           7                 0   100.00%          43                 0   100.00%           0                 0         -
+converter/RIFFChunkWalker.swift                71                12    83.10%          19                 4    78.95%         139                13    90.65%           0                 0         -
+converter/Support.swift                        88                 3    96.59%          42                 0   100.00%         193                 3    98.45%           0                 0         -
+converter/ValidationPipeline.swift            619               111    82.07%         130                32    75.38%        1392               130    90.66%           0                 0         -
+converter/VideoPipeline.swift                 236                27    88.56%          58                 5    91.38%         511                36    92.95%           0                 0         -
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+TOTAL                                        4932               934    81.06%        1298               199    84.67%       11118              1447    86.99%          79                37    53.16%

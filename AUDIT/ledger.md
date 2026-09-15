@@ -6,9 +6,9 @@ Session: `2026-09-14` · branch `audit/2026-09-14` · baseline commit `40bfadd`
 
 | status | count |
 |---|---|
-| START | 2 |
+| START | 1 |
 | PROGRESS | 0 |
-| TEST | 0 |
+| TEST | 1 |
 | AUDIT | 0 |
 | DONE | 156 |
 | BLOCKED | 1 |
@@ -31,7 +31,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
-| #0144 | S3 | converter/tests | AUDIT/evidence-2026-09-14/baseline-coverage-gaps.txt | Coverage of three production files is materially incomplete | tests | START |  |
+| #0144 | S3 | converter/tests | AUDIT/evidence-2026-09-14/baseline-coverage-gaps.txt | Coverage of three production files is materially incomplete | tests | TEST |  |
 
 ## Done (156)
 
@@ -1949,7 +1949,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **evidence-after:** AUDIT/evidence-2026-09-14/0114-0149-fullsuite.txt (277 tests, 0 failures, 0 compiler warnings), 0114-0145-fullsuite.txt, 0123-0145-fullsuite.txt, 0145-exif-probe.txt; three new tests (audio-stream duration, MP3-with-artwork copy, entry point); scripts/lint-budget.sh re-recorded at 461/19 with no new violations.
 - **commit sha:** 15ce23e
 
-### #0144 · S3 · START · Coverage of three production files is materially incomplete
+### #0144 · S3 · TEST · Coverage of three production files is materially incomplete
 
 - **project/module:** converter/tests
 - **file:line:** AUDIT/evidence-2026-09-14/baseline-coverage-gaps.txt
@@ -1957,6 +1957,8 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **host-used:** local
 - **discovered-by:** L6 coverage
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0144 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
+- **fix-summary:** Added an end-to-end test for the batch conversion action entry points (-wavtoflac, -flactowav, -wavtom4a, -m4atomp3, -jpgtopng, -pngtojpg, -loudscan); coverage rose to 86.99% lines / 81.06% regions / 84.67% functions, with Main.swift 0% -> 67.05% and Actions.swift 74.66% -> 79.68%.
+- **evidence-after:** AUDIT/evidence-2026-09-14/final-coverage-test.log (278 tests, 0 failures) and final-coverage-report.txt.
 
 ### #0145 · S3 · DONE · The ffmpeg still-image path does not account for EXIF orientation
 

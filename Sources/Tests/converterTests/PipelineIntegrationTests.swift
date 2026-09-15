@@ -3371,6 +3371,36 @@ final class PipelineIntegrationTests: XCTestCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("track.mp3").path))
     }
 
+    // audit #0144: the batch conversion actions had no coverage — the suite exercised the pipelines
+    // beneath them, not the action entry points, so a regression in one of them was invisible.
+    func testBatchConversionActionsProduceTheirOutputs() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe", "magick"])
+
+        _ = try workspace.createAudio(name: "batch_wav", ext: "wav", duration: 1.2)
+        _ = try workspace.createAudio(name: "batch_flac", ext: "flac", duration: 1.2)
+        _ = try workspace.createAudio(name: "batch_m4a", ext: "m4a", duration: 1.2)
+        _ = try workspace.createAudio(name: "batch_mp3", ext: "mp3", duration: 1.2, sampleRate: 48_000)
+        _ = try workspace.createImage(name: "batch_art", ext: "jpg")
+
+        try workspace.makeTool(arguments: ["-wavtoflac"]).stepWAVToFLAC()
+        try workspace.makeTool(arguments: ["-flactowav"]).stepFLACToWAV()
+        try workspace.makeTool(arguments: ["-wavtom4a"]).stepWAVToM4A()
+        try workspace.makeTool(arguments: ["-m4atomp3"]).stepM4AToMP3()
+        try workspace.makeTool(arguments: ["-jpgtopng"]).stepJPGToPNG()
+        try workspace.makeTool(arguments: ["-pngtojpg"]).stepPNGToJPG()
+        try workspace.makeTool(arguments: ["-loudscan"]).stepLoudScan()
+
+        for name in [
+            "batch_wav.flac", "batch_flac.wav", "batch_wav.m4a", "batch_m4a.mp3",
+            "batch_art.png", "batch_art.jpg",
+        ] {
+            XCTAssertTrue(
+                FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent(name).path),
+                "expected \(name) to exist")
+        }
+    }
+
     // audit #0124: `format=duration` is the container duration, i.e. the longest track. An MP4 whose
     // video ran longer than its audio used to fail every audio action with a misleading duration
     // mismatch even though the audio was intact.

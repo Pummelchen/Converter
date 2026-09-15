@@ -9,9 +9,9 @@ and a rebuild can be compared.
 | Field | Value |
 |---|---|
 | File | `converter` |
-| Size | 1 696 168 bytes |
-| SHA-256 | `75de0aa1f82e5ae7e2d64f9e4e801079fbee96c43baa1f346b8f9e1e3dd0d602` |
-| Source commit | `d9aa826c3db6c24084d3b3b870694b42fe31d2c0` |
+| Size | 1 715 256 bytes |
+| SHA-256 | `6661fe376ae2f10d1c7f556fae2c8b6a8dbf57170804f2032206dd7989ebc024` |
+| Source commit | `cc6b3795bdf4c850fe3f7eab9a3d6f19ae86cb9b` |
 | Build command | `swift build --package-path Sources -c release -Xswiftc -warnings-as-errors -Xcc -Wall -Xcc -Wextra -Xcc -Werror` |
 | Swift | 6.4 (`swiftlang-6.4.0.34.1`), target `arm64-apple-macosx27.0.0` |
 | Xcode | 27.0 (27A266a) |
@@ -49,6 +49,7 @@ see `docs/KNOWN_GOOD_VERSIONS.md` for the measurement behind that decision.
 
 | Date | Source commit | SHA-256 | Notes |
 |---|---|---|---|
+| 2026-09-15 | `cc6b379` | `6661fe37…9ebc024` | Rebuilt after the delivery-QC, duration, reuse and verification fixes; verified with `-help`, `-matrix` and `-doctor`. |
 | 2026-09-15 | `d9aa826` | `75de0aa1…dd0d602` | Rebuilt under the Swift 6.4 / Xcode 27 standard at the end of the re-audit; verified with `-help`, `-matrix` and `-doctor`. |
 | 2026-09-14 | `7abe547` | `2a8484bb…ea9427e` | First recorded rebuild, after the pre-production audit fixes. |
 | (before 2026-09-07) | unknown | `d58901a1d02ee94d6886e77148753503898ee88bee89dae6c1e4f36bd916ddce` | Pre-audit binary committed in `4bb136a`; no build inputs were recorded. |
