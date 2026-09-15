@@ -10,8 +10,8 @@ and a rebuild can be compared.
 |---|---|
 | File | `converter` |
 | Size | 1 715 256 bytes |
-| SHA-256 | `6661fe376ae2f10d1c7f556fae2c8b6a8dbf57170804f2032206dd7989ebc024` |
-| Source commit | `cc6b3795bdf4c850fe3f7eab9a3d6f19ae86cb9b` |
+| SHA-256 | `6aba6b23aaa329157b57fb8ae3781c44949fb02f91db243cb76c023f0cbd9ad5` |
+| Source commit | `0ffed120411f9426a2768f3c2a272021ee507987` |
 | Build command | `swift build --package-path Sources -c release -Xswiftc -warnings-as-errors -Xcc -Wall -Xcc -Wextra -Xcc -Werror` |
 | Swift | 6.4 (`swiftlang-6.4.0.34.1`), target `arm64-apple-macosx27.0.0` |
 | Xcode | 27.0 (27A266a) |
@@ -49,6 +49,7 @@ see `docs/KNOWN_GOOD_VERSIONS.md` for the measurement behind that decision.
 
 | Date | Source commit | SHA-256 | Notes |
 |---|---|---|---|
+| 2026-09-15 | `0ffed12` | `6aba6b23…cbd9ad5` | Rebuilt on the converted toolchain after the formatter adoption and the account-wide Swift 6.4 work; verified with `-help`, `-matrix` and `-doctor`. |
 | 2026-09-15 | `cc6b379` | `6661fe37…9ebc024` | Rebuilt after the delivery-QC, duration, reuse and verification fixes; verified with `-help`, `-matrix` and `-doctor`. |
 | 2026-09-15 | `d9aa826` | `75de0aa1…dd0d602` | Rebuilt under the Swift 6.4 / Xcode 27 standard at the end of the re-audit; verified with `-help`, `-matrix` and `-doctor`. |
 | 2026-09-14 | `7abe547` | `2a8484bb…ea9427e` | First recorded rebuild, after the pre-production audit fixes. |
