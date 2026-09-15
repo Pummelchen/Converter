@@ -2,15 +2,15 @@
 
 Session: `2026-09-14` · branch `audit/2026-09-14` · baseline commit `40bfadd`
 
-**known-total:159 done:145 open:13 blocked:1 new-this-session:59**
+**known-total:159 done:156 open:2 blocked:1 new-this-session:59**
 
 | status | count |
 |---|---|
 | START | 2 |
 | PROGRESS | 0 |
-| TEST | 11 |
+| TEST | 0 |
 | AUDIT | 0 |
-| DONE | 145 |
+| DONE | 156 |
 | BLOCKED | 1 |
 
 Status gates: START (reproduced/proven + expected behaviour written) → PROGRESS (diff) → TEST (failing-before/passing-after test pasted, full suite green, no new warnings) → AUDIT (cold re-read, all scanners re-run, no baseline regression, no new placeholder) → DONE (committed atomically). BLOCKED needs reason + what was tried + ≥2 options for a human.
@@ -27,24 +27,13 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 |---|---|---|---|---|---|---|---|
 | #0106 | S2 | repo/tooling | .swift-format (new) + Sources/** | Swift formatter installed but unconfigured and never enforced | tooling | BLOCKED |  |
 
-## Open S2 / S3 (12)
+## Open S2 / S3 (1)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
-| #0114 | S2 | converter/audio-QC | Sources/converter/AudioPipeline.swift:1675-1720; Actions.swift:698,1349 | Delivery QC ceilings never gate the published deliverables | verification | TEST |  |
-| #0115 | S2 | converter/audio-QC | Sources/converter/AudioPipeline.swift:672-680,368 | A failed loudness QC is published with a warning instead of failing | verification | TEST |  |
-| #0123 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:840-943 | Padding verifiers report success without measuring | verification | TEST |  |
-| #0124 | S2 | converter/PipelineCore | Sources/converter/PipelineCore.swift:730-734 | Audio duration checks use the container duration and reject valid MP4 sources | logic | TEST |  |
-| #0128 | S3 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:1179-1187 | Reused outputs are never checked against the current source | verification | TEST |  |
-| #0130 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:527-535 | Fade outputs are never checked for an actual fade | verification | TEST |  |
-| #0131 | S3 | converter/LosslessAudioPipeline | Sources/converter/LosslessAudioPipeline.swift:155-189 | FLAC output bit depth is neither pinned nor verified | verification | TEST |  |
-| #0132 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:239-277 | An .m4a source with a video track has its video dropped silently | logic | TEST |  |
-| #0133 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:1480-1488 | A standard MP3 with cover art is re-encoded instead of copied | logic | TEST |  |
-| #0143 | S3 | converter/Main | Sources/converter/Main.swift:5-58 | The entry point is entirely untested and resolves its own directory unsafely | tests | TEST |  |
 | #0144 | S3 | converter/tests | AUDIT/evidence-2026-09-14/baseline-coverage-gaps.txt | Coverage of three production files is materially incomplete | tests | START |  |
-| #0145 | S3 | converter/VideoPipeline | Sources/converter/VideoPipeline.swift:443-542 | The ffmpeg still-image path does not account for EXIF orientation | logic | TEST |  |
 
-## Done (145)
+## Done (156)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
@@ -131,6 +120,8 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 | #0105 | S2 | repo/security | .gitleaks.toml (new) | Permanent gitleaks false positive blocks the secrets-clean claim | security | DONE | b72350d |
 | #0107 | S2 | AUDIT/tools | AUDIT/tools/*.py | In-repo audit tooling has no annotations, ruff or mypy configuration | tooling | DONE | b72350d |
 | #0108 | S2 | Sources/ThirdParty | Sources/ThirdParty/libbw64/UPSTREAM.md | Vendored libbw64 is patched but recorded as verbatim | docs | DONE | b72350d |
+| #0114 | S2 | converter/audio-QC | Sources/converter/AudioPipeline.swift:1675-1720; Actions.swift:698,1349 | Delivery QC ceilings never gate the published deliverables | verification | DONE | 15ce23e |
+| #0115 | S2 | converter/audio-QC | Sources/converter/AudioPipeline.swift:672-680,368 | A failed loudness QC is published with a warning instead of failing | verification | DONE | 15ce23e |
 | #0116 | S2 | converter/ProcessRunner | Sources/converter/ProcessRunner.swift:273-274 | Success path drains child pipes without a deadline and can hang forever | robustness | DONE | 1f0e0d9 |
 | #0117 | S2 | converter/PipelineCore | Sources/converter/PipelineCore.swift:492-493; ProcessRunner.swift:145 | Cancelling one operation SIGTERMs unrelated concurrent children | concurrency | DONE | 1f0e0d9 |
 | #0118 | S2 | converter/Actions | Sources/converter/Actions.swift:769-771,930-933 | -runpix re-ingests the portrait short JPEG companions | logic | DONE | b94bbf3 |
@@ -138,6 +129,8 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 | #0120 | S2 | converter/Config | Sources/converter/Config.swift:142 | A missing config file is silently ignored, even when named explicitly | logic | DONE | 1f0e0d9 |
 | #0121 | S2 | converter/CLI | Sources/converter/CLI.swift:282-286 | --sleep-seconds accepts negative and effectively unbounded values | logic | DONE | 1f0e0d9 |
 | #0122 | S2 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:1087-1091 | Canonical PCM equivalence passes when both sides are empty | verification | DONE | 1f0e0d9 |
+| #0123 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:840-943 | Padding verifiers report success without measuring | verification | DONE | 15ce23e |
+| #0124 | S2 | converter/PipelineCore | Sources/converter/PipelineCore.swift:730-734 | Audio duration checks use the container duration and reject valid MP4 sources | logic | DONE | 15ce23e |
 | #0125 | S2 | converter/PipelineCore | Sources/converter/PipelineCore.swift:577-596 | A failed replace can leave a partial destination and then delete the good backup | data-loss | DONE | 1f0e0d9 |
 | #0076 | S3 | converter/Support | Sources/converter/Support.swift:122-126 | cancelledBeforeSuspension can retain a marker for an already-resumed waiter | logic | DONE | 24e52d7 |
 | #0077 | S3 | converter/DependencyBootstrap | Sources/converter/DependencyBootstrap.swift:77-82 | Post-install failure message lists nothing when a tool is present but non-functional | logic | DONE | 2c71af1 |
@@ -170,7 +163,12 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 | #0112 | S3 | BW64Bridge | Sources/BW64Bridge/bw64_bridge.cpp:272 | clang-tidy bugprone-easily-swappable-parameters on the C ABI boundary | safety | DONE | 1f0e0d9 |
 | #0126 | S3 | converter/CLI | Sources/converter/CLI.swift:67-69 | -visualsubs accepts extra positional arguments and lets an option override them | logic | DONE | 1f0e0d9 |
 | #0127 | S3 | converter/Diagnostics | Sources/converter/Diagnostics.swift:70-93 | -doctor reports success when it could not list the source directory | logic | DONE | 1f0e0d9 |
+| #0128 | S3 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:1179-1187 | Reused outputs are never checked against the current source | verification | DONE | 15ce23e |
 | #0129 | S3 | converter/PipelineCore | Sources/converter/PipelineCore.swift:990-1049 | --num-dots / --max-attempts are unbounded and can exhaust memory | robustness | DONE | 1f0e0d9 |
+| #0130 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:527-535 | Fade outputs are never checked for an actual fade | verification | DONE | 15ce23e |
+| #0131 | S3 | converter/LosslessAudioPipeline | Sources/converter/LosslessAudioPipeline.swift:155-189 | FLAC output bit depth is neither pinned nor verified | verification | DONE | 15ce23e |
+| #0132 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:239-277 | An .m4a source with a video track has its video dropped silently | logic | DONE | 15ce23e |
+| #0133 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:1480-1488 | A standard MP3 with cover art is re-encoded instead of copied | logic | DONE | 15ce23e |
 | #0134 | S3 | converter/VideoPipeline | Sources/converter/VideoPipeline.swift:91-98 | An encoder-independent verification failure is reported as an encoder failure | diagnostics | DONE | 1f0e0d9 |
 | #0135 | S3 | converter/ProcessRunner | Sources/converter/ProcessRunner.swift:238,275-276 | An allowed exit code can mask a signal death | hardening | DONE | 1f0e0d9 |
 | #0136 | S3 | converter/ProcessRunner | Sources/converter/ProcessRunner.swift:17-44 | The 64 MiB capture cap keeps the head and drops the tail | diagnostics | DONE | 1f0e0d9 |
@@ -180,6 +178,8 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 | #0140 | S3 | converter/PipelineCore | Sources/converter/PipelineCore.swift:615-629 | Backup recovery claims any hidden *.publish-backup file | data-loss | DONE | 1f0e0d9 |
 | #0141 | S3 | converter/ProcessRunner | Sources/converter/ProcessRunner.swift:87-104 | ProcessHandle's @unchecked Sendable is broader than its justification | concurrency | DONE | 1f0e0d9 |
 | #0142 | S3 | converter/Config | Sources/converter/Config.swift:600-608 | requirePositiveRateString accepts inf | logic | DONE | 1f0e0d9 |
+| #0143 | S3 | converter/Main | Sources/converter/Main.swift:5-58 | The entry point is entirely untested and resolves its own directory unsafely | tests | DONE | 15ce23e |
+| #0145 | S3 | converter/VideoPipeline | Sources/converter/VideoPipeline.swift:443-542 | The ffmpeg still-image path does not account for EXIF orientation | logic | DONE | 15ce23e |
 | #0146 | S3 | converter/ImagePipeline | Sources/converter/ImagePipeline.swift:101-109,270-278 | JPEG deliverables flatten alpha against an unspecified background | logic | DONE | 1f0e0d9 |
 | #0147 | S3 | converter/ImagePipeline | Sources/converter/ImagePipeline.swift:51-67 | The full run leaves its JPG-to-PNG intermediate in the output directory | hygiene | DONE | b94bbf3 |
 | #0148 | S3 | converter/CLI | Sources/converter/CLI.swift:122-123,240-242 | Tilde is never expanded for path options | logic | DONE | 1f0e0d9 |
@@ -1589,7 +1589,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **evidence-after:** AUDIT/evidence-2026-09-14/0113-before.log, 0118-before.log, 0113-0118-0147-after.log, 0101-0118-fullsuite.txt (266 tests, 0 failures, 0 compiler warnings).
 - **commit sha:** b94bbf3
 
-### #0114 · S2 · TEST · Delivery QC ceilings never gate the published deliverables
+### #0114 · S2 · DONE · Delivery QC ceilings never gate the published deliverables
 
 - **project/module:** converter/audio-QC
 - **file:line:** Sources/converter/AudioPipeline.swift:1675-1720; Actions.swift:698,1349
@@ -1599,8 +1599,9 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0114 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
 - **fix-summary:** Delivery QC now gates the lossy deliverables, rebased to the source (#0114); the loudness fallback is still published but the warning says so plainly (#0115); padding verifiers fail instead of skipping unmeasurable windows (#0123); audio actions use the audio-stream duration, not the container (#0124); reuse rebuilds when the source is newer (#0128); the fade tail is measured against the pre-fade audio (#0130); the FLAC depth is pinned to s32/24 and verified (#0131); a dropped video track is reported (#0132); a standard MP3 with ID3 artwork is copied byte for byte (#0133); the entry point is a testable function with exit-code and path-resolution tests (#0143); the ffmpeg EXIF-rotation claim was measured and refuted (#0145).
 - **evidence-after:** AUDIT/evidence-2026-09-14/0114-0149-fullsuite.txt (277 tests, 0 failures, 0 compiler warnings), 0114-0145-fullsuite.txt, 0123-0145-fullsuite.txt, 0145-exif-probe.txt; three new tests (audio-stream duration, MP3-with-artwork copy, entry point); scripts/lint-budget.sh re-recorded at 461/19 with no new violations.
+- **commit sha:** 15ce23e
 
-### #0115 · S2 · TEST · A failed loudness QC is published with a warning instead of failing
+### #0115 · S2 · DONE · A failed loudness QC is published with a warning instead of failing
 
 - **project/module:** converter/audio-QC
 - **file:line:** Sources/converter/AudioPipeline.swift:672-680,368
@@ -1610,6 +1611,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0115 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
 - **fix-summary:** Delivery QC now gates the lossy deliverables, rebased to the source (#0114); the loudness fallback is still published but the warning says so plainly (#0115); padding verifiers fail instead of skipping unmeasurable windows (#0123); audio actions use the audio-stream duration, not the container (#0124); reuse rebuilds when the source is newer (#0128); the fade tail is measured against the pre-fade audio (#0130); the FLAC depth is pinned to s32/24 and verified (#0131); a dropped video track is reported (#0132); a standard MP3 with ID3 artwork is copied byte for byte (#0133); the entry point is a testable function with exit-code and path-resolution tests (#0143); the ffmpeg EXIF-rotation claim was measured and refuted (#0145).
 - **evidence-after:** AUDIT/evidence-2026-09-14/0114-0149-fullsuite.txt (277 tests, 0 failures, 0 compiler warnings), 0114-0145-fullsuite.txt, 0123-0145-fullsuite.txt, 0145-exif-probe.txt; three new tests (audio-stream duration, MP3-with-artwork copy, entry point); scripts/lint-budget.sh re-recorded at 461/19 with no new violations.
+- **commit sha:** 15ce23e
 
 ### #0116 · S2 · DONE · Success path drains child pipes without a deadline and can hang forever
 
@@ -1695,7 +1697,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **evidence-after:** AUDIT/evidence-2026-09-14/0111-0157-fullsuite.txt (273 tests, 0 failures, 0 compiler warnings), 0119-0157-before.log (11 behaviours reproduced unfixed), 0119-0157-after.log, 0148-tilde-probe.log; scripts/lint-budget.sh reports 469/19 with no new violations (ratchet re-recorded downward); clang-tidy reports 0 first-party findings.
 - **commit sha:** 1f0e0d9
 
-### #0123 · S2 · TEST · Padding verifiers report success without measuring
+### #0123 · S2 · DONE · Padding verifiers report success without measuring
 
 - **project/module:** converter/AudioPipeline
 - **file:line:** Sources/converter/AudioPipeline.swift:840-943
@@ -1705,8 +1707,9 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0123 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
 - **fix-summary:** Delivery QC now gates the lossy deliverables, rebased to the source (#0114); the loudness fallback is still published but the warning says so plainly (#0115); padding verifiers fail instead of skipping unmeasurable windows (#0123); audio actions use the audio-stream duration, not the container (#0124); reuse rebuilds when the source is newer (#0128); the fade tail is measured against the pre-fade audio (#0130); the FLAC depth is pinned to s32/24 and verified (#0131); a dropped video track is reported (#0132); a standard MP3 with ID3 artwork is copied byte for byte (#0133); the entry point is a testable function with exit-code and path-resolution tests (#0143); the ffmpeg EXIF-rotation claim was measured and refuted (#0145).
 - **evidence-after:** AUDIT/evidence-2026-09-14/0114-0149-fullsuite.txt (277 tests, 0 failures, 0 compiler warnings), 0114-0145-fullsuite.txt, 0123-0145-fullsuite.txt, 0145-exif-probe.txt; three new tests (audio-stream duration, MP3-with-artwork copy, entry point); scripts/lint-budget.sh re-recorded at 461/19 with no new violations.
+- **commit sha:** 15ce23e
 
-### #0124 · S2 · TEST · Audio duration checks use the container duration and reject valid MP4 sources
+### #0124 · S2 · DONE · Audio duration checks use the container duration and reject valid MP4 sources
 
 - **project/module:** converter/PipelineCore
 - **file:line:** Sources/converter/PipelineCore.swift:730-734
@@ -1716,6 +1719,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0124 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
 - **fix-summary:** Delivery QC now gates the lossy deliverables, rebased to the source (#0114); the loudness fallback is still published but the warning says so plainly (#0115); padding verifiers fail instead of skipping unmeasurable windows (#0123); audio actions use the audio-stream duration, not the container (#0124); reuse rebuilds when the source is newer (#0128); the fade tail is measured against the pre-fade audio (#0130); the FLAC depth is pinned to s32/24 and verified (#0131); a dropped video track is reported (#0132); a standard MP3 with ID3 artwork is copied byte for byte (#0133); the entry point is a testable function with exit-code and path-resolution tests (#0143); the ffmpeg EXIF-rotation claim was measured and refuted (#0145).
 - **evidence-after:** AUDIT/evidence-2026-09-14/0114-0149-fullsuite.txt (277 tests, 0 failures, 0 compiler warnings), 0114-0145-fullsuite.txt, 0123-0145-fullsuite.txt, 0145-exif-probe.txt; three new tests (audio-stream duration, MP3-with-artwork copy, entry point); scripts/lint-budget.sh re-recorded at 461/19 with no new violations.
+- **commit sha:** 15ce23e
 
 ### #0125 · S2 · DONE · A failed replace can leave a partial destination and then delete the good backup
 
@@ -1753,7 +1757,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **evidence-after:** AUDIT/evidence-2026-09-14/0111-0157-fullsuite.txt (273 tests, 0 failures, 0 compiler warnings), 0119-0157-before.log (11 behaviours reproduced unfixed), 0119-0157-after.log, 0148-tilde-probe.log; scripts/lint-budget.sh reports 469/19 with no new violations (ratchet re-recorded downward); clang-tidy reports 0 first-party findings.
 - **commit sha:** 1f0e0d9
 
-### #0128 · S3 · TEST · Reused outputs are never checked against the current source
+### #0128 · S3 · DONE · Reused outputs are never checked against the current source
 
 - **project/module:** converter/ValidationPipeline
 - **file:line:** Sources/converter/ValidationPipeline.swift:1179-1187
@@ -1763,6 +1767,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0128 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
 - **fix-summary:** Delivery QC now gates the lossy deliverables, rebased to the source (#0114); the loudness fallback is still published but the warning says so plainly (#0115); padding verifiers fail instead of skipping unmeasurable windows (#0123); audio actions use the audio-stream duration, not the container (#0124); reuse rebuilds when the source is newer (#0128); the fade tail is measured against the pre-fade audio (#0130); the FLAC depth is pinned to s32/24 and verified (#0131); a dropped video track is reported (#0132); a standard MP3 with ID3 artwork is copied byte for byte (#0133); the entry point is a testable function with exit-code and path-resolution tests (#0143); the ffmpeg EXIF-rotation claim was measured and refuted (#0145).
 - **evidence-after:** AUDIT/evidence-2026-09-14/0114-0149-fullsuite.txt (277 tests, 0 failures, 0 compiler warnings), 0114-0145-fullsuite.txt, 0123-0145-fullsuite.txt, 0145-exif-probe.txt; three new tests (audio-stream duration, MP3-with-artwork copy, entry point); scripts/lint-budget.sh re-recorded at 461/19 with no new violations.
+- **commit sha:** 15ce23e
 
 ### #0129 · S3 · DONE · --num-dots / --max-attempts are unbounded and can exhaust memory
 
@@ -1776,7 +1781,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **evidence-after:** AUDIT/evidence-2026-09-14/0111-0157-fullsuite.txt (273 tests, 0 failures, 0 compiler warnings), 0119-0157-before.log (11 behaviours reproduced unfixed), 0119-0157-after.log, 0148-tilde-probe.log; scripts/lint-budget.sh reports 469/19 with no new violations (ratchet re-recorded downward); clang-tidy reports 0 first-party findings.
 - **commit sha:** 1f0e0d9
 
-### #0130 · S3 · TEST · Fade outputs are never checked for an actual fade
+### #0130 · S3 · DONE · Fade outputs are never checked for an actual fade
 
 - **project/module:** converter/AudioPipeline
 - **file:line:** Sources/converter/AudioPipeline.swift:527-535
@@ -1786,8 +1791,9 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0130 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
 - **fix-summary:** Delivery QC now gates the lossy deliverables, rebased to the source (#0114); the loudness fallback is still published but the warning says so plainly (#0115); padding verifiers fail instead of skipping unmeasurable windows (#0123); audio actions use the audio-stream duration, not the container (#0124); reuse rebuilds when the source is newer (#0128); the fade tail is measured against the pre-fade audio (#0130); the FLAC depth is pinned to s32/24 and verified (#0131); a dropped video track is reported (#0132); a standard MP3 with ID3 artwork is copied byte for byte (#0133); the entry point is a testable function with exit-code and path-resolution tests (#0143); the ffmpeg EXIF-rotation claim was measured and refuted (#0145).
 - **evidence-after:** AUDIT/evidence-2026-09-14/0114-0149-fullsuite.txt (277 tests, 0 failures, 0 compiler warnings), 0114-0145-fullsuite.txt, 0123-0145-fullsuite.txt, 0145-exif-probe.txt; three new tests (audio-stream duration, MP3-with-artwork copy, entry point); scripts/lint-budget.sh re-recorded at 461/19 with no new violations.
+- **commit sha:** 15ce23e
 
-### #0131 · S3 · TEST · FLAC output bit depth is neither pinned nor verified
+### #0131 · S3 · DONE · FLAC output bit depth is neither pinned nor verified
 
 - **project/module:** converter/LosslessAudioPipeline
 - **file:line:** Sources/converter/LosslessAudioPipeline.swift:155-189
@@ -1797,8 +1803,9 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0131 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
 - **fix-summary:** Delivery QC now gates the lossy deliverables, rebased to the source (#0114); the loudness fallback is still published but the warning says so plainly (#0115); padding verifiers fail instead of skipping unmeasurable windows (#0123); audio actions use the audio-stream duration, not the container (#0124); reuse rebuilds when the source is newer (#0128); the fade tail is measured against the pre-fade audio (#0130); the FLAC depth is pinned to s32/24 and verified (#0131); a dropped video track is reported (#0132); a standard MP3 with ID3 artwork is copied byte for byte (#0133); the entry point is a testable function with exit-code and path-resolution tests (#0143); the ffmpeg EXIF-rotation claim was measured and refuted (#0145).
 - **evidence-after:** AUDIT/evidence-2026-09-14/0114-0149-fullsuite.txt (277 tests, 0 failures, 0 compiler warnings), 0114-0145-fullsuite.txt, 0123-0145-fullsuite.txt, 0145-exif-probe.txt; three new tests (audio-stream duration, MP3-with-artwork copy, entry point); scripts/lint-budget.sh re-recorded at 461/19 with no new violations.
+- **commit sha:** 15ce23e
 
-### #0132 · S3 · TEST · An .m4a source with a video track has its video dropped silently
+### #0132 · S3 · DONE · An .m4a source with a video track has its video dropped silently
 
 - **project/module:** converter/AudioPipeline
 - **file:line:** Sources/converter/AudioPipeline.swift:239-277
@@ -1808,8 +1815,9 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0132 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
 - **fix-summary:** Delivery QC now gates the lossy deliverables, rebased to the source (#0114); the loudness fallback is still published but the warning says so plainly (#0115); padding verifiers fail instead of skipping unmeasurable windows (#0123); audio actions use the audio-stream duration, not the container (#0124); reuse rebuilds when the source is newer (#0128); the fade tail is measured against the pre-fade audio (#0130); the FLAC depth is pinned to s32/24 and verified (#0131); a dropped video track is reported (#0132); a standard MP3 with ID3 artwork is copied byte for byte (#0133); the entry point is a testable function with exit-code and path-resolution tests (#0143); the ffmpeg EXIF-rotation claim was measured and refuted (#0145).
 - **evidence-after:** AUDIT/evidence-2026-09-14/0114-0149-fullsuite.txt (277 tests, 0 failures, 0 compiler warnings), 0114-0145-fullsuite.txt, 0123-0145-fullsuite.txt, 0145-exif-probe.txt; three new tests (audio-stream duration, MP3-with-artwork copy, entry point); scripts/lint-budget.sh re-recorded at 461/19 with no new violations.
+- **commit sha:** 15ce23e
 
-### #0133 · S3 · TEST · A standard MP3 with cover art is re-encoded instead of copied
+### #0133 · S3 · DONE · A standard MP3 with cover art is re-encoded instead of copied
 
 - **project/module:** converter/AudioPipeline
 - **file:line:** Sources/converter/AudioPipeline.swift:1480-1488
@@ -1819,6 +1827,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0133 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
 - **fix-summary:** Delivery QC now gates the lossy deliverables, rebased to the source (#0114); the loudness fallback is still published but the warning says so plainly (#0115); padding verifiers fail instead of skipping unmeasurable windows (#0123); audio actions use the audio-stream duration, not the container (#0124); reuse rebuilds when the source is newer (#0128); the fade tail is measured against the pre-fade audio (#0130); the FLAC depth is pinned to s32/24 and verified (#0131); a dropped video track is reported (#0132); a standard MP3 with ID3 artwork is copied byte for byte (#0133); the entry point is a testable function with exit-code and path-resolution tests (#0143); the ffmpeg EXIF-rotation claim was measured and refuted (#0145).
 - **evidence-after:** AUDIT/evidence-2026-09-14/0114-0149-fullsuite.txt (277 tests, 0 failures, 0 compiler warnings), 0114-0145-fullsuite.txt, 0123-0145-fullsuite.txt, 0145-exif-probe.txt; three new tests (audio-stream duration, MP3-with-artwork copy, entry point); scripts/lint-budget.sh re-recorded at 461/19 with no new violations.
+- **commit sha:** 15ce23e
 
 ### #0134 · S3 · DONE · An encoder-independent verification failure is reported as an encoder failure
 
@@ -1928,7 +1937,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **evidence-after:** AUDIT/evidence-2026-09-14/0111-0157-fullsuite.txt (273 tests, 0 failures, 0 compiler warnings), 0119-0157-before.log (11 behaviours reproduced unfixed), 0119-0157-after.log, 0148-tilde-probe.log; scripts/lint-budget.sh reports 469/19 with no new violations (ratchet re-recorded downward); clang-tidy reports 0 first-party findings.
 - **commit sha:** 1f0e0d9
 
-### #0143 · S3 · TEST · The entry point is entirely untested and resolves its own directory unsafely
+### #0143 · S3 · DONE · The entry point is entirely untested and resolves its own directory unsafely
 
 - **project/module:** converter/Main
 - **file:line:** Sources/converter/Main.swift:5-58
@@ -1938,6 +1947,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0143 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
 - **fix-summary:** Delivery QC now gates the lossy deliverables, rebased to the source (#0114); the loudness fallback is still published but the warning says so plainly (#0115); padding verifiers fail instead of skipping unmeasurable windows (#0123); audio actions use the audio-stream duration, not the container (#0124); reuse rebuilds when the source is newer (#0128); the fade tail is measured against the pre-fade audio (#0130); the FLAC depth is pinned to s32/24 and verified (#0131); a dropped video track is reported (#0132); a standard MP3 with ID3 artwork is copied byte for byte (#0133); the entry point is a testable function with exit-code and path-resolution tests (#0143); the ffmpeg EXIF-rotation claim was measured and refuted (#0145).
 - **evidence-after:** AUDIT/evidence-2026-09-14/0114-0149-fullsuite.txt (277 tests, 0 failures, 0 compiler warnings), 0114-0145-fullsuite.txt, 0123-0145-fullsuite.txt, 0145-exif-probe.txt; three new tests (audio-stream duration, MP3-with-artwork copy, entry point); scripts/lint-budget.sh re-recorded at 461/19 with no new violations.
+- **commit sha:** 15ce23e
 
 ### #0144 · S3 · START · Coverage of three production files is materially incomplete
 
@@ -1948,7 +1958,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **discovered-by:** L6 coverage
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0144 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
 
-### #0145 · S3 · TEST · The ffmpeg still-image path does not account for EXIF orientation
+### #0145 · S3 · DONE · The ffmpeg still-image path does not account for EXIF orientation
 
 - **project/module:** converter/VideoPipeline
 - **file:line:** Sources/converter/VideoPipeline.swift:443-542
@@ -1958,6 +1968,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0145 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
 - **fix-summary:** Delivery QC now gates the lossy deliverables, rebased to the source (#0114); the loudness fallback is still published but the warning says so plainly (#0115); padding verifiers fail instead of skipping unmeasurable windows (#0123); audio actions use the audio-stream duration, not the container (#0124); reuse rebuilds when the source is newer (#0128); the fade tail is measured against the pre-fade audio (#0130); the FLAC depth is pinned to s32/24 and verified (#0131); a dropped video track is reported (#0132); a standard MP3 with ID3 artwork is copied byte for byte (#0133); the entry point is a testable function with exit-code and path-resolution tests (#0143); the ffmpeg EXIF-rotation claim was measured and refuted (#0145).
 - **evidence-after:** AUDIT/evidence-2026-09-14/0114-0149-fullsuite.txt (277 tests, 0 failures, 0 compiler warnings), 0114-0145-fullsuite.txt, 0123-0145-fullsuite.txt, 0145-exif-probe.txt; three new tests (audio-stream duration, MP3-with-artwork copy, entry point); scripts/lint-budget.sh re-recorded at 461/19 with no new violations.
+- **commit sha:** 15ce23e
 
 ### #0146 · S3 · DONE · JPEG deliverables flatten alpha against an unspecified background
 
