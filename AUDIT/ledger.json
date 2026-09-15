@@ -2690,6 +2690,23 @@
       "evidence_after": "AUDIT/evidence-2026-09-14/0111-0157-fullsuite.txt (273 tests, 0 failures, 0 compiler warnings), 0119-0157-before.log (11 behaviours reproduced unfixed), 0119-0157-after.log, 0148-tilde-probe.log; scripts/lint-budget.sh reports 469/19 with no new violations (ratchet re-recorded downward); clang-tidy reports 0 first-party findings.",
       "commit": "1f0e0d9",
       "notes": ""
+    },
+    {
+      "id": "#0159",
+      "severity": "S1",
+      "module": "repo/audit",
+      "location": "Phase E (fresh clone on a non-development host)",
+      "title": "Phase E: end-to-end verification on a host that did not develop these fixes",
+      "category": "process",
+      "status": "START",
+      "host": "node1..node4",
+      "discovered_by": "\u00a711/\u00a712 brief",
+      "session": "2026-09-14",
+      "evidence_before": "Every fix in this session was validated on the development host (local M2, 8 GB). \u00a711 requires Phase E to run from a fresh clone on a machine that did not develop the fix, with a clean build, the full suite, the coverage report, all scanners clean or waived in writing, zero placeholders and a ledger containing only DONE or BLOCKED.",
+      "fix_summary": "",
+      "evidence_after": "",
+      "commit": "",
+      "notes": "Not started: the session ran out of budget after Phase C/D. The audit is therefore NOT complete and no PR to main may be opened until this is DONE."
     }
   ],
   "handover": "AUDIT/HANDOVER.md",

@@ -2,11 +2,11 @@
 
 Session: `2026-09-14` · branch `audit/2026-09-14` · baseline commit `40bfadd`
 
-**known-total:158 done:145 open:12 blocked:1 new-this-session:58**
+**known-total:159 done:145 open:13 blocked:1 new-this-session:59**
 
 | status | count |
 |---|---|
-| START | 12 |
+| START | 13 |
 | PROGRESS | 0 |
 | TEST | 0 |
 | AUDIT | 0 |
@@ -15,9 +15,11 @@ Session: `2026-09-14` · branch `audit/2026-09-14` · baseline commit `40bfadd`
 
 Status gates: START (reproduced/proven + expected behaviour written) → PROGRESS (diff) → TEST (failing-before/passing-after test pasted, full suite green, no new warnings) → AUDIT (cold re-read, all scanners re-run, no baseline regression, no new placeholder) → DONE (committed atomically). BLOCKED needs reason + what was tried + ≥2 options for a human.
 
-## Open S0 / S1 (0)
+## Open S0 / S1 (1)
 
-_none_
+| id | sev | module | file:line | title | category | status | commit |
+|---|---|---|---|---|---|---|---|
+| #0159 | S1 | repo/audit | Phase E (fresh clone on a non-development host) | Phase E: end-to-end verification on a host that did not develop these fixes | process | START |  |
 
 ## Blocked (1)
 
@@ -2090,4 +2092,14 @@ _none_
 - **fix-summary:** Input validation hardened and made consistent (#0119,#0120,#0121,#0122,#0125,#0126,#0127,#0129,#0134,#0135,#0136,#0141,#0142,#0146,#0149,#0150,#0152,#0153,#0155,#0157,#0158); child processes tracked per permitted operation so cancellation stops only its own work (#0116,#0117); clang-tidy first-party clean (#0111,#0112); six reviewer claims verified and closed with no code change (#0139,#0140,#0148,#0151,#0154,#0156).
 - **evidence-after:** AUDIT/evidence-2026-09-14/0111-0157-fullsuite.txt (273 tests, 0 failures, 0 compiler warnings), 0119-0157-before.log (11 behaviours reproduced unfixed), 0119-0157-after.log, 0148-tilde-probe.log; scripts/lint-budget.sh reports 469/19 with no new violations (ratchet re-recorded downward); clang-tidy reports 0 first-party findings.
 - **commit sha:** 1f0e0d9
+
+### #0159 · S1 · START · Phase E: end-to-end verification on a host that did not develop these fixes
+
+- **project/module:** repo/audit
+- **file:line:** Phase E (fresh clone on a non-development host)
+- **category:** process
+- **host-used:** node1..node4
+- **discovered-by:** §11/§12 brief
+- **evidence-before:** Every fix in this session was validated on the development host (local M2, 8 GB). §11 requires Phase E to run from a fresh clone on a machine that did not develop the fix, with a clean build, the full suite, the coverage report, all scanners clean or waived in writing, zero placeholders and a ledger containing only DONE or BLOCKED.
+- **notes:** Not started: the session ran out of budget after Phase C/D. The audit is therefore NOT complete and no PR to main may be opened until this is DONE.
 
