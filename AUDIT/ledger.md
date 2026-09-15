@@ -2,16 +2,16 @@
 
 Session: `2026-09-14` · branch `audit/2026-09-14` · baseline commit `40bfadd`
 
-**known-total:158 done:142 open:16 blocked:0 new-this-session:58**
+**known-total:158 done:142 open:15 blocked:1 new-this-session:58**
 
 | status | count |
 |---|---|
-| START | 16 |
+| START | 14 |
 | PROGRESS | 0 |
-| TEST | 0 |
+| TEST | 1 |
 | AUDIT | 0 |
 | DONE | 142 |
-| BLOCKED | 0 |
+| BLOCKED | 1 |
 
 Status gates: START (reproduced/proven + expected behaviour written) → PROGRESS (diff) → TEST (failing-before/passing-after test pasted, full suite green, no new warnings) → AUDIT (cold re-read, all scanners re-run, no baseline regression, no new placeholder) → DONE (committed atomically). BLOCKED needs reason + what was tried + ≥2 options for a human.
 
@@ -19,17 +19,18 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
-| #0103 | S1 | repo/release | converter, docs/BINARY_PROVENANCE.md, docs/converter.sha256 | Shipped release binary was built with Swift 6.3.3 / Xcode 26.6 | artefact | START |  |
+| #0103 | S1 | repo/release | converter, docs/BINARY_PROVENANCE.md, docs/converter.sha256 | Shipped release binary was built with Swift 6.3.3 / Xcode 26.6 | artefact | TEST |  |
 
-## Blocked (0)
-
-_none_
-
-## Open S2 / S3 (15)
+## Blocked (1)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
-| #0106 | S2 | repo/tooling | .swift-format (new) + Sources/** | Swift formatter installed but unconfigured and never enforced | tooling | START |  |
+| #0106 | S2 | repo/tooling | .swift-format (new) + Sources/** | Swift formatter installed but unconfigured and never enforced | tooling | BLOCKED |  |
+
+## Open S2 / S3 (14)
+
+| id | sev | module | file:line | title | category | status | commit |
+|---|---|---|---|---|---|---|---|
 | #0114 | S2 | converter/audio-QC | Sources/converter/AudioPipeline.swift:1675-1720; Actions.swift:698,1349 | Delivery QC ceilings never gate the published deliverables | verification | START |  |
 | #0115 | S2 | converter/audio-QC | Sources/converter/AudioPipeline.swift:672-680,368 | A failed loudness QC is published with a warning instead of failing | verification | START |  |
 | #0123 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:840-943 | Padding verifiers report success without measuring | verification | START |  |
@@ -1457,7 +1458,7 @@ _none_
 - **evidence-after:** AUDIT/evidence-2026-09-14/0113-before.log, 0118-before.log, 0113-0118-0147-after.log, 0101-0118-fullsuite.txt (266 tests, 0 failures, 0 compiler warnings).
 - **commit sha:** b94bbf3
 
-### #0103 · S1 · START · Shipped release binary was built with Swift 6.3.3 / Xcode 26.6
+### #0103 · S1 · TEST · Shipped release binary was built with Swift 6.3.3 / Xcode 26.6
 
 - **project/module:** repo/release
 - **file:line:** converter, docs/BINARY_PROVENANCE.md, docs/converter.sha256
@@ -1465,6 +1466,8 @@ _none_
 - **host-used:** local
 - **discovered-by:** L7
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0103 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
+- **fix-summary:** Release binary rebuilt from d9aa826 with Swift 6.4 / Xcode 27 (1 696 168 bytes, SHA-256 75de0aa1f82e5ae7e2d64f9e4e801079fbee96c43baa1f346b8f9e1e3dd0d602); -help, -matrix and -doctor pass; docs/converter.sha256 and docs/BINARY_PROVENANCE.md updated in the same commit.
+- **evidence-after:** shasum -a 256 -c docs/converter.sha256 -> converter: OK; ./converter -doctor exit 0.
 
 ### #0104 · S2 · DONE · Toolchain and release build-path documentation stale for Swift 6.4
 
@@ -1490,7 +1493,7 @@ _none_
 - **evidence-after:** scripts/lint-budget.sh reports 470/19 with no new violations; ./scripts/check-python.sh reports ruff+mypy clean and render_ledger.py regenerates ledger.md byte-for-byte; gitleaks full history reports 0 with the new config; docs/ci.yml validated as YAML.
 - **commit sha:** b72350d
 
-### #0106 · S2 · START · Swift formatter installed but unconfigured and never enforced
+### #0106 · S2 · BLOCKED · Swift formatter installed but unconfigured and never enforced
 
 - **project/module:** repo/tooling
 - **file:line:** .swift-format (new) + Sources/**
@@ -1498,6 +1501,7 @@ _none_
 - **host-used:** local
 - **discovered-by:** L0/§1
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0106 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
+- **blocked-reason:** Adopting swift format regresses the swiftlint ratchet: after the pass, scripts/lint-budget.sh reports 327 violations / 21 error-level against the recorded 469/19, because swift-format adds trailing commas (0->145) and moves opening braces to their own line (0->31) while pushing four functions past function_body_length, taking error-level violations from 19 to 21. Measured in AUDIT/evidence-2026-09-14/0106-format-vs-lint.txt; the pass was reverted. Owner options: (1) declare swift-format authoritative and retire swiftlint's trailing_comma/opening_brace rules plus re-baseline function_body_length; (2) keep swiftlint authoritative and tune .swift-format until lint-budget.sh is unchanged, which needs a formatter rule that leaves brace and comma style alone; (3) keep swifttlint only and delete .swift-format. The audit did not choose, because it changes the project's declared style. CI runs the formatter check as advisory until this is decided.
 
 ### #0107 · S2 · DONE · In-repo audit tooling has no annotations, ruff or mypy configuration
 

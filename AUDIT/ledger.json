@@ -1745,13 +1745,13 @@
       "location": "converter, docs/BINARY_PROVENANCE.md, docs/converter.sha256",
       "title": "Shipped release binary was built with Swift 6.3.3 / Xcode 26.6",
       "category": "artefact",
-      "status": "START",
+      "status": "TEST",
       "host": "local",
       "discovered_by": "L7",
       "session": "2026-09-14",
       "evidence_before": "AUDIT/findings-2026-09-14.md #0103 (verified against the working tree at 40bfadd; see the entry for the quoted lines).",
-      "fix_summary": "",
-      "evidence_after": "",
+      "fix_summary": "Release binary rebuilt from d9aa826 with Swift 6.4 / Xcode 27 (1 696 168 bytes, SHA-256 75de0aa1f82e5ae7e2d64f9e4e801079fbee96c43baa1f346b8f9e1e3dd0d602); -help, -matrix and -doctor pass; docs/converter.sha256 and docs/BINARY_PROVENANCE.md updated in the same commit.",
+      "evidence_after": "shasum -a 256 -c docs/converter.sha256 -> converter: OK; ./converter -doctor exit 0.",
       "commit": "",
       "notes": ""
     },
@@ -1796,7 +1796,7 @@
       "location": ".swift-format (new) + Sources/**",
       "title": "Swift formatter installed but unconfigured and never enforced",
       "category": "tooling",
-      "status": "START",
+      "status": "BLOCKED",
       "host": "local",
       "discovered_by": "L0/\u00a71",
       "session": "2026-09-14",
@@ -1804,7 +1804,8 @@
       "fix_summary": "",
       "evidence_after": "",
       "commit": "",
-      "notes": ""
+      "notes": "",
+      "blocked_reason": "Adopting swift format regresses the swiftlint ratchet: after the pass, scripts/lint-budget.sh reports 327 violations / 21 error-level against the recorded 469/19, because swift-format adds trailing commas (0->145) and moves opening braces to their own line (0->31) while pushing four functions past function_body_length, taking error-level violations from 19 to 21. Measured in AUDIT/evidence-2026-09-14/0106-format-vs-lint.txt; the pass was reverted. Owner options: (1) declare swift-format authoritative and retire swiftlint's trailing_comma/opening_brace rules plus re-baseline function_body_length; (2) keep swiftlint authoritative and tune .swift-format until lint-budget.sh is unchanged, which needs a formatter rule that leaves brace and comma style alone; (3) keep swifttlint only and delete .swift-format. The audit did not choose, because it changes the project's declared style. CI runs the formatter check as advisory until this is decided."
     },
     {
       "id": "#0107",
