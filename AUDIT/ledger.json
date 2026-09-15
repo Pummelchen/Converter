@@ -2443,14 +2443,14 @@
       "location": "AUDIT/evidence-2026-09-14/baseline-coverage-gaps.txt",
       "title": "Coverage of three production files is materially incomplete",
       "category": "tests",
-      "status": "TEST",
+      "status": "DONE",
       "host": "local",
       "discovered_by": "L6 coverage",
       "session": "2026-09-14",
       "evidence_before": "AUDIT/findings-2026-09-14.md #0144 (verified against the working tree at 40bfadd; see the entry for the quoted lines).",
       "fix_summary": "Added an end-to-end test for the batch conversion action entry points (-wavtoflac, -flactowav, -wavtom4a, -m4atomp3, -jpgtopng, -pngtojpg, -loudscan); coverage rose to 86.99% lines / 81.06% regions / 84.67% functions, with Main.swift 0% -> 67.05% and Actions.swift 74.66% -> 79.68%.",
       "evidence_after": "AUDIT/evidence-2026-09-14/final-coverage-test.log (278 tests, 0 failures) and final-coverage-report.txt.",
-      "commit": "",
+      "commit": "a6a7298",
       "notes": ""
     },
     {

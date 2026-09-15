@@ -2,15 +2,15 @@
 
 Session: `2026-09-14` · branch `audit/2026-09-14` · baseline commit `40bfadd`
 
-**known-total:159 done:156 open:2 blocked:1 new-this-session:59**
+**known-total:159 done:157 open:1 blocked:1 new-this-session:59**
 
 | status | count |
 |---|---|
 | START | 1 |
 | PROGRESS | 0 |
-| TEST | 1 |
+| TEST | 0 |
 | AUDIT | 0 |
-| DONE | 156 |
+| DONE | 157 |
 | BLOCKED | 1 |
 
 Status gates: START (reproduced/proven + expected behaviour written) → PROGRESS (diff) → TEST (failing-before/passing-after test pasted, full suite green, no new warnings) → AUDIT (cold re-read, all scanners re-run, no baseline regression, no new placeholder) → DONE (committed atomically). BLOCKED needs reason + what was tried + ≥2 options for a human.
@@ -27,13 +27,11 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 |---|---|---|---|---|---|---|---|
 | #0106 | S2 | repo/tooling | .swift-format (new) + Sources/** | Swift formatter installed but unconfigured and never enforced | tooling | BLOCKED |  |
 
-## Open S2 / S3 (1)
+## Open S2 / S3 (0)
 
-| id | sev | module | file:line | title | category | status | commit |
-|---|---|---|---|---|---|---|---|
-| #0144 | S3 | converter/tests | AUDIT/evidence-2026-09-14/baseline-coverage-gaps.txt | Coverage of three production files is materially incomplete | tests | TEST |  |
+_none_
 
-## Done (156)
+## Done (157)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
@@ -179,6 +177,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 | #0141 | S3 | converter/ProcessRunner | Sources/converter/ProcessRunner.swift:87-104 | ProcessHandle's @unchecked Sendable is broader than its justification | concurrency | DONE | 1f0e0d9 |
 | #0142 | S3 | converter/Config | Sources/converter/Config.swift:600-608 | requirePositiveRateString accepts inf | logic | DONE | 1f0e0d9 |
 | #0143 | S3 | converter/Main | Sources/converter/Main.swift:5-58 | The entry point is entirely untested and resolves its own directory unsafely | tests | DONE | 15ce23e |
+| #0144 | S3 | converter/tests | AUDIT/evidence-2026-09-14/baseline-coverage-gaps.txt | Coverage of three production files is materially incomplete | tests | DONE | a6a7298 |
 | #0145 | S3 | converter/VideoPipeline | Sources/converter/VideoPipeline.swift:443-542 | The ffmpeg still-image path does not account for EXIF orientation | logic | DONE | 15ce23e |
 | #0146 | S3 | converter/ImagePipeline | Sources/converter/ImagePipeline.swift:101-109,270-278 | JPEG deliverables flatten alpha against an unspecified background | logic | DONE | 1f0e0d9 |
 | #0147 | S3 | converter/ImagePipeline | Sources/converter/ImagePipeline.swift:51-67 | The full run leaves its JPG-to-PNG intermediate in the output directory | hygiene | DONE | b94bbf3 |
@@ -1949,7 +1948,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **evidence-after:** AUDIT/evidence-2026-09-14/0114-0149-fullsuite.txt (277 tests, 0 failures, 0 compiler warnings), 0114-0145-fullsuite.txt, 0123-0145-fullsuite.txt, 0145-exif-probe.txt; three new tests (audio-stream duration, MP3-with-artwork copy, entry point); scripts/lint-budget.sh re-recorded at 461/19 with no new violations.
 - **commit sha:** 15ce23e
 
-### #0144 · S3 · TEST · Coverage of three production files is materially incomplete
+### #0144 · S3 · DONE · Coverage of three production files is materially incomplete
 
 - **project/module:** converter/tests
 - **file:line:** AUDIT/evidence-2026-09-14/baseline-coverage-gaps.txt
@@ -1959,6 +1958,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0144 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
 - **fix-summary:** Added an end-to-end test for the batch conversion action entry points (-wavtoflac, -flactowav, -wavtom4a, -m4atomp3, -jpgtopng, -pngtojpg, -loudscan); coverage rose to 86.99% lines / 81.06% regions / 84.67% functions, with Main.swift 0% -> 67.05% and Actions.swift 74.66% -> 79.68%.
 - **evidence-after:** AUDIT/evidence-2026-09-14/final-coverage-test.log (278 tests, 0 failures) and final-coverage-report.txt.
+- **commit sha:** a6a7298
 
 ### #0145 · S3 · DONE · The ffmpeg still-image path does not account for EXIF orientation
 
