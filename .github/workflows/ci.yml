@@ -129,10 +129,15 @@ jobs:
           --exclude Sources/.build --exclude Sources/ThirdParty
           Sources
 
+      # Exhaustive level (not just the default branch limit) and a clean exit code: the vendored
+      # libbw64 headers are excluded from the *gate* only — their integrity is verified against the
+      # upstream tag by hash (Sources/ThirdParty/libbw64/UPSTREAM.md), and their style is upstream's.
+      # checkersReport is cppcheck's own informational summary, not a finding.
       - name: C++ static analysis (cppcheck)
         run: >
-          cppcheck --enable=all --error-exitcode=1 --std=c++17 --inline-suppr
-          --suppress=missingIncludeSystem
+          cppcheck --enable=all --check-level=exhaustive --error-exitcode=1 --std=c++17 --inline-suppr
+          --suppress=missingIncludeSystem --suppress=checkersReport
+          --suppress='*:*/ThirdParty/*'
           -I Sources/ThirdParty/libbw64 -I Sources/BW64Bridge/include
           Sources/BW64Bridge/bw64_bridge.cpp
 

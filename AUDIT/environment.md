@@ -89,7 +89,11 @@ periphery scan --project-root Sources --retain-public --format csv
 gitleaks git --no-banner --redact=100 .
 trufflehog git file://. --no-update
 semgrep scan --config p/swift --config p/c --config p/security-audit --config p/secrets --exclude .build --exclude ThirdParty Sources
-cppcheck --enable=all --std=c++17 --inline-suppr --suppress=missingIncludeSystem \
+# --check-level=exhaustive analyses every branch; the vendored path is out of the *gate* (its
+# integrity is the hash comparison in Sources/ThirdParty/libbw64/UPSTREAM.md), and checkersReport is
+# cppcheck's own informational summary rather than a finding.
+cppcheck --enable=all --check-level=exhaustive --error-exitcode=1 --std=c++17 --inline-suppr \
+  --suppress=missingIncludeSystem --suppress=checkersReport --suppress='*:*/ThirdParty/*' \
   -I Sources/ThirdParty/libbw64 -I Sources/BW64Bridge/include Sources/BW64Bridge/bw64_bridge.cpp
 clang-tidy Sources/BW64Bridge/bw64_bridge.cpp \
   -checks='bugprone-*,cert-*,clang-analyzer-*,performance-*,misc-*,-misc-include-cleaner' -- \

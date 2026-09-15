@@ -3393,7 +3393,7 @@ final class PipelineIntegrationTests: XCTestCase {
 
         for name in [
             "batch_wav.flac", "batch_flac.wav", "batch_wav.m4a", "batch_m4a.mp3",
-            "batch_art.png", "batch_art.jpg",
+            "batch_art.png", "batch_art.jpg"
         ] {
             XCTAssertTrue(
                 FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent(name).path),
