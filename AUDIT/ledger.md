@@ -24,7 +24,7 @@ _none_
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
 | #0106 | S2 | repo/tooling | .swift-format (new) + Sources/** | Swift formatter installed but unconfigured and never enforced | tooling | BLOCKED |  |
-| #0160 | S3 | repo/CI | .github/workflows/ci.yml + repository CodeQL default setup | Re-enable CodeQL for Swift once its runner image ships Swift 6.4 | tooling | BLOCKED |  |
+| #0160 | S3 | repo/CI | .github/workflows/ci.yml + repository CodeQL default setup | Re-enable CodeQL for Swift once its runner image ships Swift 6.4 | tooling | BLOCKED | eb6b941 |
 
 ## Open S2 / S3 (0)
 
@@ -2152,7 +2152,8 @@ _none_
 - **discovered-by:** owner decision 2026-09-15
 - **evidence-before:** GitHub's CodeQL default-setup autobuild runs on an image whose Swift is 6.3.3, so it cannot parse a swift-tools-version 6.4 manifest: `error: 'sources': package 'sources' is using Swift tools version 6.4.0 but the installed version is 6.3.3` (PR #24, CodeQL job 104457722762). The code is required to stay Swift 6.4, so the incompatible check was switched off rather than the standard being lowered.
 - **fix-summary:** On 2026-09-15 the Swift language was removed from the repository's CodeQL default setup (`PATCH /repos/Pummelchen/Converter/code-scanning/default-setup`, languages now actions, c-cpp, python). CodeQL keeps running for the languages it supports, and semgrep, gitleaks, cppcheck, clang-tidy, swiftlint, ruff and mypy still gate the repository.
-- **evidence-after:** `gh api repos/Pummelchen/Converter/code-scanning/default-setup` -> languages [actions, c-cpp, python]. Re-check by 2026-10-15.
+- **evidence-after:** CodeQL default setup now reports languages [actions, c-cpp, python] (`gh api repos/Pummelchen/Converter/code-scanning/default-setup`). CodeQL run on eb6b941: success; CI run on eb6b941: success (Swift build and tests on xcode-27 with the 6.4 manifest, plus static analysis and scanners); local full suite under the 6.4 manifest: 278 tests, 0 failures, 0 compiler warnings (AUDIT/evidence-2026-09-14/0160-swift64-manifest-fullsuite.txt); Phase E re-run from a fresh clone of eb6b941 on node2 is green end to end (AUDIT/evidence-2026-09-14/phase-e-main-final.log): 0-diagnostic debug and strict release builds, checksum OK, swiftlint 461/19, ruff+mypy clean, gitleaks no leaks, semgrep 0, cppcheck 0, clang-tidy 0 first-party, placeholders 0, 278 tests 0 failures, periphery 23/0 unused, smoke test ok. Re-check by 2026-10-15.
+- **commit sha:** eb6b941
 - **notes:** Re-check in a few weeks: if the CodeQL macOS image ships Swift 6.4, add `swift` back to the default setup and delete this task. The alternative at any time is CodeQL advanced setup with an explicit macOS 27 (`xcode-27`) runner, which keeps Swift coverage without waiting for the default image.
 - **blocked-reason:** Blocked on GitHub: the CodeQL default-setup Swift autobuild runner ships Swift 6.3.3 and cannot parse a swift-tools-version 6.4 manifest. Options: (1) re-check the default image in a few weeks and re-add `swift`; (2) switch CodeQL to advanced setup with a macOS 27 / xcode-27 runner now; (3) leave Swift out of CodeQL and rely on the repository's own Swift analysis (semgrep, swiftlint, warnings-as-errors builds).
 
