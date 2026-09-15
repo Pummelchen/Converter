@@ -39,7 +39,10 @@ enum LogLevel: String {
 }
 
 final class Logger: Sendable {
-    private static let timestampFormatter: DateFormatter = {
+    // DateFormatter is not thread-safe. A process-wide static guarded by the *per-instance* lock
+    // meant two loggers touched the same formatter under different locks (#0150); each logger now
+    // owns its formatter and every use is inside that instance's lock.
+    private let timestampFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
         formatter.locale = Locale(identifier: "en_US_POSIX")
@@ -56,7 +59,7 @@ final class Logger: Sendable {
     }
 
     private func timestamp() -> String {
-        Self.timestampFormatter.string(from: Date())
+        timestampFormatter.string(from: Date())
     }
 
     func log(_ level: LogLevel, _ message: String) {

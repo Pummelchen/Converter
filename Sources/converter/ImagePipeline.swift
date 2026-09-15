@@ -123,6 +123,12 @@ extension ConverterTool {
                 source.path,
                 "-auto-orient",
                 "-colorspace", config.imageOutputColorSpace,
+                // Alpha has no place in JPEG: without an explicit flatten the transparent areas take
+                // ImageMagick's implicit background while ffmpeg's yuv420p conversion uses the stored
+                // RGB, so the still and the video frame disagree (#0146).
+                "-background", "black",
+                "-alpha", "remove",
+                "-alpha", "off",
                 "-sampling-factor", config.imageJpegSamplingFactor,
                 "-quality", String(config.imagePNGToJPEGQuality),
                 "-strip",
@@ -311,6 +317,10 @@ extension ConverterTool {
                 source.path,
                 "-auto-orient",
                 "-colorspace", config.imageOutputColorSpace,
+                // See convertPNGToJPEG: flatten explicitly so every JPEG agrees about transparency (#0146).
+                "-background", "black",
+                "-alpha", "remove",
+                "-alpha", "off",
                 "-sampling-factor", config.imageJpegSamplingFactor,
                 "-strip",
                 "-define", "jpeg:extent=\(targetBytes)",

@@ -1158,6 +1158,13 @@ extension ConverterTool {
             maxAllowedDelta: allowedDelta,
             maxAllowedFailures: allowedFailures
         )
+        // Two empty decodes used to compare equal (0 failing samples of 0), so the strongest check in
+        // the pipeline became a no-op exactly when a render produced no audio (#0122).
+        guard comparison.samples > 0 else {
+            throw AppError(
+                "Canonical PCM comparison for \(label) compared no samples: src='\(source.path)' "
+                    + "out='\(output.path)' — both decodes were empty, so equivalence is unproven.")
+        }
         if comparison.failingSamples > allowedFailures {
             throw AppError(
                 "Canonical PCM mismatch for \(label): src='\(source.path)' out='\(output.path)' "

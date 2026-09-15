@@ -44,8 +44,9 @@ extension ConverterTool {
         if let sourceDuration = try mediaDuration(source) {
             let clippedDuration = duration.map { min($0, sourceDuration) } ?? sourceDuration
             let need = estimateWAVBytes(duration: clippedDuration, channels: config.wavChannels)
+            // nil = the filesystem did not report free space; skip instead of pretending it is 0 (#0149).
             let free = try availableBytes(at: tempDirectory)
-            if need > 0 && free < need {
+            if let free, need > 0 && free < need {
                 throw AppError("Low free space for internal WAV staging of \(source.basename): avail=\(free) need~\(need)")
             }
         }

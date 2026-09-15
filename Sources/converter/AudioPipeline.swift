@@ -1574,7 +1574,12 @@ extension ConverterTool {
 
     func requireFreeSpace(forBytes need: UInt64, label: String) throws {
         guard need > 0 else { return }
-        let free = try availableBytes(at: cli.outDir)
+        // An unreadable free-space value means "unknown", so the check is skipped rather than failing
+        // the run with a fabricated 0-byte figure (#0149).
+        guard let free = try availableBytes(at: cli.outDir) else {
+            logger.debug("Free space for \(label) is unknown on this filesystem; skipping the estimate check.")
+            return
+        }
         if free < need {
             throw AppError("Low free space for \(label): avail=\(free) need~\(need)")
         }
@@ -1734,6 +1739,9 @@ extension ConverterTool {
     func convertAudioToFLAC(_ source: URL) throws -> URL {
         try preflightAudioSourceForTranscode(source)
         let output = cli.outDir.appendingPathComponent(source.stem).appendingPathExtension("flac")
+        // The sibling converters guard this before probing; a `.flac` caller would otherwise publish
+        // over the file it is reading (#0157).
+        try requireDistinctOutput(output, from: source)
         if canReuseOutput(output, verifier: {
             try verifyFLACFile(output, sampleRate: config.flacSampleRate, channels: config.flacChannels, requireAudible: true, qcPolicy: nil)
             try verifyDurationMatch(source: source, output: output)

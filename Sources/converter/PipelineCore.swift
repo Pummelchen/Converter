@@ -485,12 +485,17 @@ final class ConverterTool: Sendable {
         _ semaphore: AsyncSemaphore,
         _ operation: @escaping @Sendable () throws -> T
     ) async throws -> T {
-        let runner = self.runner
         return try await semaphore.withPermit {
-            try await withTaskCancellationHandler {
-                try operation()
+            // One scope per operation: cancelling this permit stops this operation's children only.
+            // The previous implementation killed every process the shared runner had alive, so a
+            // cancelled audio branch also SIGTERMed the image branch's running ffmpeg/magick (#0117).
+            let scope = ProcessScope()
+            return try await withTaskCancellationHandler {
+                ProcessScopeStack.push(scope)
+                defer { ProcessScopeStack.pop() }
+                return try operation()
             } onCancel: {
-                runner.terminateActiveProcesses()
+                scope.terminateAll()
             }
         }
     }
@@ -534,12 +539,11 @@ final class ConverterTool: Sendable {
         return FileProbeFingerprint(path: standardized.path, sizeBytes: sizeBytes, modifiedAtMicros: micros)
     }
 
-    func availableBytes(at url: URL) throws -> UInt64 {
+    // nil means the filesystem did not report its free space. Returning 0 made that look like "no
+    // space left" and failed the run with a misleading message (#0149).
+    func availableBytes(at url: URL) throws -> UInt64? {
         let attrs = try fileManager.attributesOfFileSystem(forPath: url.path)
-        if let free = attrs[.systemFreeSize] as? NSNumber {
-            return free.uint64Value
-        }
-        return 0
+        return (attrs[.systemFreeSize] as? NSNumber)?.uint64Value
     }
 
     // Hidden temp names use a run-scoped namespace so source discovery never confuses them with real inputs.
@@ -549,38 +553,73 @@ final class ConverterTool: Sendable {
         let normalizedStem = safeStem.isEmpty ? "file" : safeStem
         for _ in 0 ..< 50 {
             let candidate = directory.appendingPathComponent(".converter-tmp.\(runToken).\(normalizedStem).\(UUID().uuidString)\(ext)")
-            if !fileManager.fileExists(atPath: candidate.path) {
-                if fileManager.createFile(atPath: candidate.path, contents: Data()) {
-                    state.register(tempFile: candidate)
-                    return candidate
-                }
+            // O_EXCL makes creation atomic and O_NOFOLLOW refuses to follow a symlink planted at the
+            // candidate path; the previous fileExists + createFile pair was a check-then-use race
+            // that would have truncated (and followed) whatever appeared in between (#0137). 0600
+            // keeps an unpublished working copy private.
+            let descriptor = open(candidate.path, O_CREAT | O_EXCL | O_NOFOLLOW | O_WRONLY, 0o600)
+            if descriptor >= 0 {
+                close(descriptor)
+                state.register(tempFile: candidate)
+                return candidate
+            }
+            if errno != EEXIST {
+                throw AppError(
+                    "Failed to create a temporary file in '\(directory.path)': "
+                        + String(cString: strerror(errno)))
             }
         }
         throw AppError("Failed to create unique temporary file in '\(directory.path)' (stem='\(stem)' ext='\(ext)')")
     }
 
+    // The backup name is the recovery contract: `recoverPublishBackups` and `-clean` look for exactly
+    // this suffix (pinned by testPublishBackupRecoveryRestoresMissingDestination and
+    // testCleanActionEntryPointPreservesUserFiles). Reviewer finding #0140 proposed a prefixed name,
+    // which those acceptance tests reject.
+    static let publishBackupSuffix = ".publish-backup"
+
     func publishTemp(_ temp: URL, to destination: URL) throws {
         try ensureWritableDirectory(destination.deletingLastPathComponent())
+        // A same-volume move carries the temp's mode onto the destination, which silently replaced a
+        // user's 0600 with the umask default on every in-place action (#0138).
+        let previousMode =
+            (try? fileManager.attributesOfItem(atPath: destination.path))?[.posixPermissions] as? NSNumber
+
+        func restoreDestinationMode() {
+            guard let previousMode else { return }
+            try? fileManager.setAttributes([.posixPermissions: previousMode], ofItemAtPath: destination.path)
+        }
+
         guard fileManager.fileExists(atPath: destination.path) else {
             try fileManager.moveItem(at: temp, to: destination)
             state.unregister(tempFile: temp)
             return
         }
 
-        // Predictable hidden backup name so a crash mid-publish leaves a recoverable copy.
         let backup = destination.deletingLastPathComponent()
-            .appendingPathComponent(".\(destination.lastPathComponent).publish-backup")
+            .appendingPathComponent(".\(destination.lastPathComponent)\(Self.publishBackupSuffix)")
         if fileManager.fileExists(atPath: backup.path) {
             try fileManager.removeItem(at: backup)
         }
         do {
             try fileManager.moveItem(at: destination, to: backup)
             try fileManager.moveItem(at: temp, to: destination)
+            restoreDestinationMode()
             try? fileManager.removeItem(at: backup)
         } catch {
-            if !fileManager.fileExists(atPath: destination.path), fileManager.fileExists(atPath: backup.path) {
+            // Restore when the destination is gone (the move never happened) *or* when the temp is
+            // still there: a cross-volume copy that fails part-way leaves a truncated file at the
+            // destination while the temp survives, and the destination-only test used to skip the
+            // restore and delete the intact backup, destroying the user's original (#0125).
+            let tempStillThere = fileManager.fileExists(atPath: temp.path)
+            let destinationMissing = !fileManager.fileExists(atPath: destination.path)
+            if destinationMissing || tempStillThere, fileManager.fileExists(atPath: backup.path) {
+                if !destinationMissing {
+                    try? fileManager.removeItem(at: destination)
+                }
                 do {
                     try fileManager.moveItem(at: backup, to: destination)
+                    restoreDestinationMode()
                 } catch let restoreError {
                     state.unregister(tempFile: temp)
                     throw AppError(
@@ -600,8 +639,8 @@ final class ConverterTool: Sendable {
         state.unregister(tempFile: temp)
     }
 
-    // Restores or discards leftover .publish-backup files from a crashed run:
-    // if the destination is missing the previous version is moved back, otherwise the backup is stale.
+    // Restores or discards leftover publish backups from a crashed run: if the destination is missing
+    // the previous version is moved back, otherwise the backup is stale.
     func recoverPublishBackups() {
         let directories = Set([cli.srcDir.standardizedFileURL, cli.outDir.standardizedFileURL])
         for directory in directories {
@@ -613,9 +652,9 @@ final class ConverterTool: Sendable {
                 continue
             }
             for file in files
-            where file.lastPathComponent.hasPrefix(".") && file.lastPathComponent.hasSuffix(".publish-backup") {
+            where file.lastPathComponent.hasPrefix(".") && file.lastPathComponent.hasSuffix(Self.publishBackupSuffix) {
                 let baseName = file.lastPathComponent
-                let destinationName = String(baseName.dropFirst().dropLast(".publish-backup".count))
+                let destinationName = String(baseName.dropFirst().dropLast(Self.publishBackupSuffix.count))
                 let destination = directory.appendingPathComponent(destinationName)
                 if !fileManager.fileExists(atPath: destination.path) {
                     do {
@@ -811,35 +850,59 @@ final class ConverterTool: Sendable {
         return Double(trimmed)
     }
 
+    // The last `{...}` in the log that closes at depth zero, scanned with string state because a `}`
+    // inside a JSON string value — or in the ffmpeg banner above the object — is not structure. The
+    // previous backwards brace count could therefore stop at the wrong place or find nothing (#0152).
+    static func lastCompleteJSONObject(in text: String) -> (start: String.Index, end: String.Index)? {
+        var depth = 0
+        var objectStart: String.Index?
+        var lastObject: (start: String.Index, end: String.Index)?
+        var cursor = text.startIndex
+        while cursor < text.endIndex {
+            let character = text[cursor]
+            if character == "\"" {
+                cursor = indexAfterStringLiteral(in: text, from: cursor)
+                continue
+            }
+            if character == "{" {
+                if depth == 0 {
+                    objectStart = cursor
+                }
+                depth += 1
+            } else if character == "}", depth > 0 {
+                depth -= 1
+                if depth == 0, let opened = objectStart {
+                    lastObject = (opened, cursor)
+                    objectStart = nil
+                }
+            }
+            cursor = text.index(after: cursor)
+        }
+        return lastObject
+    }
+
+    // The index just past the string literal starting at `start` (which must be a quote), honouring
+    // backslash escapes. Keeping this separate holds the scanner's own complexity down.
+    private static func indexAfterStringLiteral(in text: String, from start: String.Index) -> String.Index {
+        var cursor = text.index(after: start)
+        while cursor < text.endIndex, text[cursor] != "\"" {
+            if text[cursor] == "\\" {
+                cursor = text.index(after: cursor)
+            }
+            cursor = text.index(after: cursor)
+        }
+        return cursor < text.endIndex ? text.index(after: cursor) : text.endIndex
+    }
+
     func parseLoudnormJSON(from stderr: String) throws -> LoudnormMeasurement {
         // loudnorm prints its summary object last; at `-v info` ffmpeg has already dumped the
         // input metadata above it, and a tag such as `title : Song {Remix}` contains braces.
         // So the object is located from its closing brace backwards to the matching opener,
         // never from the first `{` in the log.
-        guard let end = stderr.lastIndex(of: "}") else {
+        guard let object = Self.lastCompleteJSONObject(in: stderr) else {
             throw AppError("Audio loudness probe did not return JSON output.")
         }
-        var depth = 0
-        var start: String.Index?
-        var cursor = end
-        while true {
-            let character = stderr[cursor]
-            if character == "}" {
-                depth += 1
-            } else if character == "{" {
-                depth -= 1
-                if depth == 0 {
-                    start = cursor
-                    break
-                }
-            }
-            guard cursor > stderr.startIndex else { break }
-            cursor = stderr.index(before: cursor)
-        }
-        guard let start else {
-            throw AppError("Audio loudness probe did not return JSON output.")
-        }
-        let jsonText = String(stderr[start ... end])
+        let jsonText = String(stderr[object.start ... object.end])
         guard let data = jsonText.data(using: .utf8) else {
             throw AppError("Audio loudness probe JSON encoding failed.")
         }
@@ -973,6 +1036,10 @@ final class ConverterTool: Sendable {
         // pipeline creates those files, so removing them by suffix alone could
         // delete user-owned files from OUT_DIR.
         let all = try fileManager.contentsOfDirectory(at: cli.outDir, includingPropertiesForKeys: [.isRegularFileKey], options: [])
+        // `.normalized` is a converter-owned stem marker, so a hidden OUT_DIR entry carrying it is a
+        // transient this tool wrote; `-clean` and the startup sweep are expected to remove exactly
+        // those (pinned by testCleanTransientsRemovesOnlyHiddenNormalizedFiles). Reviewer finding
+        // #0139 proposed requiring `.converter-tmp.` as well, which the acceptance tests reject.
         for file in all where file.lastPathComponent.hasPrefix(".") && file.lastPathComponent.contains(".normalized") {
             do {
                 try fileManager.removeItem(at: file)

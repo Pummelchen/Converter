@@ -106,6 +106,10 @@ struct ProjectConfig {
     // effective sigma is (value - 1) * 2, so 10 is already ~18.
     static let maximumAIPixSharpness = 10.0
 
+    // Hard ceiling for a short-form excerpt. The renderer clamps to it, so configuration has to be
+    // rejected above it instead of quietly producing a shorter excerpt than the one configured.
+    static let shortMP4AbsoluteMaximumSeconds: Double = 58.0
+
     static let supportedKeys: Set<String> = [
         "PROFILE",
         "PREFLIGHT_SECONDS", "DURATION_TOLERANCE_SEC", "CRC_CHUNK_BYTES",
@@ -135,42 +139,64 @@ struct ProjectConfig {
         "IMAGE_8K_JPG_20MB_TARGET_BYTES", "ALBUM_SILENCE_SECS", "WAV_FADE_DUR"
     ]
 
+    // Reads and validates the config file's key/value lines. Split out of load() to keep both
+    // functions inside the repository's complexity and body-length budgets.
+    private static func readConfigFile(
+        at url: URL, cli: CLIOptions, logger: Logger
+    ) throws -> [String: String] {
+        var values: [String: String] = [:]
+        if !FileManager.default.fileExists(atPath: url.path) {
+        // The default config.txt next to the binary is optional; an explicitly requested file is
+        // not. Ignoring it silently dropped the operator's profile and every QC tolerance (#0120).
+        if cli.configFileWasExplicit {
+            throw AppError(
+                "Config file not found: \(url.path) (from --config or CONFIG_FILE). "
+                    + "Remove the option to use the built-in defaults.")
+        }
+    } else {
+        let text = try String(contentsOf: url, encoding: .utf8)
+        for rawLine in text.split(whereSeparator: \.isNewline) {
+            let line = String(rawLine).trimmed
+            if line.isEmpty || line.hasPrefix("#") {
+                continue
+            }
+            guard let separator = line.firstIndex(of: "=") else {
+                logger.warn("Ignoring invalid config line in \(url.path): \(line)")
+                continue
+            }
+            let key = String(line[..<separator]).trimmed
+            var value = String(line[line.index(after: separator)...]).trimmed
+            if value.hasPrefix("\"") && value.hasSuffix("\"") && value.count >= 2 {
+                value.removeFirst()
+                value.removeLast()
+            } else if value.hasPrefix("'") && value.hasSuffix("'") && value.count >= 2 {
+                value.removeFirst()
+                value.removeLast()
+            }
+            if !supportedKeys.contains(key) {
+                // A misspelled key is the one config mistake that fails silently: the setting it was
+                // meant to change keeps its default and every output still looks plausible. A debug
+                // line is invisible in a normal run, so this is a warning naming key and file. It is
+                // not an error because the wiki promises unknown keys are skipped, and a config.txt
+                // shared with a newer converter may legitimately carry keys this build does not know.
+                logger.warn("Ignoring unknown config key '\(key)' in \(url.path)")
+                continue
+            }
+            if values.updateValue(value, forKey: key) != nil {
+                // A repeated key silently took the last value, unlike the misspelled-key warning
+                // right above, so the setting the operator wrote first was invisible (#0153).
+                logger.warn("Duplicate config key '\(key)' in \(url.path); using the last value '\(value)'")
+            }
+        }
+    }
+        return values
+    }
+
     static func load(from url: URL, environment: [String: String], cli: CLIOptions, logger: Logger) throws -> ProjectConfig {
         var config = ProjectConfig()
         var values: [String: String] = [:]
 
-        if FileManager.default.fileExists(atPath: url.path) {
-            let text = try String(contentsOf: url, encoding: .utf8)
-            for rawLine in text.split(whereSeparator: \.isNewline) {
-                let line = String(rawLine).trimmed
-                if line.isEmpty || line.hasPrefix("#") {
-                    continue
-                }
-                guard let separator = line.firstIndex(of: "=") else {
-                    logger.warn("Ignoring invalid config line in \(url.path): \(line)")
-                    continue
-                }
-                let key = String(line[..<separator]).trimmed
-                var value = String(line[line.index(after: separator)...]).trimmed
-                if value.hasPrefix("\"") && value.hasSuffix("\"") && value.count >= 2 {
-                    value.removeFirst()
-                    value.removeLast()
-                } else if value.hasPrefix("'") && value.hasSuffix("'") && value.count >= 2 {
-                    value.removeFirst()
-                    value.removeLast()
-                }
-                if !supportedKeys.contains(key) {
-                    // A misspelled key is the one config mistake that fails silently: the setting it was
-                    // meant to change keeps its default and every output still looks plausible. A debug
-                    // line is invisible in a normal run, so this is a warning naming key and file. It is
-                    // not an error because the wiki promises unknown keys are skipped, and a config.txt
-                    // shared with a newer converter may legitimately carry keys this build does not know.
-                    logger.warn("Ignoring unknown config key '\(key)' in \(url.path)")
-                    continue
-                }
-                values[key] = value
-            }
-        }
+        values = try readConfigFile(at: url, cli: cli, logger: logger)
 
         for (key, value) in environment where supportedKeys.contains(key) {
             values[key] = value
@@ -408,7 +434,7 @@ struct ProjectConfig {
         try requirePositive(videoMP4Width, "VIDEO_MP4_WIDTH")
         try requirePositive(videoMP4Height, "VIDEO_MP4_HEIGHT")
         try requireAllowedValue(videoMP4ScaleFilter, allowedScaleFilters, "VIDEO_MP4_SCALE_FILTER")
-        try requireNonEmpty(videoMP4PixelFormat, "VIDEO_MP4_PIXEL_FORMAT")
+        try requireFilterToken(videoMP4PixelFormat, "VIDEO_MP4_PIXEL_FORMAT")
         try requireNonEmpty(videoMP4Tag, "VIDEO_MP4_TAG")
         try requireNonEmpty(videoMP4VerifyCodec, "VIDEO_MP4_VERIFY_CODEC")
         try requireFilterToken(videoColorPrimaries, "VIDEO_COLOR_PRIMARIES")
@@ -434,7 +460,7 @@ struct ProjectConfig {
         try requireNumericRange(shortMP4VideoCRF, softwareCRFRange, "SHORT_MP4_VIDEO_CRF")
         try requireNumericRange(shortMP4VTQuality, videoToolboxQualityRange, "SHORT_MP4_VT_QUALITY")
         try requireNonEmpty(shortMP4VideoCodec, "SHORT_MP4_VIDEO_CODEC")
-        try requireNonEmpty(shortMP4PixelFormat, "SHORT_MP4_PIXEL_FORMAT")
+        try requireFilterToken(shortMP4PixelFormat, "SHORT_MP4_PIXEL_FORMAT")
         try requireNonEmpty(shortMP4VerifyCodec, "SHORT_MP4_VERIFY_CODEC")
         if videoEncoderLadder.isEmpty {
             throw AppError("VIDEO_MP4 encoder ladder must not be empty")
@@ -599,11 +625,13 @@ private func requireNumericRange(_ value: String, _ range: ClosedRange<Double>, 
 
 private func requirePositiveRateString(_ value: String, _ name: String) throws {
     try requireNonEmpty(value, name)
-    if let parsed = Double(value), parsed > 0 {
+    if let parsed = Double(value), parsed.isFinite, parsed > 0 {
         return
     }
     let parts = value.split(separator: "/")
-    if parts.count == 2, let numerator = Double(parts[0]), let denominator = Double(parts[1]), numerator > 0, denominator > 0 {
+    if parts.count == 2,
+       let numerator = Double(parts[0]), numerator.isFinite, numerator > 0,
+       let denominator = Double(parts[1]), denominator.isFinite, denominator > 0 {
         return
     }
     throw AppError("\(name) must be a positive number or ratio (got '\(value)')")
