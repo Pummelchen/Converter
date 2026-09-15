@@ -152,53 +152,55 @@ struct ProjectConfig {
     ) throws -> [String: String] {
         var values: [String: String] = [:]
         if !FileManager.default.fileExists(atPath: url.path) {
-        // The default config.txt next to the binary is optional; an explicitly requested file is
-        // not. Ignoring it silently dropped the operator's profile and every QC tolerance (#0120).
-        if cli.configFileWasExplicit {
-            throw AppError(
-                "Config file not found: \(url.path) (from --config or CONFIG_FILE). "
-                    + "Remove the option to use the built-in defaults.")
+            // The default config.txt next to the binary is optional; an explicitly requested file is
+            // not. Ignoring it silently dropped the operator's profile and every QC tolerance (#0120).
+            if cli.configFileWasExplicit {
+                throw AppError(
+                    "Config file not found: \(url.path) (from --config or CONFIG_FILE). "
+                        + "Remove the option to use the built-in defaults.")
+            }
+        } else {
+            let text = try String(contentsOf: url, encoding: .utf8)
+            for rawLine in text.split(whereSeparator: \.isNewline) {
+                let line = String(rawLine).trimmed
+                if line.isEmpty || line.hasPrefix("#") {
+                    continue
+                }
+                guard let separator = line.firstIndex(of: "=") else {
+                    logger.warn("Ignoring invalid config line in \(url.path): \(line)")
+                    continue
+                }
+                let key = String(line[..<separator]).trimmed
+                var value = String(line[line.index(after: separator)...]).trimmed
+                if value.hasPrefix("\"") && value.hasSuffix("\"") && value.count >= 2 {
+                    value.removeFirst()
+                    value.removeLast()
+                } else if value.hasPrefix("'") && value.hasSuffix("'") && value.count >= 2 {
+                    value.removeFirst()
+                    value.removeLast()
+                }
+                if !supportedKeys.contains(key) {
+                    // A misspelled key is the one config mistake that fails silently: the setting it was
+                    // meant to change keeps its default and every output still looks plausible. A debug
+                    // line is invisible in a normal run, so this is a warning naming key and file. It is
+                    // not an error because the wiki promises unknown keys are skipped, and a config.txt
+                    // shared with a newer converter may legitimately carry keys this build does not know.
+                    logger.warn("Ignoring unknown config key '\(key)' in \(url.path)")
+                    continue
+                }
+                if values.updateValue(value, forKey: key) != nil {
+                    // A repeated key silently took the last value, unlike the misspelled-key warning
+                    // right above, so the setting the operator wrote first was invisible (#0153).
+                    logger.warn("Duplicate config key '\(key)' in \(url.path); using the last value '\(value)'")
+                }
+            }
         }
-    } else {
-        let text = try String(contentsOf: url, encoding: .utf8)
-        for rawLine in text.split(whereSeparator: \.isNewline) {
-            let line = String(rawLine).trimmed
-            if line.isEmpty || line.hasPrefix("#") {
-                continue
-            }
-            guard let separator = line.firstIndex(of: "=") else {
-                logger.warn("Ignoring invalid config line in \(url.path): \(line)")
-                continue
-            }
-            let key = String(line[..<separator]).trimmed
-            var value = String(line[line.index(after: separator)...]).trimmed
-            if value.hasPrefix("\"") && value.hasSuffix("\"") && value.count >= 2 {
-                value.removeFirst()
-                value.removeLast()
-            } else if value.hasPrefix("'") && value.hasSuffix("'") && value.count >= 2 {
-                value.removeFirst()
-                value.removeLast()
-            }
-            if !supportedKeys.contains(key) {
-                // A misspelled key is the one config mistake that fails silently: the setting it was
-                // meant to change keeps its default and every output still looks plausible. A debug
-                // line is invisible in a normal run, so this is a warning naming key and file. It is
-                // not an error because the wiki promises unknown keys are skipped, and a config.txt
-                // shared with a newer converter may legitimately carry keys this build does not know.
-                logger.warn("Ignoring unknown config key '\(key)' in \(url.path)")
-                continue
-            }
-            if values.updateValue(value, forKey: key) != nil {
-                // A repeated key silently took the last value, unlike the misspelled-key warning
-                // right above, so the setting the operator wrote first was invisible (#0153).
-                logger.warn("Duplicate config key '\(key)' in \(url.path); using the last value '\(value)'")
-            }
-        }
-    }
         return values
     }
 
-    static func load(from url: URL, environment: [String: String], cli: CLIOptions, logger: Logger) throws -> ProjectConfig {
+    static func load(
+        from url: URL, environment: [String: String], cli: CLIOptions, logger: Logger
+    ) throws -> ProjectConfig {
         var config = ProjectConfig()
         var values: [String: String] = [:]
 
@@ -208,7 +210,8 @@ struct ProjectConfig {
             values[key] = value
         }
 
-        let selectedProfile = cli.profileName?.trimmed.nonEmpty
+        let selectedProfile =
+            cli.profileName?.trimmed.nonEmpty
             ?? values["PROFILE"]?.trimmed.nonEmpty
             ?? config.profileName
         try config.applyBuiltInProfile(named: selectedProfile)
@@ -228,7 +231,9 @@ struct ProjectConfig {
 
     mutating func applyBuiltInProfile(named rawName: String) throws {
         guard let profile = RunProfile(rawValue: rawName) else {
-            throw AppError("PROFILE must be one of: \(RunProfile.allCases.map(\.rawValue).joined(separator: ", ")) (got '\(rawName)')")
+            throw AppError(
+                "PROFILE must be one of: \(RunProfile.allCases.map(\.rawValue).joined(separator: ", ")) (got '\(rawName)')"
+            )
         }
 
         switch profile {
@@ -360,7 +365,9 @@ struct ProjectConfig {
 
     func validate() throws {
         guard RunProfile(rawValue: profileName) != nil else {
-            throw AppError("PROFILE must be one of: \(RunProfile.allCases.map(\.rawValue).joined(separator: ", ")) (got '\(profileName)')")
+            throw AppError(
+                "PROFILE must be one of: \(RunProfile.allCases.map(\.rawValue).joined(separator: ", ")) (got '\(profileName)')"
+            )
         }
         try requirePositive(preflightSeconds, "PREFLIGHT_SECONDS")
         if durationToleranceSec < 0 {
@@ -368,14 +375,14 @@ struct ProjectConfig {
         }
         // Each CRC chunk is read into memory whole, so the upper bound keeps a typo from turning the
         // hash pass into a multi-gigabyte allocation.
-        try requireRange(crcChunkBytes, 1 ... maximumCRCChunkBytes, "CRC_CHUNK_BYTES")
+        try requireRange(crcChunkBytes, 1...maximumCRCChunkBytes, "CRC_CHUNK_BYTES")
         try requirePositive(wavSampleRate, "WAV_SAMPLE_RATE")
         try requireChannels(wavChannels, "WAV_CHANNELS")
         let wavStandard = "internal WAV processing is fixed at 24-bit, 96 kHz, stereo"
         try requireProjectStandard(wavSampleRate, 96_000, "WAV_SAMPLE_RATE", wavStandard)
         try requireProjectStandard(wavCodec.lowercasedASCII, "pcm_s24le", "WAV_CODEC", wavStandard)
         try requireProjectStandard(wavChannels, 2, "WAV_CHANNELS", wavStandard)
-        try requireRange(wavWriteBext, 0 ... 1, "WAV_WRITE_BEXT")
+        try requireRange(wavWriteBext, 0...1, "WAV_WRITE_BEXT")
         try requirePositive(mp3SampleRate, "MP3_SAMPLE_RATE")
         try requireChannels(mp3Channels, "MP3_CHANNELS")
         try requirePositive(mp3MinBitrateBps, "MP3_MIN_BITRATE_BPS")
@@ -385,7 +392,7 @@ struct ProjectConfig {
         try requireProjectStandard(mp3Channels, 2, "MP3_CHANNELS", mp3Standard)
         try requirePositive(flacSampleRate, "FLAC_SAMPLE_RATE")
         try requireChannels(flacChannels, "FLAC_CHANNELS")
-        try requireRange(flacCompressionLevel, 0 ... 12, "FLAC_COMPRESSION_LEVEL")
+        try requireRange(flacCompressionLevel, 0...12, "FLAC_COMPRESSION_LEVEL")
         try requirePositive(m4aSampleRate, "M4A_SAMPLE_RATE")
         try requireChannels(m4aChannels, "M4A_CHANNELS")
         let m4aStandard = "M4A output is fixed at ALAC, 48 kHz, stereo"
@@ -488,20 +495,20 @@ struct ProjectConfig {
         try requirePositive(image4KHeight, "IMAGE_4K_HEIGHT")
         try requirePositive(image3KSize, "IMAGE_3K_SIZE")
         try requirePositive(image2KSize, "IMAGE_2K_SIZE")
-        try requireRange(imagePNGToJPEGQuality, 1 ... 100, "IMAGE_PNG_TO_JPEG_QUALITY")
+        try requireRange(imagePNGToJPEGQuality, 1...100, "IMAGE_PNG_TO_JPEG_QUALITY")
         if imageAIPixSharpness < 0 {
             throw AppError("IMAGE_AIPIX_SHARPNESS must be >= 0")
         }
         if imageAIPixSharpness > Self.maximumAIPixSharpness {
             throw AppError(
                 "IMAGE_AIPIX_SHARPNESS must be <= \(Self.maximumAIPixSharpness); "
-                + "the effective sigma is (value - 1) * 2 and larger values cost minutes per image"
+                    + "the effective sigma is (value - 1) * 2 and larger values cost minutes per image"
             )
         }
         try requireNonEmpty(imageAIPixFilter, "IMAGE_AIPIX_FILTER")
         // Both are ImageMagick's own 0-9 zlib level scale.
-        try requireRange(imageAIPixPNGCompressionLevel, 0 ... 9, "IMAGE_AIPIX_PNG_COMPRESSION_LEVEL")
-        try requireRange(imageJPGToPNGCompressionLevel, 0 ... 9, "IMAGE_JPG_TO_PNG_COMPRESSION_LEVEL")
+        try requireRange(imageAIPixPNGCompressionLevel, 0...9, "IMAGE_AIPIX_PNG_COMPRESSION_LEVEL")
+        try requireRange(imageJPGToPNGCompressionLevel, 0...9, "IMAGE_JPG_TO_PNG_COMPRESSION_LEVEL")
         try requireNonEmpty(imageJpegSamplingFactor, "IMAGE_JPEG_SAMPLING_FACTOR")
         try requireNonEmpty(imageOutputColorSpace, "IMAGE_OUTPUT_COLORSPACE")
         // A zero byte target makes every JPEG size search fail after the encode work is done.
@@ -515,8 +522,8 @@ struct ProjectConfig {
     }
 }
 
-private extension String {
-    var nonEmpty: String? {
+extension String {
+    fileprivate var nonEmpty: String? {
         let trimmed = trimmed
         return trimmed.isEmpty ? nil : trimmed
     }
@@ -564,7 +571,7 @@ private func requireProjectStandard<Value: Equatable>(
 }
 
 private func requireChannels(_ value: Int, _ name: String) throws {
-    if !(1 ... 2).contains(value) {
+    if !(1...2).contains(value) {
         throw AppError("\(name) must be 1 or 2 (got '\(value)')")
     }
 }
@@ -574,7 +581,9 @@ private func requireLoudnormTarget(_ value: Double, _ name: String) throws {
         throw AppError("\(name) must be finite")
     }
     guard value >= LoudnessSpec.minimumTargetLUFS, value <= LoudnessSpec.maximumTargetLUFS else {
-        throw AppError("\(name) must be between \(ffmpegNumber(LoudnessSpec.minimumTargetLUFS)) and \(ffmpegNumber(LoudnessSpec.maximumTargetLUFS)) LUFS")
+        throw AppError(
+            "\(name) must be between \(ffmpegNumber(LoudnessSpec.minimumTargetLUFS)) and \(ffmpegNumber(LoudnessSpec.maximumTargetLUFS)) LUFS"
+        )
     }
 }
 
@@ -613,8 +622,8 @@ private func requireFilterToken(_ value: String, _ name: String) throws {
 
 // ffmpeg's h264/hevc_videotoolbox take -q:v 1-100 and libx264/libx265 take -crf 0-51; either
 // silently clamps or errors deep inside the encoder, so the bounds are enforced here by name.
-private let videoToolboxQualityRange: ClosedRange<Double> = 1 ... 100
-private let softwareCRFRange: ClosedRange<Double> = 0 ... 51
+private let videoToolboxQualityRange: ClosedRange<Double> = 1...100
+private let softwareCRFRange: ClosedRange<Double> = 0...51
 // 64 MiB reads comfortably in one call while bounding the buffer a CRC pass allocates.
 private let maximumCRCChunkBytes = 64 * 1_048_576
 
@@ -636,8 +645,9 @@ private func requirePositiveRateString(_ value: String, _ name: String) throws {
     }
     let parts = value.split(separator: "/")
     if parts.count == 2,
-       let numerator = Double(parts[0]), numerator.isFinite, numerator > 0,
-       let denominator = Double(parts[1]), denominator.isFinite, denominator > 0 {
+        let numerator = Double(parts[0]), numerator.isFinite, numerator > 0,
+        let denominator = Double(parts[1]), denominator.isFinite, denominator > 0
+    {
         return
     }
     throw AppError("\(name) must be a positive number or ratio (got '\(value)')")

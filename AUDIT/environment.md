@@ -65,7 +65,7 @@ brew install swiftlint periphery gitleaks trufflehog semgrep cppcheck llvm jq
 
 | Requirement | Swift | C++ (bridge) | Python (audit tooling only) |
 |---|---|---|---|
-| formatter | `swift format` (`swift-format` config committed, enforced by `scripts/check-format.sh` and CI — task #0106) | `clang-format` (LLVM 23.1.1) | `ruff format`, enforced by `scripts/check-python.sh` |
+| formatter | `swift format` — `.swift-format` committed, `scripts/check-format.sh` locally and a blocking CI step (#0106) | `clang-format` (LLVM 23.1.1) | `ruff format`, enforced by `scripts/check-python.sh` |
 | linter | swiftlint (`.swiftlint.yml` pins the rule set; `scripts/lint-budget.sh` ratchets it) | clang-tidy | `ruff check`, enforced by `scripts/check-python.sh` |
 | static analyzer | periphery + compiler | cppcheck + clang-tidy + clang static analyzer | `mypy --strict` (`pyproject.toml`) |
 | type checker | swiftc, language mode 6, warnings-as-errors | `clang -std=c++17 -Wall -Wextra -Werror` | `mypy --strict` |

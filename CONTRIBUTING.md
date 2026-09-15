@@ -14,6 +14,13 @@ swift test --package-path Sources      # run all tests (263 tests, ~11 min)
 
 Requires Swift tools 6.4+ (Xcode 27, Swift language mode 6) and macOS 15+, matching the `.macOS(.v15)` platform in `Sources/Package.swift`. See the [wiki](https://github.com/Pummelchen/Converter/wiki) for command reference and configuration details.
 
+## Style
+
+`scripts/check-format.sh` is the layout gate: it runs `swift format` (bundled with Xcode 27) against
+the committed `.swift-format`, so run `scripts/check-format.sh --write` before pushing. `swiftlint`
+via `scripts/lint-budget.sh` is the rule gate (complexity, body lengths, naming), not the layout one.
+CI fails on either.
+
 ## Repository layout essentials
 
 - The Swift Package lives at `Sources/` — always use `--package-path Sources` with `swift` commands.

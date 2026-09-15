@@ -149,7 +149,7 @@ struct RIFFChunkWalker: Sendable {
             throw invalid(file, "ds64 chunk of \(size) bytes cannot hold a \(tableLength)-entry size table")
         }
         var tableSizes: [String: UInt64] = [:]
-        for entry in 0 ..< Int(tableLength) {
+        for entry in 0..<Int(tableLength) {
             let entryOffset = 28 + entry * 12
             tableSizes[fourCC(payload, at: entryOffset)] = uint64LE(payload, at: entryOffset + 4)
         }
@@ -159,19 +159,19 @@ struct RIFFChunkWalker: Sendable {
     // Latin-1 maps every byte to one character, so a corrupt id is still quotable in an error.
     private static func fourCC(_ data: Data, at offset: Int) -> String {
         let start = data.startIndex + offset
-        return String(bytes: data[start ..< start + 4], encoding: .isoLatin1) ?? "????"
+        return String(bytes: data[start..<start + 4], encoding: .isoLatin1) ?? "????"
     }
 
     private static func uint32LE(_ data: Data, at offset: Int) -> UInt32 {
         let start = data.startIndex + offset
-        return data[start ..< start + 4].enumerated().reduce(UInt32(0)) {
+        return data[start..<start + 4].enumerated().reduce(UInt32(0)) {
             $0 | UInt32($1.element) << (8 * UInt32($1.offset))
         }
     }
 
     private static func uint64LE(_ data: Data, at offset: Int) -> UInt64 {
         let start = data.startIndex + offset
-        return data[start ..< start + 8].enumerated().reduce(UInt64(0)) {
+        return data[start..<start + 8].enumerated().reduce(UInt64(0)) {
             $0 | UInt64($1.element) << (8 * UInt64($1.offset))
         }
     }

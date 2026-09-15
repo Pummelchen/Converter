@@ -48,10 +48,13 @@ struct ConverterMain {
             }
             let runLogger = Logger(scriptName: location.name, debugEnabled: cli.debug)
             logger = runLogger
-            try DependencyBootstrapper.ensureRuntimeDependencies(environment: &environment, logger: runLogger, action: cli.action)
-            let config = try ProjectConfig.load(from: cli.configFile, environment: environment, cli: cli, logger: runLogger)
+            try DependencyBootstrapper.ensureRuntimeDependencies(
+                environment: &environment, logger: runLogger, action: cli.action)
+            let config = try ProjectConfig.load(
+                from: cli.configFile, environment: environment, cli: cli, logger: runLogger)
             let runner = ProcessRunner(logger: runLogger, environment: environment, debugEnabled: cli.debug)
-            let instance = ConverterTool(cli: cli, config: config, logger: runLogger, runner: runner, environment: environment)
+            let instance = ConverterTool(
+                cli: cli, config: config, logger: runLogger, runner: runner, environment: environment)
             defer { instance.cleanupTemps() }
             try instance.initializeForExecution()
             try await instance.execute()
@@ -92,14 +95,18 @@ struct ConverterMain {
         if expanded.hasPrefix("/") {
             executableURL = URL(fileURLWithPath: expanded).standardizedFileURL
         } else if expanded.contains("/") {
-            executableURL = URL(fileURLWithPath: currentDirectory)
+            executableURL =
+                URL(fileURLWithPath: currentDirectory)
                 .appendingPathComponent(expanded).standardizedFileURL
         } else if let running = Bundle.main.executableURL {
             executableURL = running.standardizedFileURL
         } else {
-            executableURL = URL(fileURLWithPath: currentDirectory)
+            executableURL =
+                URL(fileURLWithPath: currentDirectory)
                 .appendingPathComponent(expanded).standardizedFileURL
         }
-        return (executableURL.deletingLastPathComponent(), environment["CONVERTER_NAME"] ?? executableURL.lastPathComponent)
+        return (
+            executableURL.deletingLastPathComponent(), environment["CONVERTER_NAME"] ?? executableURL.lastPathComponent
+        )
     }
 }

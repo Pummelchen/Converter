@@ -67,7 +67,8 @@ final class Logger: Sendable {
             return
         }
         lock.withLock { _ in
-            FileHandle.standardError.write(Data("[\(timestamp())] [\(scriptName)] [\(level.rawValue)] \(message)\n".utf8))
+            FileHandle.standardError.write(
+                Data("[\(timestamp())] [\(scriptName)] [\(level.rawValue)] \(message)\n".utf8))
         }
     }
 
@@ -88,9 +89,9 @@ struct SchedulerProfile: Sendable {
         let cores = max(1, activeCores)
         let total: Int
         switch cores {
-        case 1 ... 4:
+        case 1...4:
             total = 2
-        case 5 ... 8:
+        case 5...8:
             total = 3
         default:
             total = 4
@@ -288,7 +289,9 @@ func parseFlexibleTimecode(_ rawValue: String, label: String) throws -> Double {
     return seconds
 }
 
-private func parseTimecodeComponent(_ component: Substring, allowFraction: Bool, label: String, rawValue: String) throws -> Double {
+private func parseTimecodeComponent(
+    _ component: Substring, allowFraction: Bool, label: String, rawValue: String
+) throws -> Double {
     let text = String(component)
     guard !text.isEmpty else {
         throw AppError("Invalid \(label) '\(rawValue)'. Empty time component.")

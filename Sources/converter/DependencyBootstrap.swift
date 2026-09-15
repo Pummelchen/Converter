@@ -63,7 +63,9 @@ enum DependencyBootstrapper {
 
         guard autoInstallEnabled(environment: environment) else {
             let names = missingFormulae.map(\.formula).joined(separator: ", ")
-            throw AppError("Missing required Homebrew package(s): \(names). Install them with 'brew install \(names)' or set CONVERTER_AUTO_INSTALL_DEPS=1 to auto-install.")
+            throw AppError(
+                "Missing required Homebrew package(s): \(names). Install them with 'brew install \(names)' or set CONVERTER_AUTO_INSTALL_DEPS=1 to auto-install."
+            )
         }
 
         let formulaNames = missingFormulae.map(\.formula).joined(separator: ", ")
@@ -79,7 +81,8 @@ enum DependencyBootstrapper {
         missingFormulae = missingHomebrewFormulae(environment: environment)
         if !missingFormulae.isEmpty {
             let detail = missingFormulae.flatMap { unusableToolDescriptions($0, environment: environment) }
-            throw AppError("Dependency bootstrap failed; unusable command(s) after install: \(detail.joined(separator: ", "))")
+            throw AppError(
+                "Dependency bootstrap failed; unusable command(s) after install: \(detail.joined(separator: ", "))")
         }
     }
 
@@ -99,7 +102,10 @@ enum DependencyBootstrapper {
     }
 
     private static func autoInstallEnabled(environment: [String: String]) -> Bool {
-        guard let rawValue = environment["CONVERTER_AUTO_INSTALL_DEPS"]?.lowercased(with: Locale(identifier: "en_US_POSIX")) else {
+        guard
+            let rawValue = environment["CONVERTER_AUTO_INSTALL_DEPS"]?.lowercased(
+                with: Locale(identifier: "en_US_POSIX"))
+        else {
             return false
         }
         return ["1", "true", "yes", "on"].contains(rawValue)
@@ -240,8 +246,8 @@ enum DependencyBootstrapper {
             guard actual == expectedSHA256.lowercased() else {
                 throw AppError(
                     "Homebrew installer integrity check failed: expected SHA-256 \(expectedSHA256) "
-                    + "but the download has \(actual). "
-                    + "Refusing to execute it. Install Homebrew manually from https://brew.sh and rerun."
+                        + "but the download has \(actual). "
+                        + "Refusing to execute it. Install Homebrew manually from https://brew.sh and rerun."
                 )
             }
             return temp

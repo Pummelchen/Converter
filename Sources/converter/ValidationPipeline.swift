@@ -1,5 +1,5 @@
-import Foundation
 import BW64Bridge
+import Foundation
 
 extension ConverterTool {
     // The cache key for one measurement of a source segment. Milliseconds are the resolution
@@ -18,12 +18,16 @@ extension ConverterTool {
     }
 
     // Loudness comparisons for trimmed renders must use the same leading program segment, not the full source.
-    private func audioQCResultForComparison(_ file: URL, policy: AudioQCPolicy, limitDuration: Double?) throws -> AudioQCResult {
+    private func audioQCResultForComparison(
+        _ file: URL, policy: AudioQCPolicy, limitDuration: Double?
+    ) throws -> AudioQCResult {
         guard let limitDuration, limitDuration > 0 else {
             return try audioQCResult(for: file, policy: policy)
         }
 
-        if let totalDuration = try mediaDuration(file), totalDuration - limitDuration <= max(0.25, config.durationToleranceSec) {
+        if let totalDuration = try mediaDuration(file),
+            totalDuration - limitDuration <= max(0.25, config.durationToleranceSec)
+        {
             return try audioQCResult(for: file, policy: policy)
         }
 
@@ -37,20 +41,22 @@ extension ConverterTool {
             // Run-scoped temp so a crash mid-probe is still cleaned up by the normal recovery path.
             let temp = try makeTemp(in: cli.outDir, stem: "\(file.stem).qc-clip", ext: ".wav")
             defer { discardTempFile(temp) }
-            _ = try runner.run("ffmpeg", [
-                "-hide_banner", "-nostdin", "-v", "error", "-y",
-                "-i", file.path,
-                "-map", "0:a:0",
-                "-vn",
-                "-t", ffmpegArg("%.6f", limitDuration),
-                "-ac", String(config.wavChannels),
-                "-ar", String(config.wavSampleRate),
-                "-c:a", config.wavCodec,
-                "-f", "wav",
-                "-rf64", "always",
-                "-write_bext", String(config.wavWriteBext),
-                temp.path
-            ])
+            _ = try runner.run(
+                "ffmpeg",
+                [
+                    "-hide_banner", "-nostdin", "-v", "error", "-y",
+                    "-i", file.path,
+                    "-map", "0:a:0",
+                    "-vn",
+                    "-t", ffmpegArg("%.6f", limitDuration),
+                    "-ac", String(config.wavChannels),
+                    "-ar", String(config.wavSampleRate),
+                    "-c:a", config.wavCodec,
+                    "-f", "wav",
+                    "-rf64", "always",
+                    "-write_bext", String(config.wavWriteBext),
+                    temp.path
+                ])
             return try audioQCResult(for: temp, policy: policy)
         }
     }
@@ -92,12 +98,15 @@ extension ConverterTool {
             throw incomplete("no overall Peak level dB")
         }
         let rawPeakCount = astats.overallMetrics["Peak count"] ?? ""
-        guard let peakCountValue = Double(rawPeakCount), let peakCount = Int(exactly: peakCountValue.rounded()), peakCount >= 0 else {
+        guard let peakCountValue = Double(rawPeakCount), let peakCount = Int(exactly: peakCountValue.rounded()),
+            peakCount >= 0
+        else {
             throw incomplete("unparsable Peak count '\(rawPeakCount)'")
         }
         let stereoImbalance: Double
         if rmsLevels.count >= 2 {
-            let left = rmsLevels[0], right = rmsLevels[1]
+            let left = rmsLevels[0]
+            let right = rmsLevels[1]
             if left.isFinite && right.isFinite {
                 stereoImbalance = abs(left - right)
             } else if left.isFinite || right.isFinite {
@@ -122,14 +131,23 @@ extension ConverterTool {
         return try probeCache.cachedAudibleResult(key: fingerprint) {
             let result = try runner.run(
                 "ffmpeg",
-                ["-hide_banner", "-nostdin", "-v", "info", "-i", file.path, "-map", "0:a:0", "-af", "volumedetect", "-f", "null", "-"],
+                [
+                    "-hide_banner", "-nostdin", "-v", "info", "-i", file.path, "-map", "0:a:0", "-af", "volumedetect",
+                    "-f", "null", "-"
+                ],
                 allowedExitCodes: [0]
             )
             let text = result.stderr
-            guard let line = text.split(whereSeparator: \.isNewline).map(String.init).first(where: { $0.contains("max_volume:") }) else {
+            guard
+                let line = text.split(whereSeparator: \.isNewline).map(String.init).first(where: {
+                    $0.contains("max_volume:")
+                })
+            else {
                 throw AppError("Audibility probe produced no max_volume line for \(file.path)")
             }
-            let value = line.components(separatedBy: "max_volume:").last?.trimmed.replacingOccurrences(of: " dB", with: "") ?? "0"
+            let value =
+                line.components(separatedBy: "max_volume:").last?.trimmed.replacingOccurrences(of: " dB", with: "")
+                ?? "0"
             if value == "-inf" {
                 return false
             }
@@ -224,8 +242,11 @@ extension ConverterTool {
                     )
                 }
             }
-            if !metrics.analysisLimited, let loudnessRange = metrics.loudnessRange, loudnessRange > policy.maxLoudnessRange {
-                issues.append(String(format: "loudness range %.2f exceeds max %.2f", loudnessRange, policy.maxLoudnessRange))
+            if !metrics.analysisLimited, let loudnessRange = metrics.loudnessRange,
+                loudnessRange > policy.maxLoudnessRange
+            {
+                issues.append(
+                    String(format: "loudness range %.2f exceeds max %.2f", loudnessRange, policy.maxLoudnessRange))
             }
             if let truePeak = metrics.truePeakDBTP, truePeak > policy.maxTruePeakDBTP {
                 issues.append(String(format: "true peak %.2f dBTP exceeds max %.2f", truePeak, policy.maxTruePeakDBTP))
@@ -234,7 +255,8 @@ extension ConverterTool {
                 issues.append(String(format: "DC offset %.6f exceeds max %.6f", dcOffset, policy.maxDCOffset))
             }
             if let imbalance = metrics.stereoImbalanceDB, imbalance > policy.maxStereoImbalanceDB {
-                issues.append(String(format: "stereo imbalance %.2f dB exceeds max %.2f", imbalance, policy.maxStereoImbalanceDB))
+                issues.append(
+                    String(format: "stereo imbalance %.2f dB exceeds max %.2f", imbalance, policy.maxStereoImbalanceDB))
             }
             if metrics.clippedSamples > policy.maxClippedSamples {
                 issues.append("clipped samples \(metrics.clippedSamples) exceed max \(policy.maxClippedSamples)")
@@ -279,17 +301,19 @@ extension ConverterTool {
             }
             let delivered = try makeTemp(in: cli.outDir, stem: "\(source.stem).qc-delivery", ext: ".wav")
             defer { discardTempFile(delivered) }
-            _ = try runner.run("ffmpeg", [
-                "-hide_banner", "-nostdin", "-v", "error", "-y",
-                "-i", staged.path,
-                "-map", "0:a:0",
-                "-ac", String(config.wavChannels),
-                "-ar", String(sampleRate),
-                "-c:a", config.wavCodec,
-                "-f", "wav",
-                "-rf64", "always",
-                delivered.path
-            ])
+            _ = try runner.run(
+                "ffmpeg",
+                [
+                    "-hide_banner", "-nostdin", "-v", "error", "-y",
+                    "-i", staged.path,
+                    "-map", "0:a:0",
+                    "-ac", String(config.wavChannels),
+                    "-ar", String(sampleRate),
+                    "-c:a", config.wavCodec,
+                    "-f", "wav",
+                    "-rf64", "always",
+                    delivered.path
+                ])
             return try audioQCResult(for: delivered, policy: policy)
         }
     }
@@ -344,9 +368,13 @@ extension ConverterTool {
         let truePeak = rebase(
             policy.maxTruePeakDBTP, measured: metrics.truePeakDBTP,
             allowance: truePeakAllowanceDB, label: "true peak", unit: " dBTP")
-        let imbalance = rebase(policy.maxStereoImbalanceDB, measured: metrics.stereoImbalanceDB, allowance: 0.1, label: "stereo imbalance", unit: " dB")
-        let loudnessRange = rebase(policy.maxLoudnessRange, measured: metrics.loudnessRange, allowance: 0.5, label: "loudness range", unit: "")
-        let dcOffset = rebase(policy.maxDCOffset, measured: metrics.dcOffset, allowance: 0.001, label: "DC offset", unit: "")
+        let imbalance = rebase(
+            policy.maxStereoImbalanceDB, measured: metrics.stereoImbalanceDB, allowance: 0.1, label: "stereo imbalance",
+            unit: " dB")
+        let loudnessRange = rebase(
+            policy.maxLoudnessRange, measured: metrics.loudnessRange, allowance: 0.5, label: "loudness range", unit: "")
+        let dcOffset = rebase(
+            policy.maxDCOffset, measured: metrics.dcOffset, allowance: 0.001, label: "DC offset", unit: "")
 
         var clippedSamples = policy.maxClippedSamples
         if metrics.clippedSamples > clippedSamples {
@@ -456,11 +484,9 @@ extension ConverterTool {
         }
 
         let measuredValuesAreUsable =
-            (-99.0 ... 0.0).contains(measuredI) &&
-            (0.0 ... 99.0).contains(measuredLRA) &&
-            (-99.0 ... 99.0).contains(measuredTP) &&
-            (-99.0 ... 0.0).contains(measuredThresh) &&
-            (-99.0 ... 99.0).contains(offset)
+            (-99.0...0.0).contains(measuredI) && (0.0...99.0).contains(measuredLRA)
+            && (-99.0...99.0).contains(measuredTP) && (-99.0...0.0).contains(measuredThresh)
+            && (-99.0...99.0).contains(offset)
 
         guard measuredValuesAreUsable else {
             return nil
@@ -493,19 +519,21 @@ extension ConverterTool {
     func applyMasteredWAV(_ source: URL, filter: String, policy: AudioQCPolicy) throws {
         let temp = try makeTemp(in: source.deletingLastPathComponent(), stem: "mastered", ext: ".wav")
         do {
-            _ = try runner.run("ffmpeg", [
-                "-hide_banner", "-nostdin", "-v", "error", "-y",
-                "-i", source.path,
-                "-map", "0:a:0",
-                "-af", filter,
-                "-ac", String(config.wavChannels),
-                "-ar", String(config.wavSampleRate),
-                "-c:a", config.wavCodec,
-                "-f", "wav",
-                "-rf64", "always",
-                "-write_bext", String(config.wavWriteBext),
-                temp.path
-            ])
+            _ = try runner.run(
+                "ffmpeg",
+                [
+                    "-hide_banner", "-nostdin", "-v", "error", "-y",
+                    "-i", source.path,
+                    "-map", "0:a:0",
+                    "-af", filter,
+                    "-ac", String(config.wavChannels),
+                    "-ar", String(config.wavSampleRate),
+                    "-c:a", config.wavCodec,
+                    "-f", "wav",
+                    "-rf64", "always",
+                    "-write_bext", String(config.wavWriteBext),
+                    temp.path
+                ])
             try verifyWAVStandard(temp, qcPolicy: policy)
             try verifyDurationMatch(source: source, output: temp)
             try publishTemp(temp, to: source)
@@ -543,7 +571,8 @@ extension ConverterTool {
                 logger.warn("Two-pass mastering failed for \(source.basename); retrying one-pass loudnorm: \(error)")
             }
         } else {
-            logger.warn("Two-pass mastering measurement out of range for \(source.basename); using one-pass loudnorm fallback")
+            logger.warn(
+                "Two-pass mastering measurement out of range for \(source.basename); using one-pass loudnorm fallback")
         }
 
         try applyMasteredWAV(source, filter: loudnormSinglePassFilter(policy: policy), policy: policy)
@@ -575,7 +604,8 @@ extension ConverterTool {
         if let expected = expectedFormat ?? autoExpected {
             let got = probe.format.lowercasedASCII
             if got != expected.lowercasedASCII {
-                throw AppError("Image format mismatch for \(file.path) (got=\(got) expected=\(expected.lowercasedASCII))")
+                throw AppError(
+                    "Image format mismatch for \(file.path) (got=\(got) expected=\(expected.lowercasedASCII))")
             }
         }
     }
@@ -613,7 +643,12 @@ extension ConverterTool {
             try requireNoVideoStream(file)
         }
         let probeSeconds = String(seconds ?? config.preflightSeconds)
-        _ = try runner.run("ffmpeg", ["-hide_banner", "-nostdin", "-v", "error", "-xerror", "-t", probeSeconds, "-i", file.path, "-map", "0:a:0", "-f", "null", "-"])
+        _ = try runner.run(
+            "ffmpeg",
+            [
+                "-hide_banner", "-nostdin", "-v", "error", "-xerror", "-t", probeSeconds, "-i", file.path, "-map",
+                "0:a:0", "-f", "null", "-"
+            ])
         if requireAudible, !(try verifyAudibleAudioTrack(file)) {
             throw AppError("Audio verification failed: input appears silent or not meaningfully audible: \(file.path)")
         }
@@ -623,21 +658,27 @@ extension ConverterTool {
         guard file.pathExtension.lowercasedASCII == "flac" else {
             throw AppError("Expected .flac input: \(file.path)")
         }
-        try preflightAudioInput(file, expectedContainerTokens: ["flac"], expectedAudioCodecs: ["flac"], requireNoVideo: requireNoVideo, requireAudible: requireAudible)
+        try preflightAudioInput(
+            file, expectedContainerTokens: ["flac"], expectedAudioCodecs: ["flac"], requireNoVideo: requireNoVideo,
+            requireAudible: requireAudible)
     }
 
     func preflightMP3Input(_ file: URL, requireAudible: Bool = true, requireNoVideo: Bool = false) throws {
         guard file.pathExtension.lowercasedASCII == "mp3" else {
             throw AppError("Expected .mp3 input: \(file.path)")
         }
-        try preflightAudioInput(file, expectedContainerTokens: ["mp3"], expectedAudioCodecs: ["mp3"], requireNoVideo: requireNoVideo, requireAudible: requireAudible)
+        try preflightAudioInput(
+            file, expectedContainerTokens: ["mp3"], expectedAudioCodecs: ["mp3"], requireNoVideo: requireNoVideo,
+            requireAudible: requireAudible)
     }
 
     func preflightM4AInput(_ file: URL, requireAudible: Bool = true) throws {
         guard file.pathExtension.lowercasedASCII == "m4a" else {
             throw AppError("Expected .m4a input: \(file.path)")
         }
-        try preflightAudioInput(file, expectedContainerTokens: ["m4a", "mp4", "ipod", "mov"], expectedAudioCodecs: ["aac", "alac"], requireNoVideo: true, requireAudible: requireAudible)
+        try preflightAudioInput(
+            file, expectedContainerTokens: ["m4a", "mp4", "ipod", "mov"], expectedAudioCodecs: ["aac", "alac"],
+            requireNoVideo: true, requireAudible: requireAudible)
     }
 
     func preflightWAVInput(_ file: URL, requireAudible: Bool = true, requireNoVideo: Bool = false) throws {
@@ -645,10 +686,15 @@ extension ConverterTool {
             throw AppError("Expected .wav input: \(file.path)")
         }
         try verifyWAVHeader(file, expectedContainer: "ANY")
-        try preflightAudioInput(file, expectedContainerTokens: ["wav"], expectedAudioCodecs: nil, requireNoVideo: requireNoVideo, requireAudible: requireAudible)
+        try preflightAudioInput(
+            file, expectedContainerTokens: ["wav"], expectedAudioCodecs: nil, requireNoVideo: requireNoVideo,
+            requireAudible: requireAudible)
     }
 
-    func preflightVideoInput(_ file: URL, seconds: Int? = nil, expectedContainerTokens: [String]? = nil, requireAudio: Bool = true, requireAudibleAudio: Bool = true) throws {
+    func preflightVideoInput(
+        _ file: URL, seconds: Int? = nil, expectedContainerTokens: [String]? = nil, requireAudio: Bool = true,
+        requireAudibleAudio: Bool = true
+    ) throws {
         guard fileManager.fileExists(atPath: file.path) else { throw AppError("Video input missing: \(file.path)") }
         guard try fileSizeBytes(file) > 0 else { throw AppError("Video input empty: \(file.path)") }
         if let expectedContainerTokens {
@@ -659,11 +705,17 @@ extension ConverterTool {
             _ = try requireAudioStream(file)
         }
         let probeSeconds = String(seconds ?? config.preflightSeconds)
-        _ = try runner.run("ffmpeg", ["-hide_banner", "-nostdin", "-v", "error", "-xerror", "-t", probeSeconds, "-i", file.path, "-f", "null", "-"])
+        _ = try runner.run(
+            "ffmpeg",
+            [
+                "-hide_banner", "-nostdin", "-v", "error", "-xerror", "-t", probeSeconds, "-i", file.path, "-f", "null",
+                "-"
+            ])
         if requireAudio && requireAudibleAudio {
             let audioIsAudible = try verifyAudibleAudioTrack(file)
             if !audioIsAudible {
-                throw AppError("Video verification failed: audio track appears silent or not meaningfully audible: \(file.path)")
+                throw AppError(
+                    "Video verification failed: audio track appears silent or not meaningfully audible: \(file.path)")
             }
         }
     }
@@ -672,7 +724,9 @@ extension ConverterTool {
         guard file.pathExtension.lowercasedASCII == "mp4" else {
             throw AppError("Expected .mp4 input: \(file.path)")
         }
-        try preflightVideoInput(file, expectedContainerTokens: ["mp4", "mov"], requireAudio: requireAudio, requireAudibleAudio: requireAudibleAudio)
+        try preflightVideoInput(
+            file, expectedContainerTokens: ["mp4", "mov"], requireAudio: requireAudio,
+            requireAudibleAudio: requireAudibleAudio)
     }
 
     // Artwork whose pixels are all achromatic comes back out of the PNG coder as a grayscale
@@ -722,7 +776,9 @@ extension ConverterTool {
         if !expectedColor.trimmed.isEmpty {
             let gotColor = try imageColorSpace(file)?.lowercasedASCII ?? ""
             if !imageColorSpaceMatches(got: gotColor, expected: expectedColor.lowercasedASCII) {
-                throw AppError("Image colorspace mismatch for \(file.path) (got=\(gotColor) expected=\(expectedColor.lowercasedASCII))")
+                throw AppError(
+                    "Image colorspace mismatch for \(file.path) (got=\(gotColor) expected=\(expectedColor.lowercasedASCII))"
+                )
             }
         }
         if let maxBytes {
@@ -752,24 +808,34 @@ extension ConverterTool {
             throw AppError("Audio codec mismatch for \(file.path) (got=\(gotCodec) expected=\(codec.lowercasedASCII))")
         }
         if let sampleRate, gotRate != sampleRate {
-            throw AppError("Audio sample rate mismatch for \(file.path) (got=\(String(describing: gotRate)) expected=\(sampleRate))")
+            throw AppError(
+                "Audio sample rate mismatch for \(file.path) (got=\(String(describing: gotRate)) expected=\(sampleRate))"
+            )
         }
         if let channels, gotChannels != channels {
-            throw AppError("Audio channels mismatch for \(file.path) (got=\(String(describing: gotChannels)) expected=\(channels))")
+            throw AppError(
+                "Audio channels mismatch for \(file.path) (got=\(String(describing: gotChannels)) expected=\(channels))"
+            )
         }
         if let sampleFormat {
             let gotSampleFormat = (try audioField(file, "sample_fmt") ?? "").lowercasedASCII
             if gotSampleFormat != sampleFormat.lowercasedASCII {
-                throw AppError("Audio sample format mismatch for \(file.path) (got=\(gotSampleFormat) expected=\(sampleFormat.lowercasedASCII))")
+                throw AppError(
+                    "Audio sample format mismatch for \(file.path) (got=\(gotSampleFormat) expected=\(sampleFormat.lowercasedASCII))"
+                )
             }
         }
         if let bitsPerRawSample {
             let gotBits = Int(try audioField(file, "bits_per_raw_sample") ?? "")
             if gotBits != bitsPerRawSample {
-                throw AppError("Audio raw bit depth mismatch for \(file.path) (got=\(String(describing: gotBits)) expected=\(bitsPerRawSample))")
+                throw AppError(
+                    "Audio raw bit depth mismatch for \(file.path) (got=\(String(describing: gotBits)) expected=\(bitsPerRawSample))"
+                )
             }
         }
-        _ = try runner.run("ffmpeg", ["-hide_banner", "-nostdin", "-v", "error", "-xerror", "-i", file.path, "-map", "0:a:0", "-f", "null", "-"])
+        _ = try runner.run(
+            "ffmpeg",
+            ["-hide_banner", "-nostdin", "-v", "error", "-xerror", "-i", file.path, "-map", "0:a:0", "-f", "null", "-"])
         if requireAudible {
             if !(try verifyAudibleAudioTrack(file)) {
                 throw AppError("Audio verification failed: output appears silent: \(file.path)")
@@ -806,27 +872,38 @@ extension ConverterTool {
             throw AppError("Video codec mismatch for \(file.path) (got=\(gotCodec) expected=\(codec.lowercasedASCII))")
         }
         if let width, gotWidth != width {
-            throw AppError("Video width mismatch for \(file.path) (got=\(String(describing: gotWidth)) expected=\(width))")
+            throw AppError(
+                "Video width mismatch for \(file.path) (got=\(String(describing: gotWidth)) expected=\(width))")
         }
         if let height, gotHeight != height {
-            throw AppError("Video height mismatch for \(file.path) (got=\(String(describing: gotHeight)) expected=\(height))")
+            throw AppError(
+                "Video height mismatch for \(file.path) (got=\(String(describing: gotHeight)) expected=\(height))")
         }
         if let pixelFormat, gotPixelFormat != pixelFormat.lowercasedASCII {
-            throw AppError("Video pixel format mismatch for \(file.path) (got=\(gotPixelFormat) expected=\(pixelFormat.lowercasedASCII))")
+            throw AppError(
+                "Video pixel format mismatch for \(file.path) (got=\(gotPixelFormat) expected=\(pixelFormat.lowercasedASCII))"
+            )
         }
         if let colorPrimaries, gotPrimaries != colorPrimaries.lowercasedASCII {
-            throw AppError("Video color primaries mismatch for \(file.path) (got=\(gotPrimaries) expected=\(colorPrimaries.lowercasedASCII))")
+            throw AppError(
+                "Video color primaries mismatch for \(file.path) (got=\(gotPrimaries) expected=\(colorPrimaries.lowercasedASCII))"
+            )
         }
         if let colorTransfer, gotTransfer != colorTransfer.lowercasedASCII {
-            throw AppError("Video color transfer mismatch for \(file.path) (got=\(gotTransfer) expected=\(colorTransfer.lowercasedASCII))")
+            throw AppError(
+                "Video color transfer mismatch for \(file.path) (got=\(gotTransfer) expected=\(colorTransfer.lowercasedASCII))"
+            )
         }
         if let colorSpace, gotSpace != colorSpace.lowercasedASCII {
-            throw AppError("Video colorspace mismatch for \(file.path) (got=\(gotSpace) expected=\(colorSpace.lowercasedASCII))")
+            throw AppError(
+                "Video colorspace mismatch for \(file.path) (got=\(gotSpace) expected=\(colorSpace.lowercasedASCII))")
         }
         if let colorRange, gotRange != colorRange.lowercasedASCII {
-            throw AppError("Video color range mismatch for \(file.path) (got=\(gotRange) expected=\(colorRange.lowercasedASCII))")
+            throw AppError(
+                "Video color range mismatch for \(file.path) (got=\(gotRange) expected=\(colorRange.lowercasedASCII))")
         }
-        _ = try runner.run("ffmpeg", ["-hide_banner", "-nostdin", "-v", "error", "-xerror", "-i", file.path, "-f", "null", "-"])
+        _ = try runner.run(
+            "ffmpeg", ["-hide_banner", "-nostdin", "-v", "error", "-xerror", "-i", file.path, "-f", "null", "-"])
     }
 
     func verifyWAVHeader(_ file: URL, expectedContainer: String = "RF64") throws {
@@ -837,12 +914,13 @@ extension ConverterTool {
             throw AppError("WAV header too short: \(file.path)")
         }
         let container = String(data: header.prefix(4), encoding: .ascii) ?? ""
-        let format = String(data: header.subdata(in: 8 ..< 12), encoding: .ascii) ?? ""
+        let format = String(data: header.subdata(in: 8..<12), encoding: .ascii) ?? ""
         if format != "WAVE" {
             throw AppError("WAV format mismatch for \(file.path) (got='\(format)' expected='WAVE')")
         }
         if expectedContainer != "ANY" && container != expectedContainer {
-            throw AppError("WAV container mismatch for \(file.path) (got='\(container)' expected='\(expectedContainer)')")
+            throw AppError(
+                "WAV container mismatch for \(file.path) (got='\(container)' expected='\(expectedContainer)')")
         }
     }
 
@@ -884,11 +962,15 @@ extension ConverterTool {
         try verifyWAVHeader(file, expectedContainer: "RF64")
         try requireFormatNameContains(file, anyOf: ["wav"], label: "WAV container")
         try requireNoVideoStream(file)
-        try verifyAudioOutput(file, codec: config.wavCodec, sampleRate: config.wavSampleRate, channels: config.wavChannels, requireAudible: requireAudible, qcPolicy: qcPolicy)
+        try verifyAudioOutput(
+            file, codec: config.wavCodec, sampleRate: config.wavSampleRate, channels: config.wavChannels,
+            requireAudible: requireAudible, qcPolicy: qcPolicy)
     }
 
     // Generic MP3 validation is for utility actions that should accept any structurally valid MP3.
-    func verifyMP3File(_ file: URL, requireAudible: Bool = true, requireNoVideo: Bool = true, qcPolicy: AudioQCPolicy? = nil) throws {
+    func verifyMP3File(
+        _ file: URL, requireAudible: Bool = true, requireNoVideo: Bool = true, qcPolicy: AudioQCPolicy? = nil
+    ) throws {
         guard file.pathExtension.lowercasedASCII == "mp3" else {
             throw AppError("Expected .mp3 file: \(file.path)")
         }
@@ -896,7 +978,8 @@ extension ConverterTool {
         if requireNoVideo {
             try requireNoVideoStream(file)
         }
-        try verifyAudioOutput(file, codec: "mp3", sampleRate: nil, channels: nil, requireAudible: requireAudible, qcPolicy: qcPolicy)
+        try verifyAudioOutput(
+            file, codec: "mp3", sampleRate: nil, channels: nil, requireAudible: requireAudible, qcPolicy: qcPolicy)
     }
 
     // Project MP3 outputs must satisfy the configured codec, sample-rate, channel, and bitrate floor.
@@ -909,10 +992,14 @@ extension ConverterTool {
         let gotRate = Int(try audioField(file, "sample_rate") ?? "")
         let gotChannels = Int(try audioField(file, "channels") ?? "")
         if gotRate != config.mp3SampleRate {
-            throw AppError("Audio sample rate mismatch for \(file.path) (got=\(String(describing: gotRate)) expected=\(config.mp3SampleRate))")
+            throw AppError(
+                "Audio sample rate mismatch for \(file.path) (got=\(String(describing: gotRate)) expected=\(config.mp3SampleRate))"
+            )
         }
         if gotChannels != config.mp3Channels {
-            throw AppError("Audio channels mismatch for \(file.path) (got=\(String(describing: gotChannels)) expected=\(config.mp3Channels))")
+            throw AppError(
+                "Audio channels mismatch for \(file.path) (got=\(String(describing: gotChannels)) expected=\(config.mp3Channels))"
+            )
         }
         let bitrate = try audioBitrateBps(file)
         if bitrate < config.mp3MinBitrateBps {
@@ -924,7 +1011,8 @@ extension ConverterTool {
         try preflightWAVInput(file, requireNoVideo: false)
         try verifyWAVHeader(file, expectedContainer: "RF64")
         try requireFormatNameContains(file, anyOf: ["wav"], label: "WAV container")
-        try verifyAudioOutput(file, codec: config.wavCodec, sampleRate: config.wavSampleRate, channels: config.wavChannels, qcPolicy: nil)
+        try verifyAudioOutput(
+            file, codec: config.wavCodec, sampleRate: config.wavSampleRate, channels: config.wavChannels, qcPolicy: nil)
     }
 
     func verifyFLACFile(
@@ -976,13 +1064,17 @@ extension ConverterTool {
         }
         let delta = abs(sourceDuration - outputDuration)
         if delta > (tolerance ?? config.durationToleranceSec) {
-            throw AppError("Duration mismatch exceeds tolerance: src=\(sourceDuration) out=\(outputDuration) delta=\(delta) tol=\(tolerance ?? config.durationToleranceSec)")
+            throw AppError(
+                "Duration mismatch exceeds tolerance: src=\(sourceDuration) out=\(outputDuration) delta=\(delta) tol=\(tolerance ?? config.durationToleranceSec)"
+            )
         }
     }
 
     func verifySourceLoudnessPreserved(source: URL, output: URL, toleranceDB: Double = 1.0) throws {
         let outputDuration = try mediaDuration(output)
-        let sourceMetrics = try audioQCResultForComparison(source, policy: config.deliveryAudioQCPolicy, limitDuration: outputDuration).metrics
+        let sourceMetrics = try audioQCResultForComparison(
+            source, policy: config.deliveryAudioQCPolicy, limitDuration: outputDuration
+        ).metrics
         let outputMetrics = try audioQCResult(for: output, policy: config.deliveryAudioQCPolicy).metrics
 
         if let sourceLUFS = sourceMetrics.integratedLUFS, let outputLUFS = outputMetrics.integratedLUFS {
@@ -990,7 +1082,8 @@ extension ConverterTool {
             if delta > toleranceDB {
                 throw AppError(
                     String(
-                        format: "Audio loudness drift exceeds tolerance: src=%.2f LUFS out=%.2f LUFS delta=%.2f tol=%.2f (%@ -> %@)",
+                        format:
+                            "Audio loudness drift exceeds tolerance: src=%.2f LUFS out=%.2f LUFS delta=%.2f tol=%.2f (%@ -> %@)",
                         sourceLUFS,
                         outputLUFS,
                         delta,
@@ -1010,7 +1103,8 @@ extension ConverterTool {
             if delta > toleranceDB {
                 throw AppError(
                     String(
-                        format: "Audio peak drift exceeds tolerance: src=%.2f dBFS out=%.2f dBFS delta=%.2f tol=%.2f (%@ -> %@)",
+                        format:
+                            "Audio peak drift exceeds tolerance: src=%.2f dBFS out=%.2f dBFS delta=%.2f tol=%.2f (%@ -> %@)",
                         sourcePeak,
                         outputPeak,
                         delta,
@@ -1041,30 +1135,36 @@ extension ConverterTool {
     }
 
     // Decode to a canonical signed 32-bit PCM stream so lossless/container variants can be compared sample-for-sample.
-    func decodeAudioToCanonicalPCM(_ source: URL, output: URL, sampleRate: Int, channels: Int, format: CanonicalPCMFormat) throws {
-        _ = try runner.run("ffmpeg", [
-            "-hide_banner", "-nostdin", "-v", "error", "-y",
-            "-i", source.path,
-            "-map", "0:a:0",
-            "-vn",
-            "-ac", String(channels),
-            "-ar", String(sampleRate),
-            "-f", format.ffmpegFormat,
-            "-acodec", format.ffmpegCodec,
-            output.path
-        ])
+    func decodeAudioToCanonicalPCM(
+        _ source: URL, output: URL, sampleRate: Int, channels: Int, format: CanonicalPCMFormat
+    ) throws {
+        _ = try runner.run(
+            "ffmpeg",
+            [
+                "-hide_banner", "-nostdin", "-v", "error", "-y",
+                "-i", source.path,
+                "-map", "0:a:0",
+                "-vn",
+                "-ac", String(channels),
+                "-ar", String(sampleRate),
+                "-f", format.ffmpegFormat,
+                "-acodec", format.ffmpegCodec,
+                output.path
+            ])
     }
 
     func littleEndianSignedSample(_ data: Data, offset: Int, format: CanonicalPCMFormat) -> Int64 {
         switch format {
         case .s24le:
-            let value = UInt32(data[offset])
+            let value =
+                UInt32(data[offset])
                 | (UInt32(data[offset + 1]) << 8)
                 | (UInt32(data[offset + 2]) << 16)
             let signed = (value & 0x800000) != 0 ? Int64(value | 0xFF00_0000) - (1 << 32) : Int64(value)
             return signed
         case .s32le:
-            let value = UInt32(data[offset])
+            let value =
+                UInt32(data[offset])
                 | (UInt32(data[offset + 1]) << 8)
                 | (UInt32(data[offset + 2]) << 16)
                 | (UInt32(data[offset + 3]) << 24)
@@ -1114,10 +1214,12 @@ extension ConverterTool {
                 break
             }
             guard expectedChunk.count == actualChunk.count else {
-                throw AppError("Canonical PCM chunk size mismatch while comparing '\(expected.path)' and '\(actual.path)'")
+                throw AppError(
+                    "Canonical PCM chunk size mismatch while comparing '\(expected.path)' and '\(actual.path)'")
             }
             guard expectedChunk.count % bytesPerSample == 0 else {
-                throw AppError("Canonical PCM chunk is not sample-aligned while comparing '\(expected.path)' and '\(actual.path)'")
+                throw AppError(
+                    "Canonical PCM chunk is not sample-aligned while comparing '\(expected.path)' and '\(actual.path)'")
             }
 
             if expectedChunk == actualChunk {
@@ -1158,8 +1260,10 @@ extension ConverterTool {
     ) throws {
         let compareSampleRate = try sampleRate ?? requireAudioSampleRate(source)
         let compareChannels = try channels ?? requireAudioChannels(source)
-        let sourcePCM = try makeTemp(in: cli.outDir, stem: "\(source.stem).canonical.source", ext: ".\(format.ffmpegFormat)")
-        let outputPCM = try makeTemp(in: cli.outDir, stem: "\(output.stem).canonical.output", ext: ".\(format.ffmpegFormat)")
+        let sourcePCM = try makeTemp(
+            in: cli.outDir, stem: "\(source.stem).canonical.source", ext: ".\(format.ffmpegFormat)")
+        let outputPCM = try makeTemp(
+            in: cli.outDir, stem: "\(output.stem).canonical.output", ext: ".\(format.ffmpegFormat)")
 
         defer {
             for temp in [sourcePCM, outputPCM] {
@@ -1168,8 +1272,10 @@ extension ConverterTool {
             }
         }
 
-        try decodeAudioToCanonicalPCM(source, output: sourcePCM, sampleRate: compareSampleRate, channels: compareChannels, format: format)
-        try decodeAudioToCanonicalPCM(output, output: outputPCM, sampleRate: compareSampleRate, channels: compareChannels, format: format)
+        try decodeAudioToCanonicalPCM(
+            source, output: sourcePCM, sampleRate: compareSampleRate, channels: compareChannels, format: format)
+        try decodeAudioToCanonicalPCM(
+            output, output: outputPCM, sampleRate: compareSampleRate, channels: compareChannels, format: format)
         let allowedDelta = maxAllowedDelta ?? format.maxAllowedDelta
         // No sample may exceed the per-sample tolerance. Exact formats (delta 0) stay
         // strictly bit-exact; resampled formats carry an explicit non-zero tolerance.
@@ -1241,7 +1347,9 @@ extension ConverterTool {
     }
 
     func stripTrailingDerivedImageSuffix(from stem: String) -> String {
-        let orderedSuffixes = ["_NFT8K", "_NFT3K", "_NFT2K", "_20MB", "_5MB", "_2MB", "_1MB", "_8K", "_4K", "_3K", "_2K"]
+        let orderedSuffixes = [
+            "_NFT8K", "_NFT3K", "_NFT2K", "_20MB", "_5MB", "_2MB", "_1MB", "_8K", "_4K", "_3K", "_2K"
+        ]
         for suffix in orderedSuffixes where stem.hasSuffix(suffix) {
             let trimmed = String(stem.dropLast(suffix.count))
             return trimmed.isEmpty ? stem : trimmed
@@ -1266,7 +1374,9 @@ extension ConverterTool {
         try verifyWAVHeader(file, expectedContainer: "RF64")
         try requireFormatNameContains(file, anyOf: ["wav"], label: "WAV container")
         try requireNoVideoStream(file)
-        try verifyAudioOutput(file, codec: config.wavCodec, sampleRate: config.wavSampleRate, channels: config.wavChannels, qcPolicy: qcPolicy)
+        try verifyAudioOutput(
+            file, codec: config.wavCodec, sampleRate: config.wavSampleRate, channels: config.wavChannels,
+            qcPolicy: qcPolicy)
         let hasBext = try containsChunk(file, chunkID: "bext")
         if hasBext != expectBext {
             let expected = expectBext ? "present" : "absent"
@@ -1282,10 +1392,14 @@ extension ConverterTool {
         }
         try requireFormatNameContains(file, anyOf: ["wav"], label: "BW64 container")
         try requireNoVideoStream(file)
-        try verifyAudioOutput(file, codec: "pcm_s32le", sampleRate: config.wavSampleRate, channels: config.wavChannels, qcPolicy: qcPolicy)
+        try verifyAudioOutput(
+            file, codec: "pcm_s32le", sampleRate: config.wavSampleRate, channels: config.wavChannels, qcPolicy: qcPolicy
+        )
     }
 
-    func writeBW64FileFromRawFloatPCM(inputPCM: URL, output: URL, channels: Int, sampleRate: Int, bitDepth: Int = 32) throws {
+    func writeBW64FileFromRawFloatPCM(
+        inputPCM: URL, output: URL, channels: Int, sampleRate: Int, bitDepth: Int = 32
+    ) throws {
         var errorBuffer = [CChar](repeating: 0, count: 4096)
         let status = errorBuffer.withUnsafeMutableBufferPointer { buffer -> Int32 in
             inputPCM.path.withCString { inputPath in

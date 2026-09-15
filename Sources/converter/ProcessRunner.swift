@@ -223,7 +223,9 @@ final class ProcessRunner: Sendable {
             closeHandles(child.writeEnds)
             _ = child.stdout.waitString()
             _ = child.stderr.waitString()
-            throw AppError("Failed to launch command: \(formatCommand(executableURL.path, arguments)) | \(error.localizedDescription)")
+            throw AppError(
+                "Failed to launch command: \(formatCommand(executableURL.path, arguments)) | \(error.localizedDescription)"
+            )
         }
 
         closeHandles(child.writeEnds)
@@ -319,7 +321,8 @@ final class ProcessRunner: Sendable {
     private func reportCaptureIssues(stdout: PipeCapture, stderr: PipeCapture, process: Process) {
         if !stdout.hasFinishedReading || !stderr.hasFinishedReading {
             let command = formatCommand(process.executableURL?.path ?? "child", process.arguments ?? [])
-            logger.warn("A child left its output pipes open after exiting; captured output may be incomplete: \(command)")
+            logger.warn(
+                "A child left its output pipes open after exiting; captured output may be incomplete: \(command)")
         }
         for (label, capture) in [("stdout", stdout), ("stderr", stderr)] {
             if capture.wasTruncated {

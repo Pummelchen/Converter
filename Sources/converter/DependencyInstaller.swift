@@ -61,7 +61,7 @@ extension DependencyBootstrapper {
         guard process.terminationStatus == 0 else {
             throw AppError(
                 "Dependency installer failed: \(executable.path) \(arguments.joined(separator: " ")) "
-                + "exited with status \(process.terminationStatus)\(diagnostic)"
+                    + "exited with status \(process.terminationStatus)\(diagnostic)"
             )
         }
     }

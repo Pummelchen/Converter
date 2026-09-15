@@ -30,17 +30,17 @@ struct LoudnessStaticGainPlan: Equatable {
 // from table 0, so all eight necessarily agree on the one polynomial. Built once per
 // process rather than per call.
 private let crc32Tables: [[UInt32]] = {
-    let polynomial: UInt32 = 0xEDB88320
+    let polynomial: UInt32 = 0xEDB8_8320
     var tables = [[UInt32]](repeating: [UInt32](repeating: 0, count: 256), count: 8)
-    for index in 0 ..< 256 {
+    for index in 0..<256 {
         var value = UInt32(index)
-        for _ in 0 ..< 8 {
+        for _ in 0..<8 {
             value = (value & 1) == 1 ? polynomial ^ (value >> 1) : (value >> 1)
         }
         tables[0][index] = value
     }
-    for slice in 1 ..< 8 {
-        for index in 0 ..< 256 {
+    for slice in 1..<8 {
+        for index in 0..<256 {
             let previous = tables[slice - 1][index]
             tables[slice][index] = (previous >> 8) ^ tables[0][Int(previous & 0xFF)]
         }
@@ -56,7 +56,9 @@ extension ConverterTool {
         let allowedTolerance = tolerance ?? config.durationToleranceSec
         let delta = abs(actualDuration - expectedSeconds)
         if delta > allowedTolerance {
-            throw AppError("Duration mismatch for \(label): got=\(actualDuration) expected=\(expectedSeconds) delta=\(delta) tol=\(allowedTolerance)")
+            throw AppError(
+                "Duration mismatch for \(label): got=\(actualDuration) expected=\(expectedSeconds) delta=\(delta) tol=\(allowedTolerance)"
+            )
         }
     }
 
@@ -361,7 +363,8 @@ extension ConverterTool {
         }
         // A true-peak issue is only tolerable when the render did not create it (#0050).
         if let truePeak = result.metrics.truePeakDBTP, truePeak.isFinite,
-           truePeak > loudnessFallbackTruePeakCeilingDBTP(plan: plan, lossyOutput: lossyOutput) {
+            truePeak > loudnessFallbackTruePeakCeilingDBTP(plan: plan, lossyOutput: lossyOutput)
+        {
             return false
         }
         // Bounds the fallback so a far-off-target render cannot be published silently.
@@ -395,10 +398,12 @@ extension ConverterTool {
             "equalizer", "firequalizer", "highpass", "lowpass",
             "superequalizer", "treble"
         ]
-        let filterNames = filter
+        let filterNames =
+            filter
             .split(separator: ",")
             .compactMap { component -> String? in
-                let name = component
+                let name =
+                    component
                     .split(whereSeparator: { $0 == "=" || $0 == ":" })
                     .first?
                     .trimmingCharacters(in: .whitespacesAndNewlines)
@@ -406,7 +411,8 @@ extension ConverterTool {
                 return name?.isEmpty == false ? name : nil
             }
         if let forbidden = filterNames.first(where: { forbiddenFilters.contains($0) }) {
-            throw AppError("Loudness normalization must stay EQ-neutral; forbidden filter '\(forbidden)' was requested.")
+            throw AppError(
+                "Loudness normalization must stay EQ-neutral; forbidden filter '\(forbidden)' was requested.")
         }
     }
 
@@ -415,7 +421,8 @@ extension ConverterTool {
     }
 
     func staticLoudnessGainPlan(for file: URL, policy: AudioQCPolicy) throws -> LoudnessStaticGainPlan {
-        let metrics = try audioQCResult(for: file, policy: loudnessPolicy(targetLUFS: policy.targetLUFS, tolerance: 99)).metrics
+        let metrics = try audioQCResult(for: file, policy: loudnessPolicy(targetLUFS: policy.targetLUFS, tolerance: 99))
+            .metrics
         guard let integrated = metrics.integratedLUFS, integrated.isFinite else {
             throw AppError("Unable to measure integrated loudness for transparent loudness gain: \(file.path)")
         }
@@ -445,7 +452,8 @@ extension ConverterTool {
 
     func loudnessMeasurement(for file: URL) throws -> LoudnessScanEntry {
         try preflightAudioMediaSource(file, label: "loudscan")
-        let result = try audioQCResult(for: file, policy: loudnessPolicy(targetLUFS: config.audioQCTargetLUFS, tolerance: 99))
+        let result = try audioQCResult(
+            for: file, policy: loudnessPolicy(targetLUFS: config.audioQCTargetLUFS, tolerance: 99))
         guard let integrated = result.metrics.integratedLUFS, integrated.isFinite else {
             throw AppError("Unable to measure integrated loudness for \(file.path)")
         }
@@ -458,10 +466,12 @@ extension ConverterTool {
         }
         let average = entries.map(\.integratedLUFS).reduce(0, +) / Double(entries.count)
         guard let quietest = entries.min(by: { $0.integratedLUFS < $1.integratedLUFS }),
-              let loudest = entries.max(by: { $0.integratedLUFS < $1.integratedLUFS }) else {
+            let loudest = entries.max(by: { $0.integratedLUFS < $1.integratedLUFS })
+        else {
             throw AppError("No loudness entries to report.")
         }
-        let top3 = entries
+        let top3 =
+            entries
             .sorted { $0.integratedLUFS > $1.integratedLUFS }
             .prefix(3)
         let top3Average = top3.map(\.integratedLUFS).reduce(0, +) / Double(top3.count)
@@ -477,28 +487,31 @@ extension ConverterTool {
     func loudScanReportLines(progress: ((LoudnessScanProgress) -> Void)? = nil) throws -> [String] {
         let files = try audioLoudnessCandidates(includeDerived: true)
         guard !files.isEmpty else {
-            throw AppError("No supported audio media files (.flac, .wav, .mp3, .m4a, .mp4) found in '\(cli.srcDir.path)'.")
+            throw AppError(
+                "No supported audio media files (.flac, .wav, .mp3, .m4a, .mp4) found in '\(cli.srcDir.path)'.")
         }
 
         var entries: [LoudnessScanEntry] = []
         entries.reserveCapacity(files.count)
         for (index, file) in files.enumerated() {
-            progress?(LoudnessScanProgress(
-                processedFiles: index,
-                totalFiles: files.count,
-                currentFile: file,
-                reportLines: [],
-                isMeasuring: true
-            ))
+            progress?(
+                LoudnessScanProgress(
+                    processedFiles: index,
+                    totalFiles: files.count,
+                    currentFile: file,
+                    reportLines: [],
+                    isMeasuring: true
+                ))
 
             entries.append(try loudnessMeasurement(for: file))
-            progress?(LoudnessScanProgress(
-                processedFiles: index + 1,
-                totalFiles: files.count,
-                currentFile: file,
-                reportLines: try loudScanReportLines(entries: entries),
-                isMeasuring: false
-            ))
+            progress?(
+                LoudnessScanProgress(
+                    processedFiles: index + 1,
+                    totalFiles: files.count,
+                    currentFile: file,
+                    reportLines: try loudScanReportLines(entries: entries),
+                    isMeasuring: false
+                ))
         }
         return try loudScanReportLines(entries: entries)
     }
@@ -506,7 +519,8 @@ extension ConverterTool {
     func verifyTypedAudioOutput(_ file: URL, sourceExtension: String, source: URL?, qcPolicy: AudioQCPolicy?) throws {
         switch sourceExtension.lowercasedASCII {
         case "flac":
-            try verifyFLACFile(file, sampleRate: config.flacSampleRate, channels: config.flacChannels, qcPolicy: qcPolicy)
+            try verifyFLACFile(
+                file, sampleRate: config.flacSampleRate, channels: config.flacChannels, qcPolicy: qcPolicy)
         case "wav":
             try verifyWAVStandard(file, qcPolicy: qcPolicy)
         case "mp3":
@@ -599,8 +613,8 @@ extension ConverterTool {
             let peak = after.peakLevelDBFS.map { String(format: "%.2f", $0) } ?? "n/a"
             throw AppError(
                 "Bass adjustment of \(source.basename) clips: \(after.clippedSamples) full-scale samples "
-                + "(peak \(peak) dBFS, source had \(before.clippedSamples)) after \(ffmpegNumber(spec.gainDB)) dB "
-                + "below \(ffmpegNumber(spec.frequencyHz)) Hz. Reduce the gain or lower the source level first."
+                    + "(peak \(peak) dBFS, source had \(before.clippedSamples)) after \(ffmpegNumber(spec.gainDB)) dB "
+                    + "below \(ffmpegNumber(spec.frequencyHz)) Hz. Reduce the gain or lower the source level first."
             )
         }
     }
@@ -620,9 +634,12 @@ extension ConverterTool {
         let output = cli.outDir
             .appendingPathComponent(source.stem + bassOutputSuffix(for: spec))
             .appendingPathExtension(source.pathExtension.lowercasedASCII)
-        if canReuseOutput(output, source: source, verifier: {
-            try self.verifyBassOutput(output, source: source)
-        }) {
+        if canReuseOutput(
+            output, source: source,
+            verifier: {
+                try self.verifyBassOutput(output, source: source)
+            })
+        {
             logger.info("Skip existing bass-adjusted media: \(output.basename)")
             return output
         }
@@ -671,11 +688,15 @@ extension ConverterTool {
             .appendingPathComponent(source.stem + loudnessOutputSuffix(for: spec))
             .appendingPathExtension(source.pathExtension.lowercasedASCII)
         guard output.standardizedFileURL != source.standardizedFileURL else {
-            throw AppError("Refusing loudness normalization because source and output resolve to the same path: \(source.path)")
+            throw AppError(
+                "Refusing loudness normalization because source and output resolve to the same path: \(source.path)")
         }
-        if canReuseOutput(output, source: source, verifier: {
-            try self.verifyLoudnessOutput(output, source: source, policy: policy)
-        }) {
+        if canReuseOutput(
+            output, source: source,
+            verifier: {
+                try self.verifyLoudnessOutput(output, source: source, policy: policy)
+            })
+        {
             logger.info("Skip existing loudness-normalized media: \(output.basename)")
             return output
         }
@@ -712,9 +733,11 @@ extension ConverterTool {
                 return output
             }
 
-            guard loudnessCandidateIsPublishableFallback(
-                result, policy: policy, plan: plan, lossyOutput: loudnessOutputIsLossy(output)
-            ) else {
+            guard
+                loudnessCandidateIsPublishableFallback(
+                    result, policy: policy, plan: plan, lossyOutput: loudnessOutputIsLossy(output)
+                )
+            else {
                 throw AppError(loudnessQCFailureMessage(file: temp, result: result))
             }
             try publishTemp(temp, to: output)
@@ -747,9 +770,12 @@ extension ConverterTool {
         guard output.standardizedFileURL != source.standardizedFileURL else {
             throw AppError("Refusing to master \(source.path): source and output resolve to the same path.")
         }
-        if canReuseOutput(output, source: source, verifier: {
-            try self.verifyMasteredOutput(output, source: source)
-        }) {
+        if canReuseOutput(
+            output, source: source,
+            verifier: {
+                try self.verifyMasteredOutput(output, source: source)
+            })
+        {
             logger.info("Skip existing mastered media: \(output.basename)")
             return output
         }
@@ -799,17 +825,20 @@ extension ConverterTool {
     }
 
     func audioSegmentMaxVolumeDBFS(file: URL, startSeconds: Double, durationSeconds: Double) throws -> Double {
-        let result = try runner.run("ffmpeg", [
-            "-hide_banner", "-nostdin", "-v", "info",
-            "-ss", ffmpegArg("%.6f", max(0, startSeconds)),
-            "-t", ffmpegArg("%.6f", durationSeconds),
-            "-i", file.path,
-            "-map", "0:a:0",
-            "-af", "volumedetect",
-            "-f", "null",
-            "-"
-        ])
-        for line in result.stderr.split(whereSeparator: \.isNewline).map(String.init).reversed() where line.contains("max_volume:") {
+        let result = try runner.run(
+            "ffmpeg",
+            [
+                "-hide_banner", "-nostdin", "-v", "info",
+                "-ss", ffmpegArg("%.6f", max(0, startSeconds)),
+                "-t", ffmpegArg("%.6f", durationSeconds),
+                "-i", file.path,
+                "-map", "0:a:0",
+                "-af", "volumedetect",
+                "-f", "null",
+                "-"
+            ])
+        for line in result.stderr.split(whereSeparator: \.isNewline).map(String.init).reversed()
+        where line.contains("max_volume:") {
             let tail = line.components(separatedBy: "max_volume:").last?.trimmed ?? ""
             let rawValue = tail.components(separatedBy: " dB").first?.trimmed ?? tail
             if rawValue == "-inf" {
@@ -819,17 +848,20 @@ extension ConverterTool {
                 return value
             }
         }
-        let fallback = try runner.run("ffmpeg", [
-            "-hide_banner", "-nostdin", "-v", "info",
-            "-i", file.path,
-            "-ss", ffmpegArg("%.6f", max(0, startSeconds)),
-            "-t", ffmpegArg("%.6f", durationSeconds),
-            "-map", "0:a:0",
-            "-af", "astats=metadata=0:reset=0:measure_overall=Peak_level",
-            "-f", "null",
-            "-"
-        ])
-        for line in fallback.stderr.split(whereSeparator: \.isNewline).map(String.init).reversed() where line.contains("Peak level dB:") {
+        let fallback = try runner.run(
+            "ffmpeg",
+            [
+                "-hide_banner", "-nostdin", "-v", "info",
+                "-i", file.path,
+                "-ss", ffmpegArg("%.6f", max(0, startSeconds)),
+                "-t", ffmpegArg("%.6f", durationSeconds),
+                "-map", "0:a:0",
+                "-af", "astats=metadata=0:reset=0:measure_overall=Peak_level",
+                "-f", "null",
+                "-"
+            ])
+        for line in fallback.stderr.split(whereSeparator: \.isNewline).map(String.init).reversed()
+        where line.contains("Peak level dB:") {
             let tail = line.components(separatedBy: "Peak level dB:").last?.trimmed ?? ""
             if tail == "-inf" {
                 return -1_000
@@ -841,31 +873,38 @@ extension ConverterTool {
         throw AppError("Unable to verify silent audio segment in \(file.path)")
     }
 
-    func audioSegmentIntegratedLUFS(file: URL, startSeconds: Double, durationSeconds: Double, targetLUFS: Double) throws -> Double {
-        let filter = "loudnorm=I=\(LoudnormArgument.integrated(targetLUFS)):TP=\(LoudnormArgument.truePeak(config.audioQCMaxTruePeakDBTP)):LRA=\(LoudnormArgument.loudnessRange(50)):print_format=json"
+    func audioSegmentIntegratedLUFS(
+        file: URL, startSeconds: Double, durationSeconds: Double, targetLUFS: Double
+    ) throws -> Double {
+        let filter =
+            "loudnorm=I=\(LoudnormArgument.integrated(targetLUFS)):TP=\(LoudnormArgument.truePeak(config.audioQCMaxTruePeakDBTP)):LRA=\(LoudnormArgument.loudnessRange(50)):print_format=json"
         func runProbe(accurateSeek: Bool) throws -> ProcessResult {
             if accurateSeek {
-                return try runner.run("ffmpeg", [
+                return try runner.run(
+                    "ffmpeg",
+                    [
+                        "-hide_banner", "-nostdin", "-v", "info",
+                        "-i", file.path,
+                        "-ss", ffmpegArg("%.6f", max(0, startSeconds)),
+                        "-t", ffmpegArg("%.6f", durationSeconds),
+                        "-map", "0:a:0",
+                        "-af", filter,
+                        "-f", "null",
+                        "-"
+                    ])
+            }
+            return try runner.run(
+                "ffmpeg",
+                [
                     "-hide_banner", "-nostdin", "-v", "info",
-                    "-i", file.path,
                     "-ss", ffmpegArg("%.6f", max(0, startSeconds)),
                     "-t", ffmpegArg("%.6f", durationSeconds),
+                    "-i", file.path,
                     "-map", "0:a:0",
                     "-af", filter,
                     "-f", "null",
                     "-"
                 ])
-            }
-            return try runner.run("ffmpeg", [
-                "-hide_banner", "-nostdin", "-v", "info",
-                "-ss", ffmpegArg("%.6f", max(0, startSeconds)),
-                "-t", ffmpegArg("%.6f", durationSeconds),
-                "-i", file.path,
-                "-map", "0:a:0",
-                "-af", filter,
-                "-f", "null",
-                "-"
-            ])
         }
 
         let result = try runProbe(accurateSeek: false)
@@ -903,14 +942,20 @@ extension ConverterTool {
                     + "\(String(format: "%.3f", trailingProbeSeconds))s (need 0.05s).")
         }
         let maxSilentVolumeDBFS = -80.0
-        let leadingMax = try audioSegmentMaxVolumeDBFS(file: file, startSeconds: 0, durationSeconds: leadingProbeSeconds)
+        let leadingMax = try audioSegmentMaxVolumeDBFS(
+            file: file, startSeconds: 0, durationSeconds: leadingProbeSeconds)
         if leadingMax > maxSilentVolumeDBFS {
-            throw AppError("Leading silence verification failed for \(file.path): max_volume=\(String(format: "%.2f", leadingMax)) dBFS")
+            throw AppError(
+                "Leading silence verification failed for \(file.path): max_volume=\(String(format: "%.2f", leadingMax)) dBFS"
+            )
         }
         let trailingStart = max(0, expectedDuration - spec.seconds + boundaryMargin)
-        let trailingMax = try audioSegmentMaxVolumeDBFS(file: file, startSeconds: trailingStart, durationSeconds: trailingProbeSeconds)
+        let trailingMax = try audioSegmentMaxVolumeDBFS(
+            file: file, startSeconds: trailingStart, durationSeconds: trailingProbeSeconds)
         if trailingMax > maxSilentVolumeDBFS {
-            throw AppError("Trailing silence verification failed for \(file.path): max_volume=\(String(format: "%.2f", trailingMax)) dBFS")
+            throw AppError(
+                "Trailing silence verification failed for \(file.path): max_volume=\(String(format: "%.2f", trailingMax)) dBFS"
+            )
         }
     }
 
@@ -975,7 +1020,8 @@ extension ConverterTool {
         func verifySegment(label: String, start: Double) throws {
             let maxVolume: Double
             do {
-                maxVolume = try audioSegmentMaxVolumeDBFS(file: file, startSeconds: start, durationSeconds: probeSeconds)
+                maxVolume = try audioSegmentMaxVolumeDBFS(
+                    file: file, startSeconds: start, durationSeconds: probeSeconds)
             } catch {
                 throw AppError(
                     "\(label) noise peak verification failed for \(file.path): "
@@ -985,7 +1031,9 @@ extension ConverterTool {
                 )
             }
             if maxVolume <= minimumAudibleDBFS {
-                throw AppError("\(label) noise verification failed for \(file.path): max_volume=\(String(format: "%.2f", maxVolume)) dBFS")
+                throw AppError(
+                    "\(label) noise verification failed for \(file.path): max_volume=\(String(format: "%.2f", maxVolume)) dBFS"
+                )
             }
             let integrated = try audioSegmentIntegratedLUFS(
                 file: file,
@@ -1032,12 +1080,15 @@ extension ConverterTool {
                 )
             }
             if maxVolume > -55.0 {
-                throw AppError("\(label) transition silence verification failed for \(file.path): max_volume=\(String(format: "%.2f", maxVolume)) dBFS")
+                throw AppError(
+                    "\(label) transition silence verification failed for \(file.path): max_volume=\(String(format: "%.2f", maxVolume)) dBFS"
+                )
             }
         }
 
         try verifySilenceGap(label: "Leading", start: spec.seconds)
-        try verifySilenceGap(label: "Trailing", start: max(0, expectedDuration - spec.seconds - NoiseSpec.transitionSilenceSeconds))
+        try verifySilenceGap(
+            label: "Trailing", start: max(0, expectedDuration - spec.seconds - NoiseSpec.transitionSilenceSeconds))
     }
 
     func noiseLUFSTolerance(for spec: NoiseSpec) -> Double {
@@ -1078,21 +1129,23 @@ extension ConverterTool {
 
         let paddedWAV = try makeTemp(in: cli.outDir, stem: "\(source.stem).silence.padded", ext: ".wav")
         do {
-            _ = try runner.run("ffmpeg", [
-                "-hide_banner", "-nostdin", "-v", "error", "-y",
-                "-i", sourceWAV.path,
-                "-map", "0:a:0",
-                "-af", silenceAudioFilter(for: spec),
-                "-t", ffmpegArg("%.6f", expectedDuration),
-                "-vn", "-sn", "-dn",
-                "-ac", String(config.wavChannels),
-                "-ar", String(config.wavSampleRate),
-                "-c:a", config.wavCodec,
-                "-f", "wav",
-                "-rf64", "always",
-                "-write_bext", String(config.wavWriteBext),
-                paddedWAV.path
-            ])
+            _ = try runner.run(
+                "ffmpeg",
+                [
+                    "-hide_banner", "-nostdin", "-v", "error", "-y",
+                    "-i", sourceWAV.path,
+                    "-map", "0:a:0",
+                    "-af", silenceAudioFilter(for: spec),
+                    "-t", ffmpegArg("%.6f", expectedDuration),
+                    "-vn", "-sn", "-dn",
+                    "-ac", String(config.wavChannels),
+                    "-ar", String(config.wavSampleRate),
+                    "-c:a", config.wavCodec,
+                    "-f", "wav",
+                    "-rf64", "always",
+                    "-write_bext", String(config.wavWriteBext),
+                    paddedWAV.path
+                ])
             try verifyWAVStandard(paddedWAV, qcPolicy: nil)
             try verifyDuration(paddedWAV, expectedSeconds: expectedDuration, label: "silence-padded WAV")
             try verifySilencePadding(paddedWAV, expectedDuration: expectedDuration, spec: spec)
@@ -1113,20 +1166,23 @@ extension ConverterTool {
     func makeRawNoiseSegmentWAV(spec: NoiseSpec, stem: String, seed: UInt32) throws -> URL {
         let temp = try makeTemp(in: cli.outDir, stem: stem, ext: ".wav")
         do {
-            _ = try runner.run("ffmpeg", [
-                "-hide_banner", "-nostdin", "-v", "error", "-y",
-                "-f", "lavfi",
-                "-i", "anoisesrc=c=white:r=\(noiseGenerationSampleRate()):a=0.5:d=\(ffmpegArg("%.6f", spec.seconds)):s=\(seed)",
-                "-map", "0:a:0",
-                "-vn", "-sn", "-dn",
-                "-ac", String(config.wavChannels),
-                "-ar", String(config.wavSampleRate),
-                "-c:a", config.wavCodec,
-                "-f", "wav",
-                "-rf64", "always",
-                "-write_bext", String(config.wavWriteBext),
-                temp.path
-            ])
+            _ = try runner.run(
+                "ffmpeg",
+                [
+                    "-hide_banner", "-nostdin", "-v", "error", "-y",
+                    "-f", "lavfi",
+                    "-i",
+                    "anoisesrc=c=white:r=\(noiseGenerationSampleRate()):a=0.5:d=\(ffmpegArg("%.6f", spec.seconds)):s=\(seed)",
+                    "-map", "0:a:0",
+                    "-vn", "-sn", "-dn",
+                    "-ac", String(config.wavChannels),
+                    "-ar", String(config.wavSampleRate),
+                    "-c:a", config.wavCodec,
+                    "-f", "wav",
+                    "-rf64", "always",
+                    "-write_bext", String(config.wavWriteBext),
+                    temp.path
+                ])
             try verifyWAVStandard(temp, qcPolicy: nil)
             try verifyDuration(temp, expectedSeconds: spec.seconds, label: "raw noise segment", tolerance: 0.5)
             return temp
@@ -1149,12 +1205,15 @@ extension ConverterTool {
         )
         do {
             try verifyWAVStandard(processed, qcPolicy: nil)
-            try verifyDuration(processed, expectedSeconds: spec.seconds, label: "normalized noise segment", tolerance: 0.5)
+            try verifyDuration(
+                processed, expectedSeconds: spec.seconds, label: "normalized noise segment", tolerance: 0.5)
             let result = try audioQCResult(for: processed, policy: policy)
             if !loudnessNonRecoverableIssues(result).isEmpty {
                 throw AppError(loudnessQCFailureMessage(file: processed, result: result))
             }
-            guard let integrated = result.metrics.integratedLUFS, abs(integrated - policy.targetLUFS) <= policy.lufsTolerance else {
+            guard let integrated = result.metrics.integratedLUFS,
+                abs(integrated - policy.targetLUFS) <= policy.lufsTolerance
+            else {
                 let measured = result.metrics.integratedLUFS.map { String(format: "%.2f", $0) } ?? "unknown"
                 throw AppError(
                     "Noise segment loudness verification failed for \(processed.path): "
@@ -1187,28 +1246,32 @@ extension ConverterTool {
         defer { discardTempFile(trailingNoise) }
 
         let paddedWAV = try makeTemp(in: cli.outDir, stem: "\(source.stem).noise.padded", ext: ".wav")
-        let transitionSilence = "anullsrc=r=\(config.wavSampleRate):cl=stereo:d=\(ffmpegArg("%.6f", NoiseSpec.transitionSilenceSeconds))"
+        let transitionSilence =
+            "anullsrc=r=\(config.wavSampleRate):cl=stereo:d=\(ffmpegArg("%.6f", NoiseSpec.transitionSilenceSeconds))"
         do {
-            _ = try runner.run("ffmpeg", [
-                "-hide_banner", "-nostdin", "-v", "error", "-y",
-                "-i", leadingNoise.path,
-                "-f", "lavfi",
-                "-i", transitionSilence,
-                "-i", sourceWAV.path,
-                "-f", "lavfi",
-                "-i", transitionSilence,
-                "-i", trailingNoise.path,
-                "-filter_complex", "[0:a:0][1:a:0][2:a:0][3:a:0][4:a:0]concat=n=5:v=0:a=1,aformat=sample_fmts=flt:sample_rates=\(config.wavSampleRate):channel_layouts=stereo[out]",
-                "-map", "[out]",
-                "-vn", "-sn", "-dn",
-                "-ac", String(config.wavChannels),
-                "-ar", String(config.wavSampleRate),
-                "-c:a", config.wavCodec,
-                "-f", "wav",
-                "-rf64", "always",
-                "-write_bext", String(config.wavWriteBext),
-                paddedWAV.path
-            ])
+            _ = try runner.run(
+                "ffmpeg",
+                [
+                    "-hide_banner", "-nostdin", "-v", "error", "-y",
+                    "-i", leadingNoise.path,
+                    "-f", "lavfi",
+                    "-i", transitionSilence,
+                    "-i", sourceWAV.path,
+                    "-f", "lavfi",
+                    "-i", transitionSilence,
+                    "-i", trailingNoise.path,
+                    "-filter_complex",
+                    "[0:a:0][1:a:0][2:a:0][3:a:0][4:a:0]concat=n=5:v=0:a=1,aformat=sample_fmts=flt:sample_rates=\(config.wavSampleRate):channel_layouts=stereo[out]",
+                    "-map", "[out]",
+                    "-vn", "-sn", "-dn",
+                    "-ac", String(config.wavChannels),
+                    "-ar", String(config.wavSampleRate),
+                    "-c:a", config.wavCodec,
+                    "-f", "wav",
+                    "-rf64", "always",
+                    "-write_bext", String(config.wavWriteBext),
+                    paddedWAV.path
+                ])
             // The padding is verified once, on the published deliverable (verifyNoiseOutput); doing
             // it again here cost up to eight extra ffmpeg decodes per file (#0051).
             try verifyWAVStandard(paddedWAV, qcPolicy: nil)
@@ -1234,27 +1297,29 @@ extension ConverterTool {
         let hasVideo = try hasVideoStream(source)
 
         if !hasVideo {
-            _ = try runner.run("ffmpeg", [
-                "-hide_banner", "-nostdin", "-v", "error", "-y",
-                "-i", source.path,
-                "-i", paddedWAV.path,
-                "-map", "1:a:0",
-                "-vn", "-sn", "-dn"
-            ] + alacAudioArguments(sampleRate: config.videoMP4AudioSampleRate, channels: 2) + [
-                "-map_metadata", "0",
-                "-map_chapters", "0",
-                "-movflags", "+faststart",
-                output.path
-            ])
+            _ = try runner.run(
+                "ffmpeg",
+                [
+                    "-hide_banner", "-nostdin", "-v", "error", "-y",
+                    "-i", source.path,
+                    "-i", paddedWAV.path,
+                    "-map", "1:a:0",
+                    "-vn", "-sn", "-dn"
+                ] + alacAudioArguments(sampleRate: config.videoMP4AudioSampleRate, channels: 2) + [
+                    "-map_metadata", "0",
+                    "-map_chapters", "0",
+                    "-movflags", "+faststart",
+                    output.path
+                ])
             return
         }
 
         let encoders = try requireAvailableEncoderLadder(config.videoEncoderLadder, label: "\(label) MP4 video")
         let videoFilter =
-            "tpad=start_duration=\(ffmpegArg("%.6f", leadingSeconds)):stop_duration=\(ffmpegArg("%.6f", trailingSeconds)):start_mode=clone:stop_mode=clone," +
-            "format=\(config.videoMP4PixelFormat)," +
-            "setparams=color_primaries=\(config.videoColorPrimaries):color_trc=\(config.videoColorTransfer):"
-                + "colorspace=\(config.videoColorSpace):range=\(ffmpegFilterRangeValue(config.videoColorRange))"
+            "tpad=start_duration=\(ffmpegArg("%.6f", leadingSeconds)):stop_duration=\(ffmpegArg("%.6f", trailingSeconds)):start_mode=clone:stop_mode=clone,"
+            + "format=\(config.videoMP4PixelFormat),"
+            + "setparams=color_primaries=\(config.videoColorPrimaries):color_trc=\(config.videoColorTransfer):"
+            + "colorspace=\(config.videoColorSpace):range=\(ffmpegFilterRangeValue(config.videoColorRange))"
 
         func buildArguments(encoder: String) -> [String] {
             let normalizedEncoder = encoder.lowercasedASCII
@@ -1305,7 +1370,9 @@ extension ConverterTool {
         }
     }
 
-    func encodeSilencePaddedMP4(source: URL, paddedWAV: URL, output: URL, expectedDuration: Double, spec: SilenceSpec) throws {
+    func encodeSilencePaddedMP4(
+        source: URL, paddedWAV: URL, output: URL, expectedDuration: Double, spec: SilenceSpec
+    ) throws {
         try encodeDurationPaddedMP4(
             source: source,
             paddedWAV: paddedWAV,
@@ -1317,7 +1384,9 @@ extension ConverterTool {
         )
     }
 
-    func encodeNoisePaddedMP4(source: URL, paddedWAV: URL, output: URL, expectedDuration: Double, spec: NoiseSpec) throws {
+    func encodeNoisePaddedMP4(
+        source: URL, paddedWAV: URL, output: URL, expectedDuration: Double, spec: NoiseSpec
+    ) throws {
         try encodeDurationPaddedMP4(
             source: source,
             paddedWAV: paddedWAV,
@@ -1339,9 +1408,12 @@ extension ConverterTool {
         let output = cli.outDir
             .appendingPathComponent(source.stem + silenceOutputSuffix(for: spec))
             .appendingPathExtension(source.pathExtension.lowercasedASCII)
-        if canReuseOutput(output, source: source, verifier: {
-            try self.verifySilenceOutput(output, source: source, expectedDuration: expectedDuration, spec: spec)
-        }) {
+        if canReuseOutput(
+            output, source: source,
+            verifier: {
+                try self.verifySilenceOutput(output, source: source, expectedDuration: expectedDuration, spec: spec)
+            })
+        {
             logger.info("Skip existing silence-padded media: \(output.basename)")
             return output
         }
@@ -1351,7 +1423,8 @@ extension ConverterTool {
             let paddedWAV = try makeSilencePaddedWAV(from: source, spec: spec, expectedDuration: expectedDuration)
             defer { discardTempFile(paddedWAV) }
             if source.pathExtension.lowercasedASCII == "mp4" {
-                try encodeSilencePaddedMP4(source: source, paddedWAV: paddedWAV, output: temp, expectedDuration: expectedDuration, spec: spec)
+                try encodeSilencePaddedMP4(
+                    source: source, paddedWAV: paddedWAV, output: temp, expectedDuration: expectedDuration, spec: spec)
             } else {
                 try encodeProcessedWAV(paddedWAV, matching: source, to: temp, qcPolicy: nil)
             }
@@ -1376,9 +1449,12 @@ extension ConverterTool {
         let output = cli.outDir
             .appendingPathComponent(source.stem + noiseOutputSuffix(for: spec))
             .appendingPathExtension(source.pathExtension.lowercasedASCII)
-        if canReuseOutput(output, source: source, verifier: {
-            try self.verifyNoiseOutput(output, source: source, expectedDuration: expectedDuration, spec: spec)
-        }) {
+        if canReuseOutput(
+            output, source: source,
+            verifier: {
+                try self.verifyNoiseOutput(output, source: source, expectedDuration: expectedDuration, spec: spec)
+            })
+        {
             logger.info("Skip existing noise-padded media: \(output.basename)")
             return output
         }
@@ -1388,7 +1464,8 @@ extension ConverterTool {
             let paddedWAV = try makeNoisePaddedWAV(from: source, spec: spec, expectedDuration: expectedDuration)
             defer { discardTempFile(paddedWAV) }
             if source.pathExtension.lowercasedASCII == "mp4" {
-                try encodeNoisePaddedMP4(source: source, paddedWAV: paddedWAV, output: temp, expectedDuration: expectedDuration, spec: spec)
+                try encodeNoisePaddedMP4(
+                    source: source, paddedWAV: paddedWAV, output: temp, expectedDuration: expectedDuration, spec: spec)
             } else {
                 try encodeProcessedWAV(paddedWAV, matching: source, to: temp, qcPolicy: nil)
             }
@@ -1410,7 +1487,9 @@ extension ConverterTool {
         }
         let targetDuration = duration - spec.cutSeconds
         guard targetDuration > 0 else {
-            throw AppError("Fadecut would remove the entire audio file: cut=\(spec.cutSeconds)s duration=\(duration)s for \(source.basename)")
+            throw AppError(
+                "Fadecut would remove the entire audio file: cut=\(spec.cutSeconds)s duration=\(duration)s for \(source.basename)"
+            )
         }
 
         let fadeSeconds = min(spec.fadeDurationSeconds, targetDuration)
@@ -1418,11 +1497,14 @@ extension ConverterTool {
         let stem = "\(source.stem)_fadecut_\(ffmpegNumber(spec.cutSeconds))s_\(ffmpegNumber(fadeSeconds))s"
         let output = cli.outDir.appendingPathComponent(stem)
             .appendingPathExtension(source.pathExtension.lowercasedASCII)
-        if canReuseOutput(output, source: source, verifier: {
-            try self.verifyTailFadeOutput(
-                output, sourceExtension: source.pathExtension,
-                expectedDuration: targetDuration, fadeSeconds: fadeSeconds)
-        }) {
+        if canReuseOutput(
+            output, source: source,
+            verifier: {
+                try self.verifyTailFadeOutput(
+                    output, sourceExtension: source.pathExtension,
+                    expectedDuration: targetDuration, fadeSeconds: fadeSeconds)
+            })
+        {
             logger.info("Skip existing fadecut audio: \(output.basename)")
             return output
         }
@@ -1465,12 +1547,16 @@ extension ConverterTool {
 
         let fadeSeconds = min(requestedFadeSeconds, duration)
         let fadeStart = max(0, duration - fadeSeconds)
-        let output = cli.outDir.appendingPathComponent("\(source.stem)_faded_\(ffmpegNumber(fadeSeconds))s").appendingPathExtension(source.pathExtension.lowercasedASCII)
-        if canReuseOutput(output, source: source, verifier: {
-            try self.verifyTailFadeOutput(
-                output, sourceExtension: source.pathExtension,
-                expectedDuration: duration, fadeSeconds: fadeSeconds)
-        }) {
+        let output = cli.outDir.appendingPathComponent("\(source.stem)_faded_\(ffmpegNumber(fadeSeconds))s")
+            .appendingPathExtension(source.pathExtension.lowercasedASCII)
+        if canReuseOutput(
+            output, source: source,
+            verifier: {
+                try self.verifyTailFadeOutput(
+                    output, sourceExtension: source.pathExtension,
+                    expectedDuration: duration, fadeSeconds: fadeSeconds)
+            })
+        {
             logger.info("Skip existing faded audio: \(output.basename)")
             return output
         }
@@ -1509,21 +1595,28 @@ extension ConverterTool {
         let targetDuration = spec.endSeconds
         let allowedSourceOverrun = 0.05
         guard spec.fadeStartSeconds < sourceDuration else {
-            throw AppError("Fade start \(spec.fadeStartSeconds)s is beyond source duration \(sourceDuration)s for \(source.basename)")
+            throw AppError(
+                "Fade start \(spec.fadeStartSeconds)s is beyond source duration \(sourceDuration)s for \(source.basename)"
+            )
         }
         if targetDuration - sourceDuration > allowedSourceOverrun {
-            throw AppError("Fade end \(targetDuration)s exceeds source duration \(sourceDuration)s for \(source.basename)")
+            throw AppError(
+                "Fade end \(targetDuration)s exceeds source duration \(sourceDuration)s for \(source.basename)")
         }
 
-        let stem = "\(source.stem)_fadeout_\(ffmpegNumber(spec.fadeStartSeconds))s_"
+        let stem =
+            "\(source.stem)_fadeout_\(ffmpegNumber(spec.fadeStartSeconds))s_"
             + "\(ffmpegNumber(spec.fadeDurationSeconds))s"
         let output = cli.outDir.appendingPathComponent(stem)
             .appendingPathExtension(source.pathExtension.lowercasedASCII)
-        if canReuseOutput(output, source: source, verifier: {
-            try self.verifyFadeOutOutput(
-                output, sourceExtension: source.pathExtension,
-                expectedDuration: targetDuration, fadeSeconds: spec.fadeDurationSeconds)
-        }) {
+        if canReuseOutput(
+            output, source: source,
+            verifier: {
+                try self.verifyFadeOutOutput(
+                    output, sourceExtension: source.pathExtension,
+                    expectedDuration: targetDuration, fadeSeconds: spec.fadeDurationSeconds)
+            })
+        {
             logger.info("Skip existing faded audio: \(output.basename)")
             return output
         }
@@ -1532,7 +1625,8 @@ extension ConverterTool {
         do {
             let sourceWAV = try makeInternalWAV(from: source, in: cli.outDir, stem: "\(source.stem).fadeout.source")
             defer { discardTempFile(sourceWAV) }
-            let fadeFilter = fadeOutFilter(fadeStartSeconds: spec.fadeStartSeconds, fadeDurationSeconds: spec.fadeDurationSeconds)
+            let fadeFilter = fadeOutFilter(
+                fadeStartSeconds: spec.fadeStartSeconds, fadeDurationSeconds: spec.fadeDurationSeconds)
             let processedWAV = try processInternalWAV(
                 sourceWAV,
                 filter: fadeFilter,
@@ -1579,11 +1673,14 @@ extension ConverterTool {
         guard sourceIsStandard else {
             return try convertAudioToMP3(internalWAV, outputStem: outputStem)
         }
-        if canReuseOutput(output, source: source, verifier: {
-            try verifyMP3Standard(output, qcPolicy: nil)
-            try verifyDurationMatch(source: source, output: output)
-            try verifySourceLoudnessPreserved(source: source, output: output)
-        }) {
+        if canReuseOutput(
+            output, source: source,
+            verifier: {
+                try verifyMP3Standard(output, qcPolicy: nil)
+                try verifyDurationMatch(source: source, output: output)
+                try verifySourceLoudnessPreserved(source: source, output: output)
+            })
+        {
             logger.info("Skip existing MP3: \(output.basename)")
             return output
         }
@@ -1612,18 +1709,20 @@ extension ConverterTool {
         try preflightWAVInput(source)
         let temp = try makeTemp(in: source.deletingLastPathComponent(), stem: "\(source.stem).normalized", ext: ".wav")
         do {
-            _ = try runner.run("ffmpeg", [
-                "-hide_banner", "-nostdin", "-v", "error", "-y",
-                "-i", source.path,
-                "-map", "0:a:0",
-                "-ac", String(config.wavChannels),
-                "-ar", String(config.wavSampleRate),
-                "-c:a", config.wavCodec,
-                "-f", "wav",
-                "-rf64", "always",
-                "-write_bext", String(config.wavWriteBext),
-                temp.path
-            ])
+            _ = try runner.run(
+                "ffmpeg",
+                [
+                    "-hide_banner", "-nostdin", "-v", "error", "-y",
+                    "-i", source.path,
+                    "-map", "0:a:0",
+                    "-ac", String(config.wavChannels),
+                    "-ar", String(config.wavSampleRate),
+                    "-c:a", config.wavCodec,
+                    "-f", "wav",
+                    "-rf64", "always",
+                    "-write_bext", String(config.wavWriteBext),
+                    temp.path
+                ])
             try verifyWAVStandard(temp, qcPolicy: nil)
             try verifyDurationMatch(source: source, output: temp)
             try verifyCanonicalPCMSampleEquivalence(
@@ -1698,7 +1797,8 @@ extension ConverterTool {
     func requireDistinctOutput(_ output: URL, from source: URL) throws {
         if output.standardizedFileURL.path == source.standardizedFileURL.path {
             throw AppError(
-                "Refusing to write \(output.basename) over its own source \(source.path); the source must stay untouched.")
+                "Refusing to write \(output.basename) over its own source \(source.path); the source must stay untouched."
+            )
         }
     }
 
@@ -1707,17 +1807,20 @@ extension ConverterTool {
         let output = cli.outDir.appendingPathComponent(stem).appendingPathExtension("wav")
         try requireDistinctOutput(output, from: source)
         try preflightAudioSourceForTranscode(source)
-        if canReuseOutput(output, source: source, verifier: {
-            try verifyWAVStandard(output, qcPolicy: nil)
-            try verifyDurationMatch(source: source, output: output)
-            try verifyCanonicalPCMSampleEquivalence(
-                source: source,
-                output: output,
-                sampleRate: config.wavSampleRate,
-                channels: config.wavChannels,
-                label: "WAV output"
-            )
-        }) {
+        if canReuseOutput(
+            output, source: source,
+            verifier: {
+                try verifyWAVStandard(output, qcPolicy: nil)
+                try verifyDurationMatch(source: source, output: output)
+                try verifyCanonicalPCMSampleEquivalence(
+                    source: source,
+                    output: output,
+                    sampleRate: config.wavSampleRate,
+                    channels: config.wavChannels,
+                    label: "WAV output"
+                )
+            })
+        {
             logger.info("Skip existing WAV: \(output.basename)")
             return output
         }
@@ -1729,18 +1832,20 @@ extension ConverterTool {
         }
         let temp = try makeTemp(in: cli.outDir, stem: stem, ext: ".wav")
         do {
-            _ = try runner.run("ffmpeg", [
-                "-hide_banner", "-nostdin", "-v", "error", "-y",
-                "-i", source.path,
-                "-map", "0:a:0",
-                "-ac", String(config.wavChannels),
-                "-ar", String(config.wavSampleRate),
-                "-c:a", config.wavCodec,
-                "-f", "wav",
-                "-rf64", "always",
-                "-write_bext", String(config.wavWriteBext),
-                temp.path
-            ])
+            _ = try runner.run(
+                "ffmpeg",
+                [
+                    "-hide_banner", "-nostdin", "-v", "error", "-y",
+                    "-i", source.path,
+                    "-map", "0:a:0",
+                    "-ac", String(config.wavChannels),
+                    "-ar", String(config.wavSampleRate),
+                    "-c:a", config.wavCodec,
+                    "-f", "wav",
+                    "-rf64", "always",
+                    "-write_bext", String(config.wavWriteBext),
+                    temp.path
+                ])
             try verifyWAVStandard(temp, qcPolicy: nil)
             try verifyDurationMatch(source: source, output: temp)
             try verifyCanonicalPCMSampleEquivalence(
@@ -1771,11 +1876,15 @@ extension ConverterTool {
         // and still ship. Rebased to the source, so only what the encoder *added* can fail (#0114).
         let qcPolicy = try loudnessPreservingQCPolicy(
             config.deliveryAudioQCPolicy, source: source, sampleRate: config.m4aSampleRate)
-        if canReuseOutput(output, source: source, verifier: {
-            try verifyM4AFile(output, sampleRate: config.m4aSampleRate, channels: config.m4aChannels, qcPolicy: qcPolicy)
-            try verifyDurationMatch(source: source, output: output)
-            try verifySourceLoudnessPreserved(source: source, output: output, toleranceDB: 1.0)
-        }) {
+        if canReuseOutput(
+            output, source: source,
+            verifier: {
+                try verifyM4AFile(
+                    output, sampleRate: config.m4aSampleRate, channels: config.m4aChannels, qcPolicy: qcPolicy)
+                try verifyDurationMatch(source: source, output: output)
+                try verifySourceLoudnessPreserved(source: source, output: output, toleranceDB: 1.0)
+            })
+        {
             logger.info("Skip existing M4A: \(output.basename)")
             return output
         }
@@ -1810,11 +1919,14 @@ extension ConverterTool {
         let qcPolicy = try loudnessPreservingQCPolicy(
             config.deliveryAudioQCPolicy, source: source, sampleRate: config.mp3SampleRate,
             truePeakAllowanceDB: 0.3)
-        if canReuseOutput(output, source: source, verifier: {
-            try verifyMP3Standard(output, qcPolicy: qcPolicy)
-            try verifyDurationMatch(source: source, output: output)
-            try verifySourceLoudnessPreserved(source: source, output: output)
-        }) {
+        if canReuseOutput(
+            output, source: source,
+            verifier: {
+                try verifyMP3Standard(output, qcPolicy: qcPolicy)
+                try verifyDurationMatch(source: source, output: output)
+                try verifySourceLoudnessPreserved(source: source, output: output)
+            })
+        {
             logger.info("Skip existing MP3: \(output.basename)")
             return output
         }
@@ -1843,18 +1955,23 @@ extension ConverterTool {
         // The sibling converters guard this before probing; a `.flac` caller would otherwise publish
         // over the file it is reading (#0157).
         try requireDistinctOutput(output, from: source)
-        if canReuseOutput(output, source: source, verifier: {
-            try verifyFLACFile(output, sampleRate: config.flacSampleRate, channels: config.flacChannels, requireAudible: true, qcPolicy: nil)
-            try verifyDurationMatch(source: source, output: output)
-            try verifyCanonicalPCMSampleEquivalence(
-                source: source,
-                output: output,
-                sampleRate: config.flacSampleRate,
-                channels: config.flacChannels,
-                label: "FLAC output",
-                format: .s24le
-            )
-        }) {
+        if canReuseOutput(
+            output, source: source,
+            verifier: {
+                try verifyFLACFile(
+                    output, sampleRate: config.flacSampleRate, channels: config.flacChannels, requireAudible: true,
+                    qcPolicy: nil)
+                try verifyDurationMatch(source: source, output: output)
+                try verifyCanonicalPCMSampleEquivalence(
+                    source: source,
+                    output: output,
+                    sampleRate: config.flacSampleRate,
+                    channels: config.flacChannels,
+                    label: "FLAC output",
+                    format: .s24le
+                )
+            })
+        {
             logger.info("Skip existing FLAC: \(output.basename)")
             return output
         }
@@ -1895,18 +2012,20 @@ extension ConverterTool {
         let channels = try requireAudioChannels(source)
         let temp = try makeTemp(in: source.deletingLastPathComponent(), stem: "\(source.stem).notags", ext: ".mp3")
         do {
-            _ = try runner.run("ffmpeg", [
-                "-hide_banner", "-nostdin", "-v", "error", "-y",
-                "-i", source.path,
-                "-map", "0:a:0",
-                "-c:a", "copy",
-                "-map_metadata", "-1",
-                "-map_chapters", "-1",
-                "-vn", "-sn", "-dn",
-                "-id3v2_version", "0",
-                "-f", "mp3",
-                temp.path
-            ])
+            _ = try runner.run(
+                "ffmpeg",
+                [
+                    "-hide_banner", "-nostdin", "-v", "error", "-y",
+                    "-i", source.path,
+                    "-map", "0:a:0",
+                    "-c:a", "copy",
+                    "-map_metadata", "-1",
+                    "-map_chapters", "-1",
+                    "-vn", "-sn", "-dn",
+                    "-id3v2_version", "0",
+                    "-f", "mp3",
+                    temp.path
+                ])
             try verifyMP3File(temp, requireAudible: false, requireNoVideo: true, qcPolicy: nil)
             try verifyDurationMatch(source: source, output: temp)
             try verifyCanonicalPCMSampleEquivalence(
@@ -1928,10 +2047,13 @@ extension ConverterTool {
         }
         let fadeStart = max(0, duration - Double(config.wavFadeDur))
         let output = cli.outDir.appendingPathComponent("\(source.stem)_Faded_rf64").appendingPathExtension("wav")
-        if canReuseOutput(output, source: source, verifier: {
-            try verifyWAVStandard(output, qcPolicy: nil)
-            try verifyDurationMatch(source: source, output: output)
-        }) {
+        if canReuseOutput(
+            output, source: source,
+            verifier: {
+                try verifyWAVStandard(output, qcPolicy: nil)
+                try verifyDurationMatch(source: source, output: output)
+            })
+        {
             logger.info("Skip existing faded WAV: \(output.basename)")
             return output
         }
@@ -1960,11 +2082,15 @@ extension ConverterTool {
     }
 
     func createExternalFLACVariant(source: URL, output: URL) throws -> URL {
-        if canReuseOutput(output, source: source, verifier: {
-            try verifyFLACFile(output, qcPolicy: nil)
-            try verifyDurationMatch(source: source, output: output)
-            try verifyCanonicalPCMSampleEquivalence(source: source, output: output, label: "External FLAC", format: .s24le)
-        }) {
+        if canReuseOutput(
+            output, source: source,
+            verifier: {
+                try verifyFLACFile(output, qcPolicy: nil)
+                try verifyDurationMatch(source: source, output: output)
+                try verifyCanonicalPCMSampleEquivalence(
+                    source: source, output: output, label: "External FLAC", format: .s24le)
+            })
+        {
             logger.info("Skip existing external FLAC: \(output.basename)")
             return output
         }
@@ -1978,7 +2104,8 @@ extension ConverterTool {
                 channels: try requireAudioChannels(source)
             )
             try verifyDurationMatch(source: source, output: temp)
-            try verifyCanonicalPCMSampleEquivalence(source: source, output: temp, label: "External FLAC", format: .s24le)
+            try verifyCanonicalPCMSampleEquivalence(
+                source: source, output: temp, label: "External FLAC", format: .s24le)
             try publishTemp(temp, to: output)
             logger.info("Created external FLAC: \(output.basename)")
             return output
@@ -1990,27 +2117,32 @@ extension ConverterTool {
     }
 
     func createExternalWAVVariant(source: URL, output: URL, writeBext: Bool) throws -> URL {
-        if canReuseOutput(output, source: source, verifier: {
-            try verifyExternalWAVVariant(output, source: source, expectBext: writeBext)
-        }) {
+        if canReuseOutput(
+            output, source: source,
+            verifier: {
+                try verifyExternalWAVVariant(output, source: source, expectBext: writeBext)
+            })
+        {
             logger.info("Skip existing external WAV: \(output.basename)")
             return output
         }
 
         let temp = try makeTemp(in: output.deletingLastPathComponent(), stem: output.stem, ext: ".wav")
         do {
-            _ = try runner.run("ffmpeg", [
-                "-hide_banner", "-nostdin", "-v", "error", "-y",
-                "-i", source.path,
-                "-map", "0:a:0",
-                "-ac", String(config.wavChannels),
-                "-ar", String(config.wavSampleRate),
-                "-c:a", config.wavCodec,
-                "-f", "wav",
-                "-rf64", "always",
-                "-write_bext", writeBext ? "1" : "0",
-                temp.path
-            ])
+            _ = try runner.run(
+                "ffmpeg",
+                [
+                    "-hide_banner", "-nostdin", "-v", "error", "-y",
+                    "-i", source.path,
+                    "-map", "0:a:0",
+                    "-ac", String(config.wavChannels),
+                    "-ar", String(config.wavSampleRate),
+                    "-c:a", config.wavCodec,
+                    "-f", "wav",
+                    "-rf64", "always",
+                    "-write_bext", writeBext ? "1" : "0",
+                    temp.path
+                ])
             try verifyExternalWAVVariant(temp, source: source, expectBext: writeBext)
             try publishTemp(temp, to: output)
             logger.info("Created external WAV: \(output.basename)")
@@ -2023,9 +2155,12 @@ extension ConverterTool {
     }
 
     func createExternalBW64WAVVariant(source: URL, output: URL) throws -> URL {
-        if canReuseOutput(output, source: source, verifier: {
-            try verifyBW64WAVVariant(output, source: source)
-        }) {
+        if canReuseOutput(
+            output, source: source,
+            verifier: {
+                try verifyBW64WAVVariant(output, source: source)
+            })
+        {
             logger.info("Skip existing external BW64 WAV: \(output.basename)")
             return output
         }
@@ -2039,16 +2174,18 @@ extension ConverterTool {
         let rawPCM = try makeTemp(in: output.deletingLastPathComponent(), stem: output.stem, ext: ".f32le")
         let temp = try makeTemp(in: output.deletingLastPathComponent(), stem: output.stem, ext: ".wav")
         do {
-            _ = try runner.run("ffmpeg", [
-                "-hide_banner", "-nostdin", "-v", "error", "-y",
-                "-i", source.path,
-                "-map", "0:a:0",
-                "-ac", String(config.wavChannels),
-                "-ar", String(config.wavSampleRate),
-                "-f", "f32le",
-                "-acodec", "pcm_f32le",
-                rawPCM.path
-            ])
+            _ = try runner.run(
+                "ffmpeg",
+                [
+                    "-hide_banner", "-nostdin", "-v", "error", "-y",
+                    "-i", source.path,
+                    "-map", "0:a:0",
+                    "-ac", String(config.wavChannels),
+                    "-ar", String(config.wavSampleRate),
+                    "-f", "f32le",
+                    "-acodec", "pcm_f32le",
+                    rawPCM.path
+                ])
             try writeBW64FileFromRawFloatPCM(
                 inputPCM: rawPCM,
                 output: temp,
@@ -2092,10 +2229,16 @@ extension ConverterTool {
         let handle = try FileHandle(forReadingFrom: file)
         defer { try? handle.close() }
 
-        let table0 = crc32Tables[0], table1 = crc32Tables[1], table2 = crc32Tables[2], table3 = crc32Tables[3]
-        let table4 = crc32Tables[4], table5 = crc32Tables[5], table6 = crc32Tables[6], table7 = crc32Tables[7]
+        let table0 = crc32Tables[0]
+        let table1 = crc32Tables[1]
+        let table2 = crc32Tables[2]
+        let table3 = crc32Tables[3]
+        let table4 = crc32Tables[4]
+        let table5 = crc32Tables[5]
+        let table6 = crc32Tables[6]
+        let table7 = crc32Tables[7]
 
-        var crc: UInt32 = 0xFFFFFFFF
+        var crc: UInt32 = 0xFFFF_FFFF
         while true {
             let data = try handle.read(upToCount: config.crcChunkBytes)
             guard let chunk = data, !chunk.isEmpty else {
@@ -2109,9 +2252,11 @@ extension ConverterTool {
                 let count = rawBuffer.count
                 while offset + 8 <= count {
                     let low = UInt32(littleEndian: rawBuffer.loadUnaligned(fromByteOffset: offset, as: UInt32.self))
-                    let high = UInt32(littleEndian: rawBuffer.loadUnaligned(fromByteOffset: offset + 4, as: UInt32.self))
+                    let high = UInt32(
+                        littleEndian: rawBuffer.loadUnaligned(fromByteOffset: offset + 4, as: UInt32.self))
                     let mixed = crc ^ low
-                    crc = table7[Int(mixed & 0xFF)] ^ table6[Int((mixed >> 8) & 0xFF)]
+                    crc =
+                        table7[Int(mixed & 0xFF)] ^ table6[Int((mixed >> 8) & 0xFF)]
                         ^ table5[Int((mixed >> 16) & 0xFF)] ^ table4[Int(mixed >> 24)]
                         ^ table3[Int(high & 0xFF)] ^ table2[Int((high >> 8) & 0xFF)]
                         ^ table1[Int((high >> 16) & 0xFF)] ^ table0[Int(high >> 24)]
@@ -2123,7 +2268,7 @@ extension ConverterTool {
                 }
             }
         }
-        crc ^= 0xFFFFFFFF
+        crc ^= 0xFFFF_FFFF
         return crc
     }
 
@@ -2227,7 +2372,7 @@ extension ConverterTool {
             let rhsNumber = leadingTrackNumber(rhs)
             if lhsNumber != rhsNumber {
                 switch (lhsNumber, rhsNumber) {
-                case let (left?, right?):
+                case (let left?, let right?):
                     return left < right
                 case (_?, nil):
                     return true
@@ -2283,7 +2428,8 @@ extension ConverterTool {
         var chosen: [URL] = []
         for (_, members) in families {
             let ranked = members.sorted { lhs, rhs in
-                let lhsRank = extensionRank(lhs), rhsRank = extensionRank(rhs)
+                let lhsRank = extensionRank(lhs)
+                let rhsRank = extensionRank(rhs)
                 if lhsRank != rhsRank { return lhsRank < rhsRank }
                 return lhs.lastPathComponent.localizedStandardCompare(rhs.lastPathComponent) == .orderedAscending
             }
@@ -2324,7 +2470,8 @@ extension ConverterTool {
     func normalizeAlbumTrackToWAV(_ source: URL, index: Int, total: Int, policy: AudioQCPolicy) throws -> URL {
         try preflightAlbumAudioInput(source)
         logger.info("Album loudness normalize \(index)/\(total): \(source.basename)")
-        let workingSource = try makeInternalWAV(from: source, in: cli.outDir, stem: "album.track.\(index).source.\(source.stem)")
+        let workingSource = try makeInternalWAV(
+            from: source, in: cli.outDir, stem: "album.track.\(index).source.\(source.stem)")
         defer { discardTempFile(workingSource) }
 
         let plan = try staticLoudnessGainPlan(for: workingSource, policy: policy)
@@ -2354,7 +2501,7 @@ extension ConverterTool {
             let reason = loudnessFallbackReason(result: result)
             logger.warn(
                 "Album track \(reason) without compression: \(source.basename) "
-                + "[integrated=\(measured) LUFS target=\(String(format: "%.2f", policy.targetLUFS))]"
+                    + "[integrated=\(measured) LUFS target=\(String(format: "%.2f", policy.targetLUFS))]"
             )
             return processed
         } catch {
@@ -2366,7 +2513,8 @@ extension ConverterTool {
     func buildNumberedAlbumFromDirectory(defaultOutputName: String = "album.wav") throws -> URL {
         let tracks = try albumAudioCandidates()
         guard !tracks.isEmpty else {
-            throw AppError("Album pipeline expects at least one source audio file (.mp3/.wav/.flac) in '\(cli.srcDir.path)'.")
+            throw AppError(
+                "Album pipeline expects at least one source audio file (.mp3/.wav/.flac) in '\(cli.srcDir.path)'.")
         }
 
         logger.info("Album track order: \(tracks.map(\.basename).joined(separator: ", "))")
@@ -2379,7 +2527,8 @@ extension ConverterTool {
         }
 
         for (offset, track) in tracks.enumerated() {
-            normalizedTracks.append(try normalizeAlbumTrackToWAV(track, index: offset + 1, total: tracks.count, policy: policy))
+            normalizedTracks.append(
+                try normalizeAlbumTrackToWAV(track, index: offset + 1, total: tracks.count, policy: policy))
         }
 
         let output = try resolveOutputPath(cli.outputFile ?? defaultOutputName)
@@ -2402,10 +2551,12 @@ extension ConverterTool {
         var filter = ""
         var concatInputs = ""
         for index in entries.indices {
-            filter += "[\(index):a]aresample=\(config.wavSampleRate),aformat=sample_fmts=flt:channel_layouts=\(channelLayout)[a\(index)];"
+            filter +=
+                "[\(index):a]aresample=\(config.wavSampleRate),aformat=sample_fmts=flt:channel_layouts=\(channelLayout)[a\(index)];"
         }
-        for index in 0 ..< max(entries.count - 1, 0) {
-            filter += "anullsrc=r=\(config.wavSampleRate):cl=\(channelLayout):d=\(config.albumSilenceSecs),aformat=sample_fmts=flt:channel_layouts=\(channelLayout)[s\(index)];"
+        for index in 0..<max(entries.count - 1, 0) {
+            filter +=
+                "anullsrc=r=\(config.wavSampleRate):cl=\(channelLayout):d=\(config.albumSilenceSecs),aformat=sample_fmts=flt:channel_layouts=\(channelLayout)[s\(index)];"
         }
         // Count segments as they are appended rather than recovering the number by
         // parsing the generated filtergraph back out of its own string.
@@ -2418,7 +2569,8 @@ extension ConverterTool {
                 segments += 1
             } else if cli.trailingSilence {
                 let silenceIndex = entries.count - 1
-                filter += "anullsrc=r=\(config.wavSampleRate):cl=\(channelLayout):d=\(config.albumSilenceSecs),aformat=sample_fmts=flt:channel_layouts=\(channelLayout)[s\(silenceIndex)];"
+                filter +=
+                    "anullsrc=r=\(config.wavSampleRate):cl=\(channelLayout):d=\(config.albumSilenceSecs),aformat=sample_fmts=flt:channel_layouts=\(channelLayout)[s\(silenceIndex)];"
                 concatInputs += "[s\(silenceIndex)]"
                 segments += 1
             }
@@ -2440,14 +2592,16 @@ extension ConverterTool {
         do {
             _ = try runner.run("ffmpeg", ffArgs)
             try verifyWAVStandard(temp, qcPolicy: nil)
-            let expectedDuration = try entries.reduce(0.0) { sum, entry in
-                guard let duration = try mediaDuration(entry) else {
-                    throw AppError("Unable to read duration for album track: \(entry.path)")
-                }
-                return sum + duration
-            } + Double(max(entries.count - 1, 0)) * Double(config.albumSilenceSecs)
-            + (cli.trailingSilence ? Double(config.albumSilenceSecs) : 0)
-            try verifyDuration(temp, expectedSeconds: expectedDuration, label: "album WAV", tolerance: albumDurationToleranceSeconds())
+            let expectedDuration =
+                try entries.reduce(0.0) { sum, entry in
+                    guard let duration = try mediaDuration(entry) else {
+                        throw AppError("Unable to read duration for album track: \(entry.path)")
+                    }
+                    return sum + duration
+                } + Double(max(entries.count - 1, 0)) * Double(config.albumSilenceSecs)
+                + (cli.trailingSilence ? Double(config.albumSilenceSecs) : 0)
+            try verifyDuration(
+                temp, expectedSeconds: expectedDuration, label: "album WAV", tolerance: albumDurationToleranceSeconds())
             try publishTemp(temp, to: output)
             logger.info("Created album WAV: \(output.path)")
             return output
@@ -2515,7 +2669,7 @@ extension ConverterTool {
         guard fileManager.fileExists(atPath: albumPath.path) else {
             throw AppError(
                 "Missing album file: \(albumPath.path). "
-                + "Copy album.example.txt to album.txt and list your tracks in join order."
+                    + "Copy album.example.txt to album.txt and list your tracks in join order."
             )
         }
         let text = try String(contentsOf: albumPath, encoding: .utf8)
@@ -2529,7 +2683,7 @@ extension ConverterTool {
             let noun = resolved.failures.count == 1 ? "entry" : "entries"
             throw AppError(
                 "\(resolved.failures.count) album \(noun) could not be used (album built from the remaining tracks): "
-                + resolved.failures.joined(separator: "; "))
+                    + resolved.failures.joined(separator: "; "))
         }
         return album
     }

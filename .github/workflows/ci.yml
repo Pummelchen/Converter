@@ -101,16 +101,13 @@ jobs:
           ruff --version
           mypy --version
 
-      # Reported, not enforced: .swift-format and scripts/check-format.sh are in place, but the tree
-      # is not formatter-clean yet. Adopting the pass regresses the swiftlint budget (trailing_comma
-      # 0->145, opening_brace 0->31, error-level 19->21) because the two tools disagree about
-      # punctuation and brace placement, so task #0106 is BLOCKED on an owner decision about which
-      # tool is authoritative. Flip this to a failing step when that decision lands.
-      - name: Swift format (advisory)
-        continue-on-error: true
-        run: >
-          swift format lint --recursive --parallel --configuration .swift-format
-          Sources/converter Sources/Tests
+      # Enforced since #0106: .swift-format owns the layout (4-space indent, 120 columns, no trailing
+      # commas) and .swiftlint.yml carries SwiftLint's documented allowance for the wrapped-declaration
+      # brace placement swift-format produces.
+      # Note: `swift format lint` exits 0 even when it reports differences on this toolchain, so the
+      # gate is the report itself — any output fails the step.
+      - name: Swift format (no diffs)
+        run: scripts/check-format.sh
 
       - name: Swift lint budget
         run: scripts/lint-budget.sh

@@ -1,5 +1,5 @@
-import Foundation
 import Darwin
+import Foundation
 import Synchronization
 
 struct LoudnormMeasurement: Decodable, Sendable {
@@ -269,7 +269,7 @@ struct VisualSubsRandom {
     }
 
     mutating func next() -> UInt64 {
-        state = 2862933555777941757 &* state &+ 3037000493
+        state = 2_862_933_555_777_941_757 &* state &+ 3_037_000_493
         return state
     }
 
@@ -321,14 +321,16 @@ final class ConverterTool: Sendable {
         self.logger = logger
         self.runner = runner
         self.environment = environment
-        let profile = schedulerProfile
+        let profile =
+            schedulerProfile
             ?? SchedulerProfile.recommended(for: ProcessInfo.processInfo.activeProcessorCount)
         self.schedulerProfile = profile
         self.globalJobs = AsyncSemaphore(value: profile.total)
         self.imageJobs = AsyncSemaphore(value: profile.image)
         self.audioJobs = AsyncSemaphore(value: profile.audio)
         self.videoJobs = AsyncSemaphore(value: profile.video)
-        self.runToken = "\(Self.hostToken).\(ProcessInfo.processInfo.processIdentifier).\(UUID().uuidString.lowercasedASCII)"
+        self.runToken =
+            "\(Self.hostToken).\(ProcessInfo.processInfo.processIdentifier).\(UUID().uuidString.lowercasedASCII)"
     }
 
     func cleanupTemps() {
@@ -369,11 +371,13 @@ final class ConverterTool: Sendable {
     func cleanupRunScopedTempFiles() {
         let directories = Set([cli.srcDir.standardizedFileURL, cli.outDir.standardizedFileURL])
         for directory in directories {
-            guard let files = try? fileManager.contentsOfDirectory(
-                at: directory,
-                includingPropertiesForKeys: [.isRegularFileKey],
-                options: []
-            ) else {
+            guard
+                let files = try? fileManager.contentsOfDirectory(
+                    at: directory,
+                    includingPropertiesForKeys: [.isRegularFileKey],
+                    options: []
+                )
+            else {
                 continue
             }
             for file in files where file.lastPathComponent.hasPrefix(".converter-tmp.\(runToken).") {
@@ -386,11 +390,13 @@ final class ConverterTool: Sendable {
     func cleanupOrphanedConverterTempFiles() {
         let directories = Set([cli.srcDir.standardizedFileURL, cli.outDir.standardizedFileURL])
         for directory in directories {
-            guard let files = try? fileManager.contentsOfDirectory(
-                at: directory,
-                includingPropertiesForKeys: [.isRegularFileKey],
-                options: []
-            ) else {
+            guard
+                let files = try? fileManager.contentsOfDirectory(
+                    at: directory,
+                    includingPropertiesForKeys: [.isRegularFileKey],
+                    options: []
+                )
+            else {
                 continue
             }
             for file in files where isOrphanedConverterTempFile(file) {
@@ -431,7 +437,7 @@ final class ConverterTool: Sendable {
         }
         switch cli.action {
         case .album, .aipix, .jpgtopng, .pngtojpg, .pngtonft, .pngto2k, .pngto3k, .pngto3k1mb, .pngto3k5mb,
-             .pngtojpg1mb, .pngtojpg2mb, .pngtojpg20mb, .runPix, .visualsubs, .full, .m4atomp4, .nfttoshort, .short:
+            .pngtojpg1mb, .pngtojpg2mb, .pngtojpg20mb, .runPix, .visualsubs, .full, .m4atomp4, .nfttoshort, .short:
             try runner.requireExecutable("magick")
         default:
             break
@@ -549,10 +555,12 @@ final class ConverterTool: Sendable {
     // Hidden temp names use a run-scoped namespace so source discovery never confuses them with real inputs.
     func makeTemp(in directory: URL, stem: String, ext: String) throws -> URL {
         try ensureWritableDirectory(directory)
-        let safeStem = String(stem.map { $0.isLetter || $0.isNumber ? $0 : "_" }.prefix(80)).trimmingCharacters(in: CharacterSet(charactersIn: "_"))
+        let safeStem = String(stem.map { $0.isLetter || $0.isNumber ? $0 : "_" }.prefix(80)).trimmingCharacters(
+            in: CharacterSet(charactersIn: "_"))
         let normalizedStem = safeStem.isEmpty ? "file" : safeStem
-        for _ in 0 ..< 50 {
-            let candidate = directory.appendingPathComponent(".converter-tmp.\(runToken).\(normalizedStem).\(UUID().uuidString)\(ext)")
+        for _ in 0..<50 {
+            let candidate = directory.appendingPathComponent(
+                ".converter-tmp.\(runToken).\(normalizedStem).\(UUID().uuidString)\(ext)")
             // O_EXCL makes creation atomic and O_NOFOLLOW refuses to follow a symlink planted at the
             // candidate path; the previous fileExists + createFile pair was a check-then-use race
             // that would have truncated (and followed) whatever appeared in between (#0137). 0600
@@ -644,11 +652,13 @@ final class ConverterTool: Sendable {
     func recoverPublishBackups() {
         let directories = Set([cli.srcDir.standardizedFileURL, cli.outDir.standardizedFileURL])
         for directory in directories {
-            guard let files = try? fileManager.contentsOfDirectory(
-                at: directory,
-                includingPropertiesForKeys: [.isRegularFileKey],
-                options: []
-            ) else {
+            guard
+                let files = try? fileManager.contentsOfDirectory(
+                    at: directory,
+                    includingPropertiesForKeys: [.isRegularFileKey],
+                    options: []
+                )
+            else {
                 continue
             }
             for file in files
@@ -696,7 +706,8 @@ final class ConverterTool: Sendable {
     }
 
     func resolveOutputPath(_ output: String) throws -> URL {
-        let resolved = output.hasPrefix("/")
+        let resolved =
+            output.hasPrefix("/")
             ? URL(fileURLWithPath: output)
             : cli.outDir.appendingPathComponent(output)
         try requireDirectChild(resolved, of: cli.outDir, label: "Output path")
@@ -716,9 +727,11 @@ final class ConverterTool: Sendable {
             options: [.skipsHiddenFiles]
         )
 
-        return urls
+        return
+            urls
             .filter { url in
-                guard let values = try? url.resourceValues(forKeys: [.isRegularFileKey]), values.isRegularFile == true else {
+                guard let values = try? url.resourceValues(forKeys: [.isRegularFileKey]), values.isRegularFile == true
+                else {
                     return false
                 }
                 return true
@@ -736,7 +749,8 @@ final class ConverterTool: Sendable {
     }
 
     func resolveExplicitPath(_ path: String, baseDirectory: URL) throws -> URL {
-        let resolved = path.hasPrefix("/")
+        let resolved =
+            path.hasPrefix("/")
             ? URL(fileURLWithPath: path)
             : baseDirectory.appendingPathComponent(path)
         try requireDirectChild(resolved, of: baseDirectory, label: "Input path")
@@ -749,7 +763,8 @@ final class ConverterTool: Sendable {
     // (#0124). Falls back to the container when the stream carries no duration of its own.
     func audioStreamDuration(_ file: URL) throws -> Double? {
         if let raw = try ffprobeValue(selector: "a:0", entries: "stream=duration", file: file),
-            let value = Double(raw), value.isFinite, value > 0 {
+            let value = Double(raw), value.isFinite, value > 0
+        {
             return value
         }
         return try mediaDuration(file)
@@ -790,7 +805,9 @@ final class ConverterTool: Sendable {
             }
             args += ["-show_entries", entries, "-of", "default=nw=1:nk=1", file.path]
             let result = try runner.run("ffprobe", args)
-            return result.stdout.split(whereSeparator: \.isNewline).map(String.init).map(\.trimmed).first { !$0.isEmpty }
+            return result.stdout.split(whereSeparator: \.isNewline).map(String.init).map(\.trimmed).first {
+                !$0.isEmpty
+            }
         }
     }
 
@@ -863,7 +880,9 @@ final class ConverterTool: Sendable {
         if let streamBitrate = try audioField(file, "bit_rate"), let bitrate = Int(streamBitrate) {
             return bitrate
         }
-        if let formatBitrate = try ffprobeValue(entries: "format=bit_rate", file: file), let bitrate = Int(formatBitrate) {
+        if let formatBitrate = try ffprobeValue(entries: "format=bit_rate", file: file),
+            let bitrate = Int(formatBitrate)
+        {
             return bitrate
         }
         return 0
@@ -930,7 +949,7 @@ final class ConverterTool: Sendable {
         guard let object = Self.lastCompleteJSONObject(in: stderr) else {
             throw AppError("Audio loudness probe did not return JSON output.")
         }
-        let jsonText = String(stderr[object.start ... object.end])
+        let jsonText = String(stderr[object.start...object.end])
         guard let data = jsonText.data(using: .utf8) else {
             throw AppError("Audio loudness probe JSON encoding failed.")
         }
@@ -941,7 +960,9 @@ final class ConverterTool: Sendable {
         }
     }
 
-    func parseAstatsReport(from stderr: String) -> (channelMetrics: [[String: String]], overallMetrics: [String: String]) {
+    func parseAstatsReport(
+        from stderr: String
+    ) -> (channelMetrics: [[String: String]], overallMetrics: [String: String]) {
         enum Section {
             case none
             case channel(Int)
@@ -1063,7 +1084,8 @@ final class ConverterTool: Sendable {
         // extension-only scan (.w64/.log/.tsv) was dropped: nothing in the
         // pipeline creates those files, so removing them by suffix alone could
         // delete user-owned files from OUT_DIR.
-        let all = try fileManager.contentsOfDirectory(at: cli.outDir, includingPropertiesForKeys: [.isRegularFileKey], options: [])
+        let all = try fileManager.contentsOfDirectory(
+            at: cli.outDir, includingPropertiesForKeys: [.isRegularFileKey], options: [])
         // `.normalized` is a converter-owned stem marker, so a hidden OUT_DIR entry carrying it is a
         // transient this tool wrote; `-clean` and the startup sweep are expected to remove exactly
         // those (pinned by testCleanTransientsRemovesOnlyHiddenNormalizedFiles). Reviewer finding
@@ -1102,8 +1124,8 @@ final class ConverterTool: Sendable {
         func isOccupied(pointX: Int, pointY: Int) -> Bool {
             let cellX = pointX / cellSize
             let cellY = pointY / cellSize
-            for scanX in (cellX - 1) ... (cellX + 1) {
-                for scanY in (cellY - 1) ... (cellY + 1) {
+            for scanX in (cellX - 1)...(cellX + 1) {
+                for scanY in (cellY - 1)...(cellY + 1) {
                     for other in occupancy[cellKey(pointX: scanX, pointY: scanY)] ?? [] {
                         let offsetX = Double(pointX - other.0)
                         let offsetY = Double(pointY - other.1)
@@ -1126,11 +1148,11 @@ final class ConverterTool: Sendable {
         register(pointX: centerX, pointY: centerY)
         var drawScript = "fill red\ncircle \(centerX),\(centerY) \(centerX + radius),\(centerY)\n"
 
-        for _ in 0 ..< numDots {
+        for _ in 0..<numDots {
             var placed = false
-            for _ in 0 ..< cli.maxAttempts {
-                let dotX = rng.nextInt(in: radius ... max(radius, width - radius - 1))
-                let dotY = rng.nextInt(in: radius ... max(radius, height - radius - 1))
+            for _ in 0..<cli.maxAttempts {
+                let dotX = rng.nextInt(in: radius...max(radius, width - radius - 1))
+                let dotY = rng.nextInt(in: radius...max(radius, height - radius - 1))
                 if !isOccupied(pointX: dotX, pointY: dotY) {
                     register(pointX: dotX, pointY: dotY)
                     drawScript += "fill black\ncircle \(dotX),\(dotY) \(dotX + radius),\(dotY)\n"
@@ -1152,13 +1174,15 @@ final class ConverterTool: Sendable {
         }
         do {
             try drawScript.write(to: drawFile, atomically: true, encoding: .utf8)
-            _ = try runner.run("magick", [
-                "-size", "\(width)x\(height)",
-                "canvas:white",
-                "-colorspace", config.imageOutputColorSpace,
-                "-draw", "@\(drawFile.path)",
-                tempOutput.path
-            ])
+            _ = try runner.run(
+                "magick",
+                [
+                    "-size", "\(width)x\(height)",
+                    "canvas:white",
+                    "-colorspace", config.imageOutputColorSpace,
+                    "-draw", "@\(drawFile.path)",
+                    tempOutput.path
+                ])
             try verifyImageOutput(tempOutput, width: width, height: height, format: "PNG")
             try publishTemp(tempOutput, to: output)
             if cli.openAfterCreate {

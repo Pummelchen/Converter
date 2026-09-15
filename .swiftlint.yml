@@ -19,6 +19,14 @@
 # Sources/Tests` on the command line, and SwiftLint lints the union of `included:` and the CLI
 # paths, which would count every violation twice.
 
+# swift-format places the brace of a *wrapped* declaration on its own line. These three options are
+# SwiftLint's documented allowance for that style (#0106); every unwrapped declaration is still
+# required to keep its brace on the same line, and scripts/check-format.sh owns the layout.
+opening_brace:
+  ignore_multiline_statement_conditions: true
+  ignore_multiline_type_headers: true
+  ignore_multiline_function_signatures: true
+
 line_length:
   warning: 120
   error: 200

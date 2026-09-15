@@ -1,16 +1,16 @@
 {
   "swiftlint": "0.65.1",
-  "total": 461,
-  "errors": 19,
+  "total": 151,
+  "errors": 21,
   "by_rule": {
     "cyclomatic_complexity": 8,
     "file_length": 11,
-    "function_body_length": 21,
+    "function_body_length": 26,
     "function_parameter_count": 2,
     "inclusive_language": 22,
     "large_tuple": 2,
-    "line_length": 389,
+    "line_length": 74,
     "type_body_length": 6
   },
-  "note": "Ratchet, not a target: the structural rules (file_length, type_body_length, function_body_length, cyclomatic_complexity) and the 120-character line_length preference are deferred with the rationale in the #0073 commit. Lower this budget when violations are removed; never raise it without a written reason."
+  "note": "Ratchet, not a target. The structural rules (file_length, type_body_length, function_body_length, cyclomatic_complexity) and the 120-character line_length preference are accepted debt, and since #0106 the layout itself is owned by swift-format, enforced by scripts/check-format.sh and CI. function_body_length is recorded at 26 rather than 21 because the formatter wraps long calls across lines: the same bodies measure longer without any logic being added. Lower this budget when violations are removed; never raise it silently."
 }

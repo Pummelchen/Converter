@@ -4,6 +4,7 @@ import ImageIO
 import Synchronization
 import UniformTypeIdentifiers
 import XCTest
+
 @testable import converter
 
 // Captures everything the logger writes to stderr while `body` runs, so a test can assert which
@@ -45,7 +46,8 @@ final class IntegrationWorkspace {
     private let fileManager = FileManager.default
 
     init(inheritedEnvironment: [String: String] = ProcessInfo.processInfo.environment) throws {
-        root = fileManager.temporaryDirectory.appendingPathComponent("converter-tests.\(UUID().uuidString)", isDirectory: true)
+        root = fileManager.temporaryDirectory.appendingPathComponent(
+            "converter-tests.\(UUID().uuidString)", isDirectory: true)
         output = root.appendingPathComponent("Output", isDirectory: true)
         try fileManager.createDirectory(at: output, withIntermediateDirectories: true)
         try Self.defaultConfig.write(to: root.appendingPathComponent("config.txt"), atomically: true, encoding: .utf8)
@@ -77,7 +79,7 @@ final class IntegrationWorkspace {
 
     static var projectRoot: URL {
         var url = URL(fileURLWithPath: #filePath)
-        for _ in 0 ..< 4 {
+        for _ in 0..<4 {
             url.deleteLastPathComponent()
         }
         return url
@@ -216,11 +218,13 @@ final class IntegrationWorkspace {
 
     func createImage(name: String, ext: String, width: Int = 320, height: Int = 180) throws -> URL {
         let target = output.appendingPathComponent(name).appendingPathExtension(ext)
-        _ = try runner().run("magick", [
-            "-size", "\(width)x\(height)",
-            "gradient:#1A4B8C-#E7A84B",
-            target.path
-        ])
+        _ = try runner().run(
+            "magick",
+            [
+                "-size", "\(width)x\(height)",
+                "gradient:#1A4B8C-#E7A84B",
+                target.path
+            ])
         return target
     }
 
@@ -228,15 +232,17 @@ final class IntegrationWorkspace {
     // these, and ImageMagick reports the stored size plus an EXIF "%[orientation]" of RightTop.
     func createEXIFOrientedImage(name: String, width: Int = 320, height: Int = 180, orientation: Int) throws -> URL {
         let target = output.appendingPathComponent(name).appendingPathExtension("jpg")
-        guard let context = CGContext(
-            data: nil,
-            width: width,
-            height: height,
-            bitsPerComponent: 8,
-            bytesPerRow: 0,
-            space: CGColorSpaceCreateDeviceRGB(),
-            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
-        ) else {
+        guard
+            let context = CGContext(
+                data: nil,
+                width: width,
+                height: height,
+                bitsPerComponent: 8,
+                bytesPerRow: 0,
+                space: CGColorSpaceCreateDeviceRGB(),
+                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+            )
+        else {
             throw AppError("Unable to create a bitmap context for the EXIF orientation fixture.")
         }
         context.setFillColor(CGColor(red: 0.2, green: 0.4, blue: 0.8, alpha: 1))
@@ -244,12 +250,14 @@ final class IntegrationWorkspace {
         guard let image = context.makeImage() else {
             throw AppError("Unable to rasterise the EXIF orientation fixture.")
         }
-        guard let destination = CGImageDestinationCreateWithURL(
-            target as CFURL,
-            UTType.jpeg.identifier as CFString,
-            1,
-            nil
-        ) else {
+        guard
+            let destination = CGImageDestinationCreateWithURL(
+                target as CFURL,
+                UTType.jpeg.identifier as CFString,
+                1,
+                nil
+            )
+        else {
             throw AppError("Unable to open a JPEG destination for the EXIF orientation fixture.")
         }
         CGImageDestinationAddImage(destination, image, [kCGImagePropertyOrientation: orientation] as CFDictionary)
@@ -290,17 +298,22 @@ final class IntegrationWorkspace {
     }
 
     // Plain RIFF WAV fixtures exercise generic WAV input support instead of the converter's internal RF64 standard.
-    func createPlainRIFFWAV(name: String, duration: Double = 1.2, frequency: Int = 440, sampleRate: Int = 44_100) throws -> URL {
+    func createPlainRIFFWAV(
+        name: String, duration: Double = 1.2, frequency: Int = 440, sampleRate: Int = 44_100
+    ) throws -> URL {
         let target = output.appendingPathComponent(name).appendingPathExtension("wav")
-        _ = try runner().run("ffmpeg", [
-            "-hide_banner", "-nostdin", "-v", "error", "-y",
-            "-f", "lavfi",
-            "-i", "sine=frequency=\(frequency):duration=\(String(format: "%.3f", duration)):sample_rate=\(sampleRate)",
-            "-ac", "2",
-            "-c:a", "pcm_s16le",
-            "-ar", String(sampleRate),
-            target.path
-        ])
+        _ = try runner().run(
+            "ffmpeg",
+            [
+                "-hide_banner", "-nostdin", "-v", "error", "-y",
+                "-f", "lavfi",
+                "-i",
+                "sine=frequency=\(frequency):duration=\(String(format: "%.3f", duration)):sample_rate=\(sampleRate)",
+                "-ac", "2",
+                "-c:a", "pcm_s16le",
+                "-ar", String(sampleRate),
+                target.path
+            ])
         return target
     }
 
@@ -314,7 +327,9 @@ final class IntegrationWorkspace {
         ]
         switch ext.lowercased() {
         case "wav":
-            args += ["-c:a", "pcm_f32le", "-ar", "48000", "-f", "wav", "-rf64", "always", "-write_bext", "1", target.path]
+            args += [
+                "-c:a", "pcm_f32le", "-ar", "48000", "-f", "wav", "-rf64", "always", "-write_bext", "1", target.path
+            ]
         case "flac":
             args += ["-c:a", "flac", "-compression_level", "5", "-ar", "48000", target.path]
         case "mp3":
@@ -328,7 +343,9 @@ final class IntegrationWorkspace {
         return target
     }
 
-    func createHotAudio(name: String, ext: String, duration: Double = 1.2, frequency: Int = 440, gainDB: Double = 18) throws -> URL {
+    func createHotAudio(
+        name: String, ext: String, duration: Double = 1.2, frequency: Int = 440, gainDB: Double = 18
+    ) throws -> URL {
         let target = output.appendingPathComponent(name).appendingPathExtension(ext)
         var args = [
             "-hide_banner", "-nostdin", "-v", "error", "-y",
@@ -339,7 +356,9 @@ final class IntegrationWorkspace {
         ]
         switch ext.lowercased() {
         case "wav":
-            args += ["-c:a", "pcm_f32le", "-ar", "48000", "-f", "wav", "-rf64", "always", "-write_bext", "1", target.path]
+            args += [
+                "-c:a", "pcm_f32le", "-ar", "48000", "-f", "wav", "-rf64", "always", "-write_bext", "1", target.path
+            ]
         case "flac":
             args += ["-c:a", "flac", "-compression_level", "5", "-ar", "48000", target.path]
         case "mp3":
@@ -360,47 +379,56 @@ final class IntegrationWorkspace {
         name: String, sampleRate: Int, duration: Double = 6.0, frequency: Int = 440
     ) throws -> URL {
         let target = output.appendingPathComponent(name).appendingPathExtension("wav")
-        _ = try runner().run("ffmpeg", [
-            "-hide_banner", "-nostdin", "-v", "error", "-y",
-            "-f", "lavfi",
-            "-i", "sine=frequency=\(frequency):duration=\(String(format: "%.3f", duration)):sample_rate=\(sampleRate)",
-            "-ac", "2",
-            "-af", "volume=24dB",
-            "-c:a", "pcm_s24le", "-ar", String(sampleRate), "-f", "wav", "-rf64", "always", target.path
-        ])
+        _ = try runner().run(
+            "ffmpeg",
+            [
+                "-hide_banner", "-nostdin", "-v", "error", "-y",
+                "-f", "lavfi",
+                "-i",
+                "sine=frequency=\(frequency):duration=\(String(format: "%.3f", duration)):sample_rate=\(sampleRate)",
+                "-ac", "2",
+                "-af", "volume=24dB",
+                "-c:a", "pcm_s24le", "-ar", String(sampleRate), "-f", "wav", "-rf64", "always", target.path
+            ])
         return target
     }
 
-    func createVideoMP4(name: String, duration: Double, width: Int = 320, height: Int = 180, frequency: Int = 440) throws -> URL {
+    func createVideoMP4(
+        name: String, duration: Double, width: Int = 320, height: Int = 180, frequency: Int = 440
+    ) throws -> URL {
         let target = output.appendingPathComponent(name).appendingPathExtension("mp4")
-        _ = try runner().run("ffmpeg", [
-            "-hide_banner", "-nostdin", "-v", "error", "-y",
-            "-f", "lavfi",
-            "-i", "color=c=#224477:size=\(width)x\(height):rate=2:duration=\(String(format: "%.3f", duration))",
-            "-f", "lavfi",
-            "-i", "sine=frequency=\(frequency):duration=\(String(format: "%.3f", duration)):sample_rate=48000",
-            "-c:v", "libx264",
-            "-pix_fmt", "yuv420p",
-            "-c:a", "aac",
-            "-b:a", "192k",
-            "-ar", "48000",
-            "-shortest",
-            target.path
-        ])
+        _ = try runner().run(
+            "ffmpeg",
+            [
+                "-hide_banner", "-nostdin", "-v", "error", "-y",
+                "-f", "lavfi",
+                "-i", "color=c=#224477:size=\(width)x\(height):rate=2:duration=\(String(format: "%.3f", duration))",
+                "-f", "lavfi",
+                "-i", "sine=frequency=\(frequency):duration=\(String(format: "%.3f", duration)):sample_rate=48000",
+                "-c:v", "libx264",
+                "-pix_fmt", "yuv420p",
+                "-c:a", "aac",
+                "-b:a", "192k",
+                "-ar", "48000",
+                "-shortest",
+                target.path
+            ])
         return target
     }
 
     // Stereo file whose right channel is digitally silent: the worst possible balance.
     func createOneChannelSilentAudio(name: String, duration: Double = 1.2) throws -> URL {
         let target = output.appendingPathComponent(name).appendingPathExtension("wav")
-        _ = try runner().run("ffmpeg", [
-            "-hide_banner", "-nostdin", "-v", "error", "-y",
-            "-f", "lavfi",
-            "-i", "sine=frequency=440:duration=\(String(format: "%.3f", duration)):sample_rate=48000",
-            "-filter_complex", "[0:a]pan=stereo|c0=c0|c1=0*c0[a]",
-            "-map", "[a]",
-            "-c:a", "pcm_s24le", "-ar", "48000", "-f", "wav", "-rf64", "always", target.path
-        ])
+        _ = try runner().run(
+            "ffmpeg",
+            [
+                "-hide_banner", "-nostdin", "-v", "error", "-y",
+                "-f", "lavfi",
+                "-i", "sine=frequency=440:duration=\(String(format: "%.3f", duration)):sample_rate=48000",
+                "-filter_complex", "[0:a]pan=stereo|c0=c0|c1=0*c0[a]",
+                "-map", "[a]",
+                "-c:a", "pcm_s24le", "-ar", "48000", "-f", "wav", "-rf64", "always", target.path
+            ])
         return target
     }
 
@@ -410,12 +438,15 @@ final class IntegrationWorkspace {
             "-hide_banner", "-nostdin", "-v", "error", "-y",
             "-f", "lavfi",
             "-i", "sine=frequency=440:duration=\(String(format: "%.3f", duration)):sample_rate=48000",
-            "-filter_complex", "[0:a]asplit=2[left][right];[left]volume=1.0[l];[right]volume=0.02[r];[l][r]join=inputs=2:channel_layout=stereo[a]",
+            "-filter_complex",
+            "[0:a]asplit=2[left][right];[left]volume=1.0[l];[right]volume=0.02[r];[l][r]join=inputs=2:channel_layout=stereo[a]",
             "-map", "[a]"
         ]
         switch ext.lowercased() {
         case "wav":
-            args += ["-c:a", "pcm_f32le", "-ar", "48000", "-f", "wav", "-rf64", "always", "-write_bext", "1", target.path]
+            args += [
+                "-c:a", "pcm_f32le", "-ar", "48000", "-f", "wav", "-rf64", "always", "-write_bext", "1", target.path
+            ]
         case "flac":
             args += ["-c:a", "flac", "-compression_level", "5", "-ar", "48000", target.path]
         case "mp3":
@@ -436,19 +467,21 @@ final class IntegrationWorkspace {
             name: "\(name)_audio", ext: "mp3", duration: duration, frequency: frequency, sampleRate: sampleRate)
         let cover = try createImage(name: "\(name)_cover", ext: "png", width: 320, height: 320)
         let target = output.appendingPathComponent(name).appendingPathExtension("mp3")
-        _ = try runner().run("ffmpeg", [
-            "-hide_banner", "-nostdin", "-v", "error", "-y",
-            "-i", audio.path,
-            "-i", cover.path,
-            "-map", "0:a:0",
-            "-map", "1:v:0",
-            "-c:a", "copy",
-            "-c:v", "mjpeg",
-            "-id3v2_version", "3",
-            "-metadata:s:v", "title=Album cover",
-            "-metadata:s:v", "comment=Cover (front)",
-            target.path
-        ])
+        _ = try runner().run(
+            "ffmpeg",
+            [
+                "-hide_banner", "-nostdin", "-v", "error", "-y",
+                "-i", audio.path,
+                "-i", cover.path,
+                "-map", "0:a:0",
+                "-map", "1:v:0",
+                "-c:a", "copy",
+                "-c:v", "mjpeg",
+                "-id3v2_version", "3",
+                "-metadata:s:v", "title=Album cover",
+                "-metadata:s:v", "comment=Cover (front)",
+                target.path
+            ])
         try? fileManager.removeItem(at: audio)
         return target
     }
@@ -457,51 +490,59 @@ final class IntegrationWorkspace {
         let audio = try createAudio(name: "\(name)_audio", ext: "flac", duration: duration, frequency: frequency)
         let cover = try createImage(name: "\(name)_cover", ext: "png", width: 320, height: 320)
         let target = output.appendingPathComponent(name).appendingPathExtension("flac")
-        _ = try runner().run("ffmpeg", [
-            "-hide_banner", "-nostdin", "-v", "error", "-y",
-            "-i", audio.path,
-            "-i", cover.path,
-            "-map", "0:a:0",
-            "-map", "1:v:0",
-            "-c:a", "copy",
-            "-c:v", "png",
-            "-disposition:v:0", "attached_pic",
-            "-metadata:s:v", "title=Album cover",
-            "-metadata:s:v", "comment=Cover (front)",
-            target.path
-        ])
+        _ = try runner().run(
+            "ffmpeg",
+            [
+                "-hide_banner", "-nostdin", "-v", "error", "-y",
+                "-i", audio.path,
+                "-i", cover.path,
+                "-map", "0:a:0",
+                "-map", "1:v:0",
+                "-c:a", "copy",
+                "-c:v", "png",
+                "-disposition:v:0", "attached_pic",
+                "-metadata:s:v", "title=Album cover",
+                "-metadata:s:v", "comment=Cover (front)",
+                target.path
+            ])
         try? fileManager.removeItem(at: audio)
         return target
     }
 
-    func createHotMP3WithArtwork(name: String, duration: Double = 1.2, frequency: Int = 440, gainDB: Double = 24) throws -> URL {
+    func createHotMP3WithArtwork(
+        name: String, duration: Double = 1.2, frequency: Int = 440, gainDB: Double = 24
+    ) throws -> URL {
         let audio = output.appendingPathComponent("\(name)_audio").appendingPathExtension("mp3")
         let cover = try createImage(name: "\(name)_cover", ext: "png", width: 320, height: 320)
         let target = output.appendingPathComponent(name).appendingPathExtension("mp3")
-        _ = try runner().run("ffmpeg", [
-            "-hide_banner", "-nostdin", "-v", "error", "-y",
-            "-f", "lavfi",
-            "-i", "sine=frequency=\(frequency):duration=\(String(format: "%.3f", duration)):sample_rate=48000",
-            "-ac", "2",
-            "-af", "volume=\(String(format: "%.2f", gainDB))dB",
-            "-c:a", "libmp3lame",
-            "-b:a", "320k",
-            "-ar", "48000",
-            audio.path
-        ])
-        _ = try runner().run("ffmpeg", [
-            "-hide_banner", "-nostdin", "-v", "error", "-y",
-            "-i", audio.path,
-            "-i", cover.path,
-            "-map", "0:a:0",
-            "-map", "1:v:0",
-            "-c:a", "copy",
-            "-c:v", "mjpeg",
-            "-id3v2_version", "3",
-            "-metadata:s:v", "title=Album cover",
-            "-metadata:s:v", "comment=Cover (front)",
-            target.path
-        ])
+        _ = try runner().run(
+            "ffmpeg",
+            [
+                "-hide_banner", "-nostdin", "-v", "error", "-y",
+                "-f", "lavfi",
+                "-i", "sine=frequency=\(frequency):duration=\(String(format: "%.3f", duration)):sample_rate=48000",
+                "-ac", "2",
+                "-af", "volume=\(String(format: "%.2f", gainDB))dB",
+                "-c:a", "libmp3lame",
+                "-b:a", "320k",
+                "-ar", "48000",
+                audio.path
+            ])
+        _ = try runner().run(
+            "ffmpeg",
+            [
+                "-hide_banner", "-nostdin", "-v", "error", "-y",
+                "-i", audio.path,
+                "-i", cover.path,
+                "-map", "0:a:0",
+                "-map", "1:v:0",
+                "-c:a", "copy",
+                "-c:v", "mjpeg",
+                "-id3v2_version", "3",
+                "-metadata:s:v", "title=Album cover",
+                "-metadata:s:v", "comment=Cover (front)",
+                target.path
+            ])
         try? fileManager.removeItem(at: audio)
         return target
     }
@@ -517,23 +558,27 @@ final class IntegrationWorkspace {
 
     func extractFirstVideoFrame(from video: URL, name: String) throws -> URL {
         let frame = output.appendingPathComponent(name).appendingPathExtension("png")
-        _ = try runner().run("ffmpeg", [
-            "-hide_banner", "-nostdin", "-v", "error", "-y",
-            "-i", video.path,
-            "-frames:v", "1",
-            frame.path
-        ])
+        _ = try runner().run(
+            "ffmpeg",
+            [
+                "-hide_banner", "-nostdin", "-v", "error", "-y",
+                "-i", video.path,
+                "-frames:v", "1",
+                frame.path
+            ])
         return frame
     }
 
     func meanGrayValue(image: URL, crop: String) throws -> Double {
-        let result = try runner().run("magick", [
-            image.path,
-            "-crop", crop,
-            "-colorspace", "Gray",
-            "-format", "%[fx:mean]",
-            "info:"
-        ])
+        let result = try runner().run(
+            "magick",
+            [
+                image.path,
+                "-crop", crop,
+                "-colorspace", "Gray",
+                "-format", "%[fx:mean]",
+                "info:"
+            ])
         guard let value = Double(result.stdout.trimmed) else {
             throw AppError("Unable to parse mean gray value for \(image.path): \(result.stdout)")
         }
@@ -542,7 +587,7 @@ final class IntegrationWorkspace {
 
     func writeGarbageFile(name: String, ext: String) throws -> URL {
         let target = output.appendingPathComponent(name).appendingPathExtension(ext)
-        let payload = Data((0 ..< 4096).map { UInt8(($0 * 37) & 0xFF) })
+        let payload = Data((0..<4096).map { UInt8(($0 * 37) & 0xFF) })
         try payload.write(to: target)
         return target
     }
@@ -610,10 +655,10 @@ final class RecordingToolDirectory {
         let log = url.appendingPathComponent("\(name).log")
         try Data().write(to: log)
         let body = """
-        #!/bin/sh
-        printf '%s\\n' "$*" >> "\(log.path)"
-        exec "\(realTool.path)" "$@"
-        """
+            #!/bin/sh
+            printf '%s\\n' "$*" >> "\(log.path)"
+            exec "\(realTool.path)" "$@"
+            """
         try (body + "\n").write(to: stub, atomically: true, encoding: .utf8)
         try FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: stub.path)
     }
@@ -737,7 +782,7 @@ enum WAVFixture {
     static func bextChunk(description: String) -> Data {
         var payload = Data(count: 602)
         let text = Data(description.utf8.prefix(256))
-        payload.replaceSubrange(0 ..< text.count, with: text)
+        payload.replaceSubrange(0..<text.count, with: text)
         return chunk("bext", payload)
     }
 

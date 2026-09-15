@@ -16,7 +16,9 @@ extension ConverterTool {
         return nil
     }
 
-    private func mp4EncoderQualityArguments(encoder: String, vtQuality: String, preset: String, crf: String) -> [String] {
+    private func mp4EncoderQualityArguments(
+        encoder: String, vtQuality: String, preset: String, crf: String
+    ) -> [String] {
         if encoder.lowercasedASCII.contains("videotoolbox") {
             return ["-q:v", vtQuality]
         }
@@ -36,7 +38,8 @@ extension ConverterTool {
         }
         // An already-standard ALAC source is copied bit-for-bit instead of decoded to a 96 kHz
         // WAV and re-encoded (#0089).
-        args += audioStreamCopy
+        args +=
+            audioStreamCopy
             ? ["-c:a", "copy"]
             : alacAudioArguments(sampleRate: spec.audioSampleRate, channels: 2)
         args += ["-shortest", "-movflags", "+faststart"]
@@ -56,7 +59,8 @@ extension ConverterTool {
         guard let rate = try audioField(audioFile, "sample_rate").flatMap(Int.init), rate == targetSampleRate else {
             return false
         }
-        guard let channels = try audioField(audioFile, "channels").flatMap(Int.init), channels == config.m4aChannels else {
+        guard let channels = try audioField(audioFile, "channels").flatMap(Int.init), channels == config.m4aChannels
+        else {
             return false
         }
         return true
@@ -165,7 +169,9 @@ extension ConverterTool {
     // Walks the encoder ladder, verifying before publishing and falling through to the
     // next encoder on failure. All three render paths share this, so a fix here cannot
     // reach only two of them.
-    private func renderVideoWithEncoderLadder(_ encode: VideoEncodeSpec, verifying spec: VideoOutputSpec) throws -> URL {
+    private func renderVideoWithEncoderLadder(
+        _ encode: VideoEncodeSpec, verifying spec: VideoOutputSpec
+    ) throws -> URL {
         try withEncoderLadder(encode.encoderLadder, label: encode.label) { encoder in
             let temp = try makeTemp(
                 in: encode.output.deletingLastPathComponent(),
@@ -233,22 +239,23 @@ extension ConverterTool {
             // A portrait source smaller than the frame is upscaled here, so it needs the
             // configured high-quality scaler rather than ffmpeg's default.
             framing =
-                "scale=w=\(width):h=\(height):force_original_aspect_ratio=decrease:flags=\(scaleQualityFlags)," +
-                "pad=\(width):\(height):(ow-iw)/2:(oh-ih)/2:color=black"
+                "scale=w=\(width):h=\(height):force_original_aspect_ratio=decrease:flags=\(scaleQualityFlags),"
+                + "pad=\(width):\(height):(ow-iw)/2:(oh-ih)/2:color=black"
         case .centerCut:
             // `increase` guarantees both axes reach the target, so the centred crop never
             // runs short and no padding is ever introduced. A centre cut usually upscales
             // (a 7680x4320 master contributes only its middle 2430x4320), so it uses the
             // configured high-quality scaler rather than the default.
             framing =
-                "scale=w=\(width):h=\(height):force_original_aspect_ratio=increase:flags=\(scaleQualityFlags)," +
-                "crop=\(width):\(height)"
+                "scale=w=\(width):h=\(height):force_original_aspect_ratio=increase:flags=\(scaleQualityFlags),"
+                + "crop=\(width):\(height)"
         }
         return framing + ",fps=\(config.shortMP4FPS),format=\(config.shortMP4PixelFormat)," + colorParameterFilter()
     }
 
     func centerCutShortMP4Stem(_ stem: String) -> String {
-        stem.hasSuffix(ShortFillMode.centerCut.outputStemSuffix) ? stem : stem + ShortFillMode.centerCut.outputStemSuffix
+        stem.hasSuffix(ShortFillMode.centerCut.outputStemSuffix)
+            ? stem : stem + ShortFillMode.centerCut.outputStemSuffix
     }
 
     // Scaling quality flags for swscale: accurate rounding and full chroma interpolation
@@ -344,7 +351,9 @@ extension ConverterTool {
             throw AppError("Unable to read dimensions: \(imageFile.path)")
         }
         if dimensions.0 != config.videoMP4Width || dimensions.1 != config.videoMP4Height {
-            throw AppError("Image must be \(config.videoMP4Width)x\(config.videoMP4Height). Got '\(dimensions.0)x\(dimensions.1)' for '\(imageFile.path)'.")
+            throw AppError(
+                "Image must be \(config.videoMP4Width)x\(config.videoMP4Height). Got '\(dimensions.0)x\(dimensions.1)' for '\(imageFile.path)'."
+            )
         }
         guard let duration = try mediaDuration(audioFile) else {
             throw AppError("Unable to read numeric audio duration from: \(audioFile.path)")
@@ -373,9 +382,11 @@ extension ConverterTool {
         if !streamCopy {
             try requireFFmpegEncoder(alacEncoderName)
         }
-        let sourceWAV = streamCopy
+        let sourceWAV =
+            streamCopy
             ? nil
-            : try makeInternalWAV(from: audioFile, in: output.deletingLastPathComponent(), stem: "\(audioFile.stem).mainmp4.source")
+            : try makeInternalWAV(
+                from: audioFile, in: output.deletingLastPathComponent(), stem: "\(audioFile.stem).mainmp4.source")
         defer { sourceWAV.map(discardTempFile) }
 
         return try renderVideoWithEncoderLadder(
@@ -390,9 +401,8 @@ extension ConverterTool {
                     "-t", ffmpegArg("%.6f", duration)
                 ],
                 videoFilter:
-                    "scale=\(config.videoMP4Width):\(config.videoMP4Height):flags=\(scaleQualityFlags)," +
-                    "format=\(config.videoMP4PixelFormat)," +
-                    colorParameterFilter(),
+                    "scale=\(config.videoMP4Width):\(config.videoMP4Height):flags=\(scaleQualityFlags),"
+                    + "format=\(config.videoMP4PixelFormat)," + colorParameterFilter(),
                 encoderLadder: encoders,
                 vtQuality: config.videoMP4VTQuality,
                 softwarePreset: config.videoMP4SoftwarePreset,
@@ -419,7 +429,8 @@ extension ConverterTool {
     func shortenMP4(_ input: URL, audioQCPolicy: AudioQCPolicy?) throws -> URL {
         try preflightMP4Input(input, requireAudio: true, requireAudibleAudio: true)
         let shortDuration = try effectiveShortClipSeconds(for: input)
-        let output = cli.outDir.appendingPathComponent(shortMP4Stem(forInputStem: input.stem)).appendingPathExtension("mp4")
+        let output = cli.outDir.appendingPathComponent(shortMP4Stem(forInputStem: input.stem)).appendingPathExtension(
+            "mp4")
 
         let spec = VideoOutputSpec(
             width: config.shortMP4ScaleW,
@@ -427,7 +438,9 @@ extension ConverterTool {
             pixelFormat: config.shortMP4PixelFormat,
             fallbackVerifyCodec: config.shortMP4VerifyCodec,
             audioSampleRate: config.shortMP4AudioSampleRate,
-            audioQCPolicy: try audioQCPolicy.map { try shortRenderQCPolicy($0, source: input, limitDuration: shortDuration) },
+            audioQCPolicy: try audioQCPolicy.map {
+                try shortRenderQCPolicy($0, source: input, limitDuration: shortDuration)
+            },
             loudnessSource: input,
             durationCheck: { try self.verifyShortMP4Duration($0, source: input) }
         )
@@ -441,9 +454,11 @@ extension ConverterTool {
         if !streamCopy {
             try requireFFmpegEncoder(alacEncoderName)
         }
-        let sourceWAV = streamCopy
+        let sourceWAV =
+            streamCopy
             ? nil
-            : try makeInternalWAV(from: input, in: cli.outDir, stem: "\(input.stem).shortmp4.source", duration: shortDuration)
+            : try makeInternalWAV(
+                from: input, in: cli.outDir, stem: "\(input.stem).shortmp4.source", duration: shortDuration)
         defer { sourceWAV.map(discardTempFile) }
 
         return try renderVideoWithEncoderLadder(
@@ -473,11 +488,9 @@ extension ConverterTool {
     // -mp4toshort crops a landscape source to 9:16 and upscales it to the portrait frame, so it
     // needs the same configured scaler as the other short paths instead of ffmpeg's default.
     func mp4ToShortVideoFilter() -> String {
-        "crop=min(iw\\,ih*9/16):ih," +
-        "fps=\(config.shortMP4FPS)," +
-        "scale=\(config.shortMP4ScaleW):\(config.shortMP4ScaleH):flags=\(scaleQualityFlags)," +
-        "format=\(config.shortMP4PixelFormat)," +
-        colorParameterFilter()
+        "crop=min(iw\\,ih*9/16):ih," + "fps=\(config.shortMP4FPS),"
+            + "scale=\(config.shortMP4ScaleW):\(config.shortMP4ScaleH):flags=\(scaleQualityFlags),"
+            + "format=\(config.shortMP4PixelFormat)," + colorParameterFilter()
     }
 
     func preflightShortAudioInput(_ file: URL) throws {
@@ -499,7 +512,9 @@ extension ConverterTool {
             throw AppError("Unable to read dimensions: \(imageFile.path)")
         }
         if dimensions.0 <= 0 || dimensions.1 <= 0 {
-            throw AppError("Short image dimensions must be positive. Got '\(dimensions.0)x\(dimensions.1)' for '\(imageFile.path)'.")
+            throw AppError(
+                "Short image dimensions must be positive. Got '\(dimensions.0)x\(dimensions.1)' for '\(imageFile.path)'."
+            )
         }
         guard let audioDuration = try mediaDuration(audioFile) else {
             throw AppError("Unable to read numeric audio duration from: \(audioFile.path)")
@@ -516,7 +531,9 @@ extension ConverterTool {
             pixelFormat: config.shortMP4PixelFormat,
             fallbackVerifyCodec: config.shortMP4VerifyCodec,
             audioSampleRate: config.shortMP4AudioSampleRate,
-            audioQCPolicy: try audioQCPolicy.map { try shortRenderQCPolicy($0, source: audioFile, limitDuration: shortDuration) },
+            audioQCPolicy: try audioQCPolicy.map {
+                try shortRenderQCPolicy($0, source: audioFile, limitDuration: shortDuration)
+            },
             loudnessSource: audioFile,
             durationCheck: {
                 try self.verifyDuration($0, expectedSeconds: shortDuration, label: verificationLabel, tolerance: 0.5)
@@ -533,9 +550,12 @@ extension ConverterTool {
         if !streamCopy {
             try requireFFmpegEncoder(alacEncoderName)
         }
-        let sourceWAV = streamCopy
+        let sourceWAV =
+            streamCopy
             ? nil
-            : try makeInternalWAV(from: audioFile, in: cli.outDir, stem: "\(audioFile.stem).portraitshort.source", duration: shortDuration)
+            : try makeInternalWAV(
+                from: audioFile, in: cli.outDir, stem: "\(audioFile.stem).portraitshort.source", duration: shortDuration
+            )
         defer { sourceWAV.map(discardTempFile) }
 
         return try renderVideoWithEncoderLadder(

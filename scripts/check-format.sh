@@ -16,6 +16,12 @@ if [ "${1:-}" = "--write" ]; then
   exit 0
 fi
 
-# `swift format lint` exits non-zero as soon as it reports a finding.
-swift format lint --recursive --parallel --configuration .swift-format "${paths[@]}"
+# `swift format lint` exits 0 even when it reports differences on this toolchain, so the gate is the
+# report itself: any output at all means the tree is not formatted.
+report="$(swift format lint --recursive --parallel --configuration .swift-format "${paths[@]}" 2>&1 || true)"
+if [ -n "$report" ]; then
+  printf '%s\n' "$report"
+  echo "::error::swift format found formatting differences; run scripts/check-format.sh --write" >&2
+  exit 1
+fi
 echo "swift format clean: $(swift format --version)"

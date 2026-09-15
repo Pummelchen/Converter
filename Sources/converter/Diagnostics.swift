@@ -4,22 +4,24 @@ extension ConverterTool {
     func ffmpegEncoderSet() throws -> Set<String> {
         let result = try runner.run("ffmpeg", ["-hide_banner", "-encoders"])
         let lines = result.stdout.split(whereSeparator: \.isNewline).map(String.init)
-        return Set(lines.flatMap { line in
-            line.split(whereSeparator: \.isWhitespace).dropFirst().prefix(1).map(String.init)
-        })
+        return Set(
+            lines.flatMap { line in
+                line.split(whereSeparator: \.isWhitespace).dropFirst().prefix(1).map(String.init)
+            })
     }
 
     func ffmpegFilterSet() throws -> Set<String> {
         let result = try runner.run("ffmpeg", ["-hide_banner", "-filters"])
         let lines = result.stdout.split(whereSeparator: \.isNewline).map(String.init)
-        return Set(lines.compactMap { line in
-            let parts = line.split(whereSeparator: \.isWhitespace)
-            guard parts.count >= 2, String(parts[1]) != "=" else { return nil }
-            let flags = String(parts[0])
-            let allowedFlags = CharacterSet(charactersIn: ".TSAVNCD|")
-            guard !flags.isEmpty, flags.unicodeScalars.allSatisfy(allowedFlags.contains) else { return nil }
-            return String(parts[1])
-        })
+        return Set(
+            lines.compactMap { line in
+                let parts = line.split(whereSeparator: \.isWhitespace)
+                guard parts.count >= 2, String(parts[1]) != "=" else { return nil }
+                let flags = String(parts[0])
+                let allowedFlags = CharacterSet(charactersIn: ".TSAVNCD|")
+                guard !flags.isEmpty, flags.unicodeScalars.allSatisfy(allowedFlags.contains) else { return nil }
+                return String(parts[1])
+            })
     }
 
     @discardableResult

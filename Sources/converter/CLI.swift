@@ -123,20 +123,26 @@ struct CLIOptions {
     let scriptDirectory: URL
     let scriptName: String
 
-    static func parse(arguments: [String], environment: [String: String], scriptDirectory: URL, scriptName: String) throws -> CLIOptions {
+    static func parse(
+        arguments: [String], environment: [String: String], scriptDirectory: URL, scriptName: String
+    ) throws -> CLIOptions {
         let outputBase = environment["OUTPUT_DIR"]
         let envSrc = environment["SRC_DIR"] ?? outputBase
         let envOut = environment["OUT_DIR"] ?? outputBase
         let defaultIO = scriptDirectory.appendingPathComponent("Output", isDirectory: true)
 
         var options = CLIOptions(
-            configFile: URL(fileURLWithPath: environment["CONFIG_FILE"] ?? scriptDirectory.appendingPathComponent("config.txt").path),
+            configFile: URL(
+                fileURLWithPath: environment["CONFIG_FILE"] ?? scriptDirectory.appendingPathComponent("config.txt").path
+            ),
             srcDir: URL(fileURLWithPath: envSrc ?? defaultIO.path),
             outDir: URL(fileURLWithPath: envOut ?? defaultIO.path),
             scriptDirectory: scriptDirectory,
             scriptName: scriptName
         )
-        options.debug = [environment["DEBUG"]].compactMap { $0 }.contains { ["1", "true", "yes", "on"].contains($0.lowercasedASCII) }
+        options.debug = [environment["DEBUG"]].compactMap { $0 }.contains {
+            ["1", "true", "yes", "on"].contains($0.lowercasedASCII)
+        }
         // A config path named through CONFIG_FILE or --config is a request, not a convention: if it
         // does not exist the run must say so instead of silently using built-in defaults (#0120).
         options.configFileWasExplicit = environment["CONFIG_FILE"] != nil
@@ -224,7 +230,9 @@ struct CLIOptions {
             case "-mp3tohash": try select(.mp3tohash, argument)
             case "-mp3tom4a": try select(.mp3tom4a, argument)
             case "-mp3toshort":
-                throw AppError("-mp3toshort was renamed. Use -nfttoshort; it accepts any single audio-only file supported by ffmpeg.")
+                throw AppError(
+                    "-mp3toshort was renamed. Use -nfttoshort; it accepts any single audio-only file supported by ffmpeg."
+                )
             case "-mp3towav": try select(.mp3towav, argument)
             case "-mp4toshort": try select(.mp4toshort, argument)
             case "-nfttoshort": try select(.nfttoshort, argument)
@@ -233,7 +241,9 @@ struct CLIOptions {
             case "-pngto3k1mb": try select(.pngto3k1mb, argument)
             case "-pngto3k5mb": try select(.pngto3k5mb, argument)
             case "-pngtojpeg":
-                throw AppError("-pngtojpeg was removed. Use -pngtojpg; converter writes JPEG outputs with the preferred .jpg extension.")
+                throw AppError(
+                    "-pngtojpeg was removed. Use -pngtojpg; converter writes JPEG outputs with the preferred .jpg extension."
+                )
             case "-pngtojpg": try select(.pngtojpg, argument)
             case "-pngtonft": try select(.pngtonft, argument)
             case "-pngtojpg1mb": try select(.pngtojpg1mb, argument)
@@ -262,13 +272,19 @@ struct CLIOptions {
                 options.outDir = url
             case "--image", "--image-file":
                 _ = try requireValue(argument)
-                throw AppError("\(argument) is no longer supported. Converter auto-discovers required image inputs from SRC_DIR/Output.")
+                throw AppError(
+                    "\(argument) is no longer supported. Converter auto-discovers required image inputs from SRC_DIR/Output."
+                )
             case "--audio", "--audio-file":
                 _ = try requireValue(argument)
-                throw AppError("\(argument) is no longer supported. Converter auto-discovers required audio inputs from SRC_DIR/Output.")
+                throw AppError(
+                    "\(argument) is no longer supported. Converter auto-discovers required audio inputs from SRC_DIR/Output."
+                )
             case "--album-file":
                 _ = try requireValue(argument)
-                throw AppError("\(argument) is no longer supported. -wavtoalbum and -mp3toalbum read album.txt from the project root; -album and -flactoalbum scan SRC_DIR directly.")
+                throw AppError(
+                    "\(argument) is no longer supported. -wavtoalbum and -mp3toalbum read album.txt from the project root; -album and -flactoalbum scan SRC_DIR directly."
+                )
             case "--output-file":
                 options.outputFile = try requireValue(argument)
             case "--overwrite":
@@ -278,7 +294,8 @@ struct CLIOptions {
             case "--lowercase-prefix":
                 options.lowercasePrefix = true
             case "--recursive":
-                throw AppError("--recursive is no longer supported. Converter only scans the current SRC_DIR/Output folder.")
+                throw AppError(
+                    "--recursive is no longer supported. Converter only scans the current SRC_DIR/Output folder.")
             case "--no-recursive":
                 break
             case "--continue-on-error":
@@ -287,7 +304,7 @@ struct CLIOptions {
                 options.trailingSilence = true
             case "--sharpness":
                 guard let value = Double(try requireValue(argument)), value.isFinite,
-                      value >= 0, value <= ProjectConfig.maximumAIPixSharpness
+                    value >= 0, value <= ProjectConfig.maximumAIPixSharpness
                 else {
                     throw AppError(
                         "--sharpness requires a finite value between 0 and \(ProjectConfig.maximumAIPixSharpness)"
@@ -298,7 +315,7 @@ struct CLIOptions {
                 // Bounded: a negative value silently disabled the pacing the caller asked for, and
                 // an enormous one parked the run in Thread.sleep with no watchdog (#0121).
                 guard let value = Double(try requireValue(argument)), value.isFinite,
-                      value > 0, value <= CLIOptions.maximumSleepSeconds
+                    value > 0, value <= CLIOptions.maximumSleepSeconds
                 else {
                     throw AppError(
                         "--sleep-seconds requires a finite value greater than 0 and at most "
@@ -355,14 +372,15 @@ struct CLIOptions {
         if !options.actionArgs.isEmpty, !options.action.acceptsPositionalArguments {
             let stray = options.actionArgs.joined(separator: " ")
             throw AppError(
-                "-\(options.action.rawValue) does not take positional arguments (got: \(stray)). Run \(scriptName) -help.")
+                "-\(options.action.rawValue) does not take positional arguments (got: \(stray)). Run \(scriptName) -help."
+            )
         }
 
         if options.outputFile != nil, !options.action.acceptsOutputFile {
             let supported = Action.actionsAcceptingOutputFile.map { "-\($0.rawValue)" }.joined(separator: ", ")
             throw AppError(
                 "--output-file names exactly one output file and is not supported by -\(options.action.rawValue). "
-                + "It is accepted by: \(supported).")
+                    + "It is accepted by: \(supported).")
         }
 
         // --open / --num-dots / --dot-size / --max-attempts / --seed are consumed only while
@@ -399,7 +417,9 @@ struct CLIOptions {
 
     func fadeOutSpec() throws -> FadeOutSpec {
         guard actionArgs.count == 2 else {
-            throw AppError("'-fadeout' requires exactly two positional values: START DURATION. Example: converter -fadeout 1:30 10")
+            throw AppError(
+                "'-fadeout' requires exactly two positional values: START DURATION. Example: converter -fadeout 1:30 10"
+            )
         }
         let fadeStartSeconds = try parseFlexibleTimecode(actionArgs[0], label: "fade start")
         let fadeDurationSeconds = try parseFlexibleTimecode(actionArgs[1], label: "fade duration")
@@ -425,7 +445,8 @@ struct CLIOptions {
 
     func fadeCutSpec() throws -> FadeCutSpec {
         guard actionArgs.count == 2 else {
-            throw AppError("'-fadecut' requires two positional values: CUT_SECONDS FADE_SECONDS. Example: converter -fadecut 5 10")
+            throw AppError(
+                "'-fadecut' requires two positional values: CUT_SECONDS FADE_SECONDS. Example: converter -fadecut 5 10")
         }
         let cutSeconds = try parseFlexibleTimecode(actionArgs[0], label: "cut duration")
         let fadeDurationSeconds = try parseFlexibleTimecode(actionArgs[1], label: "fade duration")
@@ -444,7 +465,8 @@ struct CLIOptions {
         }
         let seconds = try parseFlexibleTimecode(rawValue, label: "silence duration")
         guard seconds >= Self.minimumPaddingSeconds else {
-            throw AppError("Silence duration must be at least \(Self.minimumPaddingSeconds) seconds so the padding is measurable.")
+            throw AppError(
+                "Silence duration must be at least \(Self.minimumPaddingSeconds) seconds so the padding is measurable.")
         }
         return SilenceSpec(seconds: seconds)
     }
@@ -458,7 +480,8 @@ struct CLIOptions {
         }
         let seconds = try parseFlexibleTimecode(rawValue, label: "noise duration")
         guard seconds >= Self.minimumPaddingSeconds else {
-            throw AppError("Noise duration must be at least \(Self.minimumPaddingSeconds) seconds so the padding is measurable.")
+            throw AppError(
+                "Noise duration must be at least \(Self.minimumPaddingSeconds) seconds so the padding is measurable.")
         }
         return NoiseSpec(seconds: seconds)
     }
@@ -508,10 +531,12 @@ struct CLIOptions {
     func printActionList() {
         let lines = [
             "Available actions:",
-            "  --hash", "  -album", "  -bass", "  -doctor", "  -fade", "  -fadecut", "  -fadeout", "  -full", "  -run", "  -short", "  -run_pix", "  -aipix", "  -clean", "  -fadewav",
+            "  --hash", "  -album", "  -bass", "  -doctor", "  -fade", "  -fadecut", "  -fadeout", "  -full", "  -run",
+            "  -short", "  -run_pix", "  -aipix", "  -clean", "  -fadewav",
             "  -flactoalbum", "  -flactohash", "  -flactom4a", "  -flactomp3", "  -flactowav",
             "  -jpgtopng", "  -m4atoflac", "  -m4atomp3", "  -m4atomp4", "  -m4atowav",
-            "  -loudscan", "  -loudness", "  -master", "  -matrix", "  -mp3clean", "  -mp3toalbum", "  -mp3toflac", "  -mp3tohash",
+            "  -loudscan", "  -loudness", "  -master", "  -matrix", "  -mp3clean", "  -mp3toalbum", "  -mp3toflac",
+            "  -mp3tohash",
             "  -mp3tom4a", "  -mp3towav", "  -mp4toshort", "  -nfttoshort", "  -pngto2k", "  -pngto3k",
             "  -pngto3k1mb", "  -pngto3k5mb", "  -pngtojpg", "  -pngtonft", "  -pngtojpg1mb",
             "  -pngtojpg2mb", "  -pngtojpg20mb", "  -noise", "  -silence", "  -visualsubs", "  -wavtoalbum",

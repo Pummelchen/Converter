@@ -1,19 +1,22 @@
 import Foundation
 import XCTest
+
 @testable import converter
 
 final class PipelineIntegrationTests: XCTestCase {
     private func filteredMeanVolumeDB(file: URL, filter: String, workspace: IntegrationWorkspace) throws -> Double {
-        let result = try workspace.runner().run("ffmpeg", [
-            "-hide_banner", "-nostdin", "-v", "info",
-            "-i", file.path,
-            "-map", "0:a:0",
-            "-af", "\(filter),volumedetect",
-            "-f", "null", "-"
-        ])
+        let result = try workspace.runner().run(
+            "ffmpeg",
+            [
+                "-hide_banner", "-nostdin", "-v", "info",
+                "-i", file.path,
+                "-map", "0:a:0",
+                "-af", "\(filter),volumedetect",
+                "-f", "null", "-"
+            ])
         guard let line = result.stderr.components(separatedBy: .newlines).last(where: { $0.contains("mean_volume:") }),
-              let rawValue = line.components(separatedBy: "mean_volume:").last?.trimmed.split(separator: " ").first,
-              let value = Double(rawValue)
+            let rawValue = line.components(separatedBy: "mean_volume:").last?.trimmed.split(separator: " ").first,
+            let value = Double(rawValue)
         else {
             throw AppError("Unable to read filtered mean volume for \(file.path) with filter \(filter)")
         }
@@ -22,7 +25,8 @@ final class PipelineIntegrationTests: XCTestCase {
 
     private func bassToMidRatioDB(file: URL, workspace: IntegrationWorkspace) throws -> Double {
         let lowBand = try filteredMeanVolumeDB(file: file, filter: "lowpass=f=120", workspace: workspace)
-        let midBand = try filteredMeanVolumeDB(file: file, filter: "highpass=f=500,lowpass=f=2000", workspace: workspace)
+        let midBand = try filteredMeanVolumeDB(
+            file: file, filter: "highpass=f=500,lowpass=f=2000", workspace: workspace)
         return lowBand - midBand
     }
 
@@ -94,11 +98,13 @@ final class PipelineIntegrationTests: XCTestCase {
         let workspace = try IntegrationWorkspace()
         try workspace.requireCommands(["ffmpeg"])
         let raw = workspace.output.appendingPathComponent("stereo.f32le")
-        _ = try workspace.runner().run("ffmpeg", [
-            "-hide_banner", "-nostdin", "-v", "error", "-y",
-            "-f", "lavfi", "-i", "sine=frequency=440:duration=0.1:sample_rate=48000",
-            "-ac", "2", "-f", "f32le", "-acodec", "pcm_f32le", raw.path
-        ])
+        _ = try workspace.runner().run(
+            "ffmpeg",
+            [
+                "-hide_banner", "-nostdin", "-v", "error", "-y",
+                "-f", "lavfi", "-i", "sine=frequency=440:duration=0.1:sample_rate=48000",
+                "-ac", "2", "-f", "f32le", "-acodec", "pcm_f32le", raw.path
+            ])
         let tool = try workspace.makeTool(arguments: ["-full"])
 
         XCTAssertThrowsError(
@@ -129,11 +135,13 @@ final class PipelineIntegrationTests: XCTestCase {
         let workspace = try IntegrationWorkspace()
         try workspace.requireCommands(["ffmpeg"])
         let raw = workspace.output.appendingPathComponent("same.f32le")
-        _ = try workspace.runner().run("ffmpeg", [
-            "-hide_banner", "-nostdin", "-v", "error", "-y",
-            "-f", "lavfi", "-i", "sine=frequency=440:duration=0.1:sample_rate=48000",
-            "-ac", "2", "-f", "f32le", "-acodec", "pcm_f32le", raw.path
-        ])
+        _ = try workspace.runner().run(
+            "ffmpeg",
+            [
+                "-hide_banner", "-nostdin", "-v", "error", "-y",
+                "-f", "lavfi", "-i", "sine=frequency=440:duration=0.1:sample_rate=48000",
+                "-ac", "2", "-f", "f32le", "-acodec", "pcm_f32le", raw.path
+            ])
         let originalSize = try XCTUnwrap(
             try? FileManager.default.attributesOfItem(atPath: raw.path)[.size] as? Int
         )
@@ -161,10 +169,12 @@ final class PipelineIntegrationTests: XCTestCase {
 
         DispatchQueue.global(qos: .userInitiated).async {
             let result = Result { () throws -> ProcessResult in
-                try runner.run("/bin/sh", [
-                    "-c",
-                    "i=0; while [ $i -lt 40000 ]; do printf 'noisy-line-%05d\\n' \"$i\" 1>&2; i=$((i+1)); done"
-                ])
+                try runner.run(
+                    "/bin/sh",
+                    [
+                        "-c",
+                        "i=0; while [ $i -lt 40000 ]; do printf 'noisy-line-%05d\\n' \"$i\" 1>&2; i=$((i+1)); done"
+                    ])
             }
             outcome.store(result)
             semaphore.signal()
@@ -173,7 +183,8 @@ final class PipelineIntegrationTests: XCTestCase {
         // audit #0093: the 10 s budget was a performance assertion on a shared machine. What this
         // test proves is that draining a chatty child cannot deadlock; the stderr assertion below
         // is what does that, and the timeout only has to stop an infinite hang.
-        XCTAssertEqual(semaphore.wait(timeout: .now() + 120), .success, "ProcessRunner.run timed out while draining stderr.")
+        XCTAssertEqual(
+            semaphore.wait(timeout: .now() + 120), .success, "ProcessRunner.run timed out while draining stderr.")
         let processResult = try XCTUnwrap(outcome.load()).get()
         XCTAssertTrue(processResult.stderr.contains("noisy-line-39999"))
     }
@@ -183,7 +194,7 @@ final class PipelineIntegrationTests: XCTestCase {
         let workspace = try IntegrationWorkspace()
         let runner = workspace.runner()
 
-        for index in 0 ..< 400 {
+        for index in 0..<400 {
             let result = try runner.run("/bin/echo", ["probe-\(index)"])
             XCTAssertEqual(result.stdout.trimmed, "probe-\(index)")
         }
@@ -353,17 +364,19 @@ final class PipelineIntegrationTests: XCTestCase {
         _ = try runner.run("/usr/sbin/diskutil", ["mount", device])
         let info = try runner.run("/usr/sbin/diskutil", ["info", device]).stdout
         guard let mountLine = info.split(whereSeparator: \.isNewline).first(where: { $0.contains("Mount Point:") }),
-              let mountPoint = mountLine.split(separator: ":", maxSplits: 1).last?.trimmingCharacters(in: .whitespaces)
+            let mountPoint = mountLine.split(separator: ":", maxSplits: 1).last?.trimmingCharacters(in: .whitespaces)
         else {
             throw XCTSkip("RAM disk did not mount")
         }
 
         let raw = workspace.output.appendingPathComponent("pcm.f32le")
-        _ = try runner.run("ffmpeg", [
-            "-hide_banner", "-nostdin", "-v", "error", "-y",
-            "-f", "lavfi", "-i", "sine=frequency=440:duration=2.0:sample_rate=96000",
-            "-ac", "2", "-f", "f32le", "-acodec", "pcm_f32le", raw.path
-        ])
+        _ = try runner.run(
+            "ffmpeg",
+            [
+                "-hide_banner", "-nostdin", "-v", "error", "-y",
+                "-f", "lavfi", "-i", "sine=frequency=440:duration=2.0:sample_rate=96000",
+                "-ac", "2", "-f", "f32le", "-acodec", "pcm_f32le", raw.path
+            ])
         let tool = try workspace.makeTool(arguments: ["-full"])
         let output = URL(fileURLWithPath: mountPoint).appendingPathComponent("truncated.wav")
         XCTAssertThrowsError(
@@ -390,7 +403,8 @@ final class PipelineIntegrationTests: XCTestCase {
             from: landscape, mode: .centerCut, prefix: "art", sharpenSource: false
         )
 
-        XCTAssertEqual(fitted.all.map(\.lastPathComponent), ["art_Short_8K.png", "art_Short_8K_1MB.jpg", "art_Short_8K_2MB.jpg"])
+        XCTAssertEqual(
+            fitted.all.map(\.lastPathComponent), ["art_Short_8K.png", "art_Short_8K_1MB.jpg", "art_Short_8K_2MB.jpg"])
         XCTAssertEqual(
             centerCut.all.map(\.lastPathComponent),
             ["art_Short_CenterCut_8K.png", "art_Short_CenterCut_8K_1MB.jpg", "art_Short_CenterCut_8K_2MB.jpg"]
@@ -406,11 +420,13 @@ final class PipelineIntegrationTests: XCTestCase {
         // A square fitted into a 9:16 frame must leave black bands; a centre cut must not.
         func topStripMaximum(_ file: URL) throws -> Double {
             let strip = max(1, tool.config.shortMP4ScaleH / 10)
-            let result = try tool.runner.run("magick", [
-                file.path, "-alpha", "off",
-                "-crop", "\(tool.config.shortMP4ScaleW)x\(strip)+0+0", "+repage",
-                "-format", "%[fx:maxima]", "info:"
-            ])
+            let result = try tool.runner.run(
+                "magick",
+                [
+                    file.path, "-alpha", "off",
+                    "-crop", "\(tool.config.shortMP4ScaleW)x\(strip)+0+0", "+repage",
+                    "-format", "%[fx:maxima]", "info:"
+                ])
             return Double(result.stdout.trimmed) ?? -1
         }
 
@@ -642,54 +658,84 @@ final class PipelineIntegrationTests: XCTestCase {
             let verify: (URL) throws -> Void
         }
         let checks: [Check] = [
-            Check(label: "flac->wav", source: flac, build: { try tool.convertAudioToWAV(flac) }, verify: { file in
-                try tool.verifyWAVStandard(file)
-                try tool.verifyDurationMatch(source: flac, output: file)
-            }),
-            Check(label: "flac->mp3", source: flac, build: { try tool.convertAudioToMP3(flac) }, verify: { file in
-                try tool.verifyMP3Standard(file)
-                try tool.verifyDurationMatch(source: flac, output: file)
-            }),
-            Check(label: "flac->m4a", source: flac, build: { try tool.convertAudioToM4A(flac) }, verify: { file in
-                try tool.verifyM4AFile(file, sampleRate: tool.config.m4aSampleRate, channels: tool.config.m4aChannels)
-                try tool.verifyDurationMatch(source: flac, output: file)
-            }),
-            Check(label: "wav->flac", source: wav, build: { try tool.convertAudioToFLAC(wav) }, verify: { file in
-                try tool.verifyAudioOutput(file, codec: "flac", sampleRate: tool.config.flacSampleRate, channels: tool.config.flacChannels)
-                try tool.verifyDurationMatch(source: wav, output: file)
-            }),
-            Check(label: "wav->mp3", source: wav, build: { try tool.convertAudioToMP3(wav) }, verify: { file in
-                try tool.verifyMP3Standard(file)
-                try tool.verifyDurationMatch(source: wav, output: file)
-            }),
-            Check(label: "wav->m4a", source: wav, build: { try tool.convertAudioToM4A(wav) }, verify: { file in
-                try tool.verifyM4AFile(file, sampleRate: tool.config.m4aSampleRate, channels: tool.config.m4aChannels)
-                try tool.verifyDurationMatch(source: wav, output: file)
-            }),
-            Check(label: "mp3->wav", source: mp3, build: { try tool.convertAudioToWAV(mp3) }, verify: { file in
-                try tool.verifyWAVStandard(file)
-                try tool.verifyDurationMatch(source: mp3, output: file)
-            }),
-            Check(label: "mp3->flac", source: mp3, build: { try tool.convertAudioToFLAC(mp3) }, verify: { file in
-                try tool.verifyAudioOutput(file, codec: "flac", sampleRate: tool.config.flacSampleRate, channels: tool.config.flacChannels)
-                try tool.verifyDurationMatch(source: mp3, output: file)
-            }),
-            Check(label: "mp3->m4a", source: mp3, build: { try tool.convertAudioToM4A(mp3) }, verify: { file in
-                try tool.verifyM4AFile(file, sampleRate: tool.config.m4aSampleRate, channels: tool.config.m4aChannels)
-                try tool.verifyDurationMatch(source: mp3, output: file)
-            }),
-            Check(label: "m4a->wav", source: m4a, build: { try tool.convertAudioToWAV(m4a) }, verify: { file in
-                try tool.verifyWAVStandard(file)
-                try tool.verifyDurationMatch(source: m4a, output: file)
-            }),
-            Check(label: "m4a->mp3", source: m4a, build: { try tool.convertAudioToMP3(m4a) }, verify: { file in
-                try tool.verifyMP3Standard(file)
-                try tool.verifyDurationMatch(source: m4a, output: file)
-            }),
-            Check(label: "m4a->flac", source: m4a, build: { try tool.convertAudioToFLAC(m4a) }, verify: { file in
-                try tool.verifyAudioOutput(file, codec: "flac", sampleRate: tool.config.flacSampleRate, channels: tool.config.flacChannels)
-                try tool.verifyDurationMatch(source: m4a, output: file)
-            })
+            Check(
+                label: "flac->wav", source: flac, build: { try tool.convertAudioToWAV(flac) },
+                verify: { file in
+                    try tool.verifyWAVStandard(file)
+                    try tool.verifyDurationMatch(source: flac, output: file)
+                }),
+            Check(
+                label: "flac->mp3", source: flac, build: { try tool.convertAudioToMP3(flac) },
+                verify: { file in
+                    try tool.verifyMP3Standard(file)
+                    try tool.verifyDurationMatch(source: flac, output: file)
+                }),
+            Check(
+                label: "flac->m4a", source: flac, build: { try tool.convertAudioToM4A(flac) },
+                verify: { file in
+                    try tool.verifyM4AFile(
+                        file, sampleRate: tool.config.m4aSampleRate, channels: tool.config.m4aChannels)
+                    try tool.verifyDurationMatch(source: flac, output: file)
+                }),
+            Check(
+                label: "wav->flac", source: wav, build: { try tool.convertAudioToFLAC(wav) },
+                verify: { file in
+                    try tool.verifyAudioOutput(
+                        file, codec: "flac", sampleRate: tool.config.flacSampleRate, channels: tool.config.flacChannels)
+                    try tool.verifyDurationMatch(source: wav, output: file)
+                }),
+            Check(
+                label: "wav->mp3", source: wav, build: { try tool.convertAudioToMP3(wav) },
+                verify: { file in
+                    try tool.verifyMP3Standard(file)
+                    try tool.verifyDurationMatch(source: wav, output: file)
+                }),
+            Check(
+                label: "wav->m4a", source: wav, build: { try tool.convertAudioToM4A(wav) },
+                verify: { file in
+                    try tool.verifyM4AFile(
+                        file, sampleRate: tool.config.m4aSampleRate, channels: tool.config.m4aChannels)
+                    try tool.verifyDurationMatch(source: wav, output: file)
+                }),
+            Check(
+                label: "mp3->wav", source: mp3, build: { try tool.convertAudioToWAV(mp3) },
+                verify: { file in
+                    try tool.verifyWAVStandard(file)
+                    try tool.verifyDurationMatch(source: mp3, output: file)
+                }),
+            Check(
+                label: "mp3->flac", source: mp3, build: { try tool.convertAudioToFLAC(mp3) },
+                verify: { file in
+                    try tool.verifyAudioOutput(
+                        file, codec: "flac", sampleRate: tool.config.flacSampleRate, channels: tool.config.flacChannels)
+                    try tool.verifyDurationMatch(source: mp3, output: file)
+                }),
+            Check(
+                label: "mp3->m4a", source: mp3, build: { try tool.convertAudioToM4A(mp3) },
+                verify: { file in
+                    try tool.verifyM4AFile(
+                        file, sampleRate: tool.config.m4aSampleRate, channels: tool.config.m4aChannels)
+                    try tool.verifyDurationMatch(source: mp3, output: file)
+                }),
+            Check(
+                label: "m4a->wav", source: m4a, build: { try tool.convertAudioToWAV(m4a) },
+                verify: { file in
+                    try tool.verifyWAVStandard(file)
+                    try tool.verifyDurationMatch(source: m4a, output: file)
+                }),
+            Check(
+                label: "m4a->mp3", source: m4a, build: { try tool.convertAudioToMP3(m4a) },
+                verify: { file in
+                    try tool.verifyMP3Standard(file)
+                    try tool.verifyDurationMatch(source: m4a, output: file)
+                }),
+            Check(
+                label: "m4a->flac", source: m4a, build: { try tool.convertAudioToFLAC(m4a) },
+                verify: { file in
+                    try tool.verifyAudioOutput(
+                        file, codec: "flac", sampleRate: tool.config.flacSampleRate, channels: tool.config.flacChannels)
+                    try tool.verifyDurationMatch(source: m4a, output: file)
+                })
         ]
 
         for check in checks {
@@ -727,7 +773,8 @@ final class PipelineIntegrationTests: XCTestCase {
         try workspace.requireCommands(["ffmpeg", "ffprobe", "magick"])
 
         let source = try workspace.createFLACWithArtwork(name: "external_flac_artwork")
-        let output = workspace.output.appendingPathComponent("external_flac_artwork_RF64").appendingPathExtension("flac")
+        let output = workspace.output.appendingPathComponent("external_flac_artwork_RF64").appendingPathExtension(
+            "flac")
         let tool = try workspace.makeTool(arguments: ["-flactowav"])
 
         XCTAssertNoThrow(try tool.requireVideoStream(source), "FLAC fixture should contain attached artwork.")
@@ -735,7 +782,8 @@ final class PipelineIntegrationTests: XCTestCase {
 
         try tool.verifyFLACFile(created, qcPolicy: nil)
         XCTAssertThrowsError(try tool.requireVideoStream(created), "External FLAC output should contain audio only.")
-        try tool.verifyCanonicalPCMSampleEquivalence(source: source, output: created, label: "External FLAC", format: .s24le)
+        try tool.verifyCanonicalPCMSampleEquivalence(
+            source: source, output: created, label: "External FLAC", format: .s24le)
     }
 
     func testImageConversionsAndDerivativesProduceVerifiedOutputs() throws {
@@ -748,33 +796,44 @@ final class PipelineIntegrationTests: XCTestCase {
         let tool = try workspace.makeTool(arguments: ["-aipix"])
 
         let pngFromJpg = try tool.convertJPGToPNG(jpg)
-        try tool.verifyImageOutput(pngFromJpg, width: tool.config.image8KWidth, height: tool.config.image8KHeight, format: "PNG")
+        try tool.verifyImageOutput(
+            pngFromJpg, width: tool.config.image8KWidth, height: tool.config.image8KHeight, format: "PNG")
 
         let pngFromJpeg = try tool.convertJPGToPNG(jpeg)
-        try tool.verifyImageOutput(pngFromJpeg, width: tool.config.image8KWidth, height: tool.config.image8KHeight, format: "PNG")
+        try tool.verifyImageOutput(
+            pngFromJpeg, width: tool.config.image8KWidth, height: tool.config.image8KHeight, format: "PNG")
 
         let jpgFromPng = try tool.convertPNGToJPEG(png, outputExtension: "jpg")
-        try tool.verifyImageOutput(jpgFromPng, width: tool.config.image8KWidth, height: tool.config.image8KHeight, format: "JPEG")
+        try tool.verifyImageOutput(
+            jpgFromPng, width: tool.config.image8KWidth, height: tool.config.image8KHeight, format: "JPEG")
 
         let aipix = try tool.aipixFile(png)
-        try tool.verifyImageOutput(aipix.eightK, width: tool.config.image8KWidth, height: tool.config.image8KHeight, format: "PNG")
-        try tool.verifyImageOutput(aipix.fourK, width: tool.config.image4KWidth, height: tool.config.image4KHeight, format: "PNG")
+        try tool.verifyImageOutput(
+            aipix.eightK, width: tool.config.image8KWidth, height: tool.config.image8KHeight, format: "PNG")
+        try tool.verifyImageOutput(
+            aipix.fourK, width: tool.config.image4KWidth, height: tool.config.image4KHeight, format: "PNG")
 
         let nft = try tool.nftFrom8K(aipix.eightK)
-        try tool.verifyImageOutput(nft.nft8K, width: tool.config.image8KWidth, height: tool.config.image8KWidth, format: "PNG")
-        try tool.verifyImageOutput(nft.nft3K, width: tool.config.image3KSize, height: tool.config.image3KSize, format: "PNG")
-        try tool.verifyImageOutput(nft.nft2K, width: tool.config.image2KSize, height: tool.config.image2KSize, format: "PNG")
+        try tool.verifyImageOutput(
+            nft.nft8K, width: tool.config.image8KWidth, height: tool.config.image8KWidth, format: "PNG")
+        try tool.verifyImageOutput(
+            nft.nft3K, width: tool.config.image3KSize, height: tool.config.image3KSize, format: "PNG")
+        try tool.verifyImageOutput(
+            nft.nft2K, width: tool.config.image2KSize, height: tool.config.image2KSize, format: "PNG")
 
         let threeK = try tool.squarePNGFrom8K(aipix.eightK, size: tool.config.image3KSize, label: "3K")
         let twoK = try tool.squarePNGFrom8K(aipix.eightK, size: tool.config.image2KSize, label: "2K")
-        try tool.verifyImageOutput(threeK, width: tool.config.image3KSize, height: tool.config.image3KSize, format: "PNG")
+        try tool.verifyImageOutput(
+            threeK, width: tool.config.image3KSize, height: tool.config.image3KSize, format: "PNG")
         try tool.verifyImageOutput(twoK, width: tool.config.image2KSize, height: tool.config.image2KSize, format: "PNG")
 
         let jpgExtent = try tool.jpegExtentFromPNG(
             aipix.eightK, requiredWidth: tool.config.image8KWidth, requiredHeight: tool.config.image8KHeight,
             suffix: "1MB", targetBytes: tool.config.image8KJPG1MBTargetBytes
         )
-        try tool.verifyImageOutput(jpgExtent, width: tool.config.image8KWidth, height: tool.config.image8KHeight, format: "JPEG", maxBytes: tool.config.image8KJPG1MBTargetBytes)
+        try tool.verifyImageOutput(
+            jpgExtent, width: tool.config.image8KWidth, height: tool.config.image8KHeight, format: "JPEG",
+            maxBytes: tool.config.image8KJPG1MBTargetBytes)
     }
 
     func testImageOutputsAreNormalizedToSRGB() throws {
@@ -782,12 +841,14 @@ final class PipelineIntegrationTests: XCTestCase {
         try workspace.requireCommands(["magick"])
 
         let cmykJPG = workspace.output.appendingPathComponent("cmyk_source.jpg")
-        _ = try workspace.runner().run("magick", [
-            "-size", "320x180",
-            "gradient:#224477-#DD8844",
-            "-colorspace", "CMYK",
-            cmykJPG.path
-        ])
+        _ = try workspace.runner().run(
+            "magick",
+            [
+                "-size", "320x180",
+                "gradient:#224477-#DD8844",
+                "-colorspace", "CMYK",
+                cmykJPG.path
+            ])
 
         let tool = try workspace.makeTool(arguments: ["-jpgtopng"])
         let converted = try tool.convertJPGToPNG(cmykJPG)
@@ -821,7 +882,9 @@ final class PipelineIntegrationTests: XCTestCase {
         let fakeMP3 = try workspace.copy(wav, as: "fake_song", ext: "mp3")
         let tool = try workspace.makeTool(arguments: ["-mp3towav"])
         XCTAssertThrowsError(try tool.convertAudioToWAV(fakeMP3)) { error in
-            XCTAssertTrue(error.localizedDescription.contains("Audio container mismatch") || error.localizedDescription.contains("Audio codec mismatch"))
+            XCTAssertTrue(
+                error.localizedDescription.contains("Audio container mismatch")
+                    || error.localizedDescription.contains("Audio codec mismatch"))
         }
     }
 
@@ -831,7 +894,9 @@ final class PipelineIntegrationTests: XCTestCase {
         let fakeFLAC = try workspace.copy(mp3, as: "fake_lossless", ext: "flac")
         let tool = try workspace.makeTool(arguments: ["-flactowav"])
         XCTAssertThrowsError(try tool.convertAudioToWAV(fakeFLAC)) { error in
-            XCTAssertTrue(error.localizedDescription.contains("Audio container mismatch") || error.localizedDescription.contains("Audio codec mismatch"))
+            XCTAssertTrue(
+                error.localizedDescription.contains("Audio container mismatch")
+                    || error.localizedDescription.contains("Audio codec mismatch"))
         }
     }
 
@@ -872,7 +937,9 @@ final class PipelineIntegrationTests: XCTestCase {
         let fakeMP4 = try workspace.copy(png, as: "still_video", ext: "mp4")
         let tool = try workspace.makeTool(arguments: ["-mp4toshort"])
         XCTAssertThrowsError(try tool.shortenMP4(fakeMP4, audioQCPolicy: nil)) { error in
-            XCTAssertTrue(error.localizedDescription.contains("Video container mismatch") || error.localizedDescription.contains("Missing video stream"))
+            XCTAssertTrue(
+                error.localizedDescription.contains("Video container mismatch")
+                    || error.localizedDescription.contains("Missing video stream"))
         }
     }
 
@@ -881,7 +948,8 @@ final class PipelineIntegrationTests: XCTestCase {
         let silent = try workspace.createSilentAudio(name: "silent_track", ext: "mp3")
         let tool = try workspace.makeTool(arguments: ["-mp3towav"])
         XCTAssertThrowsError(try tool.convertAudioToWAV(silent)) { error in
-            XCTAssertTrue(error.localizedDescription.contains("silent") || error.localizedDescription.contains("audible"))
+            XCTAssertTrue(
+                error.localizedDescription.contains("silent") || error.localizedDescription.contains("audible"))
         }
     }
 
@@ -892,7 +960,8 @@ final class PipelineIntegrationTests: XCTestCase {
         let taggedMP3 = try workspace.createMP3WithArtwork(name: "artwork_track")
         let tool = try workspace.makeTool(arguments: ["-mp3clean"])
 
-        XCTAssertNoThrow(try tool.requireVideoStream(taggedMP3), "Fixture should contain attached artwork before cleaning.")
+        XCTAssertNoThrow(
+            try tool.requireVideoStream(taggedMP3), "Fixture should contain attached artwork before cleaning.")
         try tool.cleanMP3(taggedMP3)
         // Stream copy: the 192 kbps fixture keeps its own bitrate; only structure and QC are checked.
         try tool.verifyMP3File(taggedMP3, qcPolicy: tool.config.deliveryAudioQCPolicy)
@@ -909,7 +978,8 @@ final class PipelineIntegrationTests: XCTestCase {
         let taggedMP3 = try workspace.createHotMP3WithArtwork(name: "hot_artwork_track")
         let tool = try workspace.makeTool(arguments: ["-mp3clean"])
 
-        XCTAssertNoThrow(try tool.requireVideoStream(taggedMP3), "Fixture should contain attached artwork before cleaning.")
+        XCTAssertNoThrow(
+            try tool.requireVideoStream(taggedMP3), "Fixture should contain attached artwork before cleaning.")
         XCTAssertNoThrow(try tool.cleanMP3(taggedMP3))
         // A clean is a stream copy: structurally valid MP3, artwork gone, delivery QC not applied
         // (the fixture is deliberately over the true-peak ceiling and must stay that way).
@@ -1074,18 +1144,20 @@ final class PipelineIntegrationTests: XCTestCase {
         try workspace.requireCommands(["ffmpeg", "ffprobe"])
 
         let source = workspace.output.appendingPathComponent("bass_cut_source").appendingPathExtension("wav")
-        _ = try workspace.runner().run("ffmpeg", [
-            "-hide_banner", "-nostdin", "-v", "error", "-y",
-            "-f", "lavfi",
-            "-i", "aevalsrc=0.18*sin(2*PI*60*t)+0.18*sin(2*PI*1000*t):s=48000:d=4",
-            "-ac", "2",
-            "-c:a", "pcm_f32le",
-            "-ar", "48000",
-            "-f", "wav",
-            "-rf64", "always",
-            "-write_bext", "1",
-            source.path
-        ])
+        _ = try workspace.runner().run(
+            "ffmpeg",
+            [
+                "-hide_banner", "-nostdin", "-v", "error", "-y",
+                "-f", "lavfi",
+                "-i", "aevalsrc=0.18*sin(2*PI*60*t)+0.18*sin(2*PI*1000*t):s=48000:d=4",
+                "-ac", "2",
+                "-c:a", "pcm_f32le",
+                "-ar", "48000",
+                "-f", "wav",
+                "-rf64", "always",
+                "-write_bext", "1",
+                source.path
+            ])
 
         let tool = try workspace.makeTool(arguments: ["-bass", "80", "-5"])
         let cutOutput = try tool.bassBoostMedia(source, spec: try tool.cli.bassBoostSpec())
@@ -1101,18 +1173,20 @@ final class PipelineIntegrationTests: XCTestCase {
         try workspace.requireCommands(["ffmpeg", "ffprobe"])
 
         let source = workspace.output.appendingPathComponent("two_tone").appendingPathExtension("wav")
-        _ = try workspace.runner().run("ffmpeg", [
-            "-hide_banner", "-nostdin", "-v", "error", "-y",
-            "-f", "lavfi",
-            "-i", "aevalsrc=0.18*sin(2*PI*60*t)+0.18*sin(2*PI*1000*t):s=48000:d=4",
-            "-ac", "2",
-            "-c:a", "pcm_f32le",
-            "-ar", "48000",
-            "-f", "wav",
-            "-rf64", "always",
-            "-write_bext", "1",
-            source.path
-        ])
+        _ = try workspace.runner().run(
+            "ffmpeg",
+            [
+                "-hide_banner", "-nostdin", "-v", "error", "-y",
+                "-f", "lavfi",
+                "-i", "aevalsrc=0.18*sin(2*PI*60*t)+0.18*sin(2*PI*1000*t):s=48000:d=4",
+                "-ac", "2",
+                "-c:a", "pcm_f32le",
+                "-ar", "48000",
+                "-f", "wav",
+                "-rf64", "always",
+                "-write_bext", "1",
+                source.path
+            ])
 
         let tool = try workspace.makeTool(arguments: ["-loudness"])
         let loudnessOutput = try tool.loudnessNormalizeMedia(source, spec: LoudnessSpec(targetLUFS: -12))
@@ -1122,8 +1196,10 @@ final class PipelineIntegrationTests: XCTestCase {
         let loudnessRatio = try bassToMidRatioDB(file: loudnessOutput, workspace: workspace)
         let boostedRatio = try bassToMidRatioDB(file: bassOutput, workspace: workspace)
 
-        XCTAssertLessThan(abs(loudnessRatio - sourceRatio), 1.0, "Loudness normalization must preserve low-vs-mid spectral balance.")
-        XCTAssertGreaterThan(boostedRatio - sourceRatio, 2.0, "Bass command must be the path that increases low-band energy.")
+        XCTAssertLessThan(
+            abs(loudnessRatio - sourceRatio), 1.0, "Loudness normalization must preserve low-vs-mid spectral balance.")
+        XCTAssertGreaterThan(
+            boostedRatio - sourceRatio, 2.0, "Bass command must be the path that increases low-band energy.")
     }
 
     func testLoudScanReportsFourSummaryLines() throws {
@@ -1165,9 +1241,11 @@ final class PipelineIntegrationTests: XCTestCase {
         _ = try workspace.createAudio(name: "one", ext: "wav", duration: 1.0)
         _ = try workspace.createAudio(name: "two", ext: "wav", duration: 1.0)
 
-        guard let realFFmpeg = DependencyBootstrapper.executableURL(
-            named: "ffmpeg", environment: workspace.environment
-        ) else {
+        guard
+            let realFFmpeg = DependencyBootstrapper.executableURL(
+                named: "ffmpeg", environment: workspace.environment
+            )
+        else {
             throw XCTSkip("ffmpeg not resolvable")
         }
         let recording = try RecordingToolDirectory()
@@ -1190,9 +1268,11 @@ final class PipelineIntegrationTests: XCTestCase {
         try workspace.requireCommands(["ffmpeg", "ffprobe"])
         _ = try workspace.createAudio(name: "track", ext: "wav", duration: 2.0)
 
-        guard let realFFmpeg = DependencyBootstrapper.executableURL(
-            named: "ffmpeg", environment: workspace.environment
-        ) else {
+        guard
+            let realFFmpeg = DependencyBootstrapper.executableURL(
+                named: "ffmpeg", environment: workspace.environment
+            )
+        else {
             throw XCTSkip("ffmpeg not resolvable")
         }
         let recording = try RecordingToolDirectory()
@@ -1304,26 +1384,30 @@ final class PipelineIntegrationTests: XCTestCase {
         )
 
         let source = workspace.output.appendingPathComponent("peak_limited").appendingPathExtension("mp4")
-        _ = try workspace.runner().run("ffmpeg", [
-            "-hide_banner", "-nostdin", "-v", "error", "-y",
-            "-f", "lavfi",
-            "-i", "color=c=#111111:size=320x180:rate=2:duration=4",
-            "-f", "lavfi",
-            "-i", "aevalsrc=if(lt(mod(t\\,1)\\,0.02)\\,0.95*sin(2*PI*1000*t)\\,0.04*sin(2*PI*220*t)):s=48000:d=4",
-            "-map", "0:v:0",
-            "-map", "1:a:0",
-            "-c:v", "libx264",
-            "-pix_fmt", "yuv420p",
-            "-c:a", "aac",
-            "-b:a", "192k",
-            "-ar", "48000",
-            "-shortest",
-            source.path
-        ])
+        _ = try workspace.runner().run(
+            "ffmpeg",
+            [
+                "-hide_banner", "-nostdin", "-v", "error", "-y",
+                "-f", "lavfi",
+                "-i", "color=c=#111111:size=320x180:rate=2:duration=4",
+                "-f", "lavfi",
+                "-i", "aevalsrc=if(lt(mod(t\\,1)\\,0.02)\\,0.95*sin(2*PI*1000*t)\\,0.04*sin(2*PI*220*t)):s=48000:d=4",
+                "-map", "0:v:0",
+                "-map", "1:a:0",
+                "-c:v", "libx264",
+                "-pix_fmt", "yuv420p",
+                "-c:a", "aac",
+                "-b:a", "192k",
+                "-ar", "48000",
+                "-shortest",
+                source.path
+            ])
 
         let tool = try workspace.makeTool(arguments: ["-loudness"])
         let policy = tool.loudnessPolicy(targetLUFS: -12)
-        let sourceMetrics = try tool.audioQCResult(for: source, policy: tool.loudnessPolicy(targetLUFS: -12, tolerance: 99)).metrics
+        let sourceMetrics = try tool.audioQCResult(
+            for: source, policy: tool.loudnessPolicy(targetLUFS: -12, tolerance: 99)
+        ).metrics
         XCTAssertLessThan(sourceMetrics.integratedLUFS ?? 0, -14)
         XCTAssertGreaterThan(sourceMetrics.truePeakDBTP ?? -99, policy.maxTruePeakDBTP)
         let plan = try tool.staticLoudnessGainPlan(for: source, policy: policy)
@@ -1396,8 +1480,10 @@ final class PipelineIntegrationTests: XCTestCase {
             let sourceDuration = try XCTUnwrap(try tool.mediaDuration(source))
             let expectedDuration = tool.silenceExpectedDuration(sourceDuration: sourceDuration, spec: spec)
             try tool.verifySilenceOutput(output, source: source, expectedDuration: expectedDuration, spec: spec)
-            let middleMaxVolume = try tool.audioSegmentMaxVolumeDBFS(file: output, startSeconds: spec.effectiveLeadingSeconds + 0.2, durationSeconds: 0.2)
-            XCTAssertGreaterThan(middleMaxVolume, -60, "Original audio must still be audible after inserted leading silence.")
+            let middleMaxVolume = try tool.audioSegmentMaxVolumeDBFS(
+                file: output, startSeconds: spec.effectiveLeadingSeconds + 0.2, durationSeconds: 0.2)
+            XCTAssertGreaterThan(
+                middleMaxVolume, -60, "Original audio must still be audible after inserted leading silence.")
         }
         XCTAssertNoThrow(try tool.requireVideoStream(mp4Out))
     }
@@ -1430,7 +1516,8 @@ final class PipelineIntegrationTests: XCTestCase {
         try tool.stepSilence()
 
         let output = workspace.output.appendingPathComponent("software_pad_video_silence_0_5s.mp4")
-        let expectedDuration = tool.silenceExpectedDuration(sourceDuration: try XCTUnwrap(try tool.mediaDuration(mp4)), spec: spec)
+        let expectedDuration = tool.silenceExpectedDuration(
+            sourceDuration: try XCTUnwrap(try tool.mediaDuration(mp4)), spec: spec)
         try tool.verifySilenceOutput(output, source: mp4, expectedDuration: expectedDuration, spec: spec)
         XCTAssertEqual(try tool.videoField(output, "codec_name"), "h264")
     }
@@ -1462,8 +1549,11 @@ final class PipelineIntegrationTests: XCTestCase {
             let sourceDuration = try XCTUnwrap(try tool.mediaDuration(source))
             let expectedDuration = tool.noiseExpectedDuration(sourceDuration: sourceDuration, spec: spec)
             try tool.verifyNoiseOutput(output, source: source, expectedDuration: expectedDuration, spec: spec)
-            let leadingGapMaxVolume = try tool.audioSegmentMaxVolumeDBFS(file: output, startSeconds: spec.seconds + 0.2, durationSeconds: 0.2)
-            XCTAssertLessThan(leadingGapMaxVolume, -55, "Noise output must insert silence between leading noise and the original audio.")
+            let leadingGapMaxVolume = try tool.audioSegmentMaxVolumeDBFS(
+                file: output, startSeconds: spec.seconds + 0.2, durationSeconds: 0.2)
+            XCTAssertLessThan(
+                leadingGapMaxVolume, -55,
+                "Noise output must insert silence between leading noise and the original audio.")
             let middleMaxVolume = try tool.audioSegmentMaxVolumeDBFS(
                 file: output,
                 startSeconds: spec.seconds + NoiseSpec.transitionSilenceSeconds + 0.2,
@@ -1471,7 +1561,8 @@ final class PipelineIntegrationTests: XCTestCase {
             )
             XCTAssertGreaterThan(middleMaxVolume, -60, "Original audio must still be audible after inserted noise.")
         }
-        XCTAssertNoThrow(try tool.requireVideoStream(workspace.output.appendingPathComponent("noise_video_noise_0_5s.mp4")))
+        XCTAssertNoThrow(
+            try tool.requireVideoStream(workspace.output.appendingPathComponent("noise_video_noise_0_5s.mp4")))
     }
 
     func testNoiseIgnoresPreviouslyGeneratedNoiseOutputs() throws {
@@ -1496,7 +1587,8 @@ final class PipelineIntegrationTests: XCTestCase {
 
         let result = try tool.audioQCResult(for: noise, policy: tool.noiseLoudnessPolicy(for: spec))
         XCTAssertTrue(result.passed, result.issues.joined(separator: "; "))
-        XCTAssertEqual(result.metrics.integratedLUFS ?? -99, NoiseSpec.targetLUFS, accuracy: tool.noiseLUFSTolerance(for: spec))
+        XCTAssertEqual(
+            result.metrics.integratedLUFS ?? -99, NoiseSpec.targetLUFS, accuracy: tool.noiseLUFSTolerance(for: spec))
     }
 
     func testNoisePaddingStaysAtTargetAfterFLACDeliveryEncode() throws {
@@ -1574,15 +1666,17 @@ final class PipelineIntegrationTests: XCTestCase {
         let middleSeconds = programmeSeconds + 2 * NoiseSpec.transitionSilenceSeconds
         let rate = tool.config.wavSampleRate
         let padded = workspace.output.appendingPathComponent("silent_programme.wav")
-        _ = try tool.runner.run("ffmpeg", [
-            "-hide_banner", "-nostdin", "-v", "error", "-y",
-            "-i", noise.path,
-            "-f", "lavfi", "-i", "anullsrc=r=\(rate):cl=stereo:d=\(String(format: "%.6f", middleSeconds))",
-            "-i", noise.path,
-            "-filter_complex", "[0:a:0][1:a:0][2:a:0]concat=n=3:v=0:a=1[out]",
-            "-map", "[out]", "-ac", "2", "-ar", String(rate), "-c:a", tool.config.wavCodec,
-            "-f", "wav", "-rf64", "always", padded.path
-        ])
+        _ = try tool.runner.run(
+            "ffmpeg",
+            [
+                "-hide_banner", "-nostdin", "-v", "error", "-y",
+                "-i", noise.path,
+                "-f", "lavfi", "-i", "anullsrc=r=\(rate):cl=stereo:d=\(String(format: "%.6f", middleSeconds))",
+                "-i", noise.path,
+                "-filter_complex", "[0:a:0][1:a:0][2:a:0]concat=n=3:v=0:a=1[out]",
+                "-map", "[out]", "-ac", "2", "-ar", String(rate), "-c:a", tool.config.wavCodec,
+                "-f", "wav", "-rf64", "always", padded.path
+            ])
 
         XCTAssertThrowsError(
             try tool.verifyNoisePadding(padded, expectedDuration: expectedDuration, spec: spec)
@@ -1671,7 +1765,8 @@ final class PipelineIntegrationTests: XCTestCase {
             colorSpace: tool.config.videoColorSpace,
             colorRange: tool.config.videoColorRange
         )
-        try tool.verifyALACAudioOutput(shortVideo, sampleRate: tool.config.shortMP4AudioSampleRate, channels: 2, qcPolicy: nil)
+        try tool.verifyALACAudioOutput(
+            shortVideo, sampleRate: tool.config.shortMP4AudioSampleRate, channels: 2, qcPolicy: nil)
         try tool.verifySourceLoudnessPreserved(source: sourceAAC, output: shortVideo, toleranceDB: 1.0)
         XCTAssertThrowsError(try tool.requireVideoStream(sourceAAC))
         XCTAssertNoThrow(try tool.requireVideoStream(shortVideo))
@@ -1696,11 +1791,14 @@ final class PipelineIntegrationTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: shortVideo.path))
         XCTAssertTrue(FileManager.default.fileExists(atPath: image.path))
         XCTAssertTrue(FileManager.default.fileExists(atPath: sourceFLAC.path))
-        XCTAssertFalse(FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("song_8K.mp4").path))
+        XCTAssertFalse(
+            FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("song_8K.mp4").path))
         XCTAssertFalse(FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("song.m4a").path))
         XCTAssertFalse(FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("song.mp3").path))
-        XCTAssertFalse(FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("poster_8K.png").path))
-        XCTAssertFalse(FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("poster_NFT8K.png").path))
+        XCTAssertFalse(
+            FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("poster_8K.png").path))
+        XCTAssertFalse(
+            FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("poster_NFT8K.png").path))
 
         try tool.verifyVideoOutput(
             shortVideo,
@@ -1713,7 +1811,8 @@ final class PipelineIntegrationTests: XCTestCase {
             colorSpace: tool.config.videoColorSpace,
             colorRange: tool.config.videoColorRange
         )
-        try tool.verifyALACAudioOutput(shortVideo, sampleRate: tool.config.shortMP4AudioSampleRate, channels: 2, qcPolicy: nil)
+        try tool.verifyALACAudioOutput(
+            shortVideo, sampleRate: tool.config.shortMP4AudioSampleRate, channels: 2, qcPolicy: nil)
         try tool.verifySourceLoudnessPreserved(source: sourceFLAC, output: shortVideo, toleranceDB: 1.0)
         let frame = try workspace.extractFirstVideoFrame(from: shortVideo, name: "short_only_frame")
         XCTAssertLessThan(try workspace.meanGrayValue(image: frame, crop: "90x10+0+0"), 0.05)
@@ -1727,8 +1826,7 @@ final class PipelineIntegrationTests: XCTestCase {
 
         let image = try workspace.createImage(name: "poster", ext: "png", width: 320, height: 180)
         try workspace.overwriteConfig(
-            IntegrationWorkspace.defaultConfig +
-                "\nSHORT_MP4_CLIP_SECONDS=58\n"
+            IntegrationWorkspace.defaultConfig + "\nSHORT_MP4_CLIP_SECONDS=58\n"
         )
         let sourceAudio = try workspace.createAudio(name: "song", ext: "mp3", duration: 90.0)
         let tool = try workspace.makeTool(arguments: ["-short"])
@@ -1742,7 +1840,8 @@ final class PipelineIntegrationTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: image.path))
 
         let shortClipSeconds = try tool.configuredShortClipSeconds()
-        try tool.verifyDuration(shortVideo, expectedSeconds: shortClipSeconds, label: "portrait short mp4", tolerance: 0.3)
+        try tool.verifyDuration(
+            shortVideo, expectedSeconds: shortClipSeconds, label: "portrait short mp4", tolerance: 0.3)
         let shortDuration = try XCTUnwrap(tool.mediaDuration(shortVideo))
         let fullDuration = try XCTUnwrap(tool.mediaDuration(fullSongShort))
         XCTAssertEqual(shortDuration, shortClipSeconds, accuracy: 0.3)
@@ -1771,8 +1870,10 @@ final class PipelineIntegrationTests: XCTestCase {
             colorSpace: tool.config.videoColorSpace,
             colorRange: tool.config.videoColorRange
         )
-        try tool.verifyALACAudioOutput(shortVideo, sampleRate: tool.config.shortMP4AudioSampleRate, channels: 2, qcPolicy: nil)
-        try tool.verifyALACAudioOutput(fullSongShort, sampleRate: tool.config.shortMP4AudioSampleRate, channels: 2, qcPolicy: nil)
+        try tool.verifyALACAudioOutput(
+            shortVideo, sampleRate: tool.config.shortMP4AudioSampleRate, channels: 2, qcPolicy: nil)
+        try tool.verifyALACAudioOutput(
+            fullSongShort, sampleRate: tool.config.shortMP4AudioSampleRate, channels: 2, qcPolicy: nil)
         try tool.verifySourceLoudnessPreserved(source: sourceAudio, output: shortVideo)
         try tool.verifySourceLoudnessPreserved(source: sourceAudio, output: fullSongShort)
     }
@@ -1790,7 +1891,8 @@ final class PipelineIntegrationTests: XCTestCase {
         let shortVideo = workspace.output.appendingPathComponent("song_8K_Short.mp4")
         XCTAssertTrue(FileManager.default.fileExists(atPath: shortVideo.path))
         XCTAssertFalse(FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("song.m4a").path))
-        XCTAssertFalse(FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("song_8K.mp4").path))
+        XCTAssertFalse(
+            FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("song_8K.mp4").path))
         try tool.verifyVideoOutput(
             shortVideo,
             width: tool.config.shortMP4ScaleW,
@@ -1802,7 +1904,8 @@ final class PipelineIntegrationTests: XCTestCase {
             colorSpace: tool.config.videoColorSpace,
             colorRange: tool.config.videoColorRange
         )
-        try tool.verifyALACAudioOutput(shortVideo, sampleRate: tool.config.shortMP4AudioSampleRate, channels: 2, qcPolicy: nil)
+        try tool.verifyALACAudioOutput(
+            shortVideo, sampleRate: tool.config.shortMP4AudioSampleRate, channels: 2, qcPolicy: nil)
         try tool.verifySourceLoudnessPreserved(source: sourceAAC, output: shortVideo, toleranceDB: 1.0)
     }
 
@@ -1843,7 +1946,8 @@ final class PipelineIntegrationTests: XCTestCase {
             colorSpace: tool.config.videoColorSpace,
             colorRange: tool.config.videoColorRange
         )
-        try tool.verifyALACAudioOutput(shortVideo, sampleRate: tool.config.shortMP4AudioSampleRate, channels: 2, qcPolicy: nil)
+        try tool.verifyALACAudioOutput(
+            shortVideo, sampleRate: tool.config.shortMP4AudioSampleRate, channels: 2, qcPolicy: nil)
         try tool.verifySourceLoudnessPreserved(source: sourceFLAC, output: shortVideo, toleranceDB: 1.0)
         XCTAssertNoThrow(try tool.requireVideoStream(shortVideo))
         try tool.verifyDuration(shortVideo, expectedSeconds: 1.0, label: "portrait short mp4")
@@ -1867,11 +1971,13 @@ final class PipelineIntegrationTests: XCTestCase {
         let staged = try tool.makeInternalWAV(
             from: source, in: workspace.output, stem: "clipped96k.staged", duration: 2.0
         )
-        _ = try workspace.runner().run("ffmpeg", [
-            "-hide_banner", "-nostdin", "-v", "error", "-y",
-            "-i", staged.path, "-map", "0:a:0", "-ac", "2", "-ar", "48000", "-c:a", "pcm_s24le",
-            "-f", "wav", "-rf64", "always", renderDomain.path
-        ])
+        _ = try workspace.runner().run(
+            "ffmpeg",
+            [
+                "-hide_banner", "-nostdin", "-v", "error", "-y",
+                "-i", staged.path, "-map", "0:a:0", "-ac", "2", "-ar", "48000", "-c:a", "pcm_s24le",
+                "-f", "wav", "-rf64", "always", renderDomain.path
+            ])
         let expected = try tool.audioQCResult(for: renderDomain, policy: tool.config.deliveryAudioQCPolicy)
             .metrics.clippedSamples
         XCTAssertGreaterThan(expected, 0, "fixture must actually clip")
@@ -1927,8 +2033,7 @@ final class PipelineIntegrationTests: XCTestCase {
         let workspace = try IntegrationWorkspace()
         try workspace.requireCommands(["ffmpeg", "ffprobe", "magick"])
         try workspace.overwriteConfig(
-            IntegrationWorkspace.defaultConfig +
-                "\nAUDIO_QC_MAX_TRUE_PEAK_DBTP=-1\n"
+            IntegrationWorkspace.defaultConfig + "\nAUDIO_QC_MAX_TRUE_PEAK_DBTP=-1\n"
         )
 
         _ = try workspace.createImage(name: "Vertical_8K", ext: "png", width: 90, height: 160)
@@ -1945,7 +2050,8 @@ final class PipelineIntegrationTests: XCTestCase {
 
         let shortVideo = workspace.output.appendingPathComponent("hot_song_8K_Short.mp4")
         XCTAssertTrue(FileManager.default.fileExists(atPath: shortVideo.path))
-        XCTAssertFalse(FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("hot_song.m4a").path))
+        XCTAssertFalse(
+            FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("hot_song.m4a").path))
         try tool.verifyVideoOutput(
             shortVideo,
             width: tool.config.shortMP4ScaleW,
@@ -2023,14 +2129,16 @@ final class PipelineIntegrationTests: XCTestCase {
         try workspace.requireCommands(["ffmpeg", "ffprobe"])
         try workspace.overwriteConfig(IntegrationWorkspace.defaultConfig + "\nAUDIO_QC_MAX_TRUE_PEAK_DBTP=-1\n")
         let source = workspace.output.appendingPathComponent("quiet_then_hot.wav")
-        _ = try workspace.runner().run("ffmpeg", [
-            "-hide_banner", "-nostdin", "-v", "error", "-y",
-            "-f", "lavfi",
-            "-i", "sine=frequency=440:duration=6.0:sample_rate=48000",
-            "-ac", "2",
-            "-af", "volume=20.5dB:enable='gte(t,1.5)'",
-            "-c:a", "pcm_f32le", "-ar", "48000", "-f", "wav", "-rf64", "always", source.path
-        ])
+        _ = try workspace.runner().run(
+            "ffmpeg",
+            [
+                "-hide_banner", "-nostdin", "-v", "error", "-y",
+                "-f", "lavfi",
+                "-i", "sine=frequency=440:duration=6.0:sample_rate=48000",
+                "-ac", "2",
+                "-af", "volume=20.5dB:enable='gte(t,1.5)'",
+                "-c:a", "pcm_f32le", "-ar", "48000", "-f", "wav", "-rf64", "always", source.path
+            ])
         let tool = try workspace.makeTool(arguments: ["-short"])
         let policy = tool.config.deliveryAudioQCPolicy
 
@@ -2070,23 +2178,24 @@ final class PipelineIntegrationTests: XCTestCase {
         let workspace = try IntegrationWorkspace()
         try workspace.requireCommands(["ffmpeg", "ffprobe", "magick"])
         try workspace.overwriteConfig(
-            IntegrationWorkspace.defaultConfig +
-                "\nSHORT_MP4_CLIP_SECONDS=1\n"
+            IntegrationWorkspace.defaultConfig + "\nSHORT_MP4_CLIP_SECONDS=1\n"
         )
 
         _ = try workspace.createImage(name: "poster", ext: "png", width: 320, height: 180)
         let sourceMP3 = workspace.output.appendingPathComponent("dynamic_loudness.mp3")
-        _ = try workspace.runner().run("ffmpeg", [
-            "-hide_banner", "-nostdin", "-v", "error", "-y",
-            "-f", "lavfi",
-            "-i", "sine=frequency=440:duration=2.0:sample_rate=48000",
-            "-ac", "2",
-            "-af", "volume='if(lt(t,1),1,0.1)':eval=frame",
-            "-c:a", "libmp3lame",
-            "-b:a", "320k",
-            "-ar", "48000",
-            sourceMP3.path
-        ])
+        _ = try workspace.runner().run(
+            "ffmpeg",
+            [
+                "-hide_banner", "-nostdin", "-v", "error", "-y",
+                "-f", "lavfi",
+                "-i", "sine=frequency=440:duration=2.0:sample_rate=48000",
+                "-ac", "2",
+                "-af", "volume='if(lt(t,1),1,0.1)':eval=frame",
+                "-c:a", "libmp3lame",
+                "-b:a", "320k",
+                "-ar", "48000",
+                sourceMP3.path
+            ])
 
         let tool = try workspace.makeTool(arguments: ["-nfttoshort"])
         try tool.stepNFTToShort()
@@ -2107,7 +2216,8 @@ final class PipelineIntegrationTests: XCTestCase {
         let tool = try workspace.makeTool(arguments: ["-mp3tohash"])
         let expectedHash = try tool.crc32(for: taggedMP3)
 
-        XCTAssertNoThrow(try tool.requireVideoStream(taggedMP3), "Fixture should contain attached artwork before hashing.")
+        XCTAssertNoThrow(
+            try tool.requireVideoStream(taggedMP3), "Fixture should contain attached artwork before hashing.")
         XCTAssertNoThrow(try tool.stepMP3Hash())
 
         let hashed = workspace.output.appendingPathComponent(expectedHash).appendingPathExtension("mp3")
@@ -2137,16 +2247,18 @@ final class PipelineIntegrationTests: XCTestCase {
         try workspace.requireCommands(["ffmpeg", "ffprobe"])
 
         let delayed = workspace.output.appendingPathComponent("leadingsilence.mp3")
-        _ = try workspace.runner().run("ffmpeg", [
-            "-hide_banner", "-nostdin", "-v", "error", "-y",
-            "-f", "lavfi",
-            "-i", "sine=frequency=440:duration=1.0:sample_rate=48000",
-            "-af", "adelay=3000|3000",
-            "-ac", "2",
-            "-c:a", "libmp3lame",
-            "-b:a", "192k",
-            delayed.path
-        ])
+        _ = try workspace.runner().run(
+            "ffmpeg",
+            [
+                "-hide_banner", "-nostdin", "-v", "error", "-y",
+                "-f", "lavfi",
+                "-i", "sine=frequency=440:duration=1.0:sample_rate=48000",
+                "-af", "adelay=3000|3000",
+                "-ac", "2",
+                "-c:a", "libmp3lame",
+                "-b:a", "192k",
+                delayed.path
+            ])
 
         let tool = try workspace.makeTool(arguments: ["-mp3towav"])
         let wav = try tool.convertAudioToWAV(delayed)
@@ -2190,7 +2302,8 @@ final class PipelineIntegrationTests: XCTestCase {
         let tool = try workspace.makeTool(arguments: ["-wavtom4a"])
         let output = try tool.convertAudioToM4A(riff)
 
-        try tool.verifyM4AFile(output, sampleRate: tool.config.m4aSampleRate, channels: tool.config.m4aChannels, qcPolicy: nil)
+        try tool.verifyM4AFile(
+            output, sampleRate: tool.config.m4aSampleRate, channels: tool.config.m4aChannels, qcPolicy: nil)
         try tool.verifyDurationMatch(source: riff, output: output)
         try tool.verifySourceLoudnessPreserved(source: riff, output: output)
     }
@@ -2270,14 +2383,16 @@ final class PipelineIntegrationTests: XCTestCase {
         let nested = workspace.output.appendingPathComponent("nested", isDirectory: true)
         try FileManager.default.createDirectory(at: nested, withIntermediateDirectories: true)
         let wav = nested.appendingPathComponent("deep.wav")
-        _ = try workspace.runner().run("ffmpeg", [
-            "-hide_banner", "-nostdin", "-v", "error", "-y",
-            "-f", "lavfi",
-            "-i", "sine=frequency=440:duration=1.0:sample_rate=44100",
-            "-ac", "2",
-            "-c:a", "pcm_s16le",
-            wav.path
-        ])
+        _ = try workspace.runner().run(
+            "ffmpeg",
+            [
+                "-hide_banner", "-nostdin", "-v", "error", "-y",
+                "-f", "lavfi",
+                "-i", "sine=frequency=440:duration=1.0:sample_rate=44100",
+                "-ac", "2",
+                "-c:a", "pcm_s16le",
+                wav.path
+            ])
 
         let tool = try workspace.makeTool(arguments: ["--hash"])
         let expectedHash = try tool.crc32(for: wav)
@@ -2306,7 +2421,9 @@ final class PipelineIntegrationTests: XCTestCase {
 
         let rf64FLAC = workspace.output.appendingPathComponent("wav_release_RF64.flac")
         XCTAssertEqual(try tool.audioField(rf64FLAC, "sample_rate"), "44100")
-        try tool.verifyCanonicalPCMSampleEquivalence(source: reference, output: rf64FLAC, sampleRate: 44_100, channels: 2, label: "External FLAC", format: .s24le)
+        try tool.verifyCanonicalPCMSampleEquivalence(
+            source: reference, output: rf64FLAC, sampleRate: 44_100, channels: 2, label: "External FLAC", format: .s24le
+        )
 
         // BW64 is a WAV-only container, so no FLAC counterpart may be emitted.
         XCTAssertFalse(
@@ -2320,8 +2437,7 @@ final class PipelineIntegrationTests: XCTestCase {
         let workspace = try IntegrationWorkspace()
         try workspace.requireCommands(["ffmpeg", "ffprobe"])
         try workspace.overwriteConfig(
-            IntegrationWorkspace.defaultConfig +
-                "\nMASTERING_TARGET_LUFS=-28\n"
+            IntegrationWorkspace.defaultConfig + "\nMASTERING_TARGET_LUFS=-28\n"
         )
 
         let mp3 = try workspace.createAudio(name: "master_me", ext: "mp3", duration: 4.5)
@@ -2369,8 +2485,10 @@ final class PipelineIntegrationTests: XCTestCase {
         XCTAssertTrue(
 
             FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("art_1_8K.png").path))
-        XCTAssertTrue(FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("art_2_8K.png").path))
-        XCTAssertFalse(FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("art_8K.png").path))
+        XCTAssertTrue(
+            FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("art_2_8K.png").path))
+        XCTAssertFalse(
+            FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("art_8K.png").path))
     }
 
     func testAIPixRefusesToOverwriteItsOwnSource() throws {
@@ -2436,8 +2554,10 @@ final class PipelineIntegrationTests: XCTestCase {
 
         let tool = try workspace.makeTool(arguments: ["-visualsubs", "128", "--output-file", "dots.png"])
         let output = try tool.visualSubs()
-        try tool.verifyImageOutput(output, width: tool.config.image8KWidth, height: tool.config.image8KHeight, format: "PNG")
-        let outputs = try FileManager.default.contentsOfDirectory(at: workspace.output, includingPropertiesForKeys: nil, options: [])
+        try tool.verifyImageOutput(
+            output, width: tool.config.image8KWidth, height: tool.config.image8KHeight, format: "PNG")
+        let outputs = try FileManager.default.contentsOfDirectory(
+            at: workspace.output, includingPropertiesForKeys: nil, options: [])
         XCTAssertFalse(outputs.contains { $0.lastPathComponent.contains(tool.runToken) })
     }
 
@@ -2445,13 +2565,18 @@ final class PipelineIntegrationTests: XCTestCase {
         let workspace = try IntegrationWorkspace()
         try workspace.requireCommands(["magick"])
 
-        let tool = try workspace.makeTool(arguments: ["-visualsubs", "1", "--seed", "976", "--output-file", "center_guard.png"])
+        let tool = try workspace.makeTool(arguments: [
+            "-visualsubs", "1", "--seed", "976", "--output-file", "center_guard.png"
+        ])
         let output = try tool.visualSubs()
-        let centerPixel = try workspace.runner().run("magick", [
-            output.path,
-            "-format", "%[hex:p{160,90}]",
-            "info:"
-        ]).stdout.trimmed
+        let centerPixel = try workspace.runner().run(
+            "magick",
+            [
+                output.path,
+                "-format", "%[hex:p{160,90}]",
+                "info:"
+            ]
+        ).stdout.trimmed
 
         XCTAssertEqual(centerPixel.uppercased(), "FFFF00000000")
     }
@@ -2500,19 +2625,22 @@ final class PipelineIntegrationTests: XCTestCase {
         let source = try workspace.createAudio(name: "archive_source", ext: "wav", frequency: 440)
         let wrong = try workspace.createAudio(name: "wrong_take", ext: "wav", frequency: 659)
         let output = workspace.output.appendingPathComponent("archive_source_RF64.flac")
-        _ = try workspace.runner().run("ffmpeg", [
-            "-hide_banner", "-nostdin", "-v", "error", "-y",
-            "-i", wrong.path,
-            "-map", "0:a:0",
-            "-c:a", "flac",
-            output.path
-        ])
+        _ = try workspace.runner().run(
+            "ffmpeg",
+            [
+                "-hide_banner", "-nostdin", "-v", "error", "-y",
+                "-i", wrong.path,
+                "-map", "0:a:0",
+                "-c:a", "flac",
+                output.path
+            ])
 
         let tool = try workspace.makeTool(arguments: ["-wavtoflac"])
         let rebuilt = try tool.createExternalFLACVariant(source: source, output: output)
         XCTAssertEqual(rebuilt.standardizedFileURL, output.standardizedFileURL)
         try tool.verifyFLACFile(rebuilt, qcPolicy: nil)
-        try tool.verifyCanonicalPCMSampleEquivalence(source: source, output: rebuilt, label: "External FLAC", format: .s24le)
+        try tool.verifyCanonicalPCMSampleEquivalence(
+            source: source, output: rebuilt, label: "External FLAC", format: .s24le)
     }
 
     func testFullPipelineProducesExpectedOutputsAndLeavesNoScopedTemps() async throws {
@@ -2523,23 +2651,29 @@ final class PipelineIntegrationTests: XCTestCase {
         let sourceMP3 = try workspace.createAudio(name: "track", ext: "mp3")
         let sourceMP3Reference = workspace.root.appendingPathComponent("track_source_reference.mp3")
         try FileManager.default.copyItem(at: sourceMP3, to: sourceMP3Reference)
-        try Data("foreign-temp".utf8).write(to: workspace.output.appendingPathComponent(".converter-tmp.foreign.decoy.mp3"))
-        try Data("foreign-temp".utf8).write(to: workspace.output.appendingPathComponent(".converter-tmp.foreign.decoy.png"))
+        try Data("foreign-temp".utf8).write(
+            to: workspace.output.appendingPathComponent(".converter-tmp.foreign.decoy.mp3"))
+        try Data("foreign-temp".utf8).write(
+            to: workspace.output.appendingPathComponent(".converter-tmp.foreign.decoy.png"))
 
         let tool = try workspace.makeTool(arguments: ["-full"])
         defer { tool.cleanupTemps() }
         try tool.initializeForExecution()
         try await tool.stepFull()
 
-        let allOutputs = try FileManager.default.contentsOfDirectory(at: workspace.output, includingPropertiesForKeys: [.isRegularFileKey], options: [])
-        XCTAssertFalse(allOutputs.contains { $0.lastPathComponent.contains(tool.runToken) }, "Run-scoped temp files leaked into Output.")
+        let allOutputs = try FileManager.default.contentsOfDirectory(
+            at: workspace.output, includingPropertiesForKeys: [.isRegularFileKey], options: [])
+        XCTAssertFalse(
+            allOutputs.contains { $0.lastPathComponent.contains(tool.runToken) },
+            "Run-scoped temp files leaked into Output.")
 
         // Every generated file — images included — carries the release stem. The run renames its
         // single source audio to `1_source` first, so `1` is the stem, not the incoming filename,
         // and the untouched original sits beside the deliverables.
         // (Byte-for-byte preservation of the source is asserted by testFullRunNeverOverwritesItsMP3Source.)
         XCTAssertTrue(FileManager.default.fileExists(atPath: workspace.output.path + "/1_source.mp3"))
-        XCTAssertFalse(FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("track.mp3").path))
+        XCTAssertFalse(
+            FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("track.mp3").path))
         let prefix = "1"
         let base = "1"
         let expectedFiles = [
@@ -2568,7 +2702,9 @@ final class PipelineIntegrationTests: XCTestCase {
         ]
 
         for name in expectedFiles {
-            XCTAssertTrue(FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent(name).path), "Missing full-run output \(name)")
+            XCTAssertTrue(
+                FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent(name).path),
+                "Missing full-run output \(name)")
         }
         // The source artwork keeps its own name; only generated files are renamed.
         XCTAssertTrue(FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("art.png").path))
@@ -2590,7 +2726,8 @@ final class PipelineIntegrationTests: XCTestCase {
         let shortOutput = workspace.output.appendingPathComponent("\(base)_8K_Short.mp4")
         let shortFrame = try workspace.extractFirstVideoFrame(from: shortOutput, name: "full_short_frame")
         try tool.verifyWAVStandard(wavOutput, qcPolicy: nil)
-        try tool.verifyM4AFile(m4aOutput, sampleRate: tool.config.m4aSampleRate, channels: tool.config.m4aChannels, qcPolicy: nil)
+        try tool.verifyM4AFile(
+            m4aOutput, sampleRate: tool.config.m4aSampleRate, channels: tool.config.m4aChannels, qcPolicy: nil)
         try tool.verifyMP3Standard(mp3Output, qcPolicy: nil)
         try tool.verifySourceLoudnessPreserved(source: sourceMP3Reference, output: wavOutput)
         try tool.verifySourceLoudnessPreserved(source: sourceMP3Reference, output: m4aOutput)
@@ -2603,8 +2740,12 @@ final class PipelineIntegrationTests: XCTestCase {
             label: "External FLAC",
             format: .s24le
         )
-        try tool.verifyExternalWAVVariant(workspace.output.appendingPathComponent("\(base)_RF64.wav"), source: workspace.output.appendingPathComponent("\(base).wav"), expectBext: false)
-        try tool.verifyBW64WAVVariant(workspace.output.appendingPathComponent("\(base)_BW64.wav"), source: workspace.output.appendingPathComponent("\(base).wav"))
+        try tool.verifyExternalWAVVariant(
+            workspace.output.appendingPathComponent("\(base)_RF64.wav"),
+            source: workspace.output.appendingPathComponent("\(base).wav"), expectBext: false)
+        try tool.verifyBW64WAVVariant(
+            workspace.output.appendingPathComponent("\(base)_BW64.wav"),
+            source: workspace.output.appendingPathComponent("\(base).wav"))
         try tool.verifyVideoOutput(
             mp4Output,
             width: tool.config.videoMP4Width,
@@ -2637,8 +2778,7 @@ final class PipelineIntegrationTests: XCTestCase {
 
         _ = try workspace.createImage(name: "art", ext: "png")
         try workspace.overwriteConfig(
-            IntegrationWorkspace.defaultConfig +
-                "\nSHORT_MP4_CLIP_SECONDS=58\n"
+            IntegrationWorkspace.defaultConfig + "\nSHORT_MP4_CLIP_SECONDS=58\n"
         )
         _ = try workspace.createAudio(name: "track", ext: "mp3", duration: 90.0)
         let tool = try workspace.makeTool(arguments: ["-full"])
@@ -2682,8 +2822,9 @@ final class PipelineIntegrationTests: XCTestCase {
         let base = "1"
         XCTAssertTrue(
             FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("1_source.flac").path))
-        XCTAssertFalse(FileManager.default.fileExists(
-            atPath: workspace.output.appendingPathComponent("463406_B_PH.flac").path))
+        XCTAssertFalse(
+            FileManager.default.fileExists(
+                atPath: workspace.output.appendingPathComponent("463406_B_PH.flac").path))
         let mainOutput = workspace.output.appendingPathComponent("\(base)_8K").appendingPathExtension("mp4")
         let shortOutput = workspace.output.appendingPathComponent("\(base)_8K_Short").appendingPathExtension("mp4")
 
@@ -2714,7 +2855,8 @@ final class PipelineIntegrationTests: XCTestCase {
             "Direct Horizontal_8K.png input should not be reprocessed as a generic source image."
         )
         XCTAssertFalse(
-            FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("Horizontal_8K_NFT8K.png").path),
+            FileManager.default.fileExists(
+                atPath: workspace.output.appendingPathComponent("Horizontal_8K_NFT8K.png").path),
             "Direct Horizontal_8K.png input should use stripped derivative naming for NFT images."
         )
         try tool.verifyVideoOutput(
@@ -2755,8 +2897,10 @@ final class PipelineIntegrationTests: XCTestCase {
         )
 
         tool.cleanupTemps()
-        XCTAssertTrue(FileManager.default.fileExists(atPath: mainOutput.path), "Main MP4 should remain after temp cleanup.")
-        XCTAssertTrue(FileManager.default.fileExists(atPath: shortOutput.path), "Short MP4 should remain after temp cleanup.")
+        XCTAssertTrue(
+            FileManager.default.fileExists(atPath: mainOutput.path), "Main MP4 should remain after temp cleanup.")
+        XCTAssertTrue(
+            FileManager.default.fileExists(atPath: shortOutput.path), "Short MP4 should remain after temp cleanup.")
     }
 
     func testAlbumPipelineSortsMixedAudioNormalizesAndContinuesFullRun() async throws {
@@ -2772,7 +2916,9 @@ final class PipelineIntegrationTests: XCTestCase {
         let tool = try workspace.makeTool(arguments: ["-album"])
         defer { tool.cleanupTemps() }
         try tool.initializeForExecution()
-        XCTAssertEqual(try tool.albumAudioCandidates().map(\.lastPathComponent), ["1 - Sun.mp3", "2 - Rain.wav", "10 - Storm.flac"])
+        XCTAssertEqual(
+            try tool.albumAudioCandidates().map(\.lastPathComponent), ["1 - Sun.mp3", "2 - Rain.wav", "10 - Storm.flac"]
+        )
 
         try await tool.stepAlbum()
 
@@ -2787,7 +2933,9 @@ final class PipelineIntegrationTests: XCTestCase {
             "album_8K_Short.mp4"
         ]
         for name in expectedFiles {
-            XCTAssertTrue(FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent(name).path), "Missing album pipeline output \(name)")
+            XCTAssertTrue(
+                FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent(name).path),
+                "Missing album pipeline output \(name)")
         }
         XCTAssertFalse(
             FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("album_BW64.flac").path),
@@ -2821,8 +2969,11 @@ final class PipelineIntegrationTests: XCTestCase {
             colorRange: tool.config.videoColorRange
         )
 
-        let allFiles = try FileManager.default.contentsOfDirectory(at: workspace.output, includingPropertiesForKeys: [.isRegularFileKey], options: [])
-        XCTAssertFalse(allFiles.contains { $0.lastPathComponent.contains("album.track") }, "Album track normalization temps leaked into Output.")
+        let allFiles = try FileManager.default.contentsOfDirectory(
+            at: workspace.output, includingPropertiesForKeys: [.isRegularFileKey], options: [])
+        XCTAssertFalse(
+            allFiles.contains { $0.lastPathComponent.contains("album.track") },
+            "Album track normalization temps leaked into Output.")
     }
 
     func testAlbumBuildFromAlbumFileCreatesVerifiedRF64Wave() throws {
@@ -2849,7 +3000,7 @@ final class PipelineIntegrationTests: XCTestCase {
         permit: @escaping @Sendable (@escaping @Sendable () throws -> Void) async throws -> Void
     ) async throws {
         try await withThrowingTaskGroup(of: Void.self) { group in
-            for _ in 0 ..< 16 {
+            for _ in 0..<16 {
                 group.addTask {
                     try await permit {
                         counter.enter(jobClass)
@@ -2976,8 +3127,7 @@ final class PipelineIntegrationTests: XCTestCase {
         let workspace = try IntegrationWorkspace()
         try workspace.requireCommands(["ffmpeg", "ffprobe"])
         try workspace.overwriteConfig(
-            IntegrationWorkspace.defaultConfig +
-                "\nMASTERING_TARGET_LUFS=-40\n"
+            IntegrationWorkspace.defaultConfig + "\nMASTERING_TARGET_LUFS=-40\n"
         )
         let wav = try workspace.createAudio(name: "needs_master", ext: "wav", duration: 4.5)
         let tool = try workspace.makeTool(arguments: ["-wavtom4a"])
@@ -2996,8 +3146,7 @@ final class PipelineIntegrationTests: XCTestCase {
         let workspace = try IntegrationWorkspace()
         try workspace.requireCommands(["ffmpeg", "ffprobe"])
         try workspace.overwriteConfig(
-            IntegrationWorkspace.defaultConfig +
-                "\nMASTERING_TARGET_LUFS=-12\n"
+            IntegrationWorkspace.defaultConfig + "\nMASTERING_TARGET_LUFS=-12\n"
         )
         let wav = try workspace.createHotAudio(name: "too_hot", ext: "wav", duration: 3.0, gainDB: 24)
         let tool = try workspace.makeTool(arguments: ["-wavtom4a"])
@@ -3022,8 +3171,7 @@ final class PipelineIntegrationTests: XCTestCase {
         let workspace = try IntegrationWorkspace()
         try workspace.requireCommands(["ffmpeg", "ffprobe"])
         try workspace.overwriteConfig(
-            IntegrationWorkspace.defaultConfig +
-                "\nMASTERING_TARGET_LUFS=-40\n"
+            IntegrationWorkspace.defaultConfig + "\nMASTERING_TARGET_LUFS=-40\n"
         )
         _ = try workspace.createAudio(name: "needs_master", ext: "wav", duration: 4.5)
         let tool = try workspace.makeTool(arguments: ["-master"])
@@ -3041,11 +3189,8 @@ final class PipelineIntegrationTests: XCTestCase {
         let workspace = try IntegrationWorkspace()
         try workspace.requireCommands(["ffmpeg", "ffprobe", "magick"])
         try workspace.overwriteConfig(
-            IntegrationWorkspace.defaultConfig +
-                "\nVIDEO_MP4_ENCODER=definitely_missing_encoder\n" +
-                "VIDEO_MP4_ENCODER_FALLBACKS=libx264\n" +
-                "VIDEO_MP4_VERIFY_CODEC=h264\n" +
-                "VIDEO_MP4_TAG=avc1\n"
+            IntegrationWorkspace.defaultConfig + "\nVIDEO_MP4_ENCODER=definitely_missing_encoder\n"
+                + "VIDEO_MP4_ENCODER_FALLBACKS=libx264\n" + "VIDEO_MP4_VERIFY_CODEC=h264\n" + "VIDEO_MP4_TAG=avc1\n"
         )
 
         let image = try workspace.createImage(name: "poster", ext: "png")
@@ -3070,10 +3215,8 @@ final class PipelineIntegrationTests: XCTestCase {
         let workspace = try IntegrationWorkspace()
         try workspace.requireCommands(["ffmpeg", "ffprobe", "magick"])
         try workspace.overwriteConfig(
-            IntegrationWorkspace.defaultConfig +
-                "\nSHORT_MP4_VIDEO_CODEC=definitely_missing_short_encoder\n" +
-                "SHORT_MP4_VIDEO_FALLBACKS=libx264\n" +
-                "SHORT_MP4_VERIFY_CODEC=h264\n"
+            IntegrationWorkspace.defaultConfig + "\nSHORT_MP4_VIDEO_CODEC=definitely_missing_short_encoder\n"
+                + "SHORT_MP4_VIDEO_FALLBACKS=libx264\n" + "SHORT_MP4_VERIFY_CODEC=h264\n"
         )
 
         let image = try workspace.createImage(name: "poster", ext: "png")
@@ -3104,20 +3247,24 @@ final class PipelineIntegrationTests: XCTestCase {
         try workspace.requireCommands(["ffmpeg", "ffprobe", "magick"])
 
         let alac = workspace.output.appendingPathComponent("alac_track.m4a")
-        _ = try workspace.runner().run("ffmpeg", [
-            "-hide_banner", "-nostdin", "-v", "error", "-y",
-            "-f", "lavfi", "-i", "sine=frequency=440:duration=1.0:sample_rate=48000",
-            "-ac", "2", "-c:a", "alac", "-ar", "48000",
-            "-sample_fmt", "s32p", "-bits_per_raw_sample", "24", alac.path
-        ])
+        _ = try workspace.runner().run(
+            "ffmpeg",
+            [
+                "-hide_banner", "-nostdin", "-v", "error", "-y",
+                "-f", "lavfi", "-i", "sine=frequency=440:duration=1.0:sample_rate=48000",
+                "-ac", "2", "-c:a", "alac", "-ar", "48000",
+                "-sample_fmt", "s32p", "-bits_per_raw_sample", "24", alac.path
+            ])
         // Same codec and rate but 16-bit: the copy would fail the output contract's raw bit depth.
         let shallowALAC = workspace.output.appendingPathComponent("alac16_track.m4a")
-        _ = try workspace.runner().run("ffmpeg", [
-            "-hide_banner", "-nostdin", "-v", "error", "-y",
-            "-f", "lavfi", "-i", "sine=frequency=440:duration=1.0:sample_rate=48000",
-            "-ac", "2", "-c:a", "alac", "-ar", "48000",
-            "-sample_fmt", "s16p", "-bits_per_raw_sample", "16", shallowALAC.path
-        ])
+        _ = try workspace.runner().run(
+            "ffmpeg",
+            [
+                "-hide_banner", "-nostdin", "-v", "error", "-y",
+                "-f", "lavfi", "-i", "sine=frequency=440:duration=1.0:sample_rate=48000",
+                "-ac", "2", "-c:a", "alac", "-ar", "48000",
+                "-sample_fmt", "s16p", "-bits_per_raw_sample", "16", shallowALAC.path
+            ])
         let aac = try workspace.createAudio(name: "aac_track", ext: "m4a")
         let mp3 = try workspace.createAudio(name: "mp3_track", ext: "mp3")
 
@@ -3194,10 +3341,8 @@ final class PipelineIntegrationTests: XCTestCase {
         let workspace = try IntegrationWorkspace()
         try workspace.requireCommands(["ffmpeg", "ffprobe", "magick"])
         try workspace.overwriteConfig(
-            IntegrationWorkspace.defaultConfig +
-                "\nVIDEO_MP4_ENCODER=definitely_missing_encoder\n" +
-                "VIDEO_MP4_ENCODER_FALLBACKS=libx265\n" +
-                "VIDEO_MP4_SOFTWARE_PRESET=ultrafast\n"
+            IntegrationWorkspace.defaultConfig + "\nVIDEO_MP4_ENCODER=definitely_missing_encoder\n"
+                + "VIDEO_MP4_ENCODER_FALLBACKS=libx265\n" + "VIDEO_MP4_SOFTWARE_PRESET=ultrafast\n"
         )
 
         let image = try workspace.createImage(name: "poster", ext: "png")
@@ -3222,8 +3367,7 @@ final class PipelineIntegrationTests: XCTestCase {
         let workspace = try IntegrationWorkspace()
         try workspace.requireCommands(["ffmpeg", "ffprobe"])
         try workspace.overwriteConfig(
-            IntegrationWorkspace.defaultConfig +
-                "\nSHORT_MP4_CLIP_SECONDS=75\n"
+            IntegrationWorkspace.defaultConfig + "\nSHORT_MP4_CLIP_SECONDS=75\n"
         )
 
         let source = try workspace.createVideoMP4(name: "long_source", duration: 60.5, width: 320, height: 180)
@@ -3248,8 +3392,7 @@ final class PipelineIntegrationTests: XCTestCase {
         let workspace = try IntegrationWorkspace()
         try workspace.requireCommands(["ffmpeg", "ffprobe"])
         try workspace.overwriteConfig(
-            IntegrationWorkspace.defaultConfig +
-                "\nSHORT_MP4_CLIP_SECONDS=58\n"
+            IntegrationWorkspace.defaultConfig + "\nSHORT_MP4_CLIP_SECONDS=58\n"
         )
 
         // 9:24 portrait is narrower than 9:16; the crop width must clamp to the input width.
@@ -3277,9 +3420,12 @@ final class PipelineIntegrationTests: XCTestCase {
         let tool = try workspace.makeTool(arguments: ["-wavtomp3"])
         XCTAssertThrowsError(try tool.convertAudioToMP3(empty)) { error in
             let message = error.localizedDescription
-            XCTAssertTrue(message.contains("Audio input empty") || message.contains("WAV header too short"), "Unexpected error: \(message)")
+            XCTAssertTrue(
+                message.contains("Audio input empty") || message.contains("WAV header too short"),
+                "Unexpected error: \(message)")
         }
-        XCTAssertFalse(FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("empty_song.mp3").path))
+        XCTAssertFalse(
+            FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("empty_song.mp3").path))
     }
 
     func testRejectsEmptyImageInputWithoutPublishingOutputs() throws {
@@ -3289,7 +3435,8 @@ final class PipelineIntegrationTests: XCTestCase {
         XCTAssertThrowsError(try tool.convertPNGToJPEG(empty, outputExtension: "jpg")) { error in
             XCTAssertTrue(error.localizedDescription.contains("Image input empty"))
         }
-        XCTAssertFalse(FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("empty_graphic.jpg").path))
+        XCTAssertFalse(
+            FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("empty_graphic.jpg").path))
     }
 
     // audit #0017: a listed track that cannot be found is an error, not a warning — a typo in
@@ -3323,7 +3470,8 @@ final class PipelineIntegrationTests: XCTestCase {
         try lenient.verifyWAVStandard(albumOutput)
         let track01 = workspace.output.appendingPathComponent("track01.wav")
         let track02 = workspace.output.appendingPathComponent("track02.wav")
-        let expectedSeconds = (try lenient.mediaDuration(track01) ?? 0) + (try lenient.mediaDuration(track02) ?? 0)
+        let expectedSeconds =
+            (try lenient.mediaDuration(track01) ?? 0) + (try lenient.mediaDuration(track02) ?? 0)
             + Double(lenient.config.albumSilenceSecs)
         try lenient.verifyDuration(albumOutput, expectedSeconds: expectedSeconds, label: "album wav", tolerance: 0.5)
     }
@@ -3368,7 +3516,8 @@ final class PipelineIntegrationTests: XCTestCase {
         XCTAssertEqual(try tool.crc32(for: preserved), try tool.crc32(for: reference), "source bytes must be untouched")
         try tool.verifyMP3Standard(deliverable, qcPolicy: nil)
         try tool.verifySourceLoudnessPreserved(source: reference, output: deliverable)
-        XCTAssertFalse(FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("track.mp3").path))
+        XCTAssertFalse(
+            FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("track.mp3").path))
     }
 
     // audit #0144: the batch conversion actions had no coverage — the suite exercised the pipelines
@@ -3410,14 +3559,16 @@ final class PipelineIntegrationTests: XCTestCase {
 
         let wav = try workspace.createAudio(name: "short_audio", ext: "wav", duration: 1.0)
         let mp4 = workspace.output.appendingPathComponent("outlasting_video.mp4")
-        _ = try workspace.runner().run("ffmpeg", [
-            "-hide_banner", "-nostdin", "-v", "error", "-y",
-            "-f", "lavfi", "-i", "color=c=black:s=320x180:r=24:d=3",
-            "-i", wav.path,
-            "-map", "0:v:0", "-map", "1:a:0",
-            "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac",
-            mp4.path
-        ])
+        _ = try workspace.runner().run(
+            "ffmpeg",
+            [
+                "-hide_banner", "-nostdin", "-v", "error", "-y",
+                "-f", "lavfi", "-i", "color=c=black:s=320x180:r=24:d=3",
+                "-i", wav.path,
+                "-map", "0:v:0", "-map", "1:a:0",
+                "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac",
+                mp4.path
+            ])
 
         let tool = try workspace.makeTool(arguments: ["-silence", "0.5"])
         let container = try XCTUnwrap(try tool.mediaDuration(mp4))
@@ -3440,22 +3591,26 @@ final class PipelineIntegrationTests: XCTestCase {
         let cover = try workspace.createImage(name: "cover", ext: "png")
         // A standard-conforming source: 48 kHz, stereo, 320 kbps (the floor is 300 kbps).
         let standard = workspace.output.appendingPathComponent("standard.mp3")
-        _ = try workspace.runner().run("ffmpeg", [
-            "-hide_banner", "-nostdin", "-v", "error", "-y",
-            "-f", "lavfi", "-i", "sine=frequency=440:duration=1.2:sample_rate=48000",
-            "-ac", "2", "-c:a", "libmp3lame", "-b:a", "320k", "-ar", "48000",
-            standard.path
-        ])
+        _ = try workspace.runner().run(
+            "ffmpeg",
+            [
+                "-hide_banner", "-nostdin", "-v", "error", "-y",
+                "-f", "lavfi", "-i", "sine=frequency=440:duration=1.2:sample_rate=48000",
+                "-ac", "2", "-c:a", "libmp3lame", "-b:a", "320k", "-ar", "48000",
+                standard.path
+            ])
         let tagged = workspace.output.appendingPathComponent("tagged.mp3")
-        _ = try workspace.runner().run("ffmpeg", [
-            "-hide_banner", "-nostdin", "-v", "error", "-y",
-            "-i", standard.path,
-            "-i", cover.path,
-            "-map", "0:a:0", "-map", "1:v:0",
-            "-c:a", "copy", "-c:v", "copy", "-id3v2_version", "3",
-            "-disposition:v:0", "attached_pic",
-            tagged.path
-        ])
+        _ = try workspace.runner().run(
+            "ffmpeg",
+            [
+                "-hide_banner", "-nostdin", "-v", "error", "-y",
+                "-i", standard.path,
+                "-i", cover.path,
+                "-map", "0:a:0", "-map", "1:v:0",
+                "-c:a", "copy", "-c:v", "copy", "-id3v2_version", "3",
+                "-disposition:v:0", "attached_pic",
+                tagged.path
+            ])
 
         let tool = try workspace.makeTool(arguments: ["-full"])
         XCTAssertTrue(try tool.hasVideoStream(tagged), "the fixture must expose the cover as a video stream")
@@ -3667,12 +3822,14 @@ final class PipelineIntegrationTests: XCTestCase {
         _ workspace: IntegrationWorkspace, name: String, duration: Double = 1.2
     ) throws -> Data {
         let raw = workspace.output.appendingPathComponent(name).appendingPathExtension("s24le")
-        _ = try workspace.runner().run("ffmpeg", [
-            "-hide_banner", "-nostdin", "-v", "error", "-y",
-            "-f", "lavfi",
-            "-i", "sine=frequency=440:duration=\(String(format: "%.3f", duration)):sample_rate=96000",
-            "-ac", "2", "-f", "s24le", "-c:a", "pcm_s24le", raw.path
-        ])
+        _ = try workspace.runner().run(
+            "ffmpeg",
+            [
+                "-hide_banner", "-nostdin", "-v", "error", "-y",
+                "-f", "lavfi",
+                "-i", "sine=frequency=440:duration=\(String(format: "%.3f", duration)):sample_rate=96000",
+                "-ac", "2", "-f", "s24le", "-c:a", "pcm_s24le", raw.path
+            ])
         return try Data(contentsOf: raw)
     }
 
@@ -3686,14 +3843,16 @@ final class PipelineIntegrationTests: XCTestCase {
 
         func writeRF64(name: String, bext: Bool) throws -> URL {
             let target = workspace.output.appendingPathComponent(name).appendingPathExtension("wav")
-            _ = try workspace.runner().run("ffmpeg", [
-                "-hide_banner", "-nostdin", "-v", "error", "-y",
-                "-f", "lavfi", "-i", "sine=frequency=440:duration=1.2:sample_rate=96000",
-                "-ac", "2", "-c:a", "pcm_s24le", "-ar", "96000",
-                "-metadata", "comment=bext is only a word in this comment",
-                "-f", "wav", "-rf64", "always", "-write_bext", bext ? "1" : "0",
-                target.path
-            ])
+            _ = try workspace.runner().run(
+                "ffmpeg",
+                [
+                    "-hide_banner", "-nostdin", "-v", "error", "-y",
+                    "-f", "lavfi", "-i", "sine=frequency=440:duration=1.2:sample_rate=96000",
+                    "-ac", "2", "-c:a", "pcm_s24le", "-ar", "96000",
+                    "-metadata", "comment=bext is only a word in this comment",
+                    "-f", "wav", "-rf64", "always", "-write_bext", bext ? "1" : "0",
+                    target.path
+                ])
             return target
         }
 
@@ -3781,10 +3940,12 @@ final class PipelineIntegrationTests: XCTestCase {
         }
 
         let mono = workspace.output.appendingPathComponent("mono_output.wav")
-        _ = try workspace.runner().run("ffmpeg", [
-            "-hide_banner", "-nostdin", "-v", "error", "-y",
-            "-i", source.path, "-map", "0:a:0", "-ac", "1", "-c:a", "pcm_s24le", "-ar", "48000", mono.path
-        ])
+        _ = try workspace.runner().run(
+            "ffmpeg",
+            [
+                "-hide_banner", "-nostdin", "-v", "error", "-y",
+                "-i", source.path, "-map", "0:a:0", "-ac", "1", "-c:a", "pcm_s24le", "-ar", "48000", mono.path
+            ])
         XCTAssertThrowsError(
             try tool.verifyCanonicalPCMSampleEquivalence(source: source, output: mono, label: "mono", format: .s24le)
         ) { error in
@@ -3850,7 +4011,7 @@ final class PipelineIntegrationTests: XCTestCase {
         let decode = "-resize 1x1! null:"
 
         try log.reset()
-        for _ in 0 ..< 3 {
+        for _ in 0..<3 {
             try tool.preflightPNGInput(image)
         }
         try tool.preflightImageInput(image)

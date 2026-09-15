@@ -1,5 +1,6 @@
 import Synchronization
 import XCTest
+
 @testable import converter
 
 final class ConverterTests: XCTestCase {
@@ -17,7 +18,8 @@ final class ConverterTests: XCTestCase {
             scriptName: "converter"
         )
         let runner = ProcessRunner(logger: logger, environment: environment, debugEnabled: false)
-        return ConverterTool(cli: options, config: ProjectConfig(), logger: logger, runner: runner, environment: environment)
+        return ConverterTool(
+            cli: options, config: ProjectConfig(), logger: logger, runner: runner, environment: environment)
     }
 
     // audit #0031: the unit helper passed --output-dir but still handed CONFIG_FILE and DEBUG from the
@@ -119,7 +121,9 @@ final class ConverterTests: XCTestCase {
         XCTAssertEqual(file.stem, "Album.Track.Final")
         XCTAssertFalse(file.lastPathComponent.hasPrefix("."))
         XCTAssertEqual(
-            file.deletingLastPathComponent().appendingPathComponent(file.stem + "_RF64").appendingPathExtension(file.pathExtension).lastPathComponent,
+            file.deletingLastPathComponent().appendingPathComponent(file.stem + "_RF64").appendingPathExtension(
+                file.pathExtension
+            ).lastPathComponent,
             "Album.Track.Final_RF64.wav"
         )
         XCTAssertTrue(URL(fileURLWithPath: "/tmp/.converter-tmp.file").lastPathComponent.hasPrefix("."))
@@ -685,12 +689,14 @@ final class ConverterTests: XCTestCase {
         )
         XCTAssertEqual(options.action, .nfttoshort)
 
-        XCTAssertThrowsError(try CLIOptions.parse(
-            arguments: ["-mp3toshort"],
-            environment: [:],
-            scriptDirectory: root,
-            scriptName: "converter"
-        )) { error in
+        XCTAssertThrowsError(
+            try CLIOptions.parse(
+                arguments: ["-mp3toshort"],
+                environment: [:],
+                scriptDirectory: root,
+                scriptName: "converter"
+            )
+        ) { error in
             XCTAssertTrue(error.localizedDescription.contains("Use -nfttoshort"))
         }
     }
@@ -742,17 +748,21 @@ final class ConverterTests: XCTestCase {
     }
 
     func testAlbumActionParsesAndSortsNaturallyIgnoringExtension() throws {
-        let tempDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let tempDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(
+            UUID().uuidString, isDirectory: true)
         try FileManager.default.createDirectory(at: tempDirectory, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: tempDirectory) }
 
         for name in ["10 - Storm.flac", "1 - Sun.mp3", "2 - Rain.wav", "album.wav", "3_loudness_m12LUFS.mp3"] {
-            FileManager.default.createFile(atPath: tempDirectory.appendingPathComponent(name).path, contents: Data("x".utf8))
+            FileManager.default.createFile(
+                atPath: tempDirectory.appendingPathComponent(name).path, contents: Data("x".utf8))
         }
 
         let tool = try makeTool(tempDirectory: tempDirectory, arguments: ["-album"])
         XCTAssertEqual(tool.cli.action, .album)
-        XCTAssertEqual(try tool.albumAudioCandidates().map(\.lastPathComponent), ["1 - Sun.mp3", "2 - Rain.wav", "10 - Storm.flac"])
+        XCTAssertEqual(
+            try tool.albumAudioCandidates().map(\.lastPathComponent), ["1 - Sun.mp3", "2 - Rain.wav", "10 - Storm.flac"]
+        )
     }
 
     // audit #0085: the leading track number was collected with Character.isNumber, which also
@@ -925,7 +935,8 @@ final class ConverterTests: XCTestCase {
     func testProjectLoudnessDefaultsAreMinus12LUFS() throws {
         let root = URL(fileURLWithPath: "/tmp/converter-test")
         let logger = Logger(scriptName: "converterTests", debugEnabled: false)
-        let options = try CLIOptions.parse(arguments: ["-help"], environment: [:], scriptDirectory: root, scriptName: "converter")
+        let options = try CLIOptions.parse(
+            arguments: ["-help"], environment: [:], scriptDirectory: root, scriptName: "converter")
         let config = try ProjectConfig.load(
             from: root.appendingPathComponent("missing-config.txt"),
             environment: [:],
@@ -1012,8 +1023,9 @@ final class ConverterTests: XCTestCase {
         XCTAssertEqual(atLimit.shortVideoEncoderLadder.first, "h264_videotoolbox")
 
         // As a fallback behind libx264 the encoder is never asked to open the oversized session.
-        let vtFallback = try load("SHORT_MP4_VIDEO_CODEC=libx264\nSHORT_MP4_VIDEO_FALLBACKS=h264_videotoolbox\n"
-            + "SHORT_MP4_SCALE_W=4320\nSHORT_MP4_SCALE_H=7680")
+        let vtFallback = try load(
+            "SHORT_MP4_VIDEO_CODEC=libx264\nSHORT_MP4_VIDEO_FALLBACKS=h264_videotoolbox\n"
+                + "SHORT_MP4_SCALE_W=4320\nSHORT_MP4_SCALE_H=7680")
         XCTAssertEqual(vtFallback.shortVideoEncoderLadder, ["libx264", "h264_videotoolbox"])
 
         // The main ladder has the same limit.
@@ -1104,21 +1116,27 @@ final class ConverterTests: XCTestCase {
         let policy = tool.loudnessPolicy(targetLUFS: -12)
         let singlePass = tool.loudnormSinglePassFilter(policy: policy)
         let staticGain = tool.staticLoudnessGainFilter(gainDB: 1.25)
-        let secondPass = try XCTUnwrap(tool.loudnormSecondPassFilter(policy: policy, measurement: [
-            "input_i": "-16.20",
-            "input_lra": "4.10",
-            "input_tp": "-2.50",
-            "input_thresh": "-26.40",
-            "target_offset": "0.10"
-        ]))
+        let secondPass = try XCTUnwrap(
+            tool.loudnormSecondPassFilter(
+                policy: policy,
+                measurement: [
+                    "input_i": "-16.20",
+                    "input_lra": "4.10",
+                    "input_tp": "-2.50",
+                    "input_thresh": "-26.40",
+                    "target_offset": "0.10"
+                ]))
 
         XCTAssertNoThrow(try tool.validateLoudnessFilterIsEQNeutral(singlePass))
         XCTAssertNoThrow(try tool.validateLoudnessFilterIsEQNeutral(staticGain))
         XCTAssertNoThrow(try tool.validateLoudnessFilterIsEQNeutral(secondPass))
-        XCTAssertThrowsError(try tool.validateLoudnessFilterIsEQNeutral(tool.bassFilter(for: BassBoostSpec(frequencyHz: 80, gainDB: 5)))) { error in
+        XCTAssertThrowsError(
+            try tool.validateLoudnessFilterIsEQNeutral(tool.bassFilter(for: BassBoostSpec(frequencyHz: 80, gainDB: 5)))
+        ) { error in
             XCTAssertTrue(error.localizedDescription.contains("forbidden filter 'bass'"))
         }
-        XCTAssertThrowsError(try tool.validateLoudnessFilterIsEQNeutral("loudnorm=I=-12:TP=-1:LRA=50,lowpass=f=120")) { error in
+        let lowpassFilter = "loudnorm=I=-12:TP=-1:LRA=50,lowpass=f=120"
+        XCTAssertThrowsError(try tool.validateLoudnessFilterIsEQNeutral(lowpassFilter)) { error in
             XCTAssertTrue(error.localizedDescription.contains("forbidden filter 'lowpass'"))
         }
     }
@@ -1277,12 +1295,14 @@ final class ConverterTests: XCTestCase {
     }
 
     func testResolveFullAudioPrefersHighestQualitySameStemSource() throws {
-        let tempDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let tempDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(
+            UUID().uuidString, isDirectory: true)
         try FileManager.default.createDirectory(at: tempDirectory, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: tempDirectory) }
 
         for name in ["song.flac", "song.wav", "song.mp3", "song_RF64.wav", "song_BW64.flac"] {
-            FileManager.default.createFile(atPath: tempDirectory.appendingPathComponent(name).path, contents: Data("x".utf8))
+            FileManager.default.createFile(
+                atPath: tempDirectory.appendingPathComponent(name).path, contents: Data("x".utf8))
         }
 
         // The family collapses to the FLAC, which the run then renames to the release stem.
@@ -1298,13 +1318,16 @@ final class ConverterTests: XCTestCase {
     // directory used to fail with "expects exactly one source image" once the derived family
     // existed. The audio side already collapsed its own family; the image side now matches.
     func testResolveFullImageCollapsesItsOwnDerivedOutputsOnRerun() throws {
-        let tempDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let tempDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(
+            UUID().uuidString, isDirectory: true)
         try FileManager.default.createDirectory(at: tempDirectory, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: tempDirectory) }
 
         let tool = try makeTool(tempDirectory: tempDirectory)
         func write(_ name: String, _ width: Int, _ height: Int) throws {
-            _ = try tool.runner.run("magick", ["-size", "\(width)x\(height)", "canvas:gray", tempDirectory.appendingPathComponent(name).path])
+            _ = try tool.runner.run(
+                "magick",
+                ["-size", "\(width)x\(height)", "canvas:gray", tempDirectory.appendingPathComponent(name).path])
         }
 
         // Landscape renditions the run derived from its own master.
@@ -1326,13 +1349,16 @@ final class ConverterTests: XCTestCase {
     // A full run takes one landscape master plus, optionally, one portrait image for the
     // fitted shorts. They are told apart by orientation, so neither needs a special name.
     func testFullRunSourceImagesSplitByOrientation() throws {
-        let tempDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let tempDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(
+            UUID().uuidString, isDirectory: true)
         try FileManager.default.createDirectory(at: tempDirectory, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: tempDirectory) }
         let tool = try makeTool(tempDirectory: tempDirectory)
 
         func write(_ name: String, _ width: Int, _ height: Int) throws {
-            _ = try tool.runner.run("magick", ["-size", "\(width)x\(height)", "canvas:gray", tempDirectory.appendingPathComponent(name).path])
+            _ = try tool.runner.run(
+                "magick",
+                ["-size", "\(width)x\(height)", "canvas:gray", tempDirectory.appendingPathComponent(name).path])
         }
 
         try write("cover.png", 300, 169)
@@ -1353,13 +1379,15 @@ final class ConverterTests: XCTestCase {
     }
 
     func testFullRunSourceImagesRejectTwoLandscapeMasters() throws {
-        let tempDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let tempDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(
+            UUID().uuidString, isDirectory: true)
         try FileManager.default.createDirectory(at: tempDirectory, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: tempDirectory) }
         let tool = try makeTool(tempDirectory: tempDirectory)
 
         for name in ["cover.png", "backdrop.png"] {
-            _ = try tool.runner.run("magick", ["-size", "300x169", "canvas:gray", tempDirectory.appendingPathComponent(name).path])
+            _ = try tool.runner.run(
+                "magick", ["-size", "300x169", "canvas:gray", tempDirectory.appendingPathComponent(name).path])
         }
         XCTAssertThrowsError(try tool.resolveFullRunSourceImages()) { error in
             XCTAssertTrue(error.localizedDescription.contains("exactly one landscape source image"))
@@ -1367,13 +1395,15 @@ final class ConverterTests: XCTestCase {
     }
 
     func testResolveFullImageStillRejectsTwoDistinctSources() throws {
-        let tempDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let tempDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(
+            UUID().uuidString, isDirectory: true)
         try FileManager.default.createDirectory(at: tempDirectory, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: tempDirectory) }
 
         let tool = try makeTool(tempDirectory: tempDirectory)
         for name in ["cover.png", "cover_8K.png", "backdrop.png"] {
-            _ = try tool.runner.run("magick", ["-size", "320x180", "canvas:gray", tempDirectory.appendingPathComponent(name).path])
+            _ = try tool.runner.run(
+                "magick", ["-size", "320x180", "canvas:gray", tempDirectory.appendingPathComponent(name).path])
         }
 
         XCTAssertThrowsError(try tool.resolveFullImage()) { error in
@@ -1382,7 +1412,8 @@ final class ConverterTests: XCTestCase {
     }
 
     func testFullRunImageBaseNameStripsStackedDerivedSuffixes() throws {
-        let tempDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let tempDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(
+            UUID().uuidString, isDirectory: true)
         try FileManager.default.createDirectory(at: tempDirectory, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: tempDirectory) }
         let tool = try makeTool(tempDirectory: tempDirectory)
@@ -1399,7 +1430,8 @@ final class ConverterTests: XCTestCase {
     // full-length companion. The names must stay distinct and stable so they are sortable
     // in a delivery folder.
     func testShortMP4StemsCoverLetterboxedAndCenterCutVariants() throws {
-        let tempDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let tempDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(
+            UUID().uuidString, isDirectory: true)
         try FileManager.default.createDirectory(at: tempDirectory, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: tempDirectory) }
         let tool = try makeTool(tempDirectory: tempDirectory)
@@ -1413,7 +1445,9 @@ final class ConverterTests: XCTestCase {
         XCTAssertEqual(tool.centerCutShortMP4Stem(fullSongStem), "8CF14A3F_8K_Short_FullSong_CenterCut")
 
         // All four are distinct, so no variant can overwrite another.
-        let stems = Set([shortStem, fullSongStem, tool.centerCutShortMP4Stem(shortStem), tool.centerCutShortMP4Stem(fullSongStem)])
+        let stems = Set([
+            shortStem, fullSongStem, tool.centerCutShortMP4Stem(shortStem), tool.centerCutShortMP4Stem(fullSongStem)
+        ])
         XCTAssertEqual(stems.count, 4)
 
         // Applying the suffix twice must not stack it.
@@ -1500,9 +1534,9 @@ final class ConverterTests: XCTestCase {
             let integrated = try XCTUnwrap(Double(LoudnormArgument.integrated(value)))
             XCTAssertTrue((-70 ... -5).contains(integrated), "I=\(integrated) for \(value)")
             let truePeak = try XCTUnwrap(Double(LoudnormArgument.truePeak(value)))
-            XCTAssertTrue((-9 ... 0).contains(truePeak), "TP=\(truePeak) for \(value)")
+            XCTAssertTrue((-9...0).contains(truePeak), "TP=\(truePeak) for \(value)")
             let loudnessRange = try XCTUnwrap(Double(LoudnormArgument.loudnessRange(value)))
-            XCTAssertTrue((1 ... 50).contains(loudnessRange), "LRA=\(loudnessRange) for \(value)")
+            XCTAssertTrue((1...50).contains(loudnessRange), "LRA=\(loudnessRange) for \(value)")
         }
         // Non-finite policy values must still produce an argument inside the range.
         XCTAssertEqual(LoudnormArgument.integrated(-.infinity), "-70.00")
@@ -1615,8 +1649,9 @@ final class ConverterTests: XCTestCase {
         try Data().write(to: temp.appendingPathComponent("Mirage_bass_80Hz_4dB_RF64.flac"))
         XCTAssertEqual(try tool.resolveFullAudio().basename, "1_source.flac")
         XCTAssertTrue(FileManager.default.fileExists(atPath: temp.appendingPathComponent("1_source.flac").path))
-        XCTAssertFalse(FileManager.default.fileExists(
-            atPath: temp.appendingPathComponent("Mirage_bass_80Hz_4dB_RF64.flac").path))
+        XCTAssertFalse(
+            FileManager.default.fileExists(
+                atPath: temp.appendingPathComponent("Mirage_bass_80Hz_4dB_RF64.flac").path))
         XCTAssertEqual(tool.fullRunReleaseStem(for: temp.appendingPathComponent("1_source.flac")), "1")
 
         // A rerun sees `1_source.flac` beside its own deliverables and resolves the same origin:
@@ -1650,8 +1685,9 @@ final class ConverterTests: XCTestCase {
         XCTAssertThrowsError(try tool.resolveFullAudio()) { error in
             XCTAssertTrue("\(error)".contains("but found 2"), "\(error)")
         }
-        XCTAssertTrue(FileManager.default.fileExists(atPath: temp.appendingPathComponent("Next.mp3").path),
-                      "a refused rename must leave the new source untouched")
+        XCTAssertTrue(
+            FileManager.default.fileExists(atPath: temp.appendingPathComponent("Next.mp3").path),
+            "a refused rename must leave the new source untouched")
     }
 
     func testParserRejectsDeprecatedInputOverrideFlags() throws {
@@ -1683,7 +1719,8 @@ final class ConverterTests: XCTestCase {
     }
 
     func testExplicitPathsMustStayDirectlyInOutput() throws {
-        let tempDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let tempDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(
+            UUID().uuidString, isDirectory: true)
         try FileManager.default.createDirectory(at: tempDirectory, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: tempDirectory) }
 
@@ -2040,7 +2077,8 @@ final class ConverterTests: XCTestCase {
     }
 
     func testMatrixInitializationDoesNotRequireProjectOutputDirectory() throws {
-        let tempDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let tempDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(
+            UUID().uuidString, isDirectory: true)
         try FileManager.default.createDirectory(at: tempDirectory, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: tempDirectory) }
 
@@ -2052,7 +2090,8 @@ final class ConverterTests: XCTestCase {
             scriptDirectory: tempDirectory,
             scriptName: "converter"
         )
-        let config = try ProjectConfig.load(from: options.configFile, environment: environment, cli: options, logger: logger)
+        let config = try ProjectConfig.load(
+            from: options.configFile, environment: environment, cli: options, logger: logger)
         let runner = ProcessRunner(logger: logger, environment: environment, debugEnabled: false)
         let tool = ConverterTool(cli: options, config: config, logger: logger, runner: runner, environment: environment)
 
@@ -2069,8 +2108,12 @@ final class ConverterTests: XCTestCase {
             scriptName: "converter"
         )
         XCTAssertEqual(unifiedOptions.action, .hash)
-        XCTAssertEqual(unifiedOptions.srcDir.standardizedFileURL.path, root.appendingPathComponent("Output", isDirectory: true).standardizedFileURL.path)
-        XCTAssertEqual(unifiedOptions.outDir.standardizedFileURL.path, root.appendingPathComponent("Output", isDirectory: true).standardizedFileURL.path)
+        XCTAssertEqual(
+            unifiedOptions.srcDir.standardizedFileURL.path,
+            root.appendingPathComponent("Output", isDirectory: true).standardizedFileURL.path)
+        XCTAssertEqual(
+            unifiedOptions.outDir.standardizedFileURL.path,
+            root.appendingPathComponent("Output", isDirectory: true).standardizedFileURL.path)
 
         let mp3Options = try CLIOptions.parse(
             arguments: ["-mp3tohash"],
@@ -2078,8 +2121,12 @@ final class ConverterTests: XCTestCase {
             scriptDirectory: root,
             scriptName: "converter"
         )
-        XCTAssertEqual(mp3Options.srcDir.standardizedFileURL.path, root.appendingPathComponent("Output", isDirectory: true).standardizedFileURL.path)
-        XCTAssertEqual(mp3Options.outDir.standardizedFileURL.path, root.appendingPathComponent("Output", isDirectory: true).standardizedFileURL.path)
+        XCTAssertEqual(
+            mp3Options.srcDir.standardizedFileURL.path,
+            root.appendingPathComponent("Output", isDirectory: true).standardizedFileURL.path)
+        XCTAssertEqual(
+            mp3Options.outDir.standardizedFileURL.path,
+            root.appendingPathComponent("Output", isDirectory: true).standardizedFileURL.path)
 
         let flacOptions = try CLIOptions.parse(
             arguments: ["-flactohash"],
@@ -2087,8 +2134,12 @@ final class ConverterTests: XCTestCase {
             scriptDirectory: root,
             scriptName: "converter"
         )
-        XCTAssertEqual(flacOptions.srcDir.standardizedFileURL.path, root.appendingPathComponent("Output", isDirectory: true).standardizedFileURL.path)
-        XCTAssertEqual(flacOptions.outDir.standardizedFileURL.path, root.appendingPathComponent("Output", isDirectory: true).standardizedFileURL.path)
+        XCTAssertEqual(
+            flacOptions.srcDir.standardizedFileURL.path,
+            root.appendingPathComponent("Output", isDirectory: true).standardizedFileURL.path)
+        XCTAssertEqual(
+            flacOptions.outDir.standardizedFileURL.path,
+            root.appendingPathComponent("Output", isDirectory: true).standardizedFileURL.path)
 
         let wavOptions = try CLIOptions.parse(
             arguments: ["-wavtohash"],
@@ -2096,8 +2147,12 @@ final class ConverterTests: XCTestCase {
             scriptDirectory: root,
             scriptName: "converter"
         )
-        XCTAssertEqual(wavOptions.srcDir.standardizedFileURL.path, root.appendingPathComponent("Output", isDirectory: true).standardizedFileURL.path)
-        XCTAssertEqual(wavOptions.outDir.standardizedFileURL.path, root.appendingPathComponent("Output", isDirectory: true).standardizedFileURL.path)
+        XCTAssertEqual(
+            wavOptions.srcDir.standardizedFileURL.path,
+            root.appendingPathComponent("Output", isDirectory: true).standardizedFileURL.path)
+        XCTAssertEqual(
+            wavOptions.outDir.standardizedFileURL.path,
+            root.appendingPathComponent("Output", isDirectory: true).standardizedFileURL.path)
     }
 
     func testBuiltInFastPreviewProfileOverridesRenderDefaults() throws {
@@ -2227,7 +2282,8 @@ final class ConverterTests: XCTestCase {
     }
 
     func testFadeActionsUseDefaultNormalCurve() throws {
-        let tempDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let tempDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(
+            UUID().uuidString, isDirectory: true)
         try FileManager.default.createDirectory(at: tempDirectory, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: tempDirectory) }
 
@@ -2514,7 +2570,8 @@ final class ConverterTests: XCTestCase {
     }
 
     private func makeParserTool() throws -> ConverterTool {
-        let tempDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
+        let tempDirectory = FileManager.default.temporaryDirectory.appendingPathComponent(
+            UUID().uuidString, isDirectory: true)
         try FileManager.default.createDirectory(at: tempDirectory, withIntermediateDirectories: true)
         addTeardownBlock { try? FileManager.default.removeItem(at: tempDirectory) }
         return try makeTool(tempDirectory: tempDirectory)
@@ -2541,11 +2598,12 @@ final class ConverterTests: XCTestCase {
         }
 
         let count = 20_000
-        let base = (0 ..< count).map { Int32(($0 % 1000) * 100) }
+        let base = (0..<count).map { Int32(($0 % 1000) * 100) }
         let reference = try writeS24LE(base, as: "pcm_reference.raw")
 
         let identical = try writeS24LE(base, as: "pcm_identical.raw")
-        let exact = try tool.compareCanonicalPCMFiles(reference, identical, format: .s24le, maxAllowedDelta: 0, maxAllowedFailures: 0)
+        let exact = try tool.compareCanonicalPCMFiles(
+            reference, identical, format: .s24le, maxAllowedDelta: 0, maxAllowedFailures: 0)
         XCTAssertEqual(exact.failingSamples, 0)
         XCTAssertEqual(exact.maxDelta, 0)
 
@@ -2554,11 +2612,15 @@ final class ConverterTests: XCTestCase {
         drifted[count - 1] = base[count - 1] + 5_000
         let candidate = try writeS24LE(drifted, as: "pcm_drifted.raw")
 
-        let generousTolerance = try tool.compareCanonicalPCMFiles(reference, candidate, format: .s24le, maxAllowedDelta: 20_000, maxAllowedFailures: 0)
-        XCTAssertEqual(generousTolerance.failingSamples, 0, "drift inside the tolerance must not be counted as a failure")
+        let generousTolerance = try tool.compareCanonicalPCMFiles(
+            reference, candidate, format: .s24le, maxAllowedDelta: 20_000, maxAllowedFailures: 0)
+        XCTAssertEqual(
+            generousTolerance.failingSamples, 0, "drift inside the tolerance must not be counted as a failure")
 
-        let strictTolerance = try tool.compareCanonicalPCMFiles(reference, candidate, format: .s24le, maxAllowedDelta: 256, maxAllowedFailures: 0)
-        XCTAssertGreaterThan(strictTolerance.failingSamples, 0, "an out-of-tolerance sample at the end of the file must be reached")
+        let strictTolerance = try tool.compareCanonicalPCMFiles(
+            reference, candidate, format: .s24le, maxAllowedDelta: 256, maxAllowedFailures: 0)
+        XCTAssertGreaterThan(
+            strictTolerance.failingSamples, 0, "an out-of-tolerance sample at the end of the file must be reached")
         XCTAssertEqual(strictTolerance.maxDelta, 5_000)
     }
 
@@ -2587,7 +2649,7 @@ final class ConverterTests: XCTestCase {
             (15, "53605EE3"), (16, "24E8A988"), (19, "3CA5F099"), (65_537, "B864FD3A")
         ]
         for vector in lengthVectors {
-            let contents = Data((0 ..< vector.length).map { UInt8(($0 &* 37 &+ 11) & 0xFF) })
+            let contents = Data((0..<vector.length).map { UInt8(($0 &* 37 &+ 11) & 0xFF) })
             let file = directory.appendingPathComponent("len_\(vector.length).bin")
             try contents.write(to: file)
             XCTAssertEqual(try tool.crc32(for: file), vector.expected, "CRC-32 mismatch at length \(vector.length)")
@@ -2608,7 +2670,7 @@ final class ConverterTests: XCTestCase {
             environment: tool.environment
         )
 
-        let contents = Data((0 ..< 65_537).map { UInt8(($0 &* 37 &+ 11) & 0xFF) })
+        let contents = Data((0..<65_537).map { UInt8(($0 &* 37 &+ 11) & 0xFF) })
         let file = tool.cli.outDir.appendingPathComponent("chunked.bin")
         try contents.write(to: file)
 
@@ -2621,23 +2683,23 @@ final class ConverterTests: XCTestCase {
     func testAstatsParserIgnoresOtherFiltersSharingTheSameStderr() throws {
         let tool = try makeParserTool()
         let stderr = """
-        [Parsed_astats_0 @ 0x1] Channel: 1
-        [Parsed_astats_0 @ 0x1] DC offset: -0.000001
-        [Parsed_astats_0 @ 0x1] Peak level dB: -21.074211
-        [Parsed_astats_0 @ 0x1] RMS level dB: -24.084343
-        [Parsed_astats_0 @ 0x1] Channel: 2
-        [Parsed_astats_0 @ 0x1] DC offset: 0.000002
-        [Parsed_astats_0 @ 0x1] Peak level dB: -21.074211
-        [Parsed_astats_0 @ 0x1] RMS level dB: -24.100000
-        [Parsed_astats_0 @ 0x1] Overall
-        [Parsed_astats_0 @ 0x1] DC offset: 0.000002
-        [Parsed_astats_0 @ 0x1] Peak level dB: -21.074211
-        [Parsed_astats_0 @ 0x1] Peak count: 1120
-        [Parsed_volumedetect_1 @ 0x2] n_samples: 192000
-        [Parsed_volumedetect_1 @ 0x2] mean_volume: -24.1 dB
-        [Parsed_volumedetect_1 @ 0x2] max_volume: -21.1 dB
-        [Parsed_volumedetect_1 @ 0x2] histogram_21db: 55360
-        """
+            [Parsed_astats_0 @ 0x1] Channel: 1
+            [Parsed_astats_0 @ 0x1] DC offset: -0.000001
+            [Parsed_astats_0 @ 0x1] Peak level dB: -21.074211
+            [Parsed_astats_0 @ 0x1] RMS level dB: -24.084343
+            [Parsed_astats_0 @ 0x1] Channel: 2
+            [Parsed_astats_0 @ 0x1] DC offset: 0.000002
+            [Parsed_astats_0 @ 0x1] Peak level dB: -21.074211
+            [Parsed_astats_0 @ 0x1] RMS level dB: -24.100000
+            [Parsed_astats_0 @ 0x1] Overall
+            [Parsed_astats_0 @ 0x1] DC offset: 0.000002
+            [Parsed_astats_0 @ 0x1] Peak level dB: -21.074211
+            [Parsed_astats_0 @ 0x1] Peak count: 1120
+            [Parsed_volumedetect_1 @ 0x2] n_samples: 192000
+            [Parsed_volumedetect_1 @ 0x2] mean_volume: -24.1 dB
+            [Parsed_volumedetect_1 @ 0x2] max_volume: -21.1 dB
+            [Parsed_volumedetect_1 @ 0x2] histogram_21db: 55360
+            """
 
         let report = tool.parseAstatsReport(from: stderr)
         XCTAssertEqual(report.channelMetrics.count, 2)
@@ -2652,17 +2714,17 @@ final class ConverterTests: XCTestCase {
     func testLoudnormJSONParsingToleratesSurroundingFilterOutput() throws {
         let tool = try makeParserTool()
         let stderr = """
-        [Parsed_astats_0 @ 0x1] Peak level dB: -21.074211
-        [Parsed_loudnorm_0 @ 0x2]\u{0020}
-        {
-        \t"input_i" : "-23.05",
-        \t"input_tp" : "-3.02",
-        \t"input_lra" : "7.20",
-        \t"input_thresh" : "-33.10",
-        \t"output_i" : "-12.00",
-        \t"target_offset" : "0.11"
-        }
-        """
+            [Parsed_astats_0 @ 0x1] Peak level dB: -21.074211
+            [Parsed_loudnorm_0 @ 0x2]\u{0020}
+            {
+            \t"input_i" : "-23.05",
+            \t"input_tp" : "-3.02",
+            \t"input_lra" : "7.20",
+            \t"input_thresh" : "-33.10",
+            \t"output_i" : "-12.00",
+            \t"target_offset" : "0.11"
+            }
+            """
 
         let measurement = try tool.parseLoudnormJSON(from: stderr)
         XCTAssertEqual(measurement.inputI, "-23.05")
@@ -2728,7 +2790,7 @@ final class ConverterTests: XCTestCase {
         let tracker = PermitPeakTracker()
 
         await withTaskGroup(of: Void.self) { group in
-            for _ in 0 ..< 8 {
+            for _ in 0..<8 {
                 group.addTask {
                     try? await semaphore.withPermit {
                         await tracker.enter()
@@ -2746,7 +2808,7 @@ final class ConverterTests: XCTestCase {
         // both permits must be free again afterwards.
         struct Boom: Error {}
         try await expectCompletion {
-            for _ in 0 ..< 4 {
+            for _ in 0..<4 {
                 do {
                     try await semaphore.withPermit { throw Boom() }
                 } catch is Boom {
@@ -2784,7 +2846,7 @@ final class ConverterTests: XCTestCase {
         XCTAssertNil(closureRan.load(), "the closure must not run for a cancelled task")
 
         // The single permit must still be available: a leaked one would time out here.
-        try await expectCompletion { try await semaphore.withPermit { } }
+        try await expectCompletion { try await semaphore.withPermit {} }
     }
 
     // audit #0039: the wait() fast path (a free permit) never checked cancellation either, so a
@@ -2816,9 +2878,9 @@ final class ConverterTests: XCTestCase {
     func testAsyncSemaphoreSignalRacingCancellationLeavesNoMarkerBehind() async throws {
         let semaphore = AsyncSemaphore(value: 1)
 
-        for _ in 0 ..< 500 {
+        for _ in 0..<500 {
             try await semaphore.wait()
-            let waiter = Task { try await semaphore.withPermit { } }
+            let waiter = Task { try await semaphore.withPermit {} }
             try await waitUntil { await semaphore.waiterCount == 1 }
 
             // Hand over the permit and cancel the receiver in the same breath; whichever wins,
@@ -2841,10 +2903,12 @@ final class ConverterTests: XCTestCase {
     func testEncoderLadderReportsEveryRungAndStopsOnEncoderIndependentFailure() throws {
         let tool = try makeParserTool()
         var attempted: [String] = []
-        XCTAssertThrowsError(try tool.withEncoderLadder(["a", "b", "c"], label: "test") { encoder in
-            attempted.append(encoder)
-            throw AppError("\(encoder) exploded")
-        }) { error in
+        XCTAssertThrowsError(
+            try tool.withEncoderLadder(["a", "b", "c"], label: "test") { encoder in
+                attempted.append(encoder)
+                throw AppError("\(encoder) exploded")
+            }
+        ) { error in
             let message = "\(error)"
             for rung in ["a: a exploded", "b: b exploded", "c: c exploded"] {
                 XCTAssertTrue(message.contains(rung), message)
@@ -2853,10 +2917,12 @@ final class ConverterTests: XCTestCase {
         XCTAssertEqual(attempted, ["a", "b", "c"])
 
         attempted = []
-        XCTAssertThrowsError(try tool.withEncoderLadder(["a", "b"], label: "test") { encoder in
-            attempted.append(encoder)
-            try tool.encoderIndependent { throw AppError("audio wrong") }
-        }) { error in
+        XCTAssertThrowsError(
+            try tool.withEncoderLadder(["a", "b"], label: "test") { encoder in
+                attempted.append(encoder)
+                try tool.encoderIndependent { throw AppError("audio wrong") }
+            }
+        ) { error in
             XCTAssertTrue("\(error)".contains("a: audio wrong"), "\(error)")
             XCTAssertFalse("\(error)".contains("b:"), "\(error)")
         }
@@ -2905,8 +2971,9 @@ final class ConverterTests: XCTestCase {
         for name in names {
             try Data().write(to: temp.appendingPathComponent(name))
         }
-        XCTAssertEqual(try tool.audioMasterCandidates().map(\.basename).sorted(),
-                       ["02.flac", "02_bass.flac", "song.flac", "song_RF64.flac"])
+        XCTAssertEqual(
+            try tool.audioMasterCandidates().map(\.basename).sorted(),
+            ["02.flac", "02_bass.flac", "song.flac", "song_RF64.flac"])
         XCTAssertEqual(try tool.flacAlbumCandidates().map(\.basename), ["02.flac", "song.flac"])
     }
 
@@ -2920,7 +2987,8 @@ final class ConverterTests: XCTestCase {
         defer { try? FileManager.default.removeItem(at: temp) }
         let tool = try makeTool(tempDirectory: temp)
         let names = [
-            "01.flac", "01.wav", "01.mp3", "02.mp3", "02_mastered.mp3", "03_noise_30s.flac", "04_silence_10s.wav", "05.wav"
+            "01.flac", "01.wav", "01.mp3", "02.mp3", "02_mastered.mp3", "03_noise_30s.flac", "04_silence_10s.wav",
+            "05.wav"
         ]
         for name in names {
             try Data().write(to: temp.appendingPathComponent(name))
@@ -2949,22 +3017,27 @@ final class ConverterTests: XCTestCase {
         XCTAssertFalse(tool.isNoiseDerivedMedia(temp.appendingPathComponent("a_noise_2s_mix.wav")))
         XCTAssertFalse(tool.isSilenceDerivedMedia(temp.appendingPathComponent("a_silence_s.wav")))
 
-        for name in ["song.wav", "song_silence_2s.wav", "song_silence_2s_silence_3s.wav",
-                     "song_noise_2s.wav", "song_noise_2s_noise_3s.wav"] {
+        for name in [
+            "song.wav", "song_silence_2s.wav", "song_silence_2s_silence_3s.wav",
+            "song_noise_2s.wav", "song_noise_2s_noise_3s.wav"
+        ] {
             try Data().write(to: temp.appendingPathComponent(name))
         }
-        XCTAssertEqual(try tool.audioSilenceCandidates().map(\.basename).sorted(),
-                       ["song.wav", "song_noise_2s.wav", "song_noise_2s_noise_3s.wav"])
-        XCTAssertEqual(try tool.audioNoiseCandidates().map(\.basename).sorted(),
-                       ["song.wav", "song_silence_2s.wav", "song_silence_2s_silence_3s.wav"])
+        XCTAssertEqual(
+            try tool.audioSilenceCandidates().map(\.basename).sorted(),
+            ["song.wav", "song_noise_2s.wav", "song_noise_2s_noise_3s.wav"])
+        XCTAssertEqual(
+            try tool.audioNoiseCandidates().map(\.basename).sorted(),
+            ["song.wav", "song_silence_2s.wav", "song_silence_2s_silence_3s.wav"])
     }
 
     // audit #0011: the Homebrew bootstrap must only ever execute the exact installer it was
     // reviewed against: pinned to a commit, verified by SHA-256 before a single line runs.
     func testHomebrewInstallerIsPinnedAndIntegrityChecked() throws {
         let pinnedPattern = #"/Homebrew/install/[0-9a-f]{40}/install\.sh$"#
-        XCTAssertNotNil(DependencyBootstrapper.homebrewInstallerURL.range(of: pinnedPattern, options: .regularExpression),
-                        DependencyBootstrapper.homebrewInstallerURL)
+        XCTAssertNotNil(
+            DependencyBootstrapper.homebrewInstallerURL.range(of: pinnedPattern, options: .regularExpression),
+            DependencyBootstrapper.homebrewInstallerURL)
         XCTAssertEqual(DependencyBootstrapper.homebrewInstallerSHA256.count, 64)
 
         let temp = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
@@ -2976,9 +3049,10 @@ final class ConverterTests: XCTestCase {
         let good = DependencyBootstrapper.sha256Hex(of: try Data(contentsOf: script))
 
         // Wrong hash: refused before execution, nothing runs, no temp copy is left behind.
-        XCTAssertThrowsError(try DependencyBootstrapper.fetchVerifiedInstaller(
-            from: "file://\(script.path)", expectedSHA256: String(repeating: "0", count: 64),
-            environment: ProcessInfo.processInfo.environment)
+        XCTAssertThrowsError(
+            try DependencyBootstrapper.fetchVerifiedInstaller(
+                from: "file://\(script.path)", expectedSHA256: String(repeating: "0", count: 64),
+                environment: ProcessInfo.processInfo.environment)
         ) { error in
             XCTAssertTrue("\(error)".contains("integrity"), "\(error)")
         }
@@ -2997,7 +3071,10 @@ final class ConverterTests: XCTestCase {
         func parse(_ arguments: [String]) throws -> CLIOptions {
             try CLIOptions.parse(arguments: arguments, environment: [:], scriptDirectory: root, scriptName: "converter")
         }
-        let unknown = [["-full", "--overwite"], ["-full", "--continue-on-eror"], ["-loudness", "--sharpnes", "2"], ["-short", "-verbose"]]
+        let unknown = [
+            ["-full", "--overwite"], ["-full", "--continue-on-eror"], ["-loudness", "--sharpnes", "2"],
+            ["-short", "-verbose"]
+        ]
         for arguments in unknown {
             XCTAssertThrowsError(try parse(arguments), arguments.joined(separator: " ")) { error in
                 XCTAssertTrue("\(error)".contains("Unknown option"), "\(error)")
@@ -3020,17 +3097,17 @@ final class ConverterTests: XCTestCase {
         let tool = try makeParserTool()
         let file = URL(fileURLWithPath: "/tmp/qc.wav")
         let complete = """
-        [Parsed_astats_0 @ 0x1] Channel: 1
-        [Parsed_astats_0 @ 0x1] DC offset: -0.000100
-        [Parsed_astats_0 @ 0x1] RMS level dB: -20.000000
-        [Parsed_astats_0 @ 0x1] Channel: 2
-        [Parsed_astats_0 @ 0x1] DC offset: 0.000200
-        [Parsed_astats_0 @ 0x1] RMS level dB: -inf
-        [Parsed_astats_0 @ 0x1] Overall
-        [Parsed_astats_0 @ 0x1] DC offset: 0.000200
-        [Parsed_astats_0 @ 0x1] Peak level dB: 0.000000
-        [Parsed_astats_0 @ 0x1] Peak count: 12
-        """
+            [Parsed_astats_0 @ 0x1] Channel: 1
+            [Parsed_astats_0 @ 0x1] DC offset: -0.000100
+            [Parsed_astats_0 @ 0x1] RMS level dB: -20.000000
+            [Parsed_astats_0 @ 0x1] Channel: 2
+            [Parsed_astats_0 @ 0x1] DC offset: 0.000200
+            [Parsed_astats_0 @ 0x1] RMS level dB: -inf
+            [Parsed_astats_0 @ 0x1] Overall
+            [Parsed_astats_0 @ 0x1] DC offset: 0.000200
+            [Parsed_astats_0 @ 0x1] Peak level dB: 0.000000
+            [Parsed_astats_0 @ 0x1] Peak count: 12
+            """
         let metrics = try tool.audioQCAstatsMetrics(from: complete, expectedChannels: 2, file: file)
         XCTAssertEqual(metrics.stereoImbalanceDB, .infinity)
         XCTAssertEqual(metrics.dcOffset, 0.0002, accuracy: 1e-9)
@@ -3058,7 +3135,9 @@ final class ConverterTests: XCTestCase {
         XCTAssertEqual(ffmpegNumber(2.5), "2.5")
         XCTAssertEqual(ffmpegNumber(1e18), "1000000000000000000")
         XCTAssertFalse(ffmpegNumber(1e300).isEmpty, "out-of-Int-range values must format, not trap")
-        XCTAssertEqual(SilenceSpec(seconds: 1e300).delayMilliseconds, Int.max, "unrepresentable delays saturate instead of trapping")
+        XCTAssertEqual(
+            SilenceSpec(seconds: 1e300).delayMilliseconds, Int.max,
+            "unrepresentable delays saturate instead of trapping")
     }
 
     // audit #0012: ffmpeg prints input metadata at -v info before the loudnorm summary, so a
@@ -3066,20 +3145,20 @@ final class ConverterTests: XCTestCase {
     func testLoudnormJSONParsingIgnoresBracesInInputMetadata() throws {
         let tool = try makeParserTool()
         let stderr = """
-        Input #0, mp3, from 'song.mp3':
-          Metadata:
-            title           : Song {Remix}
-            comment         : {mixed} by {someone}
-        [Parsed_loudnorm_0 @ 0x2]\u{0020}
-        {
-        \t"input_i" : "-14.20",
-        \t"input_tp" : "-0.80",
-        \t"input_lra" : "6.10",
-        \t"input_thresh" : "-24.30",
-        \t"output_i" : "-12.00",
-        \t"target_offset" : "0.05"
-        }
-        """
+            Input #0, mp3, from 'song.mp3':
+              Metadata:
+                title           : Song {Remix}
+                comment         : {mixed} by {someone}
+            [Parsed_loudnorm_0 @ 0x2]\u{0020}
+            {
+            \t"input_i" : "-14.20",
+            \t"input_tp" : "-0.80",
+            \t"input_lra" : "6.10",
+            \t"input_thresh" : "-24.30",
+            \t"output_i" : "-12.00",
+            \t"target_offset" : "0.05"
+            }
+            """
         let measurement = try tool.parseLoudnormJSON(from: stderr)
         XCTAssertEqual(measurement.inputI, "-14.20")
         XCTAssertEqual(measurement.inputTp, "-0.80")
@@ -3377,7 +3456,7 @@ final class ConverterTests: XCTestCase {
         let directory = tool.cli.outDir
         let fmt = WAVFixture.pcmFormatChunk(channels: 2, sampleRate: 96_000, bitsPerSample: 24)
         var samples = Data(count: 6 * 97)
-        samples.replaceSubrange(30 ..< 34, with: WAVFixture.fourCC("bext"))
+        samples.replaceSubrange(30..<34, with: WAVFixture.fourCC("bext"))
 
         // "bext" as text inside LIST/INFO or inside the PCM is not a bext chunk.
         let info = WAVFixture.fourCC("INFO") + WAVFixture.chunk("ICMT", Data("bext is only a word here\0".utf8))
@@ -3431,7 +3510,8 @@ final class ConverterTests: XCTestCase {
         let fmt = WAVFixture.pcmFormatChunk(channels: 2, sampleRate: 96_000, bitsPerSample: 24)
         let samples = Data(count: 6 * 40)
         let data = WAVFixture.chunk("data", samples)
-        let header = WAVFixture.fourCC("RF64") + WAVFixture.uint32LE(WAVFixture.sizePlaceholder)
+        let header =
+            WAVFixture.fourCC("RF64") + WAVFixture.uint32LE(WAVFixture.sizePlaceholder)
             + WAVFixture.fourCC("WAVE")
 
         func assertRejected(_ bytes: Data, as name: String, reason: String, line: UInt = #line) throws {

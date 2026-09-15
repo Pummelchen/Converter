@@ -47,7 +47,8 @@ extension ConverterTool {
             // nil = the filesystem did not report free space; skip instead of pretending it is 0 (#0149).
             let free = try availableBytes(at: tempDirectory)
             if let free, need > 0 && free < need {
-                throw AppError("Low free space for internal WAV staging of \(source.basename): avail=\(free) need~\(need)")
+                throw AppError(
+                    "Low free space for internal WAV staging of \(source.basename): avail=\(free) need~\(need)")
             }
         }
         let temp = try makeTemp(in: tempDirectory, stem: stem ?? "\(source.stem).internal", ext: ".wav")
@@ -66,12 +67,15 @@ extension ConverterTool {
         }
     }
 
-    func processInternalWAV(_ sourceWAV: URL, filter: String, in directory: URL? = nil, stem: String? = nil, duration: Double? = nil) throws -> URL {
+    func processInternalWAV(
+        _ sourceWAV: URL, filter: String, in directory: URL? = nil, stem: String? = nil, duration: Double? = nil
+    ) throws -> URL {
         try verifyWAVStandard(sourceWAV, qcPolicy: nil)
         let tempDirectory = directory ?? cli.outDir
         let temp = try makeTemp(in: tempDirectory, stem: stem ?? "\(sourceWAV.stem).processed", ext: ".wav")
         do {
-            _ = try runner.run("ffmpeg", internalWAVArguments(input: sourceWAV, output: temp, filter: filter, duration: duration))
+            _ = try runner.run(
+                "ffmpeg", internalWAVArguments(input: sourceWAV, output: temp, filter: filter, duration: duration))
             try verifyWAVStandard(temp, qcPolicy: nil)
             return temp
         } catch {
@@ -105,33 +109,39 @@ extension ConverterTool {
     func encodeInternalWAVToM4A(_ wav: URL, output: URL, qcPolicy: AudioQCPolicy? = nil) throws {
         try verifyWAVStandard(wav, qcPolicy: nil)
         try requireFFmpegEncoder(alacEncoderName)
-        _ = try runner.run("ffmpeg", [
-            "-hide_banner", "-nostdin", "-v", "error", "-y",
-            "-i", wav.path,
-            "-map", "0:a:0",
-            "-vn", "-sn", "-dn"
-        ] + alacAudioArguments(sampleRate: config.m4aSampleRate, channels: config.m4aChannels) + [
-            "-map_metadata", "-1",
-            output.path
-        ])
+        _ = try runner.run(
+            "ffmpeg",
+            [
+                "-hide_banner", "-nostdin", "-v", "error", "-y",
+                "-i", wav.path,
+                "-map", "0:a:0",
+                "-vn", "-sn", "-dn"
+            ] + alacAudioArguments(sampleRate: config.m4aSampleRate, channels: config.m4aChannels) + [
+                "-map_metadata", "-1",
+                output.path
+            ])
         try verifyM4AFile(output, sampleRate: config.m4aSampleRate, channels: config.m4aChannels, qcPolicy: qcPolicy)
     }
 
-    func encodeInternalWAVToMP3(_ wav: URL, output: URL, requireAudible: Bool = true, qcPolicy: AudioQCPolicy? = nil) throws {
+    func encodeInternalWAVToMP3(
+        _ wav: URL, output: URL, requireAudible: Bool = true, qcPolicy: AudioQCPolicy? = nil
+    ) throws {
         try verifyWAVStandard(wav, requireAudible: requireAudible, qcPolicy: nil)
         try requireFFmpegEncoder("libmp3lame")
-        _ = try runner.run("ffmpeg", [
-            "-hide_banner", "-nostdin", "-v", "error", "-y",
-            "-i", wav.path,
-            "-map", "0:a:0",
-            "-vn", "-sn", "-dn",
-            "-ar", String(config.mp3SampleRate),
-            "-ac", String(config.mp3Channels),
-            "-c:a", "libmp3lame",
-            "-b:a", config.mp3Bitrate,
-            "-map_metadata", "-1",
-            output.path
-        ])
+        _ = try runner.run(
+            "ffmpeg",
+            [
+                "-hide_banner", "-nostdin", "-v", "error", "-y",
+                "-i", wav.path,
+                "-map", "0:a:0",
+                "-vn", "-sn", "-dn",
+                "-ar", String(config.mp3SampleRate),
+                "-ac", String(config.mp3Channels),
+                "-c:a", "libmp3lame",
+                "-b:a", config.mp3Bitrate,
+                "-map_metadata", "-1",
+                output.path
+            ])
         try verifyMP3Standard(output, requireAudible: requireAudible, qcPolicy: qcPolicy)
     }
 
@@ -153,23 +163,26 @@ extension ConverterTool {
         requireAudible: Bool = true,
         qcPolicy: AudioQCPolicy? = nil
     ) throws {
-        _ = try runner.run("ffmpeg", [
-            "-hide_banner", "-nostdin", "-v", "error", "-y",
-            "-i", source.path,
-            "-map", "0:a:0",
-            "-vn", "-sn", "-dn",
-            "-ac", String(channels),
-            "-ar", String(sampleRate),
-            "-c:a", "flac",
-            // Pinned, not derived from the source: the archival FLAC carries the same 24-bit samples
-            // as the internal WAV, whatever depth the input had (#0131).
-            "-sample_fmt", ProjectConfig.flacSampleFormat,
-            "-bits_per_raw_sample", String(ProjectConfig.flacBitsPerRawSample),
-            "-compression_level", String(config.flacCompressionLevel),
-            "-map_metadata", "-1",
-            output.path
-        ])
-        try verifyFLACFile(output, sampleRate: sampleRate, channels: channels, requireAudible: requireAudible, qcPolicy: qcPolicy)
+        _ = try runner.run(
+            "ffmpeg",
+            [
+                "-hide_banner", "-nostdin", "-v", "error", "-y",
+                "-i", source.path,
+                "-map", "0:a:0",
+                "-vn", "-sn", "-dn",
+                "-ac", String(channels),
+                "-ar", String(sampleRate),
+                "-c:a", "flac",
+                // Pinned, not derived from the source: the archival FLAC carries the same 24-bit samples
+                // as the internal WAV, whatever depth the input had (#0131).
+                "-sample_fmt", ProjectConfig.flacSampleFormat,
+                "-bits_per_raw_sample", String(ProjectConfig.flacBitsPerRawSample),
+                "-compression_level", String(config.flacCompressionLevel),
+                "-map_metadata", "-1",
+                output.path
+            ])
+        try verifyFLACFile(
+            output, sampleRate: sampleRate, channels: channels, requireAudible: requireAudible, qcPolicy: qcPolicy)
     }
 
     func encodeInternalWAVToFLAC(
@@ -180,21 +193,23 @@ extension ConverterTool {
         try verifyWAVStandard(wav, qcPolicy: nil)
         let outputSampleRate = config.flacSampleRate
         let outputChannels = config.flacChannels
-        _ = try runner.run("ffmpeg", [
-            "-hide_banner", "-nostdin", "-v", "error", "-y",
-            "-i", wav.path,
-            "-map", "0:a:0",
-            "-vn", "-sn", "-dn",
-            "-ac", String(outputChannels),
-            "-ar", String(outputSampleRate),
-            "-c:a", "flac",
-            // See encodeSourceToFLAC: the depth is part of the archival standard, not a source property.
-            "-sample_fmt", ProjectConfig.flacSampleFormat,
-            "-bits_per_raw_sample", String(ProjectConfig.flacBitsPerRawSample),
-            "-compression_level", String(config.flacCompressionLevel),
-            "-map_metadata", "-1",
-            output.path
-        ])
+        _ = try runner.run(
+            "ffmpeg",
+            [
+                "-hide_banner", "-nostdin", "-v", "error", "-y",
+                "-i", wav.path,
+                "-map", "0:a:0",
+                "-vn", "-sn", "-dn",
+                "-ac", String(outputChannels),
+                "-ar", String(outputSampleRate),
+                "-c:a", "flac",
+                // See encodeSourceToFLAC: the depth is part of the archival standard, not a source property.
+                "-sample_fmt", ProjectConfig.flacSampleFormat,
+                "-bits_per_raw_sample", String(ProjectConfig.flacBitsPerRawSample),
+                "-compression_level", String(config.flacCompressionLevel),
+                "-map_metadata", "-1",
+                output.path
+            ])
         try verifyFLACFile(output, sampleRate: outputSampleRate, channels: outputChannels, qcPolicy: qcPolicy)
     }
 
@@ -204,24 +219,28 @@ extension ConverterTool {
         try verifyWAVStandard(output, qcPolicy: qcPolicy)
     }
 
-    func encodeInternalWAVToMP4AudioWithVideo(sourceVideo: URL, wav: URL, output: URL, audioSampleRate: Int, qcPolicy: AudioQCPolicy? = nil) throws {
+    func encodeInternalWAVToMP4AudioWithVideo(
+        sourceVideo: URL, wav: URL, output: URL, audioSampleRate: Int, qcPolicy: AudioQCPolicy? = nil
+    ) throws {
         try verifyWAVStandard(wav, qcPolicy: nil)
         try requireFFmpegEncoder(alacEncoderName)
-        _ = try runner.run("ffmpeg", [
-            "-hide_banner", "-nostdin", "-v", "error", "-y",
-            "-i", sourceVideo.path,
-            "-i", wav.path,
-            "-map", "0:v:0?",
-            "-map", "1:a:0",
-            "-c:v", "copy"
-        ] + alacAudioArguments(sampleRate: audioSampleRate, channels: 2) + [
-            "-sn", "-dn",
-            "-map_metadata", "0",
-            "-map_chapters", "0",
-            "-shortest",
-            "-movflags", "+faststart",
-            output.path
-        ])
+        _ = try runner.run(
+            "ffmpeg",
+            [
+                "-hide_banner", "-nostdin", "-v", "error", "-y",
+                "-i", sourceVideo.path,
+                "-i", wav.path,
+                "-map", "0:v:0?",
+                "-map", "1:a:0",
+                "-c:v", "copy"
+            ] + alacAudioArguments(sampleRate: audioSampleRate, channels: 2) + [
+                "-sn", "-dn",
+                "-map_metadata", "0",
+                "-map_chapters", "0",
+                "-shortest",
+                "-movflags", "+faststart",
+                output.path
+            ])
         try requireFormatNameContains(output, anyOf: ["mp4", "mov"], label: "MP4 container")
         if try hasVideoStream(sourceVideo) {
             try requireVideoStream(output)

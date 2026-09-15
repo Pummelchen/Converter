@@ -6,5 +6,8 @@
   "respectsExistingLineBreaks": true,
   "lineBreakBeforeControlFlowKeywords": false,
   "lineBreakBeforeEachArgument": false,
-  "prioritizeKeepingFunctionOutputTogether": true
+  "prioritizeKeepingFunctionOutputTogether": true,
+  // The repository's style has no trailing commas in multi-line collections; swift-format's
+  // default adds them, which is what made the first adoption attempt fight swiftlint (#0106).
+  "multiElementCollectionTrailingCommas": false
 }

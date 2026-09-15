@@ -142,7 +142,9 @@ extension ConverterTool {
     }
 
     @discardableResult
-    func processBatch<T>(files: [URL], emptyMessage: String, failWhenEmpty: Bool, operation: (URL) throws -> T) throws -> [T] {
+    func processBatch<T>(
+        files: [URL], emptyMessage: String, failWhenEmpty: Bool, operation: (URL) throws -> T
+    ) throws -> [T] {
         if files.isEmpty {
             if failWhenEmpty {
                 throw AppError(emptyMessage)
@@ -183,7 +185,10 @@ extension ConverterTool {
         let files = try files(in: cli.srcDir) {
             $0.pathExtension.lowercasedASCII == "png" && $0.stem.hasSuffix(spec.stemSuffix) && !isPortraitShortStill($0)
         }
-        _ = try processBatch(files: files, emptyMessage: "No *\(spec.stemSuffix).png files found in '\(cli.srcDir.path)'.", failWhenEmpty: false) { file in
+        _ = try processBatch(
+            files: files, emptyMessage: "No *\(spec.stemSuffix).png files found in '\(cli.srcDir.path)'.",
+            failWhenEmpty: false
+        ) { file in
             self.logger.info("\(spec.logPrefix): \(file.basename)")
             return try spec.operation(file)
         }
@@ -208,8 +213,8 @@ extension ConverterTool {
             }
             throw AppError(
                 "Full pipeline found no source audio in '\(cli.srcDir.path)': "
-                + "\(names(skipped)) \(skipped.count == 1 ? "is an archival companion" : "are archival companions") "
-                + "of audio already in that folder, so \(skipped.count == 1 ? "it was" : "they were") skipped."
+                    + "\(names(skipped)) \(skipped.count == 1 ? "is an archival companion" : "are archival companions") "
+                    + "of audio already in that folder, so \(skipped.count == 1 ? "it was" : "they were") skipped."
             )
         }
         throw AppError(
@@ -254,7 +259,7 @@ extension ConverterTool {
         for move in moves where fileManager.fileExists(atPath: move.to.path) {
             throw AppError(
                 "Full pipeline cannot rename \(move.from.basename) to \(move.to.basename): "
-                + "that file already exists in '\(directory.path)'. Clear the previous release before running again."
+                    + "that file already exists in '\(directory.path)'. Clear the previous release before running again."
             )
         }
         var completed: [(from: URL, to: URL)] = []
@@ -303,7 +308,8 @@ extension ConverterTool {
             throw AppError("Unable to read dimensions for \(label): \(image.path)")
         }
         if dimensions.0 != width || dimensions.1 != height {
-            throw AppError("\(label) must be \(width)x\(height). Got '\(dimensions.0)x\(dimensions.1)' for '\(image.path)'.")
+            throw AppError(
+                "\(label) must be \(width)x\(height). Got '\(dimensions.0)x\(dimensions.1)' for '\(image.path)'.")
         }
     }
 
@@ -340,8 +346,9 @@ extension ConverterTool {
             // A square is not portrait, so it becomes the landscape master; say so instead of
             // silently treating it as one.
             guard dimensions.0 != dimensions.1 else {
-                logger.warn("Square source image '\(candidate.basename)' is treated as the landscape master; "
-                    + "it will be fitted into a \(config.videoMP4Width)x\(config.videoMP4Height) frame.")
+                logger.warn(
+                    "Square source image '\(candidate.basename)' is treated as the landscape master; "
+                        + "it will be fitted into a \(config.videoMP4Width)x\(config.videoMP4Height) frame.")
                 masters.append(candidate)
                 continue
             }
@@ -354,7 +361,9 @@ extension ConverterTool {
 
         guard portraits.count <= 1 else {
             let names = portraits.map(\.basename).sorted().joined(separator: ", ")
-            throw AppError("Full pipeline accepts at most one portrait source image for the shorts; found \(portraits.count) in '\(cli.srcDir.path)' (\(names)).")
+            throw AppError(
+                "Full pipeline accepts at most one portrait source image for the shorts; found \(portraits.count) in '\(cli.srcDir.path)' (\(names))."
+            )
         }
 
         // A rerun can still see an older derived family beside the master; collapse it.
@@ -365,7 +374,9 @@ extension ConverterTool {
             warnMessage: "Full pipeline found multiple same-stem images; auto-selecting "
         )
         guard rankedMasters.count == 1, let master = rankedMasters.first else {
-            throw AppError("Full pipeline expects either Horizontal_8K.png for direct render or exactly one landscape source image (.png/.jpg/.jpeg) in '\(cli.srcDir.path)'.")
+            throw AppError(
+                "Full pipeline expects either Horizontal_8K.png for direct render or exactly one landscape source image (.png/.jpg/.jpeg) in '\(cli.srcDir.path)'."
+            )
         }
         return (master, portraits.first)
     }
@@ -385,14 +396,16 @@ extension ConverterTool {
 
     func resolveShortRenderImage() throws -> URL {
         if let vertical = try namedFullRunImage("Vertical_8K.png") {
-            try verifyFullRunImage(vertical, width: config.shortMP4ScaleW, height: config.shortMP4ScaleH, label: "Vertical_8K.png")
+            try verifyFullRunImage(
+                vertical, width: config.shortMP4ScaleW, height: config.shortMP4ScaleH, label: "Vertical_8K.png")
             return vertical
         }
         if let nft = try existingNFT8KImage() {
             return nft
         }
         if let horizontal = try namedFullRunImage("Horizontal_8K.png") {
-            try verifyFullRunImage(horizontal, width: config.videoMP4Width, height: config.videoMP4Height, label: "Horizontal_8K.png")
+            try verifyFullRunImage(
+                horizontal, width: config.videoMP4Width, height: config.videoMP4Height, label: "Horizontal_8K.png")
             return try nftFrom8K(horizontal).nft8K
         }
 
@@ -471,7 +484,8 @@ extension ConverterTool {
     func resolveShortAudio() throws -> URL {
         let candidates = try rankedShortAudioCandidates()
         guard candidates.count == 1, let audio = candidates.first else {
-            throw AppError("Short render expects exactly one audio-only file supported by ffmpeg in '\(cli.srcDir.path)'.")
+            throw AppError(
+                "Short render expects exactly one audio-only file supported by ffmpeg in '\(cli.srcDir.path)'.")
         }
         return audio
     }
@@ -481,10 +495,12 @@ extension ConverterTool {
         let vertical = try namedFullRunImage("Vertical_8K.png")
 
         if let horizontal {
-            try verifyFullRunImage(horizontal, width: config.videoMP4Width, height: config.videoMP4Height, label: "Horizontal_8K.png")
+            try verifyFullRunImage(
+                horizontal, width: config.videoMP4Width, height: config.videoMP4Height, label: "Horizontal_8K.png")
             logger.info("Full step: use Horizontal_8K.png for main MP4")
             if let vertical {
-                try verifyFullRunImage(vertical, width: config.shortMP4ScaleW, height: config.shortMP4ScaleH, label: "Vertical_8K.png")
+                try verifyFullRunImage(
+                    vertical, width: config.shortMP4ScaleW, height: config.shortMP4ScaleH, label: "Vertical_8K.png")
                 logger.info("Full step: use Vertical_8K.png for short MP4")
             } else {
                 logger.info("Full step: create NFT8K PNG for short MP4")
@@ -497,7 +513,8 @@ extension ConverterTool {
         }
 
         if let vertical {
-            try verifyFullRunImage(vertical, width: config.shortMP4ScaleW, height: config.shortMP4ScaleH, label: "Vertical_8K.png")
+            try verifyFullRunImage(
+                vertical, width: config.shortMP4ScaleW, height: config.shortMP4ScaleH, label: "Vertical_8K.png")
             logger.info("Full step: use Vertical_8K.png for short MP4")
         }
 
@@ -542,8 +559,12 @@ extension ConverterTool {
             self.logger.info("Full step: 3K PNG")
             let threeK = try self.squarePNGFrom8K(variants.eightK, size: self.config.image3KSize, label: "3K")
             self.logger.info("Full step: 3K JPG deliverables")
-            _ = try self.jpegExtentFromPNG(threeK, requiredWidth: self.config.image3KSize, requiredHeight: self.config.image3KSize, suffix: "1MB", targetBytes: self.config.image3KJPG1MBTargetBytes)
-            _ = try self.jpegExtentFromPNG(threeK, requiredWidth: self.config.image3KSize, requiredHeight: self.config.image3KSize, suffix: "5MB", targetBytes: self.config.image3KJPG5MBTargetBytes)
+            _ = try self.jpegExtentFromPNG(
+                threeK, requiredWidth: self.config.image3KSize, requiredHeight: self.config.image3KSize, suffix: "1MB",
+                targetBytes: self.config.image3KJPG1MBTargetBytes)
+            _ = try self.jpegExtentFromPNG(
+                threeK, requiredWidth: self.config.image3KSize, requiredHeight: self.config.image3KSize, suffix: "5MB",
+                targetBytes: self.config.image3KJPG5MBTargetBytes)
             return threeK
         }
 
@@ -568,7 +589,8 @@ extension ConverterTool {
         let threeK = try await threeKTask
         _ = try await eightKJPGTask
 
-        return ImageArtifacts(eightK: variants.eightK, fourK: variants.fourK, threeK: threeK, twoK: twoK, nft8K: nft.nft8K)
+        return ImageArtifacts(
+            eightK: variants.eightK, fourK: variants.fourK, threeK: threeK, twoK: twoK, nft8K: nft.nft8K)
     }
 
     func fullImagePipelineFromDirect8K(_ sourcePNG: URL, deliveryPrefix: String? = nil) async throws -> ImageArtifacts {
@@ -586,15 +608,21 @@ extension ConverterTool {
 
         async let twoKTask: URL = withImagePermit {
             self.logger.info("Full step: 2K PNG")
-            return try self.squarePNGFrom8K(sourcePNG, size: self.config.image2KSize, label: "2K", deliveryPrefix: deliveryPrefix)
+            return try self.squarePNGFrom8K(
+                sourcePNG, size: self.config.image2KSize, label: "2K", deliveryPrefix: deliveryPrefix)
         }
 
         async let threeKTask: URL = withImagePermit {
             self.logger.info("Full step: 3K PNG")
-            let threeK = try self.squarePNGFrom8K(sourcePNG, size: self.config.image3KSize, label: "3K", deliveryPrefix: deliveryPrefix)
+            let threeK = try self.squarePNGFrom8K(
+                sourcePNG, size: self.config.image3KSize, label: "3K", deliveryPrefix: deliveryPrefix)
             self.logger.info("Full step: 3K JPG deliverables")
-            _ = try self.jpegExtentFromPNG(threeK, requiredWidth: self.config.image3KSize, requiredHeight: self.config.image3KSize, suffix: "1MB", targetBytes: self.config.image3KJPG1MBTargetBytes)
-            _ = try self.jpegExtentFromPNG(threeK, requiredWidth: self.config.image3KSize, requiredHeight: self.config.image3KSize, suffix: "5MB", targetBytes: self.config.image3KJPG5MBTargetBytes)
+            _ = try self.jpegExtentFromPNG(
+                threeK, requiredWidth: self.config.image3KSize, requiredHeight: self.config.image3KSize, suffix: "1MB",
+                targetBytes: self.config.image3KJPG1MBTargetBytes)
+            _ = try self.jpegExtentFromPNG(
+                threeK, requiredWidth: self.config.image3KSize, requiredHeight: self.config.image3KSize, suffix: "5MB",
+                targetBytes: self.config.image3KJPG5MBTargetBytes)
             return threeK
         }
 
@@ -733,7 +761,9 @@ extension ConverterTool {
             }
         } else {
             logger.info("Full step: MP4 -> Short")
-            _ = try await withVideoPermit { try self.shortenMP4(mainVideo, audioQCPolicy: self.config.shortFormAudioQCPolicy) }
+            _ = try await withVideoPermit {
+                try self.shortenMP4(mainVideo, audioQCPolicy: self.config.shortFormAudioQCPolicy)
+            }
         }
         try cleanTransients()
     }
@@ -799,7 +829,9 @@ extension ConverterTool {
 
     func stepJPGToPNG() throws {
         let files = try files(in: cli.srcDir, matchingExtensions: ["jpg", "jpeg"])
-        _ = try processBatch(files: files, emptyMessage: "No JPG/JPEG files found in '\(cli.srcDir.path)'.", failWhenEmpty: false) { file in
+        _ = try processBatch(
+            files: files, emptyMessage: "No JPG/JPEG files found in '\(cli.srcDir.path)'.", failWhenEmpty: false
+        ) { file in
             self.logger.info("JPG -> PNG: \(file.basename)")
             return try self.convertJPGToPNG(file)
         }
@@ -807,7 +839,9 @@ extension ConverterTool {
 
     func stepPNGToJPG() throws {
         let files = try sourceImageFiles(matchingExtensions: ["png"])
-        _ = try processBatch(files: files, emptyMessage: "No .png files found in '\(cli.srcDir.path)'.", failWhenEmpty: false) { file in
+        _ = try processBatch(
+            files: files, emptyMessage: "No .png files found in '\(cli.srcDir.path)'.", failWhenEmpty: false
+        ) { file in
             self.logger.info("PNG -> JPG: \(file.basename)")
             return try self.convertPNGToJPEG(file, outputExtension: "jpg")
         }
@@ -815,65 +849,90 @@ extension ConverterTool {
 
     func stepAIPix() throws {
         let files = try sourceImageFiles(matchingExtensions: ["png"])
-        _ = try processBatch(files: files, emptyMessage: "No PNG files found in '\(cli.srcDir.path)'.", failWhenEmpty: false) { file in
+        _ = try processBatch(
+            files: files, emptyMessage: "No PNG files found in '\(cli.srcDir.path)'.", failWhenEmpty: false
+        ) { file in
             self.logger.info("PNG variants: \(file.basename)")
             return try self.aipixFile(file)
         }
     }
 
     func stepPNGToNFT() throws {
-        let files = try files(in: cli.srcDir) { $0.pathExtension.lowercasedASCII == "png" && $0.stem.hasSuffix("_8K") && !isPortraitShortStill($0) }
-        _ = try processBatch(files: files, emptyMessage: "No *_8K.png files found in '\(cli.srcDir.path)'.", failWhenEmpty: false) { file in
+        let files = try files(in: cli.srcDir) {
+            $0.pathExtension.lowercasedASCII == "png" && $0.stem.hasSuffix("_8K") && !isPortraitShortStill($0)
+        }
+        _ = try processBatch(
+            files: files, emptyMessage: "No *_8K.png files found in '\(cli.srcDir.path)'.", failWhenEmpty: false
+        ) { file in
             self.logger.info("NFT assets: \(file.basename)")
             return try self.nftFrom8K(file)
         }
     }
 
     func stepPNGTo3K() throws {
-        try runImageBatch(spec: ImageBatchSpec(stemSuffix: "_8K", logPrefix: "8K -> 3K PNG") { file in
-            try self.squarePNGFrom8K(file, size: self.config.image3KSize, label: "3K")
-        })
+        try runImageBatch(
+            spec: ImageBatchSpec(stemSuffix: "_8K", logPrefix: "8K -> 3K PNG") { file in
+                try self.squarePNGFrom8K(file, size: self.config.image3KSize, label: "3K")
+            })
     }
 
     func stepPNGTo2K() throws {
-        try runImageBatch(spec: ImageBatchSpec(stemSuffix: "_8K", logPrefix: "8K -> 2K PNG") { file in
-            try self.squarePNGFrom8K(file, size: self.config.image2KSize, label: "2K")
-        })
+        try runImageBatch(
+            spec: ImageBatchSpec(stemSuffix: "_8K", logPrefix: "8K -> 2K PNG") { file in
+                try self.squarePNGFrom8K(file, size: self.config.image2KSize, label: "2K")
+            })
     }
 
     func stepPNGTo3K1MB() throws {
-        try runImageBatch(spec: ImageBatchSpec(stemSuffix: "_3K", logPrefix: "3K PNG -> 1MB JPG") { file in
-            try self.jpegExtentFromPNG(file, requiredWidth: self.config.image3KSize, requiredHeight: self.config.image3KSize, suffix: "1MB", targetBytes: self.config.image3KJPG1MBTargetBytes)
-        })
+        try runImageBatch(
+            spec: ImageBatchSpec(stemSuffix: "_3K", logPrefix: "3K PNG -> 1MB JPG") { file in
+                try self.jpegExtentFromPNG(
+                    file, requiredWidth: self.config.image3KSize, requiredHeight: self.config.image3KSize,
+                    suffix: "1MB", targetBytes: self.config.image3KJPG1MBTargetBytes)
+            })
     }
 
     func stepPNGTo3K5MB() throws {
-        try runImageBatch(spec: ImageBatchSpec(stemSuffix: "_3K", logPrefix: "3K PNG -> 5MB JPG") { file in
-            try self.jpegExtentFromPNG(file, requiredWidth: self.config.image3KSize, requiredHeight: self.config.image3KSize, suffix: "5MB", targetBytes: self.config.image3KJPG5MBTargetBytes)
-        })
+        try runImageBatch(
+            spec: ImageBatchSpec(stemSuffix: "_3K", logPrefix: "3K PNG -> 5MB JPG") { file in
+                try self.jpegExtentFromPNG(
+                    file, requiredWidth: self.config.image3KSize, requiredHeight: self.config.image3KSize,
+                    suffix: "5MB", targetBytes: self.config.image3KJPG5MBTargetBytes)
+            })
     }
 
     func stepPNGToJPG1MB() throws {
-        try runImageBatch(spec: ImageBatchSpec(stemSuffix: "_8K", logPrefix: "8K PNG -> 1MB JPG") { file in
-            try self.jpegExtentFromPNG(file, requiredWidth: self.config.image8KWidth, requiredHeight: self.config.image8KHeight, suffix: "1MB", targetBytes: self.config.image8KJPG1MBTargetBytes)
-        })
+        try runImageBatch(
+            spec: ImageBatchSpec(stemSuffix: "_8K", logPrefix: "8K PNG -> 1MB JPG") { file in
+                try self.jpegExtentFromPNG(
+                    file, requiredWidth: self.config.image8KWidth, requiredHeight: self.config.image8KHeight,
+                    suffix: "1MB", targetBytes: self.config.image8KJPG1MBTargetBytes)
+            })
     }
 
     func stepPNGToJPG2MB() throws {
-        try runImageBatch(spec: ImageBatchSpec(stemSuffix: "_8K", logPrefix: "8K PNG -> 2MB JPG") { file in
-            try self.jpegExtentFromPNG(file, requiredWidth: self.config.image8KWidth, requiredHeight: self.config.image8KHeight, suffix: "2MB", targetBytes: self.config.image8KJPG2MBTargetBytes)
-        })
+        try runImageBatch(
+            spec: ImageBatchSpec(stemSuffix: "_8K", logPrefix: "8K PNG -> 2MB JPG") { file in
+                try self.jpegExtentFromPNG(
+                    file, requiredWidth: self.config.image8KWidth, requiredHeight: self.config.image8KHeight,
+                    suffix: "2MB", targetBytes: self.config.image8KJPG2MBTargetBytes)
+            })
     }
 
     func stepPNGToJPG20MB() throws {
-        try runImageBatch(spec: ImageBatchSpec(stemSuffix: "_8K", logPrefix: "8K PNG -> 20MB JPG") { file in
-            try self.jpegExtentFromPNG(file, requiredWidth: self.config.image8KWidth, requiredHeight: self.config.image8KHeight, suffix: "20MB", targetBytes: self.config.image8KJPG20MBTargetBytes)
-        })
+        try runImageBatch(
+            spec: ImageBatchSpec(stemSuffix: "_8K", logPrefix: "8K PNG -> 20MB JPG") { file in
+                try self.jpegExtentFromPNG(
+                    file, requiredWidth: self.config.image8KWidth, requiredHeight: self.config.image8KHeight,
+                    suffix: "20MB", targetBytes: self.config.image8KJPG20MBTargetBytes)
+            })
     }
 
     func stepFLACToWAV() throws {
         let files = try files(in: cli.srcDir, matchingExtensions: ["flac"])
-        _ = try processBatch(files: files, emptyMessage: "No .flac files found in '\(cli.srcDir.path)'.", failWhenEmpty: true) { file in
+        _ = try processBatch(
+            files: files, emptyMessage: "No .flac files found in '\(cli.srcDir.path)'.", failWhenEmpty: true
+        ) { file in
             self.logger.info("FLAC -> WAV: \(file.basename)")
             return try self.convertAudioToWAV(file)
         }
@@ -881,7 +940,9 @@ extension ConverterTool {
 
     func stepMP3ToWAV() throws {
         let files = try files(in: cli.srcDir, matchingExtensions: ["mp3"])
-        _ = try processBatch(files: files, emptyMessage: "No .mp3 files found in '\(cli.srcDir.path)'.", failWhenEmpty: false) { file in
+        _ = try processBatch(
+            files: files, emptyMessage: "No .mp3 files found in '\(cli.srcDir.path)'.", failWhenEmpty: false
+        ) { file in
             self.logger.info("MP3 -> WAV: \(file.basename)")
             return try self.convertAudioToWAV(file)
         }
@@ -889,9 +950,12 @@ extension ConverterTool {
 
     func stepNFTToShort() throws {
         let images = try files(in: cli.srcDir, matchingExtensions: ["png", "jpg", "jpeg"])
-        let existing8K = try files(in: cli.srcDir) { $0.pathExtension.lowercasedASCII == "png" && $0.stem.hasSuffix("_8K") && !isPortraitShortStill($0) }
+        let existing8K = try files(in: cli.srcDir) {
+            $0.pathExtension.lowercasedASCII == "png" && $0.stem.hasSuffix("_8K") && !isPortraitShortStill($0)
+        }
         if existing8K.count + images.count == 0 {
-            throw AppError("Expected exactly one source image (.png/.jpg/.jpeg) or one *_8K.png in '\(cli.srcDir.path)'.")
+            throw AppError(
+                "Expected exactly one source image (.png/.jpg/.jpeg) or one *_8K.png in '\(cli.srcDir.path)'.")
         }
 
         let image = try resolveShortRenderImage()
@@ -903,7 +967,9 @@ extension ConverterTool {
             throw AppError("Unable to read dimensions: \(image.path)")
         }
         guard imageDimensions.0 > 0 && imageDimensions.1 > 0 else {
-            throw AppError("Short image dimensions must be positive. Got '\(imageDimensions.0)x\(imageDimensions.1)' for '\(image.path)'.")
+            throw AppError(
+                "Short image dimensions must be positive. Got '\(imageDimensions.0)x\(imageDimensions.1)' for '\(image.path)'."
+            )
         }
         try renderPortraitShortMP4Variants(
             imageFile: image,
@@ -1017,7 +1083,9 @@ extension ConverterTool {
 
     func stepM4AToWAV() throws {
         let files = try files(in: cli.srcDir, matchingExtensions: ["m4a"])
-        _ = try processBatch(files: files, emptyMessage: "No .m4a files found in '\(cli.srcDir.path)'.", failWhenEmpty: true) { file in
+        _ = try processBatch(
+            files: files, emptyMessage: "No .m4a files found in '\(cli.srcDir.path)'.", failWhenEmpty: true
+        ) { file in
             self.logger.info("M4A -> WAV: \(file.basename)")
             return try self.convertAudioToWAV(file)
         }
@@ -1025,7 +1093,9 @@ extension ConverterTool {
 
     func stepWAVToM4A() throws {
         let files = try files(in: cli.srcDir, matchingExtensions: ["wav"])
-        _ = try processBatch(files: files, emptyMessage: "No .wav files found in '\(cli.srcDir.path)'.", failWhenEmpty: true) { file in
+        _ = try processBatch(
+            files: files, emptyMessage: "No .wav files found in '\(cli.srcDir.path)'.", failWhenEmpty: true
+        ) { file in
             self.logger.info("WAV -> M4A: \(file.basename)")
             return try self.convertAudioToM4A(file)
         }
@@ -1033,7 +1103,9 @@ extension ConverterTool {
 
     func stepFLACToM4A() throws {
         let files = try files(in: cli.srcDir, matchingExtensions: ["flac"])
-        _ = try processBatch(files: files, emptyMessage: "No .flac files found in '\(cli.srcDir.path)'.", failWhenEmpty: true) { file in
+        _ = try processBatch(
+            files: files, emptyMessage: "No .flac files found in '\(cli.srcDir.path)'.", failWhenEmpty: true
+        ) { file in
             self.logger.info("FLAC -> M4A: \(file.basename)")
             return try self.convertAudioToM4A(file)
         }
@@ -1041,7 +1113,9 @@ extension ConverterTool {
 
     func stepMP3ToM4A() throws {
         let files = try files(in: cli.srcDir, matchingExtensions: ["mp3"])
-        _ = try processBatch(files: files, emptyMessage: "No .mp3 files found in '\(cli.srcDir.path)'.", failWhenEmpty: true) { file in
+        _ = try processBatch(
+            files: files, emptyMessage: "No .mp3 files found in '\(cli.srcDir.path)'.", failWhenEmpty: true
+        ) { file in
             self.logger.info("MP3 -> M4A: \(file.basename)")
             return try self.convertAudioToM4A(file)
         }
@@ -1049,7 +1123,9 @@ extension ConverterTool {
 
     func stepM4AToMP3() throws {
         let files = try files(in: cli.srcDir, matchingExtensions: ["m4a"])
-        _ = try processBatch(files: files, emptyMessage: "No .m4a files found in '\(cli.srcDir.path)'.", failWhenEmpty: true) { file in
+        _ = try processBatch(
+            files: files, emptyMessage: "No .m4a files found in '\(cli.srcDir.path)'.", failWhenEmpty: true
+        ) { file in
             self.logger.info("M4A -> MP3: \(file.basename)")
             return try self.convertAudioToMP3(file)
         }
@@ -1057,7 +1133,9 @@ extension ConverterTool {
 
     func stepWAVToMP3() throws {
         let files = try files(in: cli.srcDir, matchingExtensions: ["wav"])
-        _ = try processBatch(files: files, emptyMessage: "No .wav files found in '\(cli.srcDir.path)'.", failWhenEmpty: true) { file in
+        _ = try processBatch(
+            files: files, emptyMessage: "No .wav files found in '\(cli.srcDir.path)'.", failWhenEmpty: true
+        ) { file in
             self.logger.info("WAV -> MP3: \(file.basename)")
             return try self.convertAudioToMP3(file)
         }
@@ -1065,7 +1143,9 @@ extension ConverterTool {
 
     func stepFLACToMP3() throws {
         let files = try files(in: cli.srcDir, matchingExtensions: ["flac"])
-        _ = try processBatch(files: files, emptyMessage: "No .flac files found in '\(cli.srcDir.path)'.", failWhenEmpty: true) { file in
+        _ = try processBatch(
+            files: files, emptyMessage: "No .flac files found in '\(cli.srcDir.path)'.", failWhenEmpty: true
+        ) { file in
             self.logger.info("FLAC -> MP3: \(file.basename)")
             return try self.convertAudioToMP3(file)
         }
@@ -1073,7 +1153,9 @@ extension ConverterTool {
 
     func stepWAVToFLAC() throws {
         let files = try files(in: cli.srcDir, matchingExtensions: ["wav"])
-        _ = try processBatch(files: files, emptyMessage: "No .wav files found in '\(cli.srcDir.path)'.", failWhenEmpty: true) { file in
+        _ = try processBatch(
+            files: files, emptyMessage: "No .wav files found in '\(cli.srcDir.path)'.", failWhenEmpty: true
+        ) { file in
             self.logger.info("WAV -> FLAC: \(file.basename)")
             return try self.convertAudioToFLAC(file)
         }
@@ -1081,7 +1163,9 @@ extension ConverterTool {
 
     func stepMP3ToFLAC() throws {
         let files = try files(in: cli.srcDir, matchingExtensions: ["mp3"])
-        _ = try processBatch(files: files, emptyMessage: "No .mp3 files found in '\(cli.srcDir.path)'.", failWhenEmpty: true) { file in
+        _ = try processBatch(
+            files: files, emptyMessage: "No .mp3 files found in '\(cli.srcDir.path)'.", failWhenEmpty: true
+        ) { file in
             self.logger.info("MP3 -> FLAC: \(file.basename)")
             return try self.convertAudioToFLAC(file)
         }
@@ -1089,7 +1173,9 @@ extension ConverterTool {
 
     func stepM4AToFLAC() throws {
         let files = try files(in: cli.srcDir, matchingExtensions: ["m4a"])
-        _ = try processBatch(files: files, emptyMessage: "No .m4a files found in '\(cli.srcDir.path)'.", failWhenEmpty: true) { file in
+        _ = try processBatch(
+            files: files, emptyMessage: "No .m4a files found in '\(cli.srcDir.path)'.", failWhenEmpty: true
+        ) { file in
             self.logger.info("M4A -> FLAC: \(file.basename)")
             return try self.convertAudioToFLAC(file)
         }
@@ -1097,7 +1183,9 @@ extension ConverterTool {
 
     func stepMP3Clean() throws {
         let mp3Files = try files(in: cli.srcDir, matchingExtensions: ["mp3"])
-        _ = try processBatch(files: mp3Files, emptyMessage: "No .mp3 files found in '\(cli.srcDir.path)'.", failWhenEmpty: false) { file in
+        _ = try processBatch(
+            files: mp3Files, emptyMessage: "No .mp3 files found in '\(cli.srcDir.path)'.", failWhenEmpty: false
+        ) { file in
             self.logger.info("Clean MP3 metadata: \(file.basename)")
             try self.cleanMP3(file)
         }
@@ -1108,11 +1196,14 @@ extension ConverterTool {
         let files = try audioBassCandidates()
         _ = try processBatch(
             files: files,
-            emptyMessage: "No supported audio media files (.flac, .wav, .mp3, .m4a, .mp4) found in '\(cli.srcDir.path)'.",
+            emptyMessage:
+                "No supported audio media files (.flac, .wav, .mp3, .m4a, .mp4) found in '\(cli.srcDir.path)'.",
             failWhenEmpty: true
         ) { file in
             let mode = spec.gainDB < 0 ? "reduce" : "boost"
-            self.logger.info("Bass \(mode) \(file.basename): frequency=\(ffmpegNumber(spec.frequencyHz))Hz gain=\(ffmpegNumber(spec.gainDB))dB")
+            self.logger.info(
+                "Bass \(mode) \(file.basename): frequency=\(ffmpegNumber(spec.frequencyHz))Hz gain=\(ffmpegNumber(spec.gainDB))dB"
+            )
             return try self.bassBoostMedia(file, spec: spec)
         }
     }
@@ -1127,11 +1218,15 @@ extension ConverterTool {
         var printedFinalReport = false
         let finalLines = try loudScanReportLines { progress in
             if progress.isMeasuring {
-                self.logger.info("Loudscan \(progress.processedFiles + 1)/\(progress.totalFiles) measuring: \(progress.currentFile.basename)")
+                self.logger.info(
+                    "Loudscan \(progress.processedFiles + 1)/\(progress.totalFiles) measuring: \(progress.currentFile.basename)"
+                )
                 return
             }
 
-            self.logger.info("Loudscan \(progress.processedFiles)/\(progress.totalFiles) files processed: \(progress.currentFile.basename)")
+            self.logger.info(
+                "Loudscan \(progress.processedFiles)/\(progress.totalFiles) files processed: \(progress.currentFile.basename)"
+            )
             self.emitLoudScanReport(progress.reportLines)
             printedFinalReport = progress.processedFiles == progress.totalFiles
         }
@@ -1144,7 +1239,8 @@ extension ConverterTool {
         let spec = try cli.loudnessSpec()
         let files = try audioLoudnessCandidates()
         guard !files.isEmpty else {
-            throw AppError("No supported audio media files (.flac, .wav, .mp3, .m4a, .mp4) found in '\(cli.srcDir.path)'.")
+            throw AppError(
+                "No supported audio media files (.flac, .wav, .mp3, .m4a, .mp4) found in '\(cli.srcDir.path)'.")
         }
 
         var processed = 0
@@ -1153,7 +1249,8 @@ extension ConverterTool {
             try ensureDirectory(cli.srcDir)
             try ensureWritableDirectory(cli.outDir)
             do {
-                logger.info("Loudness normalize \(file.basename): integrated target=\(ffmpegNumber(spec.targetLUFS)) LUFS")
+                logger.info(
+                    "Loudness normalize \(file.basename): integrated target=\(ffmpegNumber(spec.targetLUFS)) LUFS")
                 _ = try loudnessNormalizeMedia(file, spec: spec)
                 processed += 1
                 maybeSleep()
@@ -1168,7 +1265,9 @@ extension ConverterTool {
         }
 
         guard failures.isEmpty else {
-            throw AppError("Loudness normalize failed for \(failures.count)/\(files.count) file(s): \(failures.joined(separator: "; "))")
+            throw AppError(
+                "Loudness normalize failed for \(failures.count)/\(files.count) file(s): \(failures.joined(separator: "; "))"
+            )
         }
         logger.info("Loudness normalize complete: processed=\(processed) failed=0")
     }
@@ -1176,7 +1275,8 @@ extension ConverterTool {
     func stepMaster() throws {
         let files = try audioMasterCandidates()
         guard !files.isEmpty else {
-            throw AppError("No supported audio media files (.flac, .wav, .mp3, .m4a, .mp4) found in '\(cli.srcDir.path)'.")
+            throw AppError(
+                "No supported audio media files (.flac, .wav, .mp3, .m4a, .mp4) found in '\(cli.srcDir.path)'.")
         }
 
         var processed = 0
@@ -1200,14 +1300,17 @@ extension ConverterTool {
         }
 
         guard failures.isEmpty else {
-            throw AppError("Master failed for \(failures.count)/\(files.count) file(s): \(failures.joined(separator: "; "))")
+            throw AppError(
+                "Master failed for \(failures.count)/\(files.count) file(s): \(failures.joined(separator: "; "))")
         }
         logger.info("Master complete: processed=\(processed) failed=0")
     }
 
     func stepFadeWAV() throws {
         let files = try files(in: cli.srcDir, matchingExtensions: ["wav"])
-        _ = try processBatch(files: files, emptyMessage: "No .wav files found in '\(cli.srcDir.path)'.", failWhenEmpty: true) { file in
+        _ = try processBatch(
+            files: files, emptyMessage: "No .wav files found in '\(cli.srcDir.path)'.", failWhenEmpty: true
+        ) { file in
             self.logger.info("Fade WAV: \(file.basename)")
             return try self.fadeWAV(file)
         }
@@ -1234,7 +1337,9 @@ extension ConverterTool {
             emptyMessage: "No supported audio files (.flac, .wav, .mp3) found in '\(cli.srcDir.path)'.",
             failWhenEmpty: true
         ) { file in
-            self.logger.info("Fadecut \(file.basename): cut=\(self.actionTimeDisplay(spec.cutSeconds)) fade=\(self.actionTimeDisplay(spec.fadeDurationSeconds))")
+            self.logger.info(
+                "Fadecut \(file.basename): cut=\(self.actionTimeDisplay(spec.cutSeconds)) fade=\(self.actionTimeDisplay(spec.fadeDurationSeconds))"
+            )
             return try self.fadeCutAudio(file, spec: spec)
         }
     }
@@ -1247,7 +1352,9 @@ extension ConverterTool {
             emptyMessage: "No supported audio files (.flac, .wav, .mp3, .m4a) found in '\(cli.srcDir.path)'.",
             failWhenEmpty: true
         ) { file in
-            self.logger.info("Fadeout \(file.basename): start=\(self.actionTimeDisplay(spec.fadeStartSeconds)) duration=\(self.actionTimeDisplay(spec.fadeDurationSeconds))")
+            self.logger.info(
+                "Fadeout \(file.basename): start=\(self.actionTimeDisplay(spec.fadeStartSeconds)) duration=\(self.actionTimeDisplay(spec.fadeDurationSeconds))"
+            )
             return try self.fadeOutAudio(file, spec: spec)
         }
     }
@@ -1260,7 +1367,9 @@ extension ConverterTool {
             emptyMessage: "No supported media files (.wav, .flac, .mp4) found in '\(cli.srcDir.path)'.",
             failWhenEmpty: true
         ) { file in
-            self.logger.info("Add silence \(file.basename): before=\(self.actionTimeDisplay(spec.seconds)) after=\(self.actionTimeDisplay(spec.seconds))")
+            self.logger.info(
+                "Add silence \(file.basename): before=\(self.actionTimeDisplay(spec.seconds)) after=\(self.actionTimeDisplay(spec.seconds))"
+            )
             return try self.addSilenceToMedia(file, spec: spec)
         }
     }
@@ -1273,7 +1382,8 @@ extension ConverterTool {
             emptyMessage: "No supported media files (.flac, .wav, .mp3, .m4a, .mp4) found in '\(cli.srcDir.path)'.",
             failWhenEmpty: true
         ) { file in
-            let timing = "before=\(self.actionTimeDisplay(spec.seconds)) "
+            let timing =
+                "before=\(self.actionTimeDisplay(spec.seconds)) "
                 + "silence=\(self.actionTimeDisplay(NoiseSpec.transitionSilenceSeconds)) "
                 + "after=\(self.actionTimeDisplay(spec.seconds))"
             self.logger.info("Add noise \(file.basename): \(timing) level=-12 LUFS")
@@ -1295,7 +1405,8 @@ extension ConverterTool {
 
     func stepMP3ToAlbum() throws {
         logger.info("Build MP3 album")
-        _ = try buildAlbumFromAlbumFile(extension: "mp3", defaultOutputName: cli.outputFile ?? "album_from_mp3.rf64.wav")
+        _ = try buildAlbumFromAlbumFile(
+            extension: "mp3", defaultOutputName: cli.outputFile ?? "album_from_mp3.rf64.wav")
     }
 
     func stepFLACToAlbum() throws {
@@ -1305,7 +1416,9 @@ extension ConverterTool {
 
     private func requireHashRenameSucceeded(_ outcome: ConverterTool.HashRenameOutcome) throws {
         guard outcome.failures.isEmpty else {
-            throw AppError("Hash rename failed for \(outcome.failures.count)/\(outcome.considered) file(s): \(outcome.failures.joined(separator: "; "))")
+            throw AppError(
+                "Hash rename failed for \(outcome.failures.count)/\(outcome.considered) file(s): \(outcome.failures.joined(separator: "; "))"
+            )
         }
     }
 
@@ -1347,7 +1460,9 @@ extension ConverterTool {
     }
 
     func stepM4AToMP4() throws {
-        let images = try files(in: cli.srcDir) { $0.pathExtension.lowercasedASCII == "png" && $0.stem.hasSuffix("_8K") && !isPortraitShortStill($0) }
+        let images = try files(in: cli.srcDir) {
+            $0.pathExtension.lowercasedASCII == "png" && $0.stem.hasSuffix("_8K") && !isPortraitShortStill($0)
+        }
         guard images.count == 1, let image = images.first else {
             throw AppError("Expected exactly one *_8K.png in '\(cli.srcDir.path)'.")
         }
@@ -1366,7 +1481,9 @@ extension ConverterTool {
 
     func stepMP4ToShort() throws {
         let files = try files(in: cli.srcDir, matchingExtensions: ["mp4"]).filter { !isShortMP4Deliverable($0) }
-        _ = try processBatch(files: files, emptyMessage: "No .mp4 files found in '\(cli.srcDir.path)'.", failWhenEmpty: false) { file in
+        _ = try processBatch(
+            files: files, emptyMessage: "No .mp4 files found in '\(cli.srcDir.path)'.", failWhenEmpty: false
+        ) { file in
             self.logger.info("MP4 -> Short: \(file.basename)")
             return try self.shortenMP4(file, audioQCPolicy: self.config.shortFormAudioQCPolicy)
         }
