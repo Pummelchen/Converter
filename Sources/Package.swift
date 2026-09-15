@@ -1,11 +1,13 @@
-// swift-tools-version: 6.3.3
-// The *enforced* toolchain is Swift 6.4 / Xcode 27: .github/workflows/ci.yml asserts
-// `Swift version 6.4` on the `xcode-27` image and builds with -warnings-as-errors. The manifest
-// floor stays at 6.3.3 because GitHub's CodeQL default setup autobuilds on a runner that ships
-// Swift 6.3.3, and raising the floor to 6.4 fails that check with
-//   "package 'sources' is using Swift tools version 6.4.0 but the installed version is 6.3.3"
-// (measured: CodeQL job 104457722762 on PR #24). Raise this line once CodeQL runs on a Swift 6.4
-// image; the owner can also switch CodeQL to advanced setup with an explicit macOS 27 runner.
+// swift-tools-version: 6.4
+// The audited standard, and what CI enforces: the `xcode-27` runner image asserts `Swift version 6.4`
+// and builds with -warnings-as-errors.
+//
+// GitHub's CodeQL default setup could not follow: its autobuild runner ships Swift 6.3.3, so with this
+// floor it failed with "package 'sources' is using Swift tools version 6.4.0 but the installed
+// version is 6.3.3" (PR #24, job 104457722762). Swift is therefore switched off in the repository's
+// CodeQL default setup until that image moves to Swift 6.4 — re-check by 2026-10-15, tracked as
+// #0160 in AUDIT/ledger.md. CodeQL still runs for actions, c-cpp and python, and the repository's own
+// static analysis (semgrep, gitleaks, cppcheck, clang-tidy, swiftlint, ruff, mypy) is unaffected.
 import PackageDescription
 
 // Upcoming-feature flags adopted ahead of the next language mode. All four already build

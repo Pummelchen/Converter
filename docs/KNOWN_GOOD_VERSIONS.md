@@ -1,6 +1,6 @@
 # Known-Good Toolchain and Dependency Versions
 
-Versions recorded from successful local builds and full test runs. These are reference points, not hard pins — the repository is built and tested with Swift 6.4 / Xcode 27, requires Swift language mode 6 and macOS 15+ (per `.macOS(.v15)` in `Sources/Package.swift`), and keeps a `swift-tools-version` floor of 6.3.3 so GitHub's CodeQL default-setup autobuild can still parse the manifest.
+Versions recorded from successful local builds and full test runs. These are reference points, not hard pins — the repository requires Swift tools 6.4+, Swift language mode 6, and macOS 15+ (per `.macOS(.v15)` in `Sources/Package.swift`).
 
 ## Recorded environment (2026-08-04)
 

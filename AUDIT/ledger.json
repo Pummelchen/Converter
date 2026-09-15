@@ -1733,10 +1733,10 @@
       "discovered_by": "L0/\u00a71",
       "session": "2026-09-14",
       "evidence_before": "AUDIT/findings-2026-09-14.md #0102 (verified against the working tree at 40bfadd; see the entry for the quoted lines).",
-      "fix_summary": "Image self-overwrite guard at every image publish site (#0113); isPortraitShortStill sees through the _1MB/_2MB companion labels (#0118); the full run's JPG->PNG working copy is a run-scoped temp (#0147); swift-tools-version 6.4 (#0102).",
-      "evidence_after": "AUDIT/evidence-2026-09-14/0113-before.log, 0118-before.log, 0113-0118-0147-after.log, 0101-0118-fullsuite.txt (266 tests, 0 failures, 0 compiler warnings).",
+      "fix_summary": "Sources/Package.swift is swift-tools-version 6.4, matching the audited standard; CI moved to the xcode-27 image and asserts `Swift version 6.4` with -warnings-as-errors, and the four documents that quoted 6.3.3 state the 6.4 requirement.",
+      "evidence_after": "AUDIT/evidence-2026-09-14/0160-swift64-manifest-fullsuite.txt (full suite green under a 6.4 manifest); CI on main runs on xcode-27 and asserts the version. GitHub's CodeQL default-setup autobuild could not parse the 6.4 manifest because its runner ships Swift 6.3.3 (PR #24 job 104457722762), so per the owner's decision the Swift language was switched off in CodeQL default setup on 2026-09-15 and re-enabling it is tracked as #0160.",
       "commit": "b94bbf3",
-      "notes": ""
+      "notes": "CodeQL still covers actions, c-cpp and python; the repository's own scanners (semgrep, gitleaks, cppcheck, clang-tidy, swiftlint, ruff, mypy) are unaffected."
     },
     {
       "id": "#0103",
@@ -1804,8 +1804,8 @@
       "fix_summary": "",
       "evidence_after": "",
       "commit": "",
-      "notes": "",
-      "blocked_reason": "Adopting swift format regresses the swiftlint ratchet: after the pass, scripts/lint-budget.sh reports 327 violations / 21 error-level against the recorded 469/19, because swift-format adds trailing commas (0->145) and moves opening braces to their own line (0->31) while pushing four functions past function_body_length, taking error-level violations from 19 to 21. Measured in AUDIT/evidence-2026-09-14/0106-format-vs-lint.txt; the pass was reverted. Owner options: (1) declare swift-format authoritative and retire swiftlint's trailing_comma/opening_brace rules plus re-baseline function_body_length; (2) keep swiftlint authoritative and tune .swift-format until lint-budget.sh is unchanged, which needs a formatter rule that leaves brace and comma style alone; (3) keep swifttlint only and delete .swift-format. The audit did not choose, because it changes the project's declared style. CI runs the formatter check as advisory until this is decided."
+      "notes": "Measurement on request: with `multiElementCollectionTrailingCommas: false` plus the three opening_brace ignore_* options, `swift format --in-place` then `swiftlint` gives total 154 / error-level 21, opening_brace 2, function_body_length 26, line_length 74. swift-format has no option for brace placement (`swift format dump-configuration` has none), so that half of the fix must live in swiftlint.",
+      "blocked_reason": "Adopting swift format regresses the swiftlint ratchet under the default collision (trailing_comma 0->145, opening_brace 0->31, function_body_length 21->25, error-level 19->21), so the pass was reverted and the tree is not formatter-clean. Measured afterwards: the collision is fixable on both sides \u2014 `\"multiElementCollectionTrailingCommas\": false` in .swift-format removes all 145 trailing-comma conflicts, and swiftlint's documented opening_brace options `ignore_multiline_statement_conditions`, `ignore_multiline_type_headers` and `ignore_multiline_function_signatures` remove 31 of the 33 brace conflicts. Together the tree lands at 154 violations (from 461) with line_length 397->74, leaving only a function_body_length re-baseline (21->26, because wrapping adds lines) and 2 brace sites. Options: (A) adopt the formatter with that tuned configuration, accepting the three ignore_* options and the function_body_length re-baseline; (B) keep swiftlint only and delete .swift-format; (C) keep the formatter advisory. The owner has not chosen yet; an audit should not decide the project's declared style unilaterally."
     },
     {
       "id": "#0107",
@@ -2707,6 +2707,24 @@
       "evidence_after": "AUDIT/evidence-2026-09-14/phase-e-node2-final.log (clone 0cd0e32, clean tree): debug build warnings-as-errors 0, strict release build 0, committed-binary checksum OK, swiftlint 461/19 no new violations, ruff+mypy --strict clean, gitleaks full history no leaks, semgrep 0, cppcheck exhaustive 0, clang-tidy 0 first-party, placeholder markers 0, try!/as!/fatalError 0, full suite 278 tests 0 failures, periphery 23 findings / 0 unused, -help/-matrix/-doctor ok. The first run is kept as phase-e-node2.log.",
       "commit": "0cd0e32",
       "notes": "Not started: the session ran out of budget after Phase C/D. The audit is therefore NOT complete and no PR to main may be opened until this is DONE."
+    },
+    {
+      "id": "#0160",
+      "severity": "S3",
+      "module": "repo/CI",
+      "location": ".github/workflows/ci.yml + repository CodeQL default setup",
+      "title": "Re-enable CodeQL for Swift once its runner image ships Swift 6.4",
+      "category": "tooling",
+      "status": "BLOCKED",
+      "host": "repo settings",
+      "discovered_by": "owner decision 2026-09-15",
+      "session": "2026-09-14",
+      "evidence_before": "GitHub's CodeQL default-setup autobuild runs on an image whose Swift is 6.3.3, so it cannot parse a swift-tools-version 6.4 manifest: `error: 'sources': package 'sources' is using Swift tools version 6.4.0 but the installed version is 6.3.3` (PR #24, CodeQL job 104457722762). The code is required to stay Swift 6.4, so the incompatible check was switched off rather than the standard being lowered.",
+      "fix_summary": "On 2026-09-15 the Swift language was removed from the repository's CodeQL default setup (`PATCH /repos/Pummelchen/Converter/code-scanning/default-setup`, languages now actions, c-cpp, python). CodeQL keeps running for the languages it supports, and semgrep, gitleaks, cppcheck, clang-tidy, swiftlint, ruff and mypy still gate the repository.",
+      "evidence_after": "`gh api repos/Pummelchen/Converter/code-scanning/default-setup` -> languages [actions, c-cpp, python]. Re-check by 2026-10-15.",
+      "commit": "",
+      "notes": "Re-check in a few weeks: if the CodeQL macOS image ships Swift 6.4, add `swift` back to the default setup and delete this task. The alternative at any time is CodeQL advanced setup with an explicit macOS 27 (`xcode-27`) runner, which keeps Swift coverage without waiting for the default image.",
+      "blocked_reason": "Blocked on GitHub: the CodeQL default-setup Swift autobuild runner ships Swift 6.3.3 and cannot parse a swift-tools-version 6.4 manifest. Options: (1) re-check the default image in a few weeks and re-add `swift`; (2) switch CodeQL to advanced setup with a macOS 27 / xcode-27 runner now; (3) leave Swift out of CodeQL and rely on the repository's own Swift analysis (semgrep, swiftlint, warnings-as-errors builds)."
     }
   ],
   "handover": "AUDIT/HANDOVER.md",
