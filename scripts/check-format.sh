@@ -24,4 +24,5 @@ if [ -n "$report" ]; then
   echo "::error::swift format found formatting differences; run scripts/check-format.sh --write" >&2
   exit 1
 fi
-echo "swift format clean: $(swift format --version)"
+# `swift format --version` warns (and is deprecated) without input paths, so report the toolchain instead.
+echo "swift format clean: $(swift --version 2>/dev/null | head -1)"
