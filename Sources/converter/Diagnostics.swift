@@ -65,16 +65,18 @@ extension ConverterTool {
         logger.info("Doctor encoder ok: \(alacEncoderName)")
 
         let freeBytes = try availableBytes(at: cli.outDir)
-        logger.info("Doctor free space: \(freeBytes) bytes")
+        logger.info("Doctor free space: \(freeBytes.map { "\($0) bytes" } ?? "not reported by this filesystem")")
 
-        let imageCandidates = try? files(in: cli.srcDir, matchingExtensions: ["png", "jpg", "jpeg"])
-        if let image = imageCandidates?.first, imageCandidates?.count == 1 {
+        // A failed listing used to be swallowed, so doctor printed its success line without having
+        // inspected any source material at all (#0127).
+        let imageCandidates = try files(in: cli.srcDir, matchingExtensions: ["png", "jpg", "jpeg"])
+        if let image = imageCandidates.first, imageCandidates.count == 1 {
             try preflightImageInput(image)
             logger.info("Doctor source image ok: \(image.basename)")
         }
 
-        let audioCandidates = try? files(in: cli.srcDir, matchingExtensions: ["flac", "wav", "mp3", "m4a"])
-        if let audio = audioCandidates?.first, audioCandidates?.count == 1 {
+        let audioCandidates = try files(in: cli.srcDir, matchingExtensions: ["flac", "wav", "mp3", "m4a"])
+        if let audio = audioCandidates.first, audioCandidates.count == 1 {
             switch audio.pathExtension.lowercasedASCII {
             case "flac":
                 try preflightFLACInput(audio)

@@ -1,7 +1,8 @@
 import Foundation
 
 extension ConverterTool {
-    private var shortMP4AbsoluteMaximumSeconds: Double { 58.0 }
+    // The ceiling itself lives on ProjectConfig; configuration validation uses the same constant.
+    private var shortMP4AbsoluteMaximumSeconds: Double { ProjectConfig.shortMP4AbsoluteMaximumSeconds }
 
     /// Maps an encoder name to the ffprobe codec name used to verify its output.
     func verifyCodec(forEncoder encoder: String) -> String? {
@@ -82,6 +83,9 @@ extension ConverterTool {
     // fail for an unrelated reason such as an encoder that cannot handle the dimensions at all.
     func withEncoderLadder<T>(_ encoders: [String], label: String, attempt: (String) throws -> T) throws -> T {
         var failures: [String] = []
+        // A failure that no other encoder can fix stops the ladder; the marker has to survive into the
+        // thrown error, or the caller reports "all encoders failed" and blames the wrong layer (#0134).
+        var encoderIndependentFailure: (any Error)?
         for encoder in encoders {
             do {
                 return try attempt(encoder)
@@ -90,12 +94,17 @@ extension ConverterTool {
                 logger.warn("\(label) encoder failed (\(encoder)): \(error.localizedDescription)")
                 if (error as? AppError)?.isEncoderIndependent == true {
                     logger.warn("\(label): skipping remaining encoders — this failure is not encoder-related.")
+                    encoderIndependentFailure = error
                     break
                 }
             }
         }
         let detail = failures.isEmpty ? "unknown error" : failures.joined(separator: " | ")
-        throw AppError("All \(label) encoders failed. \(detail)")
+        // The summary names every rung (callers and tests depend on that); the marker travels with it
+        // so a caller does not retry work no encoder can fix (#0134).
+        throw AppError(
+            "All \(label) encoders failed. \(detail)",
+            isEncoderIndependent: encoderIndependentFailure != nil)
     }
 
     // What a finished render must satisfy. Shared by the reuse check and the encoder
@@ -355,7 +364,7 @@ extension ConverterTool {
             durationCheck: { try self.verifyDurationMatch(source: audioFile, output: $0) }
         )
 
-        if canReuseOutput(output, verifier: { try self.verifyRenderedVideo(output, spec: spec) }) {
+        if canReuseOutput(output, source: audioFile, verifier: { try self.verifyRenderedVideo(output, spec: spec) }) {
             logger.info("Skip existing MP4: \(output.basename)")
             return output
         }
@@ -423,7 +432,7 @@ extension ConverterTool {
             durationCheck: { try self.verifyShortMP4Duration($0, source: input) }
         )
 
-        if canReuseOutput(output, verifier: { try self.verifyRenderedVideo(output, spec: spec) }) {
+        if canReuseOutput(output, source: input, verifier: { try self.verifyRenderedVideo(output, spec: spec) }) {
             logger.info("Skip existing short MP4: \(output.basename)")
             return output
         }
@@ -514,7 +523,7 @@ extension ConverterTool {
             }
         )
 
-        if canReuseOutput(output, verifier: { try self.verifyRenderedVideo(output, spec: spec) }) {
+        if canReuseOutput(output, source: audioFile, verifier: { try self.verifyRenderedVideo(output, spec: spec) }) {
             logger.info("Skip existing \(fillMode.label): \(output.basename)")
             return output
         }

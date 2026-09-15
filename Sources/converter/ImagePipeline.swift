@@ -43,15 +43,38 @@ extension ConverterTool {
         return args
     }
 
+    // The `-jpgtopng` action: here the PNG is the requested deliverable, so it is published under
+    // the source stem. Everything the full/short pipelines need is `convertJPGToPNGTemp` instead.
     func convertJPGToPNG(_ source: URL) throws -> URL {
         try preflightJPEGInput(source)
         guard let dimensions = try imageDimensions(source) else {
             throw AppError("Unable to read dimensions: \(source.path)")
         }
         let output = cli.outDir.appendingPathComponent(source.stem).appendingPathExtension("png")
-        if canReuseOutput(output, verifier: { try verifyImageOutput(output, width: dimensions.0, height: dimensions.1, format: "PNG") }) {
+        try requireDistinctOutput(output, from: source)
+        if canReuseOutput(output, source: source, verifier: { try verifyImageOutput(output, width: dimensions.0, height: dimensions.1, format: "PNG") }) {
             logger.info("Skip existing PNG: \(output.basename)")
             return output
+        }
+        let temp = try convertJPGToPNGTemp(source)
+        do {
+            try publishTemp(temp, to: output)
+            logger.info("Created PNG: \(output.basename)")
+            return output
+        } catch {
+            discardTempFile(temp)
+            throw error
+        }
+    }
+
+    // The JPG->PNG step produces a lossless working copy for the PNG pipeline, not a deliverable.
+    // It is written to a run-scoped temp so OUT_DIR does not collect an unrequested `<master>.png`
+    // that a later batch action would discover as a source (#0147). The run's temp cleanup removes
+    // it, including on the error path.
+    func convertJPGToPNGTemp(_ source: URL) throws -> URL {
+        try preflightJPEGInput(source)
+        guard let dimensions = try imageDimensions(source) else {
+            throw AppError("Unable to read dimensions: \(source.path)")
         }
         let temp = try makeTemp(in: cli.outDir, stem: source.stem, ext: ".png")
         do {
@@ -64,12 +87,9 @@ extension ConverterTool {
                 temp.path
             ])
             try verifyImageOutput(temp, width: dimensions.0, height: dimensions.1, format: "PNG")
-            try publishTemp(temp, to: output)
-            logger.info("Created PNG: \(output.basename)")
-            return output
+            return temp
         } catch {
-            try? fileManager.removeItem(at: temp)
-            state.unregister(tempFile: temp)
+            discardTempFile(temp)
             throw error
         }
     }
@@ -89,6 +109,7 @@ extension ConverterTool {
         }
 
         let output = cli.outDir.appendingPathComponent(source.stem).appendingPathExtension(normalizedExt)
+        try requireDistinctOutput(output, from: source)
         if canReuseOutput(output, verifier: {
             try verifyImageOutput(output, width: dimensions.0, height: dimensions.1, format: "JPEG")
         }) {
@@ -102,6 +123,12 @@ extension ConverterTool {
                 source.path,
                 "-auto-orient",
                 "-colorspace", config.imageOutputColorSpace,
+                // Alpha has no place in JPEG: without an explicit flatten the transparent areas take
+                // ImageMagick's implicit background while ffmpeg's yuv420p conversion uses the stored
+                // RGB, so the still and the video frame disagree (#0146).
+                "-background", "black",
+                "-alpha", "remove",
+                "-alpha", "off",
                 "-sampling-factor", config.imageJpegSamplingFactor,
                 "-quality", String(config.imagePNGToJPEGQuality),
                 "-strip",
@@ -110,6 +137,56 @@ extension ConverterTool {
             try verifyImageOutput(temp, width: dimensions.0, height: dimensions.1, format: "JPEG")
             try publishTemp(temp, to: output)
             logger.info("Created \(normalizedExt.uppercased()) image: \(output.basename)")
+            return output
+        } catch {
+            try? fileManager.removeItem(at: temp)
+            state.unregister(tempFile: temp)
+            throw error
+        }
+    }
+
+    // One delivery size of the AIPIX pair. Returns the published path, or the existing file when the
+    // reuse verifier accepts it.
+    private func aiPixTargetOutput(
+        source: URL, dimensions: (Int, Int), target: AIPixTarget, prefix: String
+    ) throws -> URL {
+        let label = target.label
+        let width = target.width
+        let height = target.height
+        let output = cli.outDir.appendingPathComponent("\(prefix)_\(label)").appendingPathExtension("png")
+        // A source already named `<prefix>_8K`/`_4K` would otherwise resolve to its own path here
+        // and be resized over itself (the audio converters have the same guard).
+        try requireDistinctOutput(output, from: source)
+        if canReuseOutput(output, source: source, verifier: { try verifyImageOutput(output, width: width, height: height, format: "PNG") }) {
+            logger.info("Skip existing \(label) PNG: \(output.basename)")
+            return output
+        }
+
+        let temp = try makeTemp(in: cli.outDir, stem: "\(prefix)_\(label)", ext: ".png")
+        do {
+            if dimensions.0 == width && dimensions.1 == height {
+                _ = try runner.run("magick", [
+                    source.path,
+                    "-auto-orient",
+                    "-colorspace", config.imageOutputColorSpace,
+                    "-define", "png:compression-level=\(config.imageAIPixPNGCompressionLevel)",
+                    "-strip",
+                    temp.path
+                ])
+            } else {
+                let finalArgs = aipixResizeArguments(
+                    source: source,
+                    resizeHeight: height,
+                    width: width,
+                    height: height,
+                    sharpness: config.imageAIPixSharpness,
+                    compressionLevel: config.imageAIPixPNGCompressionLevel
+                ) + [temp.path]
+                _ = try runner.run("magick", finalArgs)
+            }
+            try verifyImageOutput(temp, width: width, height: height, format: "PNG")
+            try publishTemp(temp, to: output)
+            logger.info("Created \(label) PNG: \(output.basename)")
             return output
         } catch {
             try? fileManager.removeItem(at: temp)
@@ -128,50 +205,16 @@ extension ConverterTool {
         }
 
         let prefix = deliveryPrefix ?? imagePrefix(from: source.stem)
-        let targets: [(label: String, width: Int, height: Int)] = [
-            ("8K", config.image8KWidth, config.image8KHeight),
-            ("4K", config.image4KWidth, config.image4KHeight)
+        let targets = [
+            AIPixTarget(label: "8K", width: config.image8KWidth, height: config.image8KHeight),
+            AIPixTarget(label: "4K", width: config.image4KWidth, height: config.image4KHeight)
         ]
 
         var outputs: [String: URL] = [:]
         for target in targets {
-            let output = cli.outDir.appendingPathComponent("\(prefix)_\(target.label)").appendingPathExtension("png")
-            outputs[target.label] = output
-            if canReuseOutput(output, verifier: { try verifyImageOutput(output, width: target.width, height: target.height, format: "PNG") }) {
-                logger.info("Skip existing \(target.label) PNG: \(output.basename)")
-                continue
-            }
-
-            let temp = try makeTemp(in: cli.outDir, stem: "\(prefix)_\(target.label)", ext: ".png")
-            do {
-                if dimensions.0 == target.width && dimensions.1 == target.height {
-                    _ = try runner.run("magick", [
-                        source.path,
-                        "-auto-orient",
-                        "-colorspace", config.imageOutputColorSpace,
-                        "-define", "png:compression-level=\(config.imageAIPixPNGCompressionLevel)",
-                        "-strip",
-                        temp.path
-                    ])
-                } else {
-                    let finalArgs = aipixResizeArguments(
-                        source: source,
-                        resizeHeight: target.height,
-                        width: target.width,
-                        height: target.height,
-                        sharpness: config.imageAIPixSharpness,
-                        compressionLevel: config.imageAIPixPNGCompressionLevel
-                    ) + [temp.path]
-                    _ = try runner.run("magick", finalArgs)
-                }
-                try verifyImageOutput(temp, width: target.width, height: target.height, format: "PNG")
-                try publishTemp(temp, to: output)
-                logger.info("Created \(target.label) PNG: \(output.basename)")
-            } catch {
-                try? fileManager.removeItem(at: temp)
-                state.unregister(tempFile: temp)
-                throw error
-            }
+            outputs[target.label] = try aiPixTargetOutput(
+                source: source, dimensions: dimensions, target: target, prefix: prefix
+            )
         }
 
         guard let eightK = outputs["8K"], let fourK = outputs["4K"] else {
@@ -185,7 +228,8 @@ extension ConverterTool {
         let outputName = deliveryPrefix.map { "\($0)_\(label)" }
             ?? replacingTrailingSuffix(in: source.stem, suffix: "_8K", replacement: "_\(label)")
         let output = cli.outDir.appendingPathComponent(outputName).appendingPathExtension("png")
-        if canReuseOutput(output, verifier: { try verifyImageOutput(output, width: size, height: size, format: "PNG") }) {
+        try requireDistinctOutput(output, from: source)
+        if canReuseOutput(output, source: source, verifier: { try verifyImageOutput(output, width: size, height: size, format: "PNG") }) {
             logger.info("Skip existing \(label) PNG: \(output.basename)")
             return output
         }
@@ -223,7 +267,8 @@ extension ConverterTool {
         let outputName = deliveryPrefix.map { "\($0)_4K" }
             ?? replacingTrailingSuffix(in: source.stem, suffix: "_8K", replacement: "_4K")
         let output = cli.outDir.appendingPathComponent(outputName).appendingPathExtension("png")
-        if canReuseOutput(output, verifier: { try verifyImageOutput(output, width: config.image4KWidth, height: config.image4KHeight, format: "PNG") }) {
+        try requireDistinctOutput(output, from: source)
+        if canReuseOutput(output, source: source, verifier: { try verifyImageOutput(output, width: config.image4KWidth, height: config.image4KHeight, format: "PNG") }) {
             logger.info("Skip existing 4K PNG: \(output.basename)")
             return output
         }
@@ -260,7 +305,8 @@ extension ConverterTool {
         }
 
         let output = cli.outDir.appendingPathComponent(outputStem.map { "\($0)_\(suffix)" } ?? "\(source.stem)_\(suffix)").appendingPathExtension("jpg")
-        if canReuseOutput(output, verifier: { try verifyImageOutput(output, width: requiredWidth, height: requiredHeight, format: "JPEG", maxBytes: targetBytes) }) {
+        try requireDistinctOutput(output, from: source)
+        if canReuseOutput(output, source: source, verifier: { try verifyImageOutput(output, width: requiredWidth, height: requiredHeight, format: "JPEG", maxBytes: targetBytes) }) {
             logger.info("Skip existing \(suffix) JPG: \(output.basename)")
             return output
         }
@@ -271,6 +317,10 @@ extension ConverterTool {
                 source.path,
                 "-auto-orient",
                 "-colorspace", config.imageOutputColorSpace,
+                // See convertPNGToJPEG: flatten explicitly so every JPEG agrees about transparency (#0146).
+                "-background", "black",
+                "-alpha", "remove",
+                "-alpha", "off",
                 "-sampling-factor", config.imageJpegSamplingFactor,
                 "-strip",
                 "-define", "jpeg:extent=\(targetBytes)",
@@ -337,7 +387,8 @@ extension ConverterTool {
         let stem = "\(prefix)_\(label)_8K"
 
         let png = cli.outDir.appendingPathComponent(stem).appendingPathExtension("png")
-        if canReuseOutput(png, verifier: { try verifyImageOutput(png, width: width, height: height, format: "PNG") }) {
+        try requireDistinctOutput(png, from: source)
+        if canReuseOutput(png, source: source, verifier: { try verifyImageOutput(png, width: width, height: height, format: "PNG") }) {
             logger.info("Skip existing portrait still: \(png.basename)")
         } else {
             let temp = try makeTemp(in: cli.outDir, stem: stem, ext: ".png")
@@ -373,10 +424,13 @@ extension ConverterTool {
         let nft8K = cli.outDir.appendingPathComponent("\(prefix)_NFT8K").appendingPathExtension("png")
         let nft3K = cli.outDir.appendingPathComponent("\(prefix)_NFT3K").appendingPathExtension("png")
         let nft2K = cli.outDir.appendingPathComponent("\(prefix)_NFT2K").appendingPathExtension("png")
+        for output in [nft8K, nft3K, nft2K] {
+            try requireDistinctOutput(output, from: source)
+        }
 
-        if canReuseOutput(nft8K, verifier: { try verifyImageOutput(nft8K, width: config.image8KWidth, height: config.image8KWidth, format: "PNG") }) &&
-            canReuseOutput(nft3K, verifier: { try verifyImageOutput(nft3K, width: config.image3KSize, height: config.image3KSize, format: "PNG") }) &&
-            canReuseOutput(nft2K, verifier: { try verifyImageOutput(nft2K, width: config.image2KSize, height: config.image2KSize, format: "PNG") }) {
+        if canReuseOutput(nft8K, source: source, verifier: { try verifyImageOutput(nft8K, width: config.image8KWidth, height: config.image8KWidth, format: "PNG") }) &&
+            canReuseOutput(nft3K, source: source, verifier: { try verifyImageOutput(nft3K, width: config.image3KSize, height: config.image3KSize, format: "PNG") }) &&
+            canReuseOutput(nft2K, source: source, verifier: { try verifyImageOutput(nft2K, width: config.image2KSize, height: config.image2KSize, format: "PNG") }) {
             logger.info("Skip existing NFT set: \(prefix)")
             return NFTOutputs(nft8K: nft8K, nft3K: nft3K, nft2K: nft2K)
         }
@@ -415,4 +469,12 @@ extension ConverterTool {
             throw error
         }
     }
+}
+
+// One delivery size of the AIPIX pair. A named type rather than a tuple: the target is passed
+// across helpers, and a three-element tuple trips swiftlint's large_tuple rule.
+private struct AIPixTarget {
+    let label: String
+    let width: Int
+    let height: Int
 }

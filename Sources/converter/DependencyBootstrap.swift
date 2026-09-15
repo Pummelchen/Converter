@@ -160,9 +160,11 @@ enum DependencyBootstrapper {
         }
 
         let timedOut = TimeoutFlag()
-        let watchdog = DispatchWorkItem { [weak process, timedOut] in
-            guard let process else { return }
-            ProcessRunner.terminateWithEscalation(process, flag: timedOut, qos: .utility)
+        // The pid is captured on this thread; the watchdog signals it and never touches Process while
+        // this thread is blocked in waitUntilExit (#0141).
+        let pid = process.processIdentifier
+        let watchdog = DispatchWorkItem { [timedOut] in
+            ProcessRunner.terminateWithEscalation(pid: pid, flag: timedOut)
         }
         DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + toolProbeTimeoutSeconds, execute: watchdog)
         process.waitUntilExit()

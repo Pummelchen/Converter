@@ -84,6 +84,13 @@ extension Action {
 struct CLIOptions {
     // Padding below this cannot be verified by the silence/noise content probes.
     static let minimumPaddingSeconds = 0.5
+    // --sleep-seconds is a deliberate pacing pause, not a way to park the process indefinitely.
+    static let maximumSleepSeconds: Double = 3600
+    // The dot overlay's placement loop grows one dictionary entry per placed dot, so an unbounded
+    // count or attempt budget is an out-of-memory path on the 8 GB target machine (#0129). 200k
+    // dots is far above any usable overlay on the 7680x4320 canvas.
+    static let maximumVisualSubsDots = 200_000
+    static let maximumVisualSubsAttempts = 1_000_000
 
     var action: Action = .help
     var debug = false
@@ -100,11 +107,16 @@ struct CLIOptions {
     var dotSize = 10
     var maxAttempts = 10_000
     var seed: UInt64?
+    // The options above (and --open) are consumed only by `-visualsubs`; the names are recorded
+    // here so every other action can reject them instead of silently ignoring them (#0155).
+    var usedVisualSubsOptions: Set<String> = []
     var sleepSeconds: Double = 0
     var sharpnessOverride: Double?
     var actionArgs: [String] = []
 
     var configFile: URL
+    // True when the path came from --config or CONFIG_FILE rather than the script-directory default.
+    var configFileWasExplicit = false
     var srcDir: URL
     var outDir: URL
 
@@ -125,6 +137,9 @@ struct CLIOptions {
             scriptName: scriptName
         )
         options.debug = [environment["DEBUG"]].compactMap { $0 }.contains { ["1", "true", "yes", "on"].contains($0.lowercasedASCII) }
+        // A config path named through CONFIG_FILE or --config is a request, not a convention: if it
+        // does not exist the run must say so instead of silently using built-in defaults (#0120).
+        options.configFileWasExplicit = environment["CONFIG_FILE"] != nil
 
         var index = 0
         func requireValue(_ flag: String) throws -> String {
@@ -234,6 +249,7 @@ struct CLIOptions {
             case "-list", "--list": try select(.list, argument)
             case "--config":
                 options.configFile = URL(fileURLWithPath: try requireValue(argument))
+                options.configFileWasExplicit = true
             case "--profile":
                 options.profileName = try requireValue(argument)
             case "--src-dir":
@@ -241,8 +257,7 @@ struct CLIOptions {
             case "--out-dir":
                 options.outDir = URL(fileURLWithPath: try requireValue(argument))
             case "--output-dir":
-                let path = try requireValue(argument)
-                let url = URL(fileURLWithPath: path)
+                let url = URL(fileURLWithPath: try requireValue(argument))
                 options.srcDir = url
                 options.outDir = url
             case "--image", "--image-file":
@@ -280,8 +295,14 @@ struct CLIOptions {
                 }
                 options.sharpnessOverride = value
             case "--sleep-seconds":
-                guard let value = Double(try requireValue(argument)), value.isFinite else {
-                    throw AppError("--sleep-seconds requires a finite numeric value")
+                // Bounded: a negative value silently disabled the pacing the caller asked for, and
+                // an enormous one parked the run in Thread.sleep with no watchdog (#0121).
+                guard let value = Double(try requireValue(argument)), value.isFinite,
+                      value > 0, value <= CLIOptions.maximumSleepSeconds
+                else {
+                    throw AppError(
+                        "--sleep-seconds requires a finite value greater than 0 and at most "
+                            + "\(Int(CLIOptions.maximumSleepSeconds)) seconds")
                 }
                 options.sleepSeconds = value
             case "--num-dots":
@@ -289,23 +310,28 @@ struct CLIOptions {
                     throw AppError("--num-dots requires a positive integer")
                 }
                 options.numDots = value
+                options.usedVisualSubsOptions.insert("--num-dots")
             case "--dot-size":
                 guard let value = Int(try requireValue(argument)), value > 0 else {
                     throw AppError("--dot-size requires a positive integer")
                 }
                 options.dotSize = value
+                options.usedVisualSubsOptions.insert("--dot-size")
             case "--max-attempts":
                 guard let value = Int(try requireValue(argument)), value > 0 else {
                     throw AppError("--max-attempts requires a positive integer")
                 }
                 options.maxAttempts = value
+                options.usedVisualSubsOptions.insert("--max-attempts")
             case "--seed":
                 guard let value = UInt64(try requireValue(argument)), value > 0 else {
                     throw AppError("--seed requires a positive integer")
                 }
                 options.seed = value
+                options.usedVisualSubsOptions.insert("--seed")
             case "--open":
                 options.openAfterCreate = true
+                options.usedVisualSubsOptions.insert("--open")
             case "--debug", "--verbose":
                 options.debug = true
             case "--":
@@ -337,6 +363,35 @@ struct CLIOptions {
             throw AppError(
                 "--output-file names exactly one output file and is not supported by -\(options.action.rawValue). "
                 + "It is accepted by: \(supported).")
+        }
+
+        // --open / --num-dots / --dot-size / --max-attempts / --seed are consumed only while
+        // rendering the dot overlay. Every other action used to accept and ignore them (#0155).
+        if let option = options.usedVisualSubsOptions.sorted().first, options.action != .visualsubs {
+            throw AppError(
+                "\(option) is only supported by -visualsubs (got -\(options.action.rawValue)). "
+                    + "Run \(scriptName) -help for the option list.")
+        }
+
+        if options.action == .visualsubs {
+            // Two positional values used to be accepted and the second silently discarded (#0126).
+            guard options.actionArgs.count <= 1 else {
+                throw AppError(
+                    "-visualsubs accepts at most one positional dot count (got: "
+                        + "\(options.actionArgs.joined(separator: " "))).")
+            }
+            if options.actionArgs.count == 1, options.numDots != nil {
+                throw AppError("-visualsubs received a positional dot count and --num-dots; give exactly one of them.")
+            }
+            let dots = options.numDots ?? options.actionArgs.first.flatMap(Int.init) ?? 0
+            guard dots <= Self.maximumVisualSubsDots else {
+                throw AppError(
+                    "-visualsubs supports at most \(Self.maximumVisualSubsDots) dots (got \(dots)).")
+            }
+            guard options.maxAttempts <= Self.maximumVisualSubsAttempts else {
+                throw AppError(
+                    "--max-attempts supports at most \(Self.maximumVisualSubsAttempts) (got \(options.maxAttempts)).")
+            }
         }
 
         return options

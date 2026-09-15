@@ -205,7 +205,7 @@ void writeBW64FromFile(const Options& options) {
         throw std::runtime_error("failed to open input PCM file: " + options.inputPath);
     }
 
-    auto chnaChunk = std::make_shared<bw64::ChnaChunk>();
+    const auto chnaChunk = std::make_shared<bw64::ChnaChunk>();
     auto writer = bw64::writeFile(
         options.outputPath,
         options.channels,
@@ -267,6 +267,12 @@ void writeError(const std::string& message, char* errorBuffer, size_t errorBuffe
 
 }  // namespace
 
+// The three numeric parameters look swappable to clang-tidy, but this order is the exported C ABI
+// declared in bw64_bridge.h and consumed by Swift with labels (channels:sampleRate:bitDepth:), so
+// reordering or wrapping them in a struct means changing that contract. Suppressed here, at the
+// declaration, rather than in a shared config file. The diagnostic is reported on the first
+// parameter line, so the suppression has to span the declaration.
+// NOLINTBEGIN(bugprone-easily-swappable-parameters)
 int bw64_write_from_f32le_file(
     const char* input_path,
     uint16_t channels,
@@ -293,3 +299,4 @@ int bw64_write_from_f32le_file(
         return 1;
     }
 }
+// NOLINTEND(bugprone-easily-swappable-parameters)

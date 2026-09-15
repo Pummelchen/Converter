@@ -524,14 +524,57 @@ extension ConverterTool {
         }
     }
 
-    func verifyTailFadeOutput(_ file: URL, sourceExtension: String, expectedDuration: Double) throws {
+    func verifyTailFadeOutput(
+        _ file: URL, sourceExtension: String, expectedDuration: Double, fadeSeconds: Double
+    ) throws {
         try verifyTypedAudioOutput(file, sourceExtension: sourceExtension, source: nil, qcPolicy: nil)
         try verifyDuration(file, expectedSeconds: expectedDuration, label: "fade output")
+        try verifyFadeActuallyHappened(file, fadeSeconds: fadeSeconds, label: "fade output")
     }
 
-    func verifyFadeOutOutput(_ file: URL, sourceExtension: String, expectedDuration: Double) throws {
+    func verifyFadeOutOutput(
+        _ file: URL, sourceExtension: String, expectedDuration: Double, fadeSeconds: Double
+    ) throws {
         try verifyTypedAudioOutput(file, sourceExtension: sourceExtension, source: nil, qcPolicy: nil)
         try verifyDuration(file, expectedSeconds: expectedDuration, label: "fadeout output")
+        try verifyFadeActuallyHappened(file, fadeSeconds: fadeSeconds, label: "fadeout output")
+    }
+
+    // A no-op `afade` still yields the right codec and duration, so the fade was never actually
+    // checked: only the output type and length were. This measures the end of the fade against the
+    // same window of the source, and against the output's own earlier audio (#0130).
+    func verifyFadeActuallyHappened(_ file: URL, fadeSeconds: Double, label: String) throws {
+        guard let duration = try mediaDuration(file), duration > 0.4 else {
+            throw AppError("Cannot verify the \(label): its duration could not be measured.")
+        }
+        // The end of the fade (a quarter of it, at least 0.2 s and at most 1 s) has to be well below
+        // the audio from just *before* the fade began; comparing with the immediately preceding window
+        // measures only the last step of a gradual fade (#0130).
+        let window = min(1.0, max(0.2, fadeSeconds / 4))
+        let start = max(0, duration - window)
+        let beforeStart = max(0, duration - fadeSeconds - window)
+        let tailMax = try audioSegmentMaxVolumeDBFS(file: file, startSeconds: start, durationSeconds: window)
+        let beforeMax: Double
+        if beforeStart < start {
+            beforeMax = try audioSegmentMaxVolumeDBFS(
+                file: file, startSeconds: beforeStart, durationSeconds: window)
+        } else {
+            beforeMax = tailMax
+        }
+
+        // A fade to silence has to end well below the audio immediately before it. Both values can be
+        // -inf for a silent file, which trivially satisfies "quieter", and that is fine: a silent
+        // deliverable is caught by the audibility check in verifyTypedAudioOutput.
+        let drop = beforeMax - tailMax
+        guard drop.isFinite else { return }
+        guard drop >= 6 else {
+            throw AppError(
+                String(
+                    format: "%@ was not faded: the last %.2fs peaks at %.2f dBFS, only %.2f dB below the "
+                        + "audio before the fade (need at least 6 dB).",
+                    label, window, tailMax, drop, window
+                ))
+        }
     }
 
     // The bass filter computes in float, but the staging WAV is 24-bit integer: any overshoot
@@ -577,7 +620,7 @@ extension ConverterTool {
         let output = cli.outDir
             .appendingPathComponent(source.stem + bassOutputSuffix(for: spec))
             .appendingPathExtension(source.pathExtension.lowercasedASCII)
-        if canReuseOutput(output, verifier: {
+        if canReuseOutput(output, source: source, verifier: {
             try self.verifyBassOutput(output, source: source)
         }) {
             logger.info("Skip existing bass-adjusted media: \(output.basename)")
@@ -630,7 +673,7 @@ extension ConverterTool {
         guard output.standardizedFileURL != source.standardizedFileURL else {
             throw AppError("Refusing loudness normalization because source and output resolve to the same path: \(source.path)")
         }
-        if canReuseOutput(output, verifier: {
+        if canReuseOutput(output, source: source, verifier: {
             try self.verifyLoudnessOutput(output, source: source, policy: policy)
         }) {
             logger.info("Skip existing loudness-normalized media: \(output.basename)")
@@ -676,8 +719,13 @@ extension ConverterTool {
             }
             try publishTemp(temp, to: output)
             let reason = loudnessFallbackReason(result: result)
+            // The fallback itself is deliberate and pinned by tests (#0050/#0081): when the source's
+            // own peak makes the requested target unreachable, refusing would leave the operator with
+            // nothing. What was misleading was saying "Created ... without compression", which reads
+            // like success; the line now states plainly that the file did not meet the policy (#0115).
             logger.warn(
-                "Created \(reason) loudness media without compression: \(output.basename) "
+                "PUBLISHED WITHOUT FULL QC: \(output.basename) did not meet the loudness policy "
+                    + "(\(reason)); it is the closest the source's own peak allows. "
                     + "[integrated=\(measured) LUFS target=\(String(format: "%.2f", policy.targetLUFS)) "
                     + "gain=\(String(format: "%.2f", plan.appliedGainDB)) dB "
                     + "requested=\(String(format: "%.2f", plan.requestedGainDB)) dB "
@@ -699,7 +747,7 @@ extension ConverterTool {
         guard output.standardizedFileURL != source.standardizedFileURL else {
             throw AppError("Refusing to master \(source.path): source and output resolve to the same path.")
         }
-        if canReuseOutput(output, verifier: {
+        if canReuseOutput(output, source: source, verifier: {
             try self.verifyMasteredOutput(output, source: source)
         }) {
             logger.info("Skip existing mastered media: \(output.basename)")
@@ -833,12 +881,26 @@ extension ConverterTool {
         return integrated
     }
 
+    // The silence/noise preflights deliberately accept an .m4a with a video track, and the padded
+    // output is audio only. That was silent; it is now stated (#0132).
+    func reportDroppedVideoTrack(in source: URL) throws {
+        if try hasVideoStream(source) {
+            logger.info(
+                "\(source.basename) carries a video track; the padded audio output keeps the audio only.")
+        }
+    }
+
     func verifySilencePadding(_ file: URL, expectedDuration: Double, spec: SilenceSpec) throws {
         let boundaryMargin = min(0.05, spec.seconds / 4, spec.effectiveLeadingSeconds / 4)
         let leadingProbeSeconds = min(0.5, max(0, spec.effectiveLeadingSeconds - boundaryMargin))
         let trailingProbeSeconds = min(0.5, max(0, spec.seconds - boundaryMargin))
+        // Too short to measure is not a pass: the check these windows exist for would silently not
+        // run, and a padded file with no silence at all would verify (#0123).
         guard leadingProbeSeconds >= 0.05, trailingProbeSeconds >= 0.05 else {
-            return
+            throw AppError(
+                "Silence padding of \(spec.seconds)s is too short to verify: the leading/trailing probe "
+                    + "windows would be \(String(format: "%.3f", leadingProbeSeconds))s and "
+                    + "\(String(format: "%.3f", trailingProbeSeconds))s (need 0.05s).")
         }
         let maxSilentVolumeDBFS = -80.0
         let leadingMax = try audioSegmentMaxVolumeDBFS(file: file, startSeconds: 0, durationSeconds: leadingProbeSeconds)
@@ -867,8 +929,12 @@ extension ConverterTool {
         let programmeSeconds = expectedDuration - (padding * 2)
         let margin = min(0.05, programmeSeconds / 4)
         let probeSeconds = programmeSeconds - (margin * 2)
+        // This check exists so a concat that dropped or muted the programme cannot pass on padding
+        // alone; skipping it when the programme is short reported success without measuring (#0123).
         guard probeSeconds >= 0.20 else {
-            return
+            throw AppError(
+                "Noise padding leaves \(String(format: "%.3f", programmeSeconds))s of programme, too little "
+                    + "to verify that the programme is audible (need 0.20s of probe window).")
         }
         let probeStart = padding + margin
         let maxVolume: Double
@@ -897,7 +963,9 @@ extension ConverterTool {
         let boundaryMargin = min(0.05, spec.seconds / 4)
         let probeSeconds = max(0, spec.seconds - (boundaryMargin * 2))
         guard probeSeconds >= 0.20 else {
-            return
+            throw AppError(
+                "Noise padding of \(spec.seconds)s is too short to verify: the probe window would be "
+                    + "\(String(format: "%.3f", probeSeconds))s (need 0.20s).")
         }
 
         let targetLUFS = NoiseSpec.targetLUFS
@@ -941,7 +1009,9 @@ extension ConverterTool {
         let silenceMargin = min(0.05, NoiseSpec.transitionSilenceSeconds / 4)
         let silenceProbeSeconds = max(0, NoiseSpec.transitionSilenceSeconds - (silenceMargin * 2))
         guard silenceProbeSeconds >= 0.20 else {
-            return
+            throw AppError(
+                "Transition silence of \(NoiseSpec.transitionSilenceSeconds)s is too short to verify: the "
+                    + "probe window would be \(String(format: "%.3f", silenceProbeSeconds))s (need 0.20s).")
         }
 
         func verifySilenceGap(label: String, start: Double) throws {
@@ -1261,14 +1331,15 @@ extension ConverterTool {
 
     func addSilenceToMedia(_ source: URL, spec: SilenceSpec) throws -> URL {
         try preflightSilenceSource(source)
-        guard let sourceDuration = try mediaDuration(source) else {
+        try reportDroppedVideoTrack(in: source)
+        guard let sourceDuration = try audioStreamDuration(source) else {
             throw AppError("Unable to read source duration for silence padding: \(source.path)")
         }
         let expectedDuration = silenceExpectedDuration(sourceDuration: sourceDuration, spec: spec)
         let output = cli.outDir
             .appendingPathComponent(source.stem + silenceOutputSuffix(for: spec))
             .appendingPathExtension(source.pathExtension.lowercasedASCII)
-        if canReuseOutput(output, verifier: {
+        if canReuseOutput(output, source: source, verifier: {
             try self.verifySilenceOutput(output, source: source, expectedDuration: expectedDuration, spec: spec)
         }) {
             logger.info("Skip existing silence-padded media: \(output.basename)")
@@ -1297,14 +1368,15 @@ extension ConverterTool {
 
     func addNoiseToMedia(_ source: URL, spec: NoiseSpec) throws -> URL {
         try preflightNoiseSource(source)
-        guard let sourceDuration = try mediaDuration(source) else {
+        try reportDroppedVideoTrack(in: source)
+        guard let sourceDuration = try audioStreamDuration(source) else {
             throw AppError("Unable to read source duration for noise padding: \(source.path)")
         }
         let expectedDuration = noiseExpectedDuration(sourceDuration: sourceDuration, spec: spec)
         let output = cli.outDir
             .appendingPathComponent(source.stem + noiseOutputSuffix(for: spec))
             .appendingPathExtension(source.pathExtension.lowercasedASCII)
-        if canReuseOutput(output, verifier: {
+        if canReuseOutput(output, source: source, verifier: {
             try self.verifyNoiseOutput(output, source: source, expectedDuration: expectedDuration, spec: spec)
         }) {
             logger.info("Skip existing noise-padded media: \(output.basename)")
@@ -1333,7 +1405,7 @@ extension ConverterTool {
 
     func fadeCutAudio(_ source: URL, spec: FadeCutSpec) throws -> URL {
         try preflightTailFadeSource(source)
-        guard let duration = try mediaDuration(source) else {
+        guard let duration = try audioStreamDuration(source) else {
             throw AppError("Unable to read source duration for fadecut: \(source.path)")
         }
         let targetDuration = duration - spec.cutSeconds
@@ -1346,8 +1418,10 @@ extension ConverterTool {
         let stem = "\(source.stem)_fadecut_\(ffmpegNumber(spec.cutSeconds))s_\(ffmpegNumber(fadeSeconds))s"
         let output = cli.outDir.appendingPathComponent(stem)
             .appendingPathExtension(source.pathExtension.lowercasedASCII)
-        if canReuseOutput(output, verifier: {
-            try self.verifyTailFadeOutput(output, sourceExtension: source.pathExtension, expectedDuration: targetDuration)
+        if canReuseOutput(output, source: source, verifier: {
+            try self.verifyTailFadeOutput(
+                output, sourceExtension: source.pathExtension,
+                expectedDuration: targetDuration, fadeSeconds: fadeSeconds)
         }) {
             logger.info("Skip existing fadecut audio: \(output.basename)")
             return output
@@ -1367,7 +1441,9 @@ extension ConverterTool {
             )
             defer { discardTempFile(processedWAV) }
             try encodeProcessedWAV(processedWAV, matching: source, to: temp, qcPolicy: nil)
-            try verifyTailFadeOutput(temp, sourceExtension: source.pathExtension, expectedDuration: targetDuration)
+            try verifyTailFadeOutput(
+                temp, sourceExtension: source.pathExtension,
+                expectedDuration: targetDuration, fadeSeconds: fadeSeconds)
             try publishTemp(temp, to: output)
             logger.info("Created fadecut audio: \(output.basename)")
             return output
@@ -1380,7 +1456,7 @@ extension ConverterTool {
 
     func fadeTailAudio(_ source: URL, fadeSeconds requestedFadeSeconds: Double) throws -> URL {
         try preflightTailFadeSource(source)
-        guard let duration = try mediaDuration(source) else {
+        guard let duration = try audioStreamDuration(source) else {
             throw AppError("Unable to read source duration for fade: \(source.path)")
         }
         guard duration > 0 else {
@@ -1390,8 +1466,10 @@ extension ConverterTool {
         let fadeSeconds = min(requestedFadeSeconds, duration)
         let fadeStart = max(0, duration - fadeSeconds)
         let output = cli.outDir.appendingPathComponent("\(source.stem)_faded_\(ffmpegNumber(fadeSeconds))s").appendingPathExtension(source.pathExtension.lowercasedASCII)
-        if canReuseOutput(output, verifier: {
-            try self.verifyTailFadeOutput(output, sourceExtension: source.pathExtension, expectedDuration: duration)
+        if canReuseOutput(output, source: source, verifier: {
+            try self.verifyTailFadeOutput(
+                output, sourceExtension: source.pathExtension,
+                expectedDuration: duration, fadeSeconds: fadeSeconds)
         }) {
             logger.info("Skip existing faded audio: \(output.basename)")
             return output
@@ -1410,7 +1488,9 @@ extension ConverterTool {
             )
             defer { discardTempFile(processedWAV) }
             try encodeProcessedWAV(processedWAV, matching: source, to: temp, qcPolicy: nil)
-            try verifyTailFadeOutput(temp, sourceExtension: source.pathExtension, expectedDuration: duration)
+            try verifyTailFadeOutput(
+                temp, sourceExtension: source.pathExtension,
+                expectedDuration: duration, fadeSeconds: fadeSeconds)
             try publishTemp(temp, to: output)
             logger.info("Created faded audio: \(output.basename)")
             return output
@@ -1423,7 +1503,7 @@ extension ConverterTool {
 
     func fadeOutAudio(_ source: URL, spec: FadeOutSpec) throws -> URL {
         try preflightFadeOutSource(source)
-        guard let sourceDuration = try mediaDuration(source) else {
+        guard let sourceDuration = try audioStreamDuration(source) else {
             throw AppError("Unable to read source duration for fadeout: \(source.path)")
         }
         let targetDuration = spec.endSeconds
@@ -1439,8 +1519,10 @@ extension ConverterTool {
             + "\(ffmpegNumber(spec.fadeDurationSeconds))s"
         let output = cli.outDir.appendingPathComponent(stem)
             .appendingPathExtension(source.pathExtension.lowercasedASCII)
-        if canReuseOutput(output, verifier: {
-            try self.verifyFadeOutOutput(output, sourceExtension: source.pathExtension, expectedDuration: targetDuration)
+        if canReuseOutput(output, source: source, verifier: {
+            try self.verifyFadeOutOutput(
+                output, sourceExtension: source.pathExtension,
+                expectedDuration: targetDuration, fadeSeconds: spec.fadeDurationSeconds)
         }) {
             logger.info("Skip existing faded audio: \(output.basename)")
             return output
@@ -1460,7 +1542,9 @@ extension ConverterTool {
             )
             defer { discardTempFile(processedWAV) }
             try encodeProcessedWAV(processedWAV, matching: source, to: temp, qcPolicy: nil)
-            try verifyFadeOutOutput(temp, sourceExtension: source.pathExtension, expectedDuration: targetDuration)
+            try verifyFadeOutOutput(
+                temp, sourceExtension: source.pathExtension,
+                expectedDuration: targetDuration, fadeSeconds: spec.fadeDurationSeconds)
             try publishTemp(temp, to: output)
             logger.info("Created faded audio: \(output.basename)")
             return output
@@ -1481,7 +1565,11 @@ extension ConverterTool {
         // A standard mismatch is an AppError with the reason; anything else propagates.
         let sourceIsStandard: Bool
         do {
-            try verifyMP3Standard(source, qcPolicy: nil)
+            // `requireNoVideo: false`: an ID3 APIC cover is metadata, and treating it as a video
+            // stream made a byte-exact copy impossible — the file was re-encoded into a second lossy
+            // generation instead, with a log line naming the wrong cause. Every *standard* check
+            // (codec, rate, channels, bitrate floor) still applies (#0133).
+            try verifyMP3Standard(source, requireNoVideo: false, qcPolicy: nil)
             sourceIsStandard = true
         } catch let mismatch as AppError {
             logger.info(
@@ -1491,7 +1579,7 @@ extension ConverterTool {
         guard sourceIsStandard else {
             return try convertAudioToMP3(internalWAV, outputStem: outputStem)
         }
-        if canReuseOutput(output, verifier: {
+        if canReuseOutput(output, source: source, verifier: {
             try verifyMP3Standard(output, qcPolicy: nil)
             try verifyDurationMatch(source: source, output: output)
             try verifySourceLoudnessPreserved(source: source, output: output)
@@ -1502,7 +1590,9 @@ extension ConverterTool {
         let temp = try makeTemp(in: cli.outDir, stem: outputStem, ext: ".mp3")
         do {
             try copyFileIntoTemp(source, temp: temp)
-            try verifyMP3Standard(temp, qcPolicy: nil)
+            // The copy is byte-identical to the source, so it carries the source's artwork too; the
+            // standard checks still run, only the attached-picture stream is allowed (#0133).
+            try verifyMP3Standard(temp, requireNoVideo: false, qcPolicy: nil)
             try verifyDurationMatch(source: source, output: temp)
             guard try crc32(for: temp) == crc32(for: source) else {
                 throw AppError("MP3 copy does not match its source: \(source.path)")
@@ -1574,7 +1664,12 @@ extension ConverterTool {
 
     func requireFreeSpace(forBytes need: UInt64, label: String) throws {
         guard need > 0 else { return }
-        let free = try availableBytes(at: cli.outDir)
+        // An unreadable free-space value means "unknown", so the check is skipped rather than failing
+        // the run with a fabricated 0-byte figure (#0149).
+        guard let free = try availableBytes(at: cli.outDir) else {
+            logger.debug("Free space for \(label) is unknown on this filesystem; skipping the estimate check.")
+            return
+        }
         if free < need {
             throw AppError("Low free space for \(label): avail=\(free) need~\(need)")
         }
@@ -1612,7 +1707,7 @@ extension ConverterTool {
         let output = cli.outDir.appendingPathComponent(stem).appendingPathExtension("wav")
         try requireDistinctOutput(output, from: source)
         try preflightAudioSourceForTranscode(source)
-        if canReuseOutput(output, verifier: {
+        if canReuseOutput(output, source: source, verifier: {
             try verifyWAVStandard(output, qcPolicy: nil)
             try verifyDurationMatch(source: source, output: output)
             try verifyCanonicalPCMSampleEquivalence(
@@ -1671,8 +1766,13 @@ extension ConverterTool {
         try requireDistinctOutput(output, from: source)
         try preflightAudioSourceForTranscode(source)
         try requireFFmpegEncoder(alacEncoderName)
-        if canReuseOutput(output, verifier: {
-            try verifyM4AFile(output, sampleRate: config.m4aSampleRate, channels: config.m4aChannels, qcPolicy: nil)
+        // The delivery ceilings have to gate the encode as well: this was the only check missing from
+        // the published M4A, so an AAC encode could add clipping, DC offset or a channel imbalance
+        // and still ship. Rebased to the source, so only what the encoder *added* can fail (#0114).
+        let qcPolicy = try loudnessPreservingQCPolicy(
+            config.deliveryAudioQCPolicy, source: source, sampleRate: config.m4aSampleRate)
+        if canReuseOutput(output, source: source, verifier: {
+            try verifyM4AFile(output, sampleRate: config.m4aSampleRate, channels: config.m4aChannels, qcPolicy: qcPolicy)
             try verifyDurationMatch(source: source, output: output)
             try verifySourceLoudnessPreserved(source: source, output: output, toleranceDB: 1.0)
         }) {
@@ -1683,8 +1783,8 @@ extension ConverterTool {
         defer { discardTempFile(sourceWAV) }
         let temp = try makeTemp(in: cli.outDir, stem: stem, ext: ".m4a")
         do {
-            try encodeInternalWAVToM4A(sourceWAV, output: temp, qcPolicy: nil)
-            try verifyM4AFile(temp, sampleRate: config.m4aSampleRate, channels: config.m4aChannels, qcPolicy: nil)
+            try encodeInternalWAVToM4A(sourceWAV, output: temp, qcPolicy: qcPolicy)
+            try verifyM4AFile(temp, sampleRate: config.m4aSampleRate, channels: config.m4aChannels, qcPolicy: qcPolicy)
             try verifyDurationMatch(source: source, output: temp)
             try verifySourceLoudnessPreserved(source: source, output: temp, toleranceDB: 1.0)
             try publishTemp(temp, to: output)
@@ -1704,8 +1804,14 @@ extension ConverterTool {
         try requireDistinctOutput(output, from: source)
         try preflightAudioSourceForTranscode(source)
         try requireFFmpegEncoder("libmp3lame")
-        if canReuseOutput(output, verifier: {
-            try verifyMP3Standard(output, qcPolicy: nil)
+        // See convertAudioToM4A: same delivery ceilings, same source-relative rebase (#0114). MP3 is
+        // lossy at a different overshoot, so its true-peak allowance is the lossy one the fallback
+        // path already uses.
+        let qcPolicy = try loudnessPreservingQCPolicy(
+            config.deliveryAudioQCPolicy, source: source, sampleRate: config.mp3SampleRate,
+            truePeakAllowanceDB: 0.3)
+        if canReuseOutput(output, source: source, verifier: {
+            try verifyMP3Standard(output, qcPolicy: qcPolicy)
             try verifyDurationMatch(source: source, output: output)
             try verifySourceLoudnessPreserved(source: source, output: output)
         }) {
@@ -1716,8 +1822,8 @@ extension ConverterTool {
         defer { discardTempFile(sourceWAV) }
         let temp = try makeTemp(in: cli.outDir, stem: stem, ext: ".mp3")
         do {
-            try encodeInternalWAVToMP3(sourceWAV, output: temp, qcPolicy: nil)
-            try verifyMP3Standard(temp, qcPolicy: nil)
+            try encodeInternalWAVToMP3(sourceWAV, output: temp, qcPolicy: qcPolicy)
+            try verifyMP3Standard(temp, qcPolicy: qcPolicy)
             try verifyDurationMatch(source: source, output: temp)
             try verifySourceLoudnessPreserved(source: source, output: temp)
             try publishTemp(temp, to: output)
@@ -1734,7 +1840,10 @@ extension ConverterTool {
     func convertAudioToFLAC(_ source: URL) throws -> URL {
         try preflightAudioSourceForTranscode(source)
         let output = cli.outDir.appendingPathComponent(source.stem).appendingPathExtension("flac")
-        if canReuseOutput(output, verifier: {
+        // The sibling converters guard this before probing; a `.flac` caller would otherwise publish
+        // over the file it is reading (#0157).
+        try requireDistinctOutput(output, from: source)
+        if canReuseOutput(output, source: source, verifier: {
             try verifyFLACFile(output, sampleRate: config.flacSampleRate, channels: config.flacChannels, requireAudible: true, qcPolicy: nil)
             try verifyDurationMatch(source: source, output: output)
             try verifyCanonicalPCMSampleEquivalence(
@@ -1814,12 +1923,12 @@ extension ConverterTool {
 
     func fadeWAV(_ source: URL) throws -> URL {
         try preflightWAVInput(source)
-        guard let duration = try mediaDuration(source) else {
+        guard let duration = try audioStreamDuration(source) else {
             throw AppError("Unable to read numeric WAV duration from: \(source.path)")
         }
         let fadeStart = max(0, duration - Double(config.wavFadeDur))
         let output = cli.outDir.appendingPathComponent("\(source.stem)_Faded_rf64").appendingPathExtension("wav")
-        if canReuseOutput(output, verifier: {
+        if canReuseOutput(output, source: source, verifier: {
             try verifyWAVStandard(output, qcPolicy: nil)
             try verifyDurationMatch(source: source, output: output)
         }) {
@@ -1851,7 +1960,7 @@ extension ConverterTool {
     }
 
     func createExternalFLACVariant(source: URL, output: URL) throws -> URL {
-        if canReuseOutput(output, verifier: {
+        if canReuseOutput(output, source: source, verifier: {
             try verifyFLACFile(output, qcPolicy: nil)
             try verifyDurationMatch(source: source, output: output)
             try verifyCanonicalPCMSampleEquivalence(source: source, output: output, label: "External FLAC", format: .s24le)
@@ -1881,7 +1990,7 @@ extension ConverterTool {
     }
 
     func createExternalWAVVariant(source: URL, output: URL, writeBext: Bool) throws -> URL {
-        if canReuseOutput(output, verifier: {
+        if canReuseOutput(output, source: source, verifier: {
             try verifyExternalWAVVariant(output, source: source, expectBext: writeBext)
         }) {
             logger.info("Skip existing external WAV: \(output.basename)")
@@ -1914,7 +2023,7 @@ extension ConverterTool {
     }
 
     func createExternalBW64WAVVariant(source: URL, output: URL) throws -> URL {
-        if canReuseOutput(output, verifier: {
+        if canReuseOutput(output, source: source, verifier: {
             try verifyBW64WAVVariant(output, source: source)
         }) {
             logger.info("Skip existing external BW64 WAV: \(output.basename)")

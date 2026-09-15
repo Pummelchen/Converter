@@ -1359,9 +1359,15 @@ final class PipelineIntegrationTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: mp3Out.path))
         XCTAssertTrue(FileManager.default.fileExists(atPath: wavOut.path))
         XCTAssertTrue(FileManager.default.fileExists(atPath: flacOut.path))
-        try tool.verifyTailFadeOutput(mp3Out, sourceExtension: "mp3", expectedDuration: try XCTUnwrap(try tool.mediaDuration(mp3)))
-        try tool.verifyTailFadeOutput(wavOut, sourceExtension: "wav", expectedDuration: try XCTUnwrap(try tool.mediaDuration(wav)))
-        try tool.verifyTailFadeOutput(flacOut, sourceExtension: "flac", expectedDuration: try XCTUnwrap(try tool.mediaDuration(flac)))
+        try tool.verifyTailFadeOutput(
+            mp3Out, sourceExtension: "mp3", expectedDuration: try XCTUnwrap(try tool.mediaDuration(mp3)),
+            fadeSeconds: 0.5)
+        try tool.verifyTailFadeOutput(
+            wavOut, sourceExtension: "wav", expectedDuration: try XCTUnwrap(try tool.mediaDuration(wav)),
+            fadeSeconds: 0.5)
+        try tool.verifyTailFadeOutput(
+            flacOut, sourceExtension: "flac", expectedDuration: try XCTUnwrap(try tool.mediaDuration(flac)),
+            fadeSeconds: 0.5)
         XCTAssertThrowsError(try tool.requireVideoStream(mp3Out))
         XCTAssertThrowsError(try tool.requireVideoStream(wavOut))
         XCTAssertThrowsError(try tool.requireVideoStream(flacOut))
@@ -1605,9 +1611,15 @@ final class PipelineIntegrationTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: mp3Out.path))
         XCTAssertTrue(FileManager.default.fileExists(atPath: wavOut.path))
         XCTAssertTrue(FileManager.default.fileExists(atPath: flacOut.path))
-        try tool.verifyTailFadeOutput(mp3Out, sourceExtension: "mp3", expectedDuration: try XCTUnwrap(try tool.mediaDuration(mp3)) - 0.5)
-        try tool.verifyTailFadeOutput(wavOut, sourceExtension: "wav", expectedDuration: try XCTUnwrap(try tool.mediaDuration(wav)) - 0.5)
-        try tool.verifyTailFadeOutput(flacOut, sourceExtension: "flac", expectedDuration: try XCTUnwrap(try tool.mediaDuration(flac)) - 0.5)
+        try tool.verifyTailFadeOutput(
+            mp3Out, sourceExtension: "mp3", expectedDuration: try XCTUnwrap(try tool.mediaDuration(mp3)) - 0.5,
+            fadeSeconds: 0.75)
+        try tool.verifyTailFadeOutput(
+            wavOut, sourceExtension: "wav", expectedDuration: try XCTUnwrap(try tool.mediaDuration(wav)) - 0.5,
+            fadeSeconds: 0.75)
+        try tool.verifyTailFadeOutput(
+            flacOut, sourceExtension: "flac", expectedDuration: try XCTUnwrap(try tool.mediaDuration(flac)) - 0.5,
+            fadeSeconds: 0.75)
         XCTAssertThrowsError(try tool.requireVideoStream(mp3Out))
         XCTAssertThrowsError(try tool.requireVideoStream(wavOut))
         XCTAssertThrowsError(try tool.requireVideoStream(flacOut))
@@ -2359,6 +2371,63 @@ final class PipelineIntegrationTests: XCTestCase {
             FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("art_1_8K.png").path))
         XCTAssertTrue(FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("art_2_8K.png").path))
         XCTAssertFalse(FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("art_8K.png").path))
+    }
+
+    func testAIPixRefusesToOverwriteItsOwnSource() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["magick"])
+
+        // A master whose name already carries the derived label and whose dimensions are not the
+        // delivery size: `-aipix` used to resize it over itself and delete the backup.
+        let source = try workspace.createImage(name: "Master_8K", ext: "png", width: 640, height: 360)
+        let before = try Data(contentsOf: source)
+
+        let tool = try workspace.makeTool(arguments: ["-aipix"])
+        XCTAssertThrowsError(try tool.aipixFile(source)) { error in
+            XCTAssertTrue(
+                String(describing: error).contains("over its own source"),
+                "expected the self-overwrite refusal, got: \(error)"
+            )
+        }
+        XCTAssertEqual(try Data(contentsOf: source), before, "the source artwork must be untouched")
+    }
+
+    func testRunPixIgnoresPortraitShortStillCompanions() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["magick"])
+
+        // What a full run leaves behind for a portrait short: the still PNG plus its two JPEG
+        // companions. None of them may be picked up again as a source master.
+        _ = try workspace.createImage(name: "1_Short_8K", ext: "png", width: 360, height: 640)
+        _ = try workspace.createImage(name: "1_Short_CenterCut_8K", ext: "png", width: 360, height: 640)
+        _ = try workspace.createImage(name: "1_Short_8K_1MB", ext: "jpg", width: 360, height: 640)
+        _ = try workspace.createImage(name: "1_Short_8K_2MB", ext: "jpg", width: 360, height: 640)
+        let artwork = try workspace.createImage(name: "1", ext: "png")
+
+        let tool = try workspace.makeTool(arguments: ["-run_pix"])
+        let discovered = try tool.sourceImageFiles(matchingExtensions: ["png", "jpg", "jpeg"])
+        XCTAssertEqual(discovered.map(\.lastPathComponent).sorted(), [artwork.lastPathComponent])
+    }
+
+    func testJPGToPNGIntermediateIsRunScopedAndCleanedUp() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["magick"])
+
+        let jpg = try workspace.createImage(name: "master", ext: "jpg")
+        let tool = try workspace.makeTool(arguments: ["-run_pix"])
+
+        let intermediate = try tool.convertJPGToPNGTemp(jpg)
+        XCTAssertTrue(
+            intermediate.lastPathComponent.hasPrefix(".converter-tmp.\(tool.runToken)."),
+            "the working copy must stay in the run-scoped temp namespace: \(intermediate.lastPathComponent)"
+        )
+        XCTAssertFalse(
+            FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("master.png").path),
+            "the intermediate must not be published as a deliverable"
+        )
+
+        tool.cleanupTemps()
+        XCTAssertFalse(FileManager.default.fileExists(atPath: intermediate.path), "the run must clean its temp up")
     }
 
     func testVisualSubsCreatesVerifiedPNGViaPublishedOutput() throws {
@@ -3300,6 +3369,101 @@ final class PipelineIntegrationTests: XCTestCase {
         try tool.verifyMP3Standard(deliverable, qcPolicy: nil)
         try tool.verifySourceLoudnessPreserved(source: reference, output: deliverable)
         XCTAssertFalse(FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("track.mp3").path))
+    }
+
+    // audit #0144: the batch conversion actions had no coverage — the suite exercised the pipelines
+    // beneath them, not the action entry points, so a regression in one of them was invisible.
+    func testBatchConversionActionsProduceTheirOutputs() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe", "magick"])
+
+        _ = try workspace.createAudio(name: "batch_wav", ext: "wav", duration: 1.2)
+        _ = try workspace.createAudio(name: "batch_flac", ext: "flac", duration: 1.2)
+        _ = try workspace.createAudio(name: "batch_m4a", ext: "m4a", duration: 1.2)
+        _ = try workspace.createAudio(name: "batch_mp3", ext: "mp3", duration: 1.2, sampleRate: 48_000)
+        _ = try workspace.createImage(name: "batch_art", ext: "jpg")
+
+        try workspace.makeTool(arguments: ["-wavtoflac"]).stepWAVToFLAC()
+        try workspace.makeTool(arguments: ["-flactowav"]).stepFLACToWAV()
+        try workspace.makeTool(arguments: ["-wavtom4a"]).stepWAVToM4A()
+        try workspace.makeTool(arguments: ["-m4atomp3"]).stepM4AToMP3()
+        try workspace.makeTool(arguments: ["-jpgtopng"]).stepJPGToPNG()
+        try workspace.makeTool(arguments: ["-pngtojpg"]).stepPNGToJPG()
+        try workspace.makeTool(arguments: ["-loudscan"]).stepLoudScan()
+
+        for name in [
+            "batch_wav.flac", "batch_flac.wav", "batch_wav.m4a", "batch_m4a.mp3",
+            "batch_art.png", "batch_art.jpg"
+        ] {
+            XCTAssertTrue(
+                FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent(name).path),
+                "expected \(name) to exist")
+        }
+    }
+
+    // audit #0124: `format=duration` is the container duration, i.e. the longest track. An MP4 whose
+    // video ran longer than its audio used to fail every audio action with a misleading duration
+    // mismatch even though the audio was intact.
+    func testAudioPaddingUsesTheAudioStreamDurationWhenTheVideoOutlastsIt() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe"])
+
+        let wav = try workspace.createAudio(name: "short_audio", ext: "wav", duration: 1.0)
+        let mp4 = workspace.output.appendingPathComponent("outlasting_video.mp4")
+        _ = try workspace.runner().run("ffmpeg", [
+            "-hide_banner", "-nostdin", "-v", "error", "-y",
+            "-f", "lavfi", "-i", "color=c=black:s=320x180:r=24:d=3",
+            "-i", wav.path,
+            "-map", "0:v:0", "-map", "1:a:0",
+            "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac",
+            mp4.path
+        ])
+
+        let tool = try workspace.makeTool(arguments: ["-silence", "0.5"])
+        let container = try XCTUnwrap(try tool.mediaDuration(mp4))
+        let audio = try XCTUnwrap(try tool.audioStreamDuration(mp4))
+        XCTAssertGreaterThan(container, audio + 1.0, "fixture must have a video track that outlasts the audio")
+
+        let spec = try tool.cli.silenceSpec()
+        let expected = tool.silenceExpectedDuration(sourceDuration: audio, spec: spec)
+        let output = try tool.addSilenceToMedia(mp4, spec: spec)
+        try tool.verifySilenceOutput(output, source: mp4, expectedDuration: expected, spec: spec)
+    }
+
+    // audit #0133: ffprobe reports an ID3 APIC cover as a video stream, so a standard-conforming MP3
+    // with artwork was "not the delivery standard" and was re-encoded into a second lossy generation
+    // instead of being copied byte for byte.
+    func testFullRunCopiesAStandardMP3WithCoverArtInsteadOfReencodingIt() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe", "magick"])
+
+        let cover = try workspace.createImage(name: "cover", ext: "png")
+        // A standard-conforming source: 48 kHz, stereo, 320 kbps (the floor is 300 kbps).
+        let standard = workspace.output.appendingPathComponent("standard.mp3")
+        _ = try workspace.runner().run("ffmpeg", [
+            "-hide_banner", "-nostdin", "-v", "error", "-y",
+            "-f", "lavfi", "-i", "sine=frequency=440:duration=1.2:sample_rate=48000",
+            "-ac", "2", "-c:a", "libmp3lame", "-b:a", "320k", "-ar", "48000",
+            standard.path
+        ])
+        let tagged = workspace.output.appendingPathComponent("tagged.mp3")
+        _ = try workspace.runner().run("ffmpeg", [
+            "-hide_banner", "-nostdin", "-v", "error", "-y",
+            "-i", standard.path,
+            "-i", cover.path,
+            "-map", "0:a:0", "-map", "1:v:0",
+            "-c:a", "copy", "-c:v", "copy", "-id3v2_version", "3",
+            "-disposition:v:0", "attached_pic",
+            tagged.path
+        ])
+
+        let tool = try workspace.makeTool(arguments: ["-full"])
+        XCTAssertTrue(try tool.hasVideoStream(tagged), "the fixture must expose the cover as a video stream")
+        let output = try tool.fullRunMP3Deliverable(
+            source: tagged, internalWAV: standard, outputStem: "copied")
+        XCTAssertEqual(
+            try tool.crc32(for: output), try tool.crc32(for: tagged),
+            "a standard MP3 with artwork must be copied byte for byte")
     }
 
     // audit #0023: a plain 16-bit/44.1 kHz RIFF WAV used to be normalised in place, destroying the

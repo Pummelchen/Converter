@@ -1,0 +1,244 @@
+Checking Sources/BW64Bridge/bw64_bridge.cpp ...
+Sources/BW64Bridge/bw64_bridge.cpp:0:0: information: Limiting analysis of branches. Use --check-level=exhaustive to analyze all branches. [normalCheckLevelMaxBranches]
+
+^
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:126:7: performance: Variable 'extraData_' is assigned in constructor body. Consider performing initialization in initialization list. [useInitializationList]
+      extraData_ = extraData;
+      ^
+Sources/ThirdParty/libbw64/bw64/reader.hpp:109:45: style: The member function 'bw64::Bw64Reader::chunksWithId' can be static. [functionStatic]
+    std::vector<std::shared_ptr<ChunkType>> chunksWithId(
+                                            ^
+Sources/ThirdParty/libbw64/bw64/writer.hpp:105:45: style: The member function 'bw64::Bw64Writer::chunksWithId' can be static. [functionStatic]
+    std::vector<std::shared_ptr<ChunkType>> chunksWithId(
+                                            ^
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:24:5: style: Struct 'ChunkHeader' has a constructor with 1 argument that is not explicit. [noExplicitConstructor]
+    ChunkHeader(uint32_t id = 0, uint64_t size = 0, uint64_t position = 0)
+    ^
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:58:5: style: Class 'UnknownChunk' has a constructor with 1 argument that is not explicit. [noExplicitConstructor]
+    UnknownChunk(uint32_t id) { chunkId_ = id; }
+    ^
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:242:5: style: Class 'AxmlChunk' has a constructor with 1 argument that is not explicit. [noExplicitConstructor]
+    AxmlChunk(const std::string& axml) {
+    ^
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:355:5: style: Class 'ChnaChunk' has a constructor with 1 argument that is not explicit. [noExplicitConstructor]
+    ChnaChunk(std::vector<AudioId> audioIds) : audioIds_(audioIds){};
+    ^
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:395:5: style: Class 'DataSize64Chunk' has a constructor with 1 argument that is not explicit. [noExplicitConstructor]
+    DataSize64Chunk(
+    ^
+Sources/ThirdParty/libbw64/bw64/reader.hpp:41:5: style: Class 'Bw64Reader' has a constructor with 1 argument that is not explicit. [noExplicitConstructor]
+    Bw64Reader(const char* filename) {
+    ^
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:98:17: performance: Function 'subFormatString()' should return member 'subFormatString_' by const reference. [returnByReference]
+    std::string subFormatString() const { return subFormatString_; }
+                ^
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:373:26: performance: Function 'audioIds()' should return member 'audioIds_' by const reference. [returnByReference]
+    std::vector<AudioId> audioIds() const { return audioIds_; }
+                         ^
+Sources/ThirdParty/libbw64/bw64/reader.hpp:187:30: performance: Function 'chunks()' should return member 'chunkHeaders_' by const reference. [returnByReference]
+    std::vector<ChunkHeader> chunks() const { return chunkHeaders_; }
+                             ^
+Sources/ThirdParty/libbw64/bw64/writer.hpp:83:7: error: Unhandled exception thrown in function declared not to throw exceptions. [throwInNoexceptFunction]
+      finalizeDataChunk();
+      ^
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:197:27: style: Argument 'size' shadows outer function [shadowFunction]
+    void setSize(uint64_t size) { size_ = size; }
+                          ^
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:195:14: note: Shadowed function
+    uint64_t size() const override { return size_; }
+             ^
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:197:27: note: Shadow argument
+    void setSize(uint64_t size) { size_ = size; }
+                          ^
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:375:29: style: Argument 'id' shadows outer function [shadowFunction]
+    void addAudioId(AudioId id) { audioIds_.push_back(id); }
+                            ^
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:357:14: note: Shadowed function
+    uint32_t id() const override { return utils::fourCC("chna"); }
+             ^
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:375:29: note: Shadow argument
+    void addAudioId(AudioId id) { audioIds_.push_back(id); }
+                            ^
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:419:28: style: Argument 'size' shadows outer function [shadowFunction]
+    void bw64Size(uint64_t size) { bw64Size_ = size; }
+                           ^
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:403:14: note: Shadowed function
+    uint64_t size() const override {
+             ^
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:419:28: note: Shadow argument
+    void bw64Size(uint64_t size) { bw64Size_ = size; }
+                           ^
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:421:28: style: Argument 'size' shadows outer function [shadowFunction]
+    void dataSize(uint64_t size) { dataSize_ = size; }
+                           ^
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:403:14: note: Shadowed function
+    uint64_t size() const override {
+             ^
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:421:28: note: Shadow argument
+    void dataSize(uint64_t size) { dataSize_ = size; }
+                           ^
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:423:29: style: Argument 'size' shadows outer function [shadowFunction]
+    void dummySize(uint64_t size) { dummySize_ = size; }
+                            ^
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:403:14: note: Shadowed function
+    uint64_t size() const override {
+             ^
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:423:29: note: Shadow argument
+    void dummySize(uint64_t size) { dummySize_ = size; }
+                            ^
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:429:32: style: Argument 'id' shadows outer function [shadowFunction]
+    bool hasChunkSize(uint32_t id) const { return table_.count(id) != 0; }
+                               ^
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:402:14: note: Shadowed function
+    uint32_t id() const override { return utils::fourCC("ds64"); }
+             ^
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:429:32: note: Shadow argument
+    bool hasChunkSize(uint32_t id) const { return table_.count(id) != 0; }
+                               ^
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:431:36: style: Argument 'id' shadows outer function [shadowFunction]
+    uint64_t getChunkSize(uint32_t id) const { return table_.at(id); }
+                                   ^
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:402:14: note: Shadowed function
+    uint32_t id() const override { return utils::fourCC("ds64"); }
+             ^
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:431:36: note: Shadow argument
+    uint64_t getChunkSize(uint32_t id) const { return table_.at(id); }
+                                   ^
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:433:32: style: Argument 'id' shadows outer function [shadowFunction]
+    void setChunkSize(uint32_t id, uint64_t size) {
+                               ^
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:402:14: note: Shadowed function
+    uint32_t id() const override { return utils::fourCC("ds64"); }
+             ^
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:433:32: note: Shadow argument
+    void setChunkSize(uint32_t id, uint64_t size) {
+                               ^
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:433:45: style: Argument 'size' shadows outer function [shadowFunction]
+    void setChunkSize(uint32_t id, uint64_t size) {
+                                            ^
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:403:14: note: Shadowed function
+    uint64_t size() const override {
+             ^
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:433:45: note: Shadow argument
+    void setChunkSize(uint32_t id, uint64_t size) {
+                                            ^
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:444:35: style: Argument 'id' shadows outer function [shadowFunction]
+    void removeChunkSize(uint32_t id) { table_.erase(id); }
+                                  ^
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:402:14: note: Shadowed function
+    uint32_t id() const override { return utils::fourCC("ds64"); }
+             ^
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:444:35: note: Shadow argument
+    void removeChunkSize(uint32_t id) { table_.erase(id); }
+                                  ^
+Sources/ThirdParty/libbw64/bw64/parser.hpp:193:16: style: Local variable 'id' shadows outer argument [shadowArgument]
+      uint32_t id;
+               ^
+Sources/ThirdParty/libbw64/bw64/parser.hpp:173:38: note: Shadowed argument
+      std::istream& stream, uint32_t id, uint64_t size) {
+                                     ^
+Sources/ThirdParty/libbw64/bw64/parser.hpp:193:16: note: Shadow local variable
+      uint32_t id;
+               ^
+Sources/ThirdParty/libbw64/bw64/parser.hpp:194:16: style: Local variable 'size' shadows outer argument [shadowArgument]
+      uint64_t size;
+               ^
+Sources/ThirdParty/libbw64/bw64/parser.hpp:173:51: note: Shadowed argument
+      std::istream& stream, uint32_t id, uint64_t size) {
+                                                  ^
+Sources/ThirdParty/libbw64/bw64/parser.hpp:194:16: note: Shadow local variable
+      uint64_t size;
+               ^
+Sources/ThirdParty/libbw64/bw64/writer.hpp:218:12: style: Local variable 'ds64Chunk' shadows outer function [shadowFunction]
+      auto ds64Chunk = std::make_shared<DataSize64Chunk>();
+           ^
+Sources/ThirdParty/libbw64/bw64/writer.hpp:131:38: note: Shadowed function
+    std::shared_ptr<DataSize64Chunk> ds64Chunk() const {
+                                     ^
+Sources/ThirdParty/libbw64/bw64/writer.hpp:218:12: note: Shadow local variable
+      auto ds64Chunk = std::make_shared<DataSize64Chunk>();
+           ^
+Sources/ThirdParty/libbw64/bw64/writer.hpp:120:12: warning: Redundant code: Found unused function. [constStatement]
+      auto chunk = std::find_if(chunks.begin(), chunks.end(),
+           ^
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:85:47: performance: Function parameter 'subFormatString' should be passed by const reference. [passedByValue]
+              uint16_t subFormat, std::string subFormatString)
+                                              ^
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:267:31: performance: Function parameter 'trackRef' should be passed by const reference. [passedByValue]
+            const std::string trackRef, const std::string& packRef) {
+                              ^
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:355:36: performance: Function parameter 'audioIds' should be passed by const reference. [passedByValue]
+    ChnaChunk(std::vector<AudioId> audioIds) : audioIds_(audioIds){};
+                                   ^
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:365:17: performance: Range variable 'audioId' should be declared as const reference. [iterateByValue]
+      for (auto audioId : audioIds()) {
+                ^
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:375:29: performance: Function parameter 'id' should be passed by const reference. [passedByValue]
+    void addAudioId(AudioId id) { audioIds_.push_back(id); }
+                            ^
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:380:17: performance: Range variable 'audioId' should be declared as const reference. [iterateByValue]
+      for (auto audioId : audioIds()) {
+                ^
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:397:38: performance: Function parameter 'table' should be passed by const reference. [passedByValue]
+        std::map<uint32_t, uint64_t> table = std::map<uint32_t, uint64_t>())
+                                     ^
+Sources/ThirdParty/libbw64/bw64/reader.hpp:62:17: performance: Range variable 'chunkHeader' should be declared as const reference. [iterateByValue]
+      for (auto chunkHeader : chunkHeaders_) {
+                ^
+Sources/ThirdParty/libbw64/bw64/reader.hpp:195:34: performance: Function parameter 'header' should be passed by const reference. [passedByValue]
+          [id](const ChunkHeader header) { return header.id == id; });
+                                 ^
+Sources/ThirdParty/libbw64/bw64/reader.hpp:291:34: performance: Function parameter 'header' should be passed by const reference. [passedByValue]
+          [id](const ChunkHeader header) { return header.id == id; });
+                                 ^
+Sources/ThirdParty/libbw64/bw64/writer.hpp:51:52: performance: Function parameter 'additionalChunks' should be passed by const reference. [passedByValue]
+               std::vector<std::shared_ptr<Chunk>> additionalChunks) {
+                                                   ^
+Sources/ThirdParty/libbw64/bw64/writer.hpp:273:34: performance: Function parameter 'header' should be passed by const reference. [passedByValue]
+          [id](const ChunkHeader header) { return header.id == id; });
+                                 ^
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:453:18: style: Variable 'entry' can be declared as reference to const [constVariableReference]
+      for (auto& entry : table()) {
+                 ^
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:359:14: warning: Found function call inside sizeof(). [sizeofFunctionCall]
+      return sizeof(numTracks()) + sizeof(numUids()) + numUids() * 40;
+             ^
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:359:36: warning: Found function call inside sizeof(). [sizeofFunctionCall]
+      return sizeof(numTracks()) + sizeof(numUids()) + numUids() * 40;
+                                   ^
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:405:14: warning: Found function call inside sizeof(). [sizeofFunctionCall]
+             sizeof(tableLength()) + table_.size() * 12;
+             ^
+Checking Sources/BW64Bridge/bw64_bridge.cpp: __clang__=__clang__...
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:433:10: style: The function 'setChunkSize' is never used. [unusedFunction]
+    void setChunkSize(uint32_t id, uint64_t size) {
+         ^
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:444:10: style: The function 'removeChunkSize' is never used. [unusedFunction]
+    void removeChunkSize(uint32_t id) { table_.erase(id); }
+         ^
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:446:10: style: The function 'clearChunkSizeTable' is never used. [unusedFunction]
+    void clearChunkSizeTable() { table_.clear(); }
+         ^
+Sources/ThirdParty/libbw64/bw64/reader.hpp:92:14: style: The function 'fileSize' is never used. [unusedFunction]
+    uint32_t fileSize() const { return fileSize_; }
+             ^
+Sources/ThirdParty/libbw64/bw64/reader.hpp:192:10: style: The function 'hasChunk' is never used. [unusedFunction]
+    bool hasChunk(uint32_t id) const {
+         ^
+Sources/ThirdParty/libbw64/bw64/reader.hpp:109:45: style: The function 'chunksWithId' is never used. [unusedFunction]
+    std::vector<std::shared_ptr<ChunkType>> chunksWithId(
+                                            ^
+Sources/ThirdParty/libbw64/bw64/reader.hpp:180:32: style: The function 'axmlChunk' is never used. [unusedFunction]
+    std::shared_ptr<AxmlChunk> axmlChunk() const {
+                               ^
+Sources/ThirdParty/libbw64/bw64/writer.hpp:100:14: style: The function 'framesWritten' is never used. [unusedFunction]
+    uint64_t framesWritten() const {
+             ^
+Sources/ThirdParty/libbw64/bw64/writer.hpp:158:10: style: The function 'setChnaChunk' is never used. [unusedFunction]
+    void setChnaChunk(std::shared_ptr<ChnaChunk> chunk) {
+         ^
+Sources/ThirdParty/libbw64/bw64/writer.hpp:169:10: style: The function 'setAxmlChunk' is never used. [unusedFunction]
+    void setAxmlChunk(std::shared_ptr<Chunk> chunk) {
+         ^
+nofile:0:0: information: Active checkers: 173/186 (use --checkers-report=<filename> to see details) [checkersReport]
+

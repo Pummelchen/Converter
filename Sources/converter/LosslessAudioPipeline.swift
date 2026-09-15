@@ -44,8 +44,9 @@ extension ConverterTool {
         if let sourceDuration = try mediaDuration(source) {
             let clippedDuration = duration.map { min($0, sourceDuration) } ?? sourceDuration
             let need = estimateWAVBytes(duration: clippedDuration, channels: config.wavChannels)
+            // nil = the filesystem did not report free space; skip instead of pretending it is 0 (#0149).
             let free = try availableBytes(at: tempDirectory)
-            if need > 0 && free < need {
+            if let free, need > 0 && free < need {
                 throw AppError("Low free space for internal WAV staging of \(source.basename): avail=\(free) need~\(need)")
             }
         }
@@ -56,7 +57,7 @@ extension ConverterTool {
             if let duration {
                 try verifyDuration(temp, expectedSeconds: duration, label: "internal WAV", tolerance: 0.5)
             } else {
-                try verifyDurationMatch(source: source, output: temp)
+                try verifyAudioStreamDurationMatch(source: source, output: temp)
             }
             return temp
         } catch {
@@ -160,6 +161,10 @@ extension ConverterTool {
             "-ac", String(channels),
             "-ar", String(sampleRate),
             "-c:a", "flac",
+            // Pinned, not derived from the source: the archival FLAC carries the same 24-bit samples
+            // as the internal WAV, whatever depth the input had (#0131).
+            "-sample_fmt", ProjectConfig.flacSampleFormat,
+            "-bits_per_raw_sample", String(ProjectConfig.flacBitsPerRawSample),
             "-compression_level", String(config.flacCompressionLevel),
             "-map_metadata", "-1",
             output.path
@@ -183,6 +188,9 @@ extension ConverterTool {
             "-ac", String(outputChannels),
             "-ar", String(outputSampleRate),
             "-c:a", "flac",
+            // See encodeSourceToFLAC: the depth is part of the archival standard, not a source property.
+            "-sample_fmt", ProjectConfig.flacSampleFormat,
+            "-bits_per_raw_sample", String(ProjectConfig.flacBitsPerRawSample),
             "-compression_level", String(config.flacCompressionLevel),
             "-map_metadata", "-1",
             output.path

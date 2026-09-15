@@ -244,6 +244,47 @@ final class ConverterTests: XCTestCase {
         XCTAssertLessThan(Date().timeIntervalSince(start), 5, "the watchdog must end a hung installer")
     }
 
+    // audit #0117: cancelling one permitted operation used to SIGTERM every live child of the shared
+    // runner, so an unrelated sibling branch's ffmpeg/magick died with a misleading
+    // "killed by signal 15" error. Only the cancelled operation's own children may be stopped.
+    func testCancellingOnePermitLeavesTheSiblingsChildRunning() async throws {
+        let workspace = try IntegrationWorkspace()
+        let tool = try workspace.makeTool(arguments: ["-full"])
+
+        let sibling = Task {
+            try await tool.withAudioPermit { try tool.runner.run("sleep", ["3"]) }
+        }
+        try await Task.sleep(for: .milliseconds(400))
+
+        let doomed = Task {
+            try await tool.withVideoPermit { try tool.runner.run("sleep", ["15"]) }
+        }
+        try await Task.sleep(for: .milliseconds(400))
+        doomed.cancel()
+        _ = await doomed.result
+
+        let siblingResult = await sibling.result
+        guard case .success = siblingResult else {
+            return XCTFail("the unrelated sibling branch must not have its child killed: \(siblingResult)")
+        }
+    }
+
+    // audit #0135: `terminationStatus` carries the signal number, so a caller that allowed that
+    // number as an exit code accepted a SIGTERM/SIGSEGV death as success.
+    func testSignalDeathIsNeverAnAllowedExitCode() throws {
+        let workspace = try IntegrationWorkspace()
+        let tool = try workspace.makeTool(arguments: ["-full"])
+
+        XCTAssertThrowsError(
+            try tool.runner.run("/bin/sh", ["-c", "kill -TERM $$"], allowedExitCodes: [0, SIGTERM])
+        ) { error in
+            XCTAssertTrue(
+                error.localizedDescription.contains("signal"),
+                "the failure must name the signal, got: \(error.localizedDescription)"
+            )
+        }
+    }
+
     // audit #0040: when one async-let sibling fails, Swift cancels the others, but the blocking
     // waitUntilExit ignored cancellation and kept the external process (and its ffmpeg/magick
     // work) alive until it finished on its own.
@@ -300,12 +341,171 @@ final class ConverterTests: XCTestCase {
             )
         }
 
-        // The same flags in the intended order still parse.
-        let options = try parse(["-m4atomp4", "--output-file", "release.mp4", "--overwrite", "--seed", "7"])
-        XCTAssertEqual(options.action, .m4atomp4)
+        // The same flags in the intended order still parse. --seed belongs to -visualsubs, so the
+        // action here is the one that actually consumes it (#0155 rejects it elsewhere).
+        let options = try parse(["-visualsubs", "--output-file", "release.mp4", "--overwrite", "--seed", "7"])
+        XCTAssertEqual(options.action, .visualsubs)
         XCTAssertEqual(options.outputFile, "release.mp4")
         XCTAssertTrue(options.overwrite)
         XCTAssertEqual(options.seed, 7)
+    }
+
+    // audit #0121/#0126/#0129/#0155: options that an action cannot consume used to be accepted and
+    // then silently ignored, and numeric options accepted values that disabled or unbounded them.
+    func testCLIRejectsActionScopedOptionsAndOutOfRangePacing() throws {
+        let root = URL(fileURLWithPath: "/tmp/converter-test")
+        func parse(_ arguments: [String]) throws -> CLIOptions {
+            try CLIOptions.parse(
+                arguments: arguments, environment: [:], scriptDirectory: root, scriptName: "converter")
+        }
+
+        for option in [["--open"], ["--num-dots", "5"], ["--dot-size", "5"], ["--max-attempts", "5"], ["--seed", "7"]] {
+            XCTAssertThrowsError(try parse(["-full"] + option)) { error in
+                XCTAssertTrue(
+                    error.localizedDescription.contains(option[0]),
+                    "expected \(option[0]) to be named, got: \(error.localizedDescription)"
+                )
+            }
+        }
+        // -visualsubs is the action that actually consumes them.
+        let dots = try parse(["-visualsubs", "--num-dots", "5", "--open"])
+        XCTAssertEqual(dots.numDots, 5)
+        XCTAssertTrue(dots.openAfterCreate)
+
+        // A second positional value used to be discarded without a word (#0126).
+        XCTAssertThrowsError(try parse(["-visualsubs", "9", "5"])) { error in
+            XCTAssertTrue(error.localizedDescription.contains("-visualsubs"), "\(error.localizedDescription)")
+        }
+        // A positional value and the option are mutually exclusive.
+        XCTAssertThrowsError(try parse(["-visualsubs", "9", "--num-dots", "5"]))
+
+        // Bounded dot count and attempt budget (#0129).
+        let dotCap = CLIOptions.maximumVisualSubsDots
+        // A positional dot count lands in actionArgs, the option lands in numDots.
+        XCTAssertEqual(try parse(["-visualsubs", "\(dotCap)"]).actionArgs, ["\(dotCap)"])
+        XCTAssertEqual(try parse(["-visualsubs", "--num-dots", "\(dotCap)"]).numDots, dotCap)
+        XCTAssertThrowsError(try parse(["-visualsubs", "\(dotCap + 1)"]))
+        XCTAssertThrowsError(
+            try parse(["-visualsubs", "--max-attempts", "\(CLIOptions.maximumVisualSubsAttempts + 1)"]))
+
+        // --sleep-seconds accepted anything finite, so a negative value disabled pacing silently and a
+        // huge one parked the process in Thread.sleep with no watchdog (#0121).
+        XCTAssertThrowsError(try parse(["-full", "--sleep-seconds", "-5"]))
+        XCTAssertThrowsError(try parse(["-full", "--sleep-seconds", "100000"]))
+        XCTAssertThrowsError(try parse(["-full", "--sleep-seconds", "0"]))
+        XCTAssertEqual(try parse(["-full", "--sleep-seconds", "2.5"]).sleepSeconds, 2.5)
+    }
+
+    // audit #0120: a config path named through --config or CONFIG_FILE is a request. A typo used to
+    // fall back to the built-in defaults and exit 0, ignoring the operator's profile and tolerances.
+    func testExplicitConfigThatDoesNotExistIsRejected() throws {
+        let workspace = try IntegrationWorkspace()
+        let missing = workspace.root.appendingPathComponent("nope-config.txt")
+        let options = try CLIOptions.parse(
+            arguments: ["-help", "--config", missing.path],
+            environment: [:],
+            scriptDirectory: workspace.root,
+            scriptName: "converter"
+        )
+        XCTAssertTrue(options.configFileWasExplicit, "--config must mark the path as requested")
+        XCTAssertThrowsError(
+            try ProjectConfig.load(
+                from: options.configFile,
+                environment: [:],
+                cli: options,
+                logger: Logger(scriptName: "converterTests", debugEnabled: false)
+            )
+        ) { error in
+            XCTAssertTrue(
+                error.localizedDescription.contains(missing.path),
+                "the error must name the missing file, got: \(error.localizedDescription)"
+            )
+        }
+    }
+
+    // audit #0119: the pixel-format keys are spliced into `format=...` in an ffmpeg filter graph, so a
+    // comma could close the filter and inject another one. The colour keys already forbid that.
+    func testPixelFormatConfigMustBeAnFFmpegToken() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.overwriteConfig(
+            IntegrationWorkspace.defaultConfig + "\nVIDEO_MP4_PIXEL_FORMAT=yuv420p,scale=16:16\n")
+        XCTAssertThrowsError(try loadConfig(from: workspace)) { error in
+            XCTAssertTrue(
+                error.localizedDescription.contains("VIDEO_MP4_PIXEL_FORMAT"),
+                "unexpected message: \(error.localizedDescription)"
+            )
+        }
+    }
+
+    // audit #0142: requirePositiveRateString only checked `> 0`, so `inf` reached `fps=inf`.
+    func testRateConfigRejectsInfinity() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.overwriteConfig(IntegrationWorkspace.defaultConfig + "\nSHORT_MP4_FPS=inf\n")
+        XCTAssertThrowsError(try loadConfig(from: workspace)) { error in
+            XCTAssertTrue(
+                error.localizedDescription.contains("SHORT_MP4_FPS"),
+                "unexpected message: \(error.localizedDescription)"
+            )
+        }
+    }
+
+    // audit #0153: a repeated key silently took the last value while a misspelled key was reported.
+    func testDuplicateConfigKeyIsReportedAndLastValueWins() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.overwriteConfig(
+            IntegrationWorkspace.defaultConfig + "\nAUDIO_QC_TARGET_LUFS=-14\nAUDIO_QC_TARGET_LUFS=-10\n")
+
+        var loaded: ProjectConfig?
+        let standardError = try captureStandardError {
+            loaded = try loadConfig(from: workspace)
+        }
+        XCTAssertEqual(loaded?.audioQCTargetLUFS, -10, "the last value is the effective one")
+        let lines = standardError.split(whereSeparator: \.isNewline).map(String.init)
+        let duplicates = lines.filter { $0.contains("Duplicate config key 'AUDIO_QC_TARGET_LUFS'") }
+        // The shipped default config already carries the key, so both appended lines are duplicates.
+        XCTAssertFalse(duplicates.isEmpty, "a repeated key must be reported, got: \(lines)")
+        XCTAssertTrue(
+            duplicates.last?.contains("'-10'") == true,
+            "the warning must name the effective value, got: \(duplicates)")
+    }
+
+    // audit #0143: the entry point is the only code that maps errors to process exit codes, and it had
+    // no test at all. It is now a function of (arguments, environment, current directory).
+    func testEntryPointMapsArgumentErrorsToExitCodeTwo() async throws {
+        let unknownOption = await ConverterMain.run(
+            arguments: ["converter", "--not-an-option"], environment: [:], currentDirectory: "/tmp")
+        XCTAssertEqual(unknownOption, 2)
+
+        let twoActions = await ConverterMain.run(
+            arguments: ["converter", "-full", "-album"], environment: [:], currentDirectory: "/tmp")
+        XCTAssertEqual(twoActions, 2)
+
+        let help = await ConverterMain.run(
+            arguments: ["converter", "-help"], environment: [:], currentDirectory: "/tmp")
+        XCTAssertEqual(help, 0)
+    }
+
+    // audit #0143: a bare `converter` found through PATH used to resolve against the current directory,
+    // so the tool read config.txt and wrote Output in whatever directory the caller happened to be in.
+    func testEntryPointResolvesABareExecutableNameAgainstTheRunningBinary() throws {
+        let bare = ConverterMain.scriptLocation(
+            executablePath: "converter", currentDirectory: "/tmp/somewhere-else", environment: [:])
+        let running = try XCTUnwrap(Bundle.main.executableURL?.standardizedFileURL)
+        XCTAssertEqual(bare.directory.standardizedFileURL.path, running.deletingLastPathComponent().path)
+        XCTAssertNotEqual(bare.directory.standardizedFileURL.path, "/tmp/somewhere-else")
+
+        // A path that does name a directory is still resolved relative to the current directory.
+        let explicit = ConverterMain.scriptLocation(
+            executablePath: "build/converter", currentDirectory: "/tmp/base", environment: [:])
+        XCTAssertEqual(explicit.directory.standardizedFileURL.path, "/tmp/base/build")
+
+        // The CONVERTER_ROOT/CONVERTER_NAME overrides win, which is what the tests rely on.
+        let overridden = ConverterMain.scriptLocation(
+            executablePath: "converter",
+            currentDirectory: "/tmp/base",
+            environment: ["CONVERTER_ROOT": "/opt/converter", "CONVERTER_NAME": "renamed"])
+        XCTAssertEqual(overridden.directory.path, "/opt/converter")
+        XCTAssertEqual(overridden.name, "renamed")
     }
 
     // audit #0077: after an install, a tool that exists but fails its -version probe was filtered

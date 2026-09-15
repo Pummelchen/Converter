@@ -4,7 +4,7 @@ Checklist for declaring the converter stable as Release v1.0. Track blockers as 
 
 ## Build and test validation
 
-- [ ] `swift build --package-path Sources -c release` succeeds on a clean checkout (macOS 15+, Apple Silicon, Swift tools 6.3.3+)
+- [ ] `swift build --package-path Sources -c release` succeeds on a clean checkout (macOS 15+, Apple Silicon, Swift 6.4 / Xcode 27; the manifest floor is 6.3.3)
 - [ ] `swift test --package-path Sources` passes fully (see `docs/KNOWN_GOOD_VERSIONS.md` for the current recorded baseline)
 - [ ] CI workflow (`.github/workflows/ci.yml`) green on the release commit
 - [ ] Manual smoke test on representative (non-private) media: `-full`, `-album`, `-short`, `-nfttoshort`, one audio batch action, `-doctor`
@@ -27,8 +27,10 @@ Checklist for declaring the converter stable as Release v1.0. Track blockers as 
 - [ ] The checked-in `converter` binary is regenerated from the release commit:
   ```bash
   swift build --package-path Sources -c release
-  cp Sources/.build/arm64-apple-macosx/release/converter ./converter
+  # Swift 6.4 moved the build products (.build/out/Products/<config>), so ask SwiftPM where they are.
+  cp "$(swift build --package-path Sources -c release --show-bin-path)/converter" ./converter
   chmod +x ./converter
+  shasum -a 256 ./converter   # then update docs/converter.sha256 and docs/BINARY_PROVENANCE.md
   ```
 - [ ] Binary verified: `./converter -help`, `./converter -matrix`, `./converter -doctor`
 - [ ] Commit message states the binary was intentionally regenerated

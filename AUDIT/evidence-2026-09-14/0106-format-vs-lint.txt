@@ -1,0 +1,29 @@
+#0106 — adopting `swift format` as the Swift style gate vs. the recorded swiftlint budget
+
+State before (unformatted, reverted after this measurement):
+  scripts/lint-budget.sh -> 469 violations, 19 error-level  (budget 469 / 19, no new violations)
+
+After `swift format --in-place --recursive --configuration .swift-format Sources/...`
+(lineLength 120, indentation 4 spaces, respectsExistingLineBreaks):
+
+  scripts/lint-budget.sh -> 327 violations, 21 error-level
+  ::error::swiftlint regression against the recorded budget
+    total: 469 -> 327
+    errors: 19 -> 21
+    closure_parameter_position: 0 -> 1
+    function_body_length: 21 -> 25
+    opening_brace: 0 -> 31
+    trailing_comma: 0 -> 145
+
+Per-rule after formatting (swiftlint --reporter json):
+  trailing_comma 145, line_length 74, opening_brace 31, function_body_length 25,
+  inclusive_language 22, file_length 11, ...
+
+So the formatter fixes the rule it overlaps with (line_length 397 -> 74) but introduces 145
+trailing_comma and 31 opening_brace violations and pushes four functions past
+function_body_length, taking error-level violations from 19 to 21. `swift format lint` itself is
+clean after the pass, i.e. the two tools simply disagree about punctuation and brace placement.
+
+Resolution: the pass was reverted; `.swift-format`, `scripts/check-format.sh` and the CI step stay in
+place, and the task is BLOCKED on an owner decision, because choosing between them changes the
+project's declared style and its lint ratchet, which an audit must not decide unilaterally.

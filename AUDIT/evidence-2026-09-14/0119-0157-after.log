@@ -1,0 +1,31 @@
+Building for debugging...
+[1 / 7] converterTests-product
+[2 / 7] converterTests-product
+[4 / 9] converterTests-product
+[7 / 13] converterTests-product
+[9 / 13] converterTests-product
+Build complete! (2.59 sec)
+Test Suite 'Selected tests' started at 2026-09-15 20:22:05.000.
+Test Suite 'converterTests.xctest' started at 2026-09-15 20:22:05.001.
+Test Suite 'ConverterTests' started at 2026-09-15 20:22:05.001.
+Test Case '-[converterTests.ConverterTests testClipSecondsAboveTheHardMaximumIsRejected]' started.
+[2026-09-15 20:22:05] [converterTests] [WARN] Duplicate config key 'SHORT_MP4_CLIP_SECONDS' in /var/folders/k5/fzyk9mb96rqbc6_vnxv5mh3h0000gn/T/converter-tests.45135DF1-B8E8-4633-A4AB-9F3EA465C343/config.txt; using the last value '120'
+Test Case '-[converterTests.ConverterTests testClipSecondsAboveTheHardMaximumIsRejected]' passed (0.004 seconds).
+Test Case '-[converterTests.ConverterTests testCLIRejectsActionScopedOptionsAndOutOfRangePacing]' started.
+Test Case '-[converterTests.ConverterTests testCLIRejectsActionScopedOptionsAndOutOfRangePacing]' passed (0.001 seconds).
+Test Case '-[converterTests.ConverterTests testDuplicateConfigKeyIsReportedAndLastValueWins]' started.
+Test Case '-[converterTests.ConverterTests testDuplicateConfigKeyIsReportedAndLastValueWins]' passed (0.002 seconds).
+Test Case '-[converterTests.ConverterTests testExplicitConfigThatDoesNotExistIsRejected]' started.
+Test Case '-[converterTests.ConverterTests testExplicitConfigThatDoesNotExistIsRejected]' passed (0.001 seconds).
+Test Case '-[converterTests.ConverterTests testPixelFormatConfigMustBeAnFFmpegToken]' started.
+[2026-09-15 20:22:05] [converterTests] [WARN] Duplicate config key 'VIDEO_MP4_PIXEL_FORMAT' in /var/folders/k5/fzyk9mb96rqbc6_vnxv5mh3h0000gn/T/converter-tests.63A6BFAC-8B60-41E2-A8A0-C18600C1A53A/config.txt; using the last value 'yuv420p,scale=16:16'
+Test Case '-[converterTests.ConverterTests testPixelFormatConfigMustBeAnFFmpegToken]' passed (0.002 seconds).
+Test Case '-[converterTests.ConverterTests testRateConfigRejectsInfinity]' started.
+[2026-09-15 20:22:05] [converterTests] [WARN] Duplicate config key 'SHORT_MP4_FPS' in /var/folders/k5/fzyk9mb96rqbc6_vnxv5mh3h0000gn/T/converter-tests.4721E777-7E8C-4153-A329-613E5EFE6344/config.txt; using the last value 'inf'
+Test Case '-[converterTests.ConverterTests testRateConfigRejectsInfinity]' passed (0.002 seconds).
+Test Suite 'ConverterTests' passed at 2026-09-15 20:22:05.013.
+	 Executed 6 tests, with 0 failures (0 unexpected) in 0.011 (0.012) seconds
+Test Suite 'converterTests.xctest' passed at 2026-09-15 20:22:05.013.
+	 Executed 6 tests, with 0 failures (0 unexpected) in 0.011 (0.012) seconds
+Test Suite 'Selected tests' passed at 2026-09-15 20:22:05.013.
+	 Executed 6 tests, with 0 failures (0 unexpected) in 0.011 (0.012) seconds

@@ -1,0 +1,12 @@
+swiftlint total 471 {'Warning': 452, 'Error': 19}
+  Error    cyclomatic_complexity          3
+  Error    file_length                    6
+  Error    function_body_length           4
+  Error    type_body_length               6
+  Warning  cyclomatic_complexity          5
+  Warning  file_length                    5
+  Warning  function_body_length           17
+  Warning  function_parameter_count       2
+  Warning  inclusive_language             22
+  Warning  large_tuple                    3
+  Warning  line_length                    398
