@@ -8,7 +8,7 @@
 # tool.
 #
 # The thresholds below are exactly SwiftLint 0.65.1's defaults, so this file changes no count
-# (verified: scripts/lint-budget.sh still reports 471 violations / 19 error-level with the same
+# (verified: scripts/lint-budget.sh still reports 151 violations / 21 error-level with the same
 # per-rule breakdown). `swiftlint rules` prints the same numbers for the installed binary.
 #
 # Not configured on purpose: every opt-in rule stays off, and the rule set is the default one. The

@@ -2,7 +2,7 @@
 
 ## Supported versions
 
-Converter has no numbered releases yet. Security fixes land on `main`, and the checked-in
+Converter's latest numbered release is v1.0. Security fixes land on `main`, and the checked-in
 `converter` binary at the repository root is rebuilt from `main` when a fix affects it. Only the
 current `main` and the binary built from it are supported.
 
