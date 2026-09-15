@@ -2,24 +2,22 @@
 
 Session: `2026-09-14` · branch `audit/2026-09-14` · baseline commit `40bfadd`
 
-**known-total:159 done:157 open:1 blocked:1 new-this-session:59**
+**known-total:159 done:158 open:0 blocked:1 new-this-session:59**
 
 | status | count |
 |---|---|
-| START | 1 |
+| START | 0 |
 | PROGRESS | 0 |
 | TEST | 0 |
 | AUDIT | 0 |
-| DONE | 157 |
+| DONE | 158 |
 | BLOCKED | 1 |
 
 Status gates: START (reproduced/proven + expected behaviour written) → PROGRESS (diff) → TEST (failing-before/passing-after test pasted, full suite green, no new warnings) → AUDIT (cold re-read, all scanners re-run, no baseline regression, no new placeholder) → DONE (committed atomically). BLOCKED needs reason + what was tried + ≥2 options for a human.
 
-## Open S0 / S1 (1)
+## Open S0 / S1 (0)
 
-| id | sev | module | file:line | title | category | status | commit |
-|---|---|---|---|---|---|---|---|
-| #0159 | S1 | repo/audit | Phase E (fresh clone on a non-development host) | Phase E: end-to-end verification on a host that did not develop these fixes | process | START |  |
+_none_
 
 ## Blocked (1)
 
@@ -31,7 +29,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 
 _none_
 
-## Done (157)
+## Done (158)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
@@ -73,6 +71,7 @@ _none_
 | #0038 | S1 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:126-146 | Orphan temp cleanup untested against a live foreign PID | test | DONE | a53673a |
 | #0101 | S1 | repo/CI | .github/workflows/ci.yml:11-49 | CI builds on macos-26 with Swift 6.3.3, below the 6.4 standard | toolchain | DONE | b72350d |
 | #0103 | S1 | repo/release | converter, docs/BINARY_PROVENANCE.md, docs/converter.sha256 | Shipped release binary was built with Swift 6.3.3 / Xcode 26.6 | artefact | DONE | d7f332d |
+| #0159 | S1 | repo/audit | Phase E (fresh clone on a non-development host) | Phase E: end-to-end verification on a host that did not develop these fixes | process | DONE | 0cd0e32 |
 | #0001 | S2 | repo/AUDIT | AUDIT/inventory.md | Phase A: scope inventory, dependency graph, trust boundaries, blast radius | docs | DONE | 5fa6546 |
 | #0002 | S2 | repo/AUDIT | AUDIT/environment.md | Phase A: environment record and audit tooling install (§1/§1b) | docs | DONE | 5fa6546 |
 | #0003 | S2 | repo/AUDIT | AUDIT/baseline.md | Phase A: baseline metrics at 4bb136a (§3) | docs | DONE | 2184906 |
@@ -2128,13 +2127,16 @@ _none_
 - **evidence-after:** AUDIT/evidence-2026-09-14/0111-0157-fullsuite.txt (273 tests, 0 failures, 0 compiler warnings), 0119-0157-before.log (11 behaviours reproduced unfixed), 0119-0157-after.log, 0148-tilde-probe.log; scripts/lint-budget.sh reports 469/19 with no new violations (ratchet re-recorded downward); clang-tidy reports 0 first-party findings.
 - **commit sha:** 1f0e0d9
 
-### #0159 · S1 · START · Phase E: end-to-end verification on a host that did not develop these fixes
+### #0159 · S1 · DONE · Phase E: end-to-end verification on a host that did not develop these fixes
 
 - **project/module:** repo/audit
 - **file:line:** Phase E (fresh clone on a non-development host)
 - **category:** process
-- **host-used:** node1..node4
+- **host-used:** node2 (Mac Mini M2, 8 GB, macOS 27.0, Xcode 27.0, Swift 6.4)
 - **discovered-by:** §11/§12 brief
 - **evidence-before:** Every fix in this session was validated on the development host (local M2, 8 GB). §11 requires Phase E to run from a fresh clone on a machine that did not develop the fix, with a clean build, the full suite, the coverage report, all scanners clean or waived in writing, zero placeholders and a ledger containing only DONE or BLOCKED.
+- **fix-summary:** Phase E ran twice from a fresh clone on node2 (a host that did not develop these fixes). The first run found two real gate failures — a swiftlint regression (462/461, one trailing comma added with the #0144 test) and a cppcheck gate that exited 1 on vendored style findings, cppcheck's own checkersReport and the default branch-limit notice. Both were fixed, and the second run at 0cd0e32 is green end to end.
+- **evidence-after:** AUDIT/evidence-2026-09-14/phase-e-node2-final.log (clone 0cd0e32, clean tree): debug build warnings-as-errors 0, strict release build 0, committed-binary checksum OK, swiftlint 461/19 no new violations, ruff+mypy --strict clean, gitleaks full history no leaks, semgrep 0, cppcheck exhaustive 0, clang-tidy 0 first-party, placeholder markers 0, try!/as!/fatalError 0, full suite 278 tests 0 failures, periphery 23 findings / 0 unused, -help/-matrix/-doctor ok. The first run is kept as phase-e-node2.log.
+- **commit sha:** 0cd0e32
 - **notes:** Not started: the session ran out of budget after Phase C/D. The audit is therefore NOT complete and no PR to main may be opened until this is DONE.
 
