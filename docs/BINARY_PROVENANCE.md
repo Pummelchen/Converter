@@ -11,7 +11,7 @@ and a rebuild can be compared.
 | File | `converter` |
 | Size | 1 715 256 bytes |
 | SHA-256 | `6aba6b23aaa329157b57fb8ae3781c44949fb02f91db243cb76c023f0cbd9ad5` |
-| Source commit | `0ffed120411f9426a2768f3c2a272021ee507987` |
+| Source commit | `8d2a70758a15327d70e5d073f69ffc994772fe2c` |
 | Build command | `swift build --package-path Sources -c release -Xswiftc -warnings-as-errors -Xcc -Wall -Xcc -Wextra -Xcc -Werror` |
 | Swift | 6.4 (`swiftlang-6.4.0.34.1`), target `arm64-apple-macosx27.0.0` |
 | Xcode | 27.0 (27A266a) |
