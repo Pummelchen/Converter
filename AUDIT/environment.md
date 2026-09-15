@@ -1,76 +1,108 @@
-# Audit environment record (§1 / §1b)
+# Audit environment record — session 2026-09-14 (Swift 6.4 / Xcode 27)
 
 Everything here must be re-installable from this file alone. Versions are what was actually
-observed on 2026-09-13.
+observed on **2026-09-15** (the session's clock; the audit branch is named `audit/2026-09-14`).
+
+## Standard applied
+
+| Language | Standard this audit holds the repo to |
+|---|---|
+| Swift | **6.4** (Xcode 27), strict concurrency (language mode 6), warnings-as-errors |
+| C++ | C++17, `-Wall -Wextra -Werror`; first-party code only, vendored headers stay verbatim |
+| C | **N/A** — no C sources exist (no `*.c` outside vendored third-party) |
+| Python | 3.14 present only as audit tooling (`AUDIT/tools/*.py`); nothing Python ships in the product |
+| C# / .NET | **N/A** — no C# in the repository |
 
 ## Hosts
 
-| Host | Role in this audit | Hardware | OS | Xcode | Swift | Homebrew | ffmpeg | ImageMagick | Docker |
-|---|---|---|---|---|---|---|---|---|---|
-| local (`Mac15,3`, Apple Silicon, 24 GB) | development, baseline, all static scanning | M3-class laptop | macOS 26.6.2 (25G83) | 26.6 (17F113) | 6.3.3 (swiftlang-6.3.3.1.3) | 6.0.22 | 9.0.1 | 7.1.2-31 Q16-HDRI | available (not used) |
-| `node1` (Mac Mini M2, 8 GB) | **Phase E independent verification** (fresh clone) | M2, 8 GB | 26.6.2 | 26.6 | 6.3.3 | 6.0.22 | 9.0.1 | 7.1.2-31 | installed, not used |
-| `node2`, `node3`, `node4` (Mac Mini M2, 8 GB) | reserve; not used | M2, 8 GB | 26.6.2 | 26.6 | 6.3.3 | 6.0.22 | 9.0.1 | 7.1.2-31 | installed, not used |
-| Debian 13 Intel VPS | **not used** — this repository has no Linux-buildable project (Swift/Xcode/Apple-platform only, see `inventory.md`) | — | — | — | — | — | — | — | — |
+| Host | Role | Hardware | OS | Xcode | Swift | ffmpeg | ImageMagick |
+|---|---|---|---|---|---|---|---|
+| local | development, baseline, all static scanning | **Apple M2, 8 GB** | **27.0 (26A428)** | **27.0 (27A266a)** | **6.4 (swiftlang-6.4.0.34.1)** | 9.0.1 | 7.1.2-31 Q16-HDRI |
+| `node1` (Mac Mini M2, 8 GB) | independent verification (Phase E) | M2, 8 GB | 27.0 | 27.0 | 6.4 | 9.0.1 | 7.1.2-31 |
+| `node2`, `node3`, `node4` (Mac Mini M2, 8 GB) | reserve | M2, 8 GB | 27.0 | 27.0 | 6.4 | 9.0.1 | 7.1.2-31 |
+| Debian 13 Intel VPS | **not used** — nothing in this repository builds on Linux (Swift/Xcode only), so the standard's Linux/x86 rules have no target here | — | — | — | — | — | — |
 
-Fleet rule applied: at most one heavy job per Mac Mini, never Docker and Xcode concurrently.
-Nothing was installed on any remote host. Phase E on `node1` uses only what was already present
-(Xcode 26.6, Swift 6.3.3, Homebrew ffmpeg/imagemagick) plus a fresh clone under
-`~/audit/Converter` that is removed afterwards (see the ledger for the cleanup entry).
+SSH reaches `node1`..`node4` with key authentication as `<host>@<host>`; no password is stored or
+transmitted anywhere. The VPS is available but **not provisioned** — the rules require asking
+first, and nothing in this repo needs it.
 
-## Tooling installed for this audit (local host, Homebrew, global)
+### Work distribution actually used
+
+- All Swift builds/tests run on Macs. At most **one** heavy job per Mac at a time.
+- The local machine for this session is an **8 GB M2**, so that rule applies here too: the full
+  suite never runs concurrently with a build or an analyzer that indexes the package.
+- Docker 29.8.0 is installed but **not used**: there is no Linux-targeted work in this repo
+  (the C++ bridge and all Swift code build natively). Recorded rather than silently skipped.
+
+## Tooling installed for this audit (Homebrew, global, on the local host)
 
 Install command (reproducible):
 
 ```bash
-brew install swiftlint periphery gitleaks trufflehog semgrep cppcheck
+brew install swiftlint periphery gitleaks trufflehog semgrep cppcheck llvm jq
 ```
 
 | Tool | Version | Purpose (§1 minimum coverage) | Install method |
 |---|---|---|---|
 | `swiftlint` | 0.65.1 | Swift linter | `brew install swiftlint` |
-| `swift format` | 6.3.0 (bundled with Swift 6.3.3 toolchain) | Swift formatter | ships with Xcode 26.6 |
-| Swift compiler `-warnings-as-errors`, language mode 6 | 6.3.3 | Swift type checker / strict concurrency | ships with Xcode 26.6 |
+| `swift format` | bundled with Swift 6.4 (`swift format --version` prints `main`) | Swift formatter | ships with Xcode 27 |
+| Swift compiler | 6.4 (`swiftlang-6.4.0.34.1`), language mode 6, `-warnings-as-errors` | type checker / strict concurrency | ships with Xcode 27 |
 | `periphery` | 3.8.0 | Swift unused-code static analyzer | `brew install periphery` |
-| `semgrep` | 1.176.0 | SAST (rulesets `p/swift`, `p/c`, `p/security-audit`, `p/secrets`) | `brew install semgrep` |
+| `semgrep` | 1.176.0 | SAST (`p/swift`, `p/c`, `p/security-audit`, `p/secrets`) | `brew install semgrep` |
 | `gitleaks` | 8.30.1 | secret scan, full git history | `brew install gitleaks` |
 | `trufflehog` | 3.97.4 | secret scan, full git history (second engine) | `brew install trufflehog` |
 | `cppcheck` | 2.21.0 | C++ static analyzer (bridge) | `brew install cppcheck` |
-| `clang-tidy` | Homebrew LLVM 23.1.1 | C++ static analyzer (bridge), checks `bugprone-*,cert-*,clang-analyzer-*,performance-*,misc-*` | pre-existing `brew install llvm` |
-| `swift build --sanitize=address` / `--sanitize=undefined` / `--sanitize=thread` | toolchain | sanitizer builds for the C++ bridge and Swift | ships with Xcode 26.6 |
-| `swift test --enable-code-coverage` + `xcrun llvm-cov` | toolchain | coverage measurement | ships with Xcode 26.6 |
-| `jq` | 1.8.2 | report processing | pre-existing |
-| `python3` | system | report processing | ships with macOS |
+| `clang-tidy` | Homebrew LLVM 23.1.1 | C++ static analyzer, `bugprone-*,cert-*,clang-analyzer-*,performance-*,misc-*` | `brew install llvm` |
+| `xcrun llvm-cov` | Apple LLVM 21.0.0 | coverage measurement | ships with Xcode 27 |
+| `swift build --sanitize=address/undefined/thread` | Xcode 27 toolchain | sanitizer builds for Swift + the C++ bridge | ships with Xcode 27 |
+| `jq` | 1.8.2 | report processing | `brew install jq` |
+| `python3` | 3.14.7 | audit tooling (`AUDIT/tools/*.py`) | system / Homebrew |
+| Docker | 29.8.0 (88096ef005) | disposable Linux toolchains — unused here, see above | Docker Desktop |
 
 ### Coverage of the §1 minimum per language
 
-| Requirement | Swift | C++ (bridge) |
-|---|---|---|
-| formatter | `swift format` | `clang-format` (LLVM 23.1.1, pre-existing) |
-| linter | swiftlint | clang-tidy |
-| static analyzer | periphery + compiler | cppcheck + clang-tidy + clang static analyzer (`clang-analyzer-*`) |
-| type checker | swiftc (language mode 6, `-warnings-as-errors`) | clang `-std=c++17 -Wall -Wextra -Werror` |
-| SAST | semgrep `p/swift`, `p/security-audit` | semgrep `p/c`, `p/security-audit` |
-| dependency / CVE scanner | **N/A with justification**: no SwiftPM dependencies exist (no `Package.resolved`); the only vendored dependency is libbw64 0.10.0, which equals the latest upstream release and has no published CVEs (checked GitHub advisories, 2026-09-13). Runtime tools ffmpeg/ImageMagick are Homebrew-managed and outside the build; their versions are recorded above. | same |
-| secret scanner over full history | gitleaks + trufflehog | same |
-| sanitizer builds + memory checker | ASan/UBSan/TSan via `swift build --sanitize=…` running the test suite (macOS has no valgrind; ASan + LeakSanitizer is the memory checker used) | same (bridge is compiled into the sanitized build) |
-| coverage | `swift test --enable-code-coverage` | included (llvm-cov, bridge object is instrumented) |
-
-Python / C# / C: not present in the repository; their §1 rows do not apply.
+| Requirement | Swift | C++ (bridge) | Python (audit tooling only) |
+|---|---|---|---|
+| formatter | `swift format` | `clang-format` (LLVM 23.1.1) | `ruff format` (see the tooling task; not yet applied) |
+| linter | swiftlint | clang-tidy | `ruff check` (task) |
+| static analyzer | periphery + compiler | cppcheck + clang-tidy + clang static analyzer | `mypy --strict` (task) |
+| type checker | swiftc, language mode 6, warnings-as-errors | `clang -std=c++17 -Wall -Wextra -Werror` | `mypy --strict` (task) |
+| SAST | semgrep `p/swift`, `p/security-audit` | semgrep `p/c`, `p/security-audit` | semgrep `p/python` (task) |
+| dependency / CVE scanner | **N/A with justification**: no SwiftPM dependencies exist (no `Package.resolved`); the only vendored dependency is libbw64 0.10.0, equal to the latest upstream release (2019-01-28) with no advisories on record. Runtime tools (ffmpeg/ImageMagick) are Homebrew-managed and outside the build; versions recorded above. | same | stdlib only |
+| secret scanner over full history | gitleaks + trufflehog | same | same |
+| sanitizer builds + memory checker | ASan/UBSan/TSan via `swift test --sanitize=…`; macOS has no valgrind, ASan+LeakSanitizer is the memory checker | same (the bridge is compiled into the sanitized build) | n/a |
+| coverage | `swift test --enable-code-coverage` + `llvm-cov` | included (the bridge object is instrumented) | n/a |
 
 ## Commands used for the baseline (copy-paste reproducible)
 
 ```bash
 # from the repository root, Sources/.build removed first
-swift build --package-path Sources -Xswiftc -warnings-as-errors
+swift build --package-path Sources --build-tests -Xswiftc -warnings-as-errors
 swift build --package-path Sources -c release -Xswiftc -warnings-as-errors -Xcc -Wall -Xcc -Wextra -Xcc -Werror
 swift test  --package-path Sources --enable-code-coverage
 xcrun llvm-cov report Sources/.build/debug/converterPackageTests.xctest/Contents/MacOS/converterPackageTests \
   -instr-profile Sources/.build/debug/codecov/default.profdata -ignore-filename-regex='Tests|ThirdParty|\.build'
 swiftlint lint --quiet --reporter json Sources/converter Sources/Tests
-semgrep scan --config p/swift --config p/c --config p/security-audit --config p/secrets --exclude .build --exclude ThirdParty Sources
+periphery scan --project-root Sources --retain-public --format csv
 gitleaks git --no-banner --redact=100 .
 trufflehog git file://. --no-update
-cppcheck --enable=all --std=c++17 --inline-suppr --suppress=missingIncludeSystem -I Sources/ThirdParty/libbw64 -I Sources/BW64Bridge/include Sources/BW64Bridge/bw64_bridge.cpp
-clang-tidy Sources/BW64Bridge/bw64_bridge.cpp -checks='bugprone-*,cert-*,clang-analyzer-*,performance-*,misc-*,-misc-include-cleaner' -- -std=c++17 -I Sources/ThirdParty/libbw64 -I Sources/BW64Bridge/include -isysroot "$(xcrun --show-sdk-path)"
-periphery scan --project-path Sources   # run only when no other SwiftPM build holds Sources/.build
+semgrep scan --config p/swift --config p/c --config p/security-audit --config p/secrets --exclude .build --exclude ThirdParty Sources
+cppcheck --enable=all --std=c++17 --inline-suppr --suppress=missingIncludeSystem \
+  -I Sources/ThirdParty/libbw64 -I Sources/BW64Bridge/include Sources/BW64Bridge/bw64_bridge.cpp
+clang-tidy Sources/BW64Bridge/bw64_bridge.cpp \
+  -checks='bugprone-*,cert-*,clang-analyzer-*,performance-*,misc-*,-misc-include-cleaner' -- \
+  -std=c++17 -I Sources/ThirdParty/libbw64 -I Sources/BW64Bridge/include -isysroot "$(xcrun --show-sdk-path)"
 ```
+
+## Host state
+
+- Nothing was installed on `node1`..`node4`; they already carry Xcode 27.0 / Swift 6.4 and the media
+  tools. Phase E clones into `~/audit/Converter` and removes it afterwards.
+- No Docker containers or images were created.
+- The VPS was not touched.
+
+## Previous session
+
+The 2026-09-13 audit ran on macOS 26.6.2 / Xcode 26.6 / Swift 6.3.3 on a 24 GB M3 laptop. That host
+is not part of this session's fleet; this file was rewritten because the whole environment changed
+(OS major version, Xcode major version, Swift minor version, and the local machine itself).

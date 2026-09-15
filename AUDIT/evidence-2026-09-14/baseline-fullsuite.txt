@@ -1,0 +1,486 @@
+Building for debugging...
+[Planning deferred tasks]
+[5 / 16] converter
+[14 / 35] converter-product
+[17 / 35] converter-product
+[19 / 35] converter-product
+[20 / 35] BW64Bridge
+[24 / 37] converter
+[28 / 38] converter
+[29 / 38] converter
+[29 / 41] converter-product
+[29 / 41] converter
+[29 / 41] converter-product
+[31 / 41] converter-product
+[33 / 42] converter
+[37 / 42] converterTests-product
+[39 / 50]
+[40 / 50]
+[45 / 50] converterTests-product
+[48 / 51] converterTests-product
+[50 / 51] converterTests-product
+Build complete! (6.43 sec)
+Test Suite 'All tests' started at 2026-09-15 19:25:28.235.
+Test Suite 'converterTests.xctest' started at 2026-09-15 19:25:28.236.
+Test Suite 'ConverterTests' started at 2026-09-15 19:25:28.236.
+Test Case '-[converterTests.ConverterTests testAlbumActionParsesAndSortsNaturallyIgnoringExtension]' started.
+Test Case '-[converterTests.ConverterTests testAlbumActionParsesAndSortsNaturallyIgnoringExtension]' passed (0.031 seconds).
+Test Case '-[converterTests.ConverterTests testAlbumCandidatesCollapseSameStemFamiliesAndSkipDerivedOutputs]' started.
+[2026-09-15 19:25:28] [converterTests] [WARN] Album track 01.flac has same-stem conversions beside it; ignoring 01.wav, 01.mp3.
+Test Case '-[converterTests.ConverterTests testAlbumCandidatesCollapseSameStemFamiliesAndSkipDerivedOutputs]' passed (0.002 seconds).
+Test Case '-[converterTests.ConverterTests testAlbumFileFlagRejectionNamesAlbumTxtAndDirectoryCommands]' started.
+Test Case '-[converterTests.ConverterTests testAlbumFileFlagRejectionNamesAlbumTxtAndDirectoryCommands]' passed (0.000 seconds).
+Test Case '-[converterTests.ConverterTests testAlbumTrackSortParsesOnlyASCIIDigitPrefixes]' started.
+Test Case '-[converterTests.ConverterTests testAlbumTrackSortParsesOnlyASCIIDigitPrefixes]' passed (0.001 seconds).
+Test Case '-[converterTests.ConverterTests testArchivalSuffixOnlySkipsAudioThatSitsBesideItsSource]' started.
+[2026-09-15 19:25:28] [converterTests] [INFO] Source audio renamed: Mirage_bass_80Hz_4dB_RF64.flac -> 1_source.flac
+Test Case '-[converterTests.ConverterTests testArchivalSuffixOnlySkipsAudioThatSitsBesideItsSource]' passed (0.001 seconds).
+Test Case '-[converterTests.ConverterTests testArchiveProfileIsNoLongerAcceptedOrAdvertised]' started.
+Test Case '-[converterTests.ConverterTests testArchiveProfileIsNoLongerAcceptedOrAdvertised]' passed (0.002 seconds).
+Test Case '-[converterTests.ConverterTests testAstatsMetricsFailClosedAndTreatSilentChannelAsInfiniteImbalance]' started.
+Test Case '-[converterTests.ConverterTests testAstatsMetricsFailClosedAndTreatSilentChannelAsInfiniteImbalance]' passed (0.001 seconds).
+Test Case '-[converterTests.ConverterTests testAstatsParserIgnoresOtherFiltersSharingTheSameStderr]' started.
+Test Case '-[converterTests.ConverterTests testAstatsParserIgnoresOtherFiltersSharingTheSameStderr]' passed (0.000 seconds).
+Test Case '-[converterTests.ConverterTests testAsyncSemaphoreCancellationBeforeSuspensionStillThrows]' started.
+Test Case '-[converterTests.ConverterTests testAsyncSemaphoreCancellationBeforeSuspensionStillThrows]' passed (0.000 seconds).
+Test Case '-[converterTests.ConverterTests testAsyncSemaphoreCancellationResumesOnlyTheCancelledWaiter]' started.
+Test Case '-[converterTests.ConverterTests testAsyncSemaphoreCancellationResumesOnlyTheCancelledWaiter]' passed (0.000 seconds).
+Test Case '-[converterTests.ConverterTests testAsyncSemaphoreSignalRacingCancellationLeavesNoMarkerBehind]' started.
+Test Case '-[converterTests.ConverterTests testAsyncSemaphoreSignalRacingCancellationLeavesNoMarkerBehind]' passed (0.006 seconds).
+Test Case '-[converterTests.ConverterTests testAsyncSemaphoreWaitFastPathRefusesCancelledTask]' started.
+Test Case '-[converterTests.ConverterTests testAsyncSemaphoreWaitFastPathRefusesCancelledTask]' passed (0.000 seconds).
+Test Case '-[converterTests.ConverterTests testAsyncSemaphoreWithPermitCapsConcurrencyAndReleasesOnThrow]' started.
+Test Case '-[converterTests.ConverterTests testAsyncSemaphoreWithPermitCapsConcurrencyAndReleasesOnThrow]' passed (0.097 seconds).
+Test Case '-[converterTests.ConverterTests testAsyncSemaphoreWithPermitRefusesCancelledTask]' started.
+Test Case '-[converterTests.ConverterTests testAsyncSemaphoreWithPermitRefusesCancelledTask]' passed (0.000 seconds).
+Test Case '-[converterTests.ConverterTests testAudioConversionRefusesToWriteOverItsSource]' started.
+Test Case '-[converterTests.ConverterTests testAudioConversionRefusesToWriteOverItsSource]' passed (0.001 seconds).
+Test Case '-[converterTests.ConverterTests testBassParsesDefaultsAndManualValues]' started.
+Test Case '-[converterTests.ConverterTests testBassParsesDefaultsAndManualValues]' passed (0.000 seconds).
+Test Case '-[converterTests.ConverterTests testBassRejectsInvalidArguments]' started.
+Test Case '-[converterTests.ConverterTests testBassRejectsInvalidArguments]' passed (0.000 seconds).
+Test Case '-[converterTests.ConverterTests testBuiltInFastPreviewProfileOverridesRenderDefaults]' started.
+Test Case '-[converterTests.ConverterTests testBuiltInFastPreviewProfileOverridesRenderDefaults]' passed (0.001 seconds).
+Test Case '-[converterTests.ConverterTests testCancellingAPermittedOperationTerminatesItsChildProcess]' started.
+Test Case '-[converterTests.ConverterTests testCancellingAPermittedOperationTerminatesItsChildProcess]' passed (0.304 seconds).
+Test Case '-[converterTests.ConverterTests testCanonicalPCMComparisonScansWholeFileAndEnforcesPerSampleTolerance]' started.
+Test Case '-[converterTests.ConverterTests testCanonicalPCMComparisonScansWholeFileAndEnforcesPerSampleTolerance]' passed (0.021 seconds).
+Test Case '-[converterTests.ConverterTests testCanonicalPCMSampleDecodingAndLengthBoundaries]' started.
+Test Case '-[converterTests.ConverterTests testCanonicalPCMSampleDecodingAndLengthBoundaries]' passed (0.001 seconds).
+Test Case '-[converterTests.ConverterTests testCleanActionEntryPointPreservesUserFiles]' started.
+[2026-09-15 19:25:28] [converterTests] [INFO] Profile: youtube_master
+[2026-09-15 19:25:28] [converterTests] [INFO] Scheduler profile: total=3 image=2 audio=2 video=1
+[2026-09-15 19:25:28] [converterTests] [WARN] Recovered previous version from publish backup: /var/folders/k5/fzyk9mb96rqbc6_vnxv5mh3h0000gn/T/D0E73284-3E84-4DCB-A8A8-D1F4E6B6F549/lost.wav
+[2026-09-15 19:25:28] [converterTests] [INFO] Removed transient file: .x.normalized.wav
+[2026-09-15 19:25:28] [converterTests] [INFO] Removed transient file: .x.normalized
+Test Case '-[converterTests.ConverterTests testCleanActionEntryPointPreservesUserFiles]' passed (0.005 seconds).
+Test Case '-[converterTests.ConverterTests testCleanTransientsRemovesOnlyHiddenNormalizedFiles]' started.
+[2026-09-15 19:25:28] [converterTests] [INFO] Removed transient file: .x.normalized.wav
+[2026-09-15 19:25:28] [converterTests] [INFO] Removed transient file: .x.normalized
+Test Case '-[converterTests.ConverterTests testCleanTransientsRemovesOnlyHiddenNormalizedFiles]' passed (0.002 seconds).
+Test Case '-[converterTests.ConverterTests testCLIRejectsNonFiniteSharpnessValue]' started.
+Test Case '-[converterTests.ConverterTests testCLIRejectsNonFiniteSharpnessValue]' passed (0.000 seconds).
+Test Case '-[converterTests.ConverterTests testCLIRejectsZeroSeedUnboundedSharpnessRepeatedActionsAndOptionLikeValues]' started.
+Test Case '-[converterTests.ConverterTests testCLIRejectsZeroSeedUnboundedSharpnessRepeatedActionsAndOptionLikeValues]' passed (0.000 seconds).
+Test Case '-[converterTests.ConverterTests testConfigFileStartingWithUTF8BOMAppliesItsFirstKey]' started.
+Test Case '-[converterTests.ConverterTests testConfigFileStartingWithUTF8BOMAppliesItsFirstKey]' passed (0.001 seconds).
+Test Case '-[converterTests.ConverterTests testConfigRangeRulesAcceptTheirBoundaryValues]' started.
+Test Case '-[converterTests.ConverterTests testConfigRangeRulesAcceptTheirBoundaryValues]' passed (0.019 seconds).
+Test Case '-[converterTests.ConverterTests testContainsChunkRejectsMalformedRIFFStructures]' started.
+Test Case '-[converterTests.ConverterTests testContainsChunkRejectsMalformedRIFFStructures]' passed (0.002 seconds).
+Test Case '-[converterTests.ConverterTests testContainsChunkWalksChunksInsteadOfScanningBytes]' started.
+Test Case '-[converterTests.ConverterTests testContainsChunkWalksChunksInsteadOfScanningBytes]' passed (0.001 seconds).
+Test Case '-[converterTests.ConverterTests testCRC32IsIndependentOfReadChunkBoundaries]' started.
+Test Case '-[converterTests.ConverterTests testCRC32IsIndependentOfReadChunkBoundaries]' passed (0.057 seconds).
+Test Case '-[converterTests.ConverterTests testCRC32MatchesReferenceImplementationAcrossChunkBoundaries]' started.
+Test Case '-[converterTests.ConverterTests testCRC32MatchesReferenceImplementationAcrossChunkBoundaries]' passed (0.024 seconds).
+Test Case '-[converterTests.ConverterTests testDependencyBootstrapEnrichesPathWithHomebrewLocations]' started.
+Test Case '-[converterTests.ConverterTests testDependencyBootstrapEnrichesPathWithHomebrewLocations]' passed (0.000 seconds).
+Test Case '-[converterTests.ConverterTests testDependencyManifestMatchesCurrentRuntimeTools]' started.
+Test Case '-[converterTests.ConverterTests testDependencyManifestMatchesCurrentRuntimeTools]' passed (0.000 seconds).
+Test Case '-[converterTests.ConverterTests testDependencyProbeGivesToolsNoStdin]' started.
+Test Case '-[converterTests.ConverterTests testDependencyProbeGivesToolsNoStdin]' passed (0.414 seconds).
+Test Case '-[converterTests.ConverterTests testDerivedMediaPredicatesRecogniseRepeatedPaddingMarkers]' started.
+Test Case '-[converterTests.ConverterTests testDerivedMediaPredicatesRecogniseRepeatedPaddingMarkers]' passed (0.001 seconds).
+Test Case '-[converterTests.ConverterTests testEncoderLadderReportsEveryRungAndStopsOnEncoderIndependentFailure]' started.
+[2026-09-15 19:25:29] [converterTests] [WARN] test encoder failed (a): a exploded
+[2026-09-15 19:25:29] [converterTests] [WARN] test encoder failed (b): b exploded
+[2026-09-15 19:25:29] [converterTests] [WARN] test encoder failed (c): c exploded
+[2026-09-15 19:25:29] [converterTests] [WARN] test encoder failed (a): audio wrong
+[2026-09-15 19:25:29] [converterTests] [WARN] test: skipping remaining encoders — this failure is not encoder-related.
+[2026-09-15 19:25:29] [converterTests] [WARN] test encoder failed (a): no
+Test Case '-[converterTests.ConverterTests testEncoderLadderReportsEveryRungAndStopsOnEncoderIndependentFailure]' passed (0.001 seconds).
+Test Case '-[converterTests.ConverterTests testEnsureWritableDirectoryRejectsARegularFile]' started.
+Test Case '-[converterTests.ConverterTests testEnsureWritableDirectoryRejectsARegularFile]' passed (0.001 seconds).
+Test Case '-[converterTests.ConverterTests testEveryConfigRuleRejectsAnInvalidValueNamingTheKey]' started.
+Test Case '-[converterTests.ConverterTests testEveryConfigRuleRejectsAnInvalidValueNamingTheKey]' passed (0.102 seconds).
+Test Case '-[converterTests.ConverterTests testEverySupportedConfigKeyIsDocumentedInRepositoryConfigWithItsDefault]' started.
+Test Case '-[converterTests.ConverterTests testEverySupportedConfigKeyIsDocumentedInRepositoryConfigWithItsDefault]' passed (0.003 seconds).
+Test Case '-[converterTests.ConverterTests testExplicitPathsMustStayDirectlyInOutput]' started.
+Test Case '-[converterTests.ConverterTests testExplicitPathsMustStayDirectlyInOutput]' passed (0.001 seconds).
+Test Case '-[converterTests.ConverterTests testFadeActionsUseDefaultNormalCurve]' started.
+Test Case '-[converterTests.ConverterTests testFadeActionsUseDefaultNormalCurve]' passed (0.001 seconds).
+Test Case '-[converterTests.ConverterTests testFadeCutParsesCutAndFadeDurations]' started.
+Test Case '-[converterTests.ConverterTests testFadeCutParsesCutAndFadeDurations]' passed (0.000 seconds).
+Test Case '-[converterTests.ConverterTests testFadeCutRejectsMissingArguments]' started.
+Test Case '-[converterTests.ConverterTests testFadeCutRejectsMissingArguments]' passed (0.000 seconds).
+Test Case '-[converterTests.ConverterTests testFadeFLACAliasNoLongerFallsThroughToFullRun]' started.
+Test Case '-[converterTests.ConverterTests testFadeFLACAliasNoLongerFallsThroughToFullRun]' passed (0.000 seconds).
+Test Case '-[converterTests.ConverterTests testFadeOutParsesFlexibleTimeArguments]' started.
+Test Case '-[converterTests.ConverterTests testFadeOutParsesFlexibleTimeArguments]' passed (0.000 seconds).
+Test Case '-[converterTests.ConverterTests testFadeOutRejectsMissingArguments]' started.
+Test Case '-[converterTests.ConverterTests testFadeOutRejectsMissingArguments]' passed (0.000 seconds).
+Test Case '-[converterTests.ConverterTests testFadeOutRejectsTooManyArguments]' started.
+Test Case '-[converterTests.ConverterTests testFadeOutRejectsTooManyArguments]' passed (0.000 seconds).
+Test Case '-[converterTests.ConverterTests testFlexibleTimecodeParsingAcceptsSupportedFormsAndRejectsInvalidBounds]' started.
+Test Case '-[converterTests.ConverterTests testFlexibleTimecodeParsingAcceptsSupportedFormsAndRejectsInvalidBounds]' passed (0.000 seconds).
+Test Case '-[converterTests.ConverterTests testFullRunImageBaseNameStripsStackedDerivedSuffixes]' started.
+Test Case '-[converterTests.ConverterTests testFullRunImageBaseNameStripsStackedDerivedSuffixes]' passed (0.000 seconds).
+Test Case '-[converterTests.ConverterTests testFullRunRenamesItsSourceAudioToOneSource]' started.
+[2026-09-15 19:25:29] [converterTests] [INFO] Source audio renamed: Mirage_bass_80Hz_4dB_RF64.flac -> 1_source.flac
+[2026-09-15 19:25:29] [converterTests] [WARN] Full pipeline found multiple same-stem audio files; auto-selecting 1_source.flac and ignoring derived companions.
+Test Case '-[converterTests.ConverterTests testFullRunRenamesItsSourceAudioToOneSource]' passed (0.003 seconds).
+Test Case '-[converterTests.ConverterTests testFullRunRenamesTheWholeSourceFamilyAndKeepsRerunsStable]' started.
+[2026-09-15 19:25:29] [converterTests] [WARN] Full pipeline found multiple same-stem audio files; auto-selecting song.flac and ignoring derived companions.
+[2026-09-15 19:25:29] [converterTests] [INFO] Source audio renamed: song.flac -> 1_source.flac
+[2026-09-15 19:25:29] [converterTests] [INFO] Source audio renamed: song.wav -> 1_source.wav
+[2026-09-15 19:25:29] [converterTests] [INFO] Source audio renamed: song_BW64.wav -> 1_source_BW64.wav
+[2026-09-15 19:25:29] [converterTests] [INFO] Source audio renamed: song_RF64.flac -> 1_source_RF64.flac
+[2026-09-15 19:25:29] [converterTests] [WARN] Full pipeline found multiple same-stem audio files; auto-selecting 1_source.flac and ignoring derived companions.
+Test Case '-[converterTests.ConverterTests testFullRunRenamesTheWholeSourceFamilyAndKeepsRerunsStable]' passed (0.002 seconds).
+Test Case '-[converterTests.ConverterTests testFullRunSourceImagesRejectTwoLandscapeMasters]' started.
+Test Case '-[converterTests.ConverterTests testFullRunSourceImagesRejectTwoLandscapeMasters]' passed (0.337 seconds).
+Test Case '-[converterTests.ConverterTests testFullRunSourceImagesSplitByOrientation]' started.
+Test Case '-[converterTests.ConverterTests testFullRunSourceImagesSplitByOrientation]' passed (0.399 seconds).
+Test Case '-[converterTests.ConverterTests testGrayscaleOutputSatisfiesAnSRGBExpectation]' started.
+Test Case '-[converterTests.ConverterTests testGrayscaleOutputSatisfiesAnSRGBExpectation]' passed (0.000 seconds).
+Test Case '-[converterTests.ConverterTests testHashActionsDefaultToProjectOutputDirectory]' started.
+Test Case '-[converterTests.ConverterTests testHashActionsDefaultToProjectOutputDirectory]' passed (0.000 seconds).
+Test Case '-[converterTests.ConverterTests testHelpListAndMatrixSkipRuntimeDependencyBootstrap]' started.
+Test Case '-[converterTests.ConverterTests testHelpListAndMatrixSkipRuntimeDependencyBootstrap]' passed (0.000 seconds).
+Test Case '-[converterTests.ConverterTests testHelpTextDistinguishesAlbumTxtAndDirectoryAlbumBuilds]' started.
+Test Case '-[converterTests.ConverterTests testHelpTextDistinguishesAlbumTxtAndDirectoryAlbumBuilds]' passed (0.001 seconds).
+Test Case '-[converterTests.ConverterTests testHelpTextMentionsFullRunContract]' started.
+Test Case '-[converterTests.ConverterTests testHelpTextMentionsFullRunContract]' passed (0.003 seconds).
+Test Case '-[converterTests.ConverterTests testHomebrewInstallerIsPinnedAndIntegrityChecked]' started.
+Test Case '-[converterTests.ConverterTests testHomebrewInstallerIsPinnedAndIntegrityChecked]' passed (0.136 seconds).
+Test Case '-[converterTests.ConverterTests testInstallerSubprocessReportsStderrAndTimesOut]' started.
+Test Case '-[converterTests.ConverterTests testInstallerSubprocessReportsStderrAndTimesOut]' passed (1.335 seconds).
+Test Case '-[converterTests.ConverterTests testInvalidLoudnormConfigTargetIsRejectedDuringLoad]' started.
+Test Case '-[converterTests.ConverterTests testInvalidLoudnormConfigTargetIsRejectedDuringLoad]' passed (0.013 seconds).
+Test Case '-[converterTests.ConverterTests testInvalidStringConfigIsRejectedDuringLoad]' started.
+Test Case '-[converterTests.ConverterTests testInvalidStringConfigIsRejectedDuringLoad]' passed (0.006 seconds).
+Test Case '-[converterTests.ConverterTests testLoudnessFallbackAcceptsMediaValidQCIssuesOnly]' started.
+Test Case '-[converterTests.ConverterTests testLoudnessFallbackAcceptsMediaValidQCIssuesOnly]' passed (0.001 seconds).
+Test Case '-[converterTests.ConverterTests testLoudnessFallbackOnlyExcusesAnInherentTruePeak]' started.
+Test Case '-[converterTests.ConverterTests testLoudnessFallbackOnlyExcusesAnInherentTruePeak]' passed (0.001 seconds).
+Test Case '-[converterTests.ConverterTests testLoudnessFiltersRejectBassAndEQFilters]' started.
+Test Case '-[converterTests.ConverterTests testLoudnessFiltersRejectBassAndEQFilters]' passed (0.002 seconds).
+Test Case '-[converterTests.ConverterTests testLoudnessParsesTargetLUFS]' started.
+Test Case '-[converterTests.ConverterTests testLoudnessParsesTargetLUFS]' passed (0.001 seconds).
+Test Case '-[converterTests.ConverterTests testLoudnessRejectsInvalidTargets]' started.
+Test Case '-[converterTests.ConverterTests testLoudnessRejectsInvalidTargets]' passed (0.000 seconds).
+Test Case '-[converterTests.ConverterTests testLoudnormArgumentClampsAreInclusiveAtTheExactBounds]' started.
+Test Case '-[converterTests.ConverterTests testLoudnormArgumentClampsAreInclusiveAtTheExactBounds]' passed (0.001 seconds).
+Test Case '-[converterTests.ConverterTests testLoudnormArgumentRoundingNeverLeavesTheAcceptedRange]' started.
+Test Case '-[converterTests.ConverterTests testLoudnormArgumentRoundingNeverLeavesTheAcceptedRange]' passed (0.210 seconds).
+Test Case '-[converterTests.ConverterTests testLoudnormArgumentsStayInsideFFmpegsAcceptedRanges]' started.
+Test Case '-[converterTests.ConverterTests testLoudnormArgumentsStayInsideFFmpegsAcceptedRanges]' passed (0.000 seconds).
+Test Case '-[converterTests.ConverterTests testLoudnormJSONParsingIgnoresBracesInInputMetadata]' started.
+Test Case '-[converterTests.ConverterTests testLoudnormJSONParsingIgnoresBracesInInputMetadata]' passed (0.000 seconds).
+Test Case '-[converterTests.ConverterTests testLoudnormJSONParsingToleratesSurroundingFilterOutput]' started.
+Test Case '-[converterTests.ConverterTests testLoudnormJSONParsingToleratesSurroundingFilterOutput]' passed (0.000 seconds).
+Test Case '-[converterTests.ConverterTests testMasterAndFLACAlbumCandidatesSkipDerivedOutputs]' started.
+Test Case '-[converterTests.ConverterTests testMasterAndFLACAlbumCandidatesSkipDerivedOutputs]' passed (0.001 seconds).
+Test Case '-[converterTests.ConverterTests testMatrixInitializationDoesNotRequireProjectOutputDirectory]' started.
+Test Case '-[converterTests.ConverterTests testMatrixInitializationDoesNotRequireProjectOutputDirectory]' passed (0.000 seconds).
+Test Case '-[converterTests.ConverterTests testMatrixTextMentionsCompletedAudioAndImageGraph]' started.
+Test Case '-[converterTests.ConverterTests testMatrixTextMentionsCompletedAudioAndImageGraph]' passed (0.000 seconds).
+Test Case '-[converterTests.ConverterTests testMissingAlbumFileErrorPointsAtTheExampleTemplate]' started.
+Test Case '-[converterTests.ConverterTests testMissingAlbumFileErrorPointsAtTheExampleTemplate]' passed (0.000 seconds).
+Test Case '-[converterTests.ConverterTests testMissingSourceAudioErrorNamesWhatWasSkipped]' started.
+[2026-09-15 19:25:31] [converterTests] [INFO] Source audio renamed: Mirage.mp3 -> 1_source.mp3
+[2026-09-15 19:25:31] [converterTests] [INFO] Source audio renamed: Mirage_RF64.wav -> 1_source_RF64.wav
+Test Case '-[converterTests.ConverterTests testMissingSourceAudioErrorNamesWhatWasSkipped]' passed (0.001 seconds).
+Test Case '-[converterTests.ConverterTests testNFTToShortFlagParsesAndOldMP3ToShortFlagIsRejected]' started.
+Test Case '-[converterTests.ConverterTests testNFTToShortFlagParsesAndOldMP3ToShortFlagIsRejected]' passed (0.000 seconds).
+Test Case '-[converterTests.ConverterTests testNoArgumentsShowHelpInsteadOfFullRun]' started.
+Test Case '-[converterTests.ConverterTests testNoArgumentsShowHelpInsteadOfFullRun]' passed (0.000 seconds).
+Test Case '-[converterTests.ConverterTests testNoiseParsesDefaultAndExplicitDuration]' started.
+Test Case '-[converterTests.ConverterTests testNoiseParsesDefaultAndExplicitDuration]' passed (0.000 seconds).
+Test Case '-[converterTests.ConverterTests testNoiseRejectsInvalidArguments]' started.
+Test Case '-[converterTests.ConverterTests testNoiseRejectsInvalidArguments]' passed (0.000 seconds).
+Test Case '-[converterTests.ConverterTests testNonFiniteConfigDoubleIsRejectedDuringLoad]' started.
+Test Case '-[converterTests.ConverterTests testNonFiniteConfigDoubleIsRejectedDuringLoad]' passed (0.002 seconds).
+Test Case '-[converterTests.ConverterTests testNumericFormattingAndBitrateParsingUseStableFFmpegForms]' started.
+Test Case '-[converterTests.ConverterTests testNumericFormattingAndBitrateParsingUseStableFFmpegForms]' passed (0.001 seconds).
+Test Case '-[converterTests.ConverterTests testOrphanCleanupLeavesOtherHostsTempFilesAlone]' started.
+Test Case '-[converterTests.ConverterTests testOrphanCleanupLeavesOtherHostsTempFilesAlone]' passed (0.002 seconds).
+Test Case '-[converterTests.ConverterTests testOutputFileIsOnlyAcceptedBySingleOutputActions]' started.
+Test Case '-[converterTests.ConverterTests testOutputFileIsOnlyAcceptedBySingleOutputActions]' passed (0.000 seconds).
+Test Case '-[converterTests.ConverterTests testOutputNamingAndSuffixHelpersAreStable]' started.
+Test Case '-[converterTests.ConverterTests testOutputNamingAndSuffixHelpersAreStable]' passed (0.000 seconds).
+Test Case '-[converterTests.ConverterTests testParserRejectsDeprecatedInputOverrideFlags]' started.
+Test Case '-[converterTests.ConverterTests testParserRejectsDeprecatedInputOverrideFlags]' passed (0.000 seconds).
+Test Case '-[converterTests.ConverterTests testParserRejectsRecursiveDiscoveryFlag]' started.
+Test Case '-[converterTests.ConverterTests testParserRejectsRecursiveDiscoveryFlag]' passed (0.000 seconds).
+Test Case '-[converterTests.ConverterTests testParserRejectsRemovedJPEGAliasFlags]' started.
+Test Case '-[converterTests.ConverterTests testParserRejectsRemovedJPEGAliasFlags]' passed (0.000 seconds).
+Test Case '-[converterTests.ConverterTests testProcessRunnerNamesSignalDeaths]' started.
+Test Case '-[converterTests.ConverterTests testProcessRunnerNamesSignalDeaths]' passed (0.065 seconds).
+Test Case '-[converterTests.ConverterTests testProjectLoudnessDefaultsAreMinus12LUFS]' started.
+Test Case '-[converterTests.ConverterTests testProjectLoudnessDefaultsAreMinus12LUFS]' passed (0.000 seconds).
+Test Case '-[converterTests.ConverterTests testPublishBackupRecoveryRemovesStaleBackupWhenDestinationExists]' started.
+Test Case '-[converterTests.ConverterTests testPublishBackupRecoveryRemovesStaleBackupWhenDestinationExists]' passed (0.001 seconds).
+Test Case '-[converterTests.ConverterTests testPublishBackupRecoveryRestoresMissingDestination]' started.
+[2026-09-15 19:25:31] [converterTests] [WARN] Recovered previous version from publish backup: /var/folders/k5/fzyk9mb96rqbc6_vnxv5mh3h0000gn/T/converter-test-1E193EFB-0EE0-437B-8355-90A040EB523F/song.mp3
+Test Case '-[converterTests.ConverterTests testPublishBackupRecoveryRestoresMissingDestination]' passed (0.001 seconds).
+Test Case '-[converterTests.ConverterTests testPublishTempKeepsDestinationWhenBackupMoveFails]' started.
+Test Case '-[converterTests.ConverterTests testPublishTempKeepsDestinationWhenBackupMoveFails]' passed (0.006 seconds).
+Test Case '-[converterTests.ConverterTests testPublishTempLeavesNoBackupBehind]' started.
+Test Case '-[converterTests.ConverterTests testPublishTempLeavesNoBackupBehind]' passed (0.002 seconds).
+Test Case '-[converterTests.ConverterTests testPublishTempRestoresPreviousVersionWhenTempMoveFails]' started.
+Test Case '-[converterTests.ConverterTests testPublishTempRestoresPreviousVersionWhenTempMoveFails]' passed (0.003 seconds).
+Test Case '-[converterTests.ConverterTests testRepositoryConfigKeysAreSupportedAndTheFileLoadsWithoutWarnings]' started.
+Test Case '-[converterTests.ConverterTests testRepositoryConfigKeysAreSupportedAndTheFileLoadsWithoutWarnings]' passed (0.002 seconds).
+Test Case '-[converterTests.ConverterTests testRequireDirectChildHandlesAbsolutePathsInsideAndOutsideOutDir]' started.
+Test Case '-[converterTests.ConverterTests testRequireDirectChildHandlesAbsolutePathsInsideAndOutsideOutDir]' passed (0.001 seconds).
+Test Case '-[converterTests.ConverterTests testRequireDirectChildRejectsRelativeEscapesSubfoldersAndSymlinkedSubfolders]' started.
+Test Case '-[converterTests.ConverterTests testRequireDirectChildRejectsRelativeEscapesSubfoldersAndSymlinkedSubfolders]' passed (0.002 seconds).
+Test Case '-[converterTests.ConverterTests testRequireDirectChildResolvesSymlinkedOutDirOnBothSides]' started.
+Test Case '-[converterTests.ConverterTests testRequireDirectChildResolvesSymlinkedOutDirOnBothSides]' passed (0.001 seconds).
+Test Case '-[converterTests.ConverterTests testResolveFullAudioPrefersHighestQualitySameStemSource]' started.
+[2026-09-15 19:25:31] [converterTests] [WARN] Full pipeline found multiple same-stem audio files; auto-selecting song.flac and ignoring derived companions.
+[2026-09-15 19:25:31] [converterTests] [INFO] Source audio renamed: song.flac -> 1_source.flac
+[2026-09-15 19:25:31] [converterTests] [INFO] Source audio renamed: song.mp3 -> 1_source.mp3
+[2026-09-15 19:25:31] [converterTests] [INFO] Source audio renamed: song.wav -> 1_source.wav
+[2026-09-15 19:25:31] [converterTests] [INFO] Source audio renamed: song_BW64.flac -> 1_source_BW64.flac
+[2026-09-15 19:25:31] [converterTests] [INFO] Source audio renamed: song_RF64.wav -> 1_source_RF64.wav
+Test Case '-[converterTests.ConverterTests testResolveFullAudioPrefersHighestQualitySameStemSource]' passed (0.002 seconds).
+Test Case '-[converterTests.ConverterTests testResolveFullImageCollapsesItsOwnDerivedOutputsOnRerun]' started.
+[2026-09-15 19:25:32] [converterTests] [WARN] Square source image '9_NFT3K.png' is treated as the landscape master; it will be fitted into a 7680x4320 frame.
+[2026-09-15 19:25:32] [converterTests] [WARN] Square source image '9_NFT8K.png' is treated as the landscape master; it will be fitted into a 7680x4320 frame.
+[2026-09-15 19:25:32] [converterTests] [WARN] Full pipeline found multiple same-stem images; auto-selecting 9_8K.png and ignoring derived companions.
+[2026-09-15 19:25:32] [converterTests] [WARN] Square source image '9_NFT3K.png' is treated as the landscape master; it will be fitted into a 7680x4320 frame.
+[2026-09-15 19:25:32] [converterTests] [WARN] Square source image '9_NFT8K.png' is treated as the landscape master; it will be fitted into a 7680x4320 frame.
+[2026-09-15 19:25:32] [converterTests] [WARN] Full pipeline found multiple same-stem images; auto-selecting 9.png and ignoring derived companions.
+Test Case '-[converterTests.ConverterTests testResolveFullImageCollapsesItsOwnDerivedOutputsOnRerun]' passed (1.062 seconds).
+Test Case '-[converterTests.ConverterTests testResolveFullImageStillRejectsTwoDistinctSources]' started.
+Test Case '-[converterTests.ConverterTests testResolveFullImageStillRejectsTwoDistinctSources]' passed (0.399 seconds).
+Test Case '-[converterTests.ConverterTests testSchedulerProfileKeepsExpectedConcurrencyCaps]' started.
+Test Case '-[converterTests.ConverterTests testSchedulerProfileKeepsExpectedConcurrencyCaps]' passed (0.000 seconds).
+Test Case '-[converterTests.ConverterTests testShortClipSecondsAcceptsTimecodesAndRejectsNonPositiveOrMalformedValues]' started.
+Test Case '-[converterTests.ConverterTests testShortClipSecondsAcceptsTimecodesAndRejectsNonPositiveOrMalformedValues]' passed (0.016 seconds).
+Test Case '-[converterTests.ConverterTests testShortDurationHelpersClampToInputDurationConfigAndHardLimit]' started.
+Test Case '-[converterTests.ConverterTests testShortDurationHelpersClampToInputDurationConfigAndHardLimit]' passed (0.003 seconds).
+Test Case '-[converterTests.ConverterTests testShortFillModesUseDistinctTempStemsAndSuffixes]' started.
+Test Case '-[converterTests.ConverterTests testShortFillModesUseDistinctTempStemsAndSuffixes]' passed (0.000 seconds).
+Test Case '-[converterTests.ConverterTests testShortMP4StemsCoverLetterboxedAndCenterCutVariants]' started.
+Test Case '-[converterTests.ConverterTests testShortMP4StemsCoverLetterboxedAndCenterCutVariants]' passed (0.000 seconds).
+Test Case '-[converterTests.ConverterTests testSilenceParsesDefaultAndExplicitDuration]' started.
+Test Case '-[converterTests.ConverterTests testSilenceParsesDefaultAndExplicitDuration]' passed (0.000 seconds).
+Test Case '-[converterTests.ConverterTests testSilenceRejectsInvalidArguments]' started.
+Test Case '-[converterTests.ConverterTests testSilenceRejectsInvalidArguments]' passed (0.000 seconds).
+Test Case '-[converterTests.ConverterTests testStaticLoudnessGainNeverAttenuatesQuietPeakConstrainedAudio]' started.
+Test Case '-[converterTests.ConverterTests testStaticLoudnessGainNeverAttenuatesQuietPeakConstrainedAudio]' passed (0.000 seconds).
+Test Case '-[converterTests.ConverterTests testStringAndURLHelpersNormalizeNamesWithoutFileSystemAccess]' started.
+Test Case '-[converterTests.ConverterTests testStringAndURLHelpersNormalizeNamesWithoutFileSystemAccess]' passed (0.000 seconds).
+Test Case '-[converterTests.ConverterTests testTailFadeParsesDefaultAndExplicitDuration]' started.
+Test Case '-[converterTests.ConverterTests testTailFadeParsesDefaultAndExplicitDuration]' passed (0.000 seconds).
+Test Case '-[converterTests.ConverterTests testTailFadeRejectsTooManyArguments]' started.
+Test Case '-[converterTests.ConverterTests testTailFadeRejectsTooManyArguments]' passed (0.000 seconds).
+Test Case '-[converterTests.ConverterTests testTimecodeRejectsAbsurdDurationsAndFFmpegNumberNeverTraps]' started.
+Test Case '-[converterTests.ConverterTests testTimecodeRejectsAbsurdDurationsAndFFmpegNumberNeverTraps]' passed (0.002 seconds).
+Test Case '-[converterTests.ConverterTests testTimecodeRejectsEmptyColonSeparatedComponents]' started.
+Test Case '-[converterTests.ConverterTests testTimecodeRejectsEmptyColonSeparatedComponents]' passed (0.000 seconds).
+Test Case '-[converterTests.ConverterTests testUnitMakeToolIgnoresHostConfigAndDebugOverrides]' started.
+Test Case '-[converterTests.ConverterTests testUnitMakeToolIgnoresHostConfigAndDebugOverrides]' passed (0.000 seconds).
+Test Case '-[converterTests.ConverterTests testUnknownConfigKeyIsReportedAtWarnLevelNamingKeyAndFile]' started.
+Test Case '-[converterTests.ConverterTests testUnknownConfigKeyIsReportedAtWarnLevelNamingKeyAndFile]' passed (0.002 seconds).
+Test Case '-[converterTests.ConverterTests testUnknownOptionsAndStrayPositionalsAreRejected]' started.
+Test Case '-[converterTests.ConverterTests testUnknownOptionsAndStrayPositionalsAreRejected]' passed (0.000 seconds).
+Test Case '-[converterTests.ConverterTests testUnusableInstalledToolsAreNamedWithTheirReason]' started.
+Test Case '-[converterTests.ConverterTests testUnusableInstalledToolsAreNamedWithTheirReason]' passed (0.329 seconds).
+Test Case '-[converterTests.ConverterTests testValidateRejectsH264VideoToolboxPrimaryAboveVideoToolboxSessionLimit]' started.
+Test Case '-[converterTests.ConverterTests testValidateRejectsH264VideoToolboxPrimaryAboveVideoToolboxSessionLimit]' passed (0.010 seconds).
+Test Case '-[converterTests.ConverterTests testVerifyCodecMapsEncoderFamilies]' started.
+Test Case '-[converterTests.ConverterTests testVerifyCodecMapsEncoderFamilies]' passed (0.000 seconds).
+Test Case '-[converterTests.ConverterTests testWAVHeaderRejectsTruncatedWAVXAndMismatchedContainers]' started.
+Test Case '-[converterTests.ConverterTests testWAVHeaderRejectsTruncatedWAVXAndMismatchedContainers]' passed (0.001 seconds).
+Test Case '-[converterTests.ConverterTests testYouTubeShortProfileKeepsLibx264PrimaryAtPortrait8K]' started.
+Test Case '-[converterTests.ConverterTests testYouTubeShortProfileKeepsLibx264PrimaryAtPortrait8K]' passed (0.000 seconds).
+Test Case '-[converterTests.ConverterTests testYouTubeShortProfileKeepsProjectMinus12LUFSTarget]' started.
+Test Case '-[converterTests.ConverterTests testYouTubeShortProfileKeepsProjectMinus12LUFSTarget]' passed (0.000 seconds).
+Test Suite 'ConverterTests' passed at 2026-09-15 19:25:33.731.
+	 Executed 125 tests, with 0 failures (0 unexpected) in 5.487 (5.495) seconds
+Test Suite 'PipelineIntegrationTests' started at 2026-09-15 19:25:33.731.
+Test Case '-[converterTests.PipelineIntegrationTests testAcceptsLeadingSilenceWhenAudioBecomesAudibleLater]' started.
+[2026-09-15 19:25:35] [converterTests] [INFO] Created WAV: leadingsilence.wav
+Test Case '-[converterTests.PipelineIntegrationTests testAcceptsLeadingSilenceWhenAudioBecomesAudibleLater]' passed (1.798 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testAIPixPreservesFullStemToAvoidUnderscoreCollisions]' started.
+[2026-09-15 19:25:35] [converterTests] [INFO] PNG variants: art_1.png
+[2026-09-15 19:25:35] [converterTests] [INFO] Created 8K PNG: art_1_8K.png
+[2026-09-15 19:25:36] [converterTests] [INFO] Created 4K PNG: art_1_4K.png
+[2026-09-15 19:25:36] [converterTests] [INFO] PNG variants: art_2.png
+[2026-09-15 19:25:36] [converterTests] [INFO] Created 8K PNG: art_2_8K.png
+[2026-09-15 19:25:36] [converterTests] [INFO] Created 4K PNG: art_2_4K.png
+Test Case '-[converterTests.PipelineIntegrationTests testAIPixPreservesFullStemToAvoidUnderscoreCollisions]' passed (1.202 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testAlbumBuildAcceptsNonStandardRIFFWavInputs]' started.
+[2026-09-15 19:25:38] [converterTests] [INFO] Created album WAV: /var/folders/k5/fzyk9mb96rqbc6_vnxv5mh3h0000gn/T/converter-tests.79F25E2E-025A-434B-9317-928C6D4B3708/Output/album.rf64.wav
+Test Case '-[converterTests.PipelineIntegrationTests testAlbumBuildAcceptsNonStandardRIFFWavInputs]' passed (1.872 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testAlbumBuildFromAlbumFileCreatesVerifiedRF64Wave]' started.
+[2026-09-15 19:25:40] [converterTests] [INFO] Created album WAV: /var/folders/k5/fzyk9mb96rqbc6_vnxv5mh3h0000gn/T/converter-tests.99DF9396-A846-4B9B-9978-312E8609BCE1/Output/album.rf64.wav
+Test Case '-[converterTests.PipelineIntegrationTests testAlbumBuildFromAlbumFileCreatesVerifiedRF64Wave]' passed (1.893 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testAlbumDurationToleranceIsStrictlyBelowTheGapItMustDetect]' started.
+Test Case '-[converterTests.PipelineIntegrationTests testAlbumDurationToleranceIsStrictlyBelowTheGapItMustDetect]' passed (0.006 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testAlbumFileFailsClosedOnMissingTracksUnlessContinueOnError]' started.
+[2026-09-15 19:25:41] [converterTests] [ERROR] album.txt entry 'missing_track.wav': missing track /var/folders/k5/fzyk9mb96rqbc6_vnxv5mh3h0000gn/T/converter-tests.3AE5305B-6468-43DF-85AE-57F3A3E24CBC/Output/missing_track.wav
+[2026-09-15 19:25:42] [converterTests] [INFO] Created album WAV: /var/folders/k5/fzyk9mb96rqbc6_vnxv5mh3h0000gn/T/converter-tests.3AE5305B-6468-43DF-85AE-57F3A3E24CBC/Output/album.rf64.wav
+Test Case '-[converterTests.PipelineIntegrationTests testAlbumFileFailsClosedOnMissingTracksUnlessContinueOnError]' passed (2.202 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testAlbumPipelineSortsMixedAudioNormalizesAndContinuesFullRun]' started.
+[2026-09-15 19:25:42] [converterTests] [INFO] Profile: youtube_master
+[2026-09-15 19:25:42] [converterTests] [INFO] Scheduler profile: total=3 image=2 audio=2 video=1
+[2026-09-15 19:25:42] [converterTests] [INFO] Album pipeline start
+[2026-09-15 19:25:42] [converterTests] [INFO] Album track order: 1 - Sun.mp3, 2 - Rain.wav, 10 - Storm.flac
+[2026-09-15 19:25:42] [converterTests] [INFO] Album loudness normalize 1/3: 1 - Sun.mp3
+[2026-09-15 19:25:43] [converterTests] [INFO] Album track ready: 1 - Sun.mp3 [integrated=-11.95 LUFS]
+[2026-09-15 19:25:43] [converterTests] [INFO] Album loudness normalize 2/3: 2 - Rain.wav
+[2026-09-15 19:25:44] [converterTests] [INFO] Album track ready: 2 - Rain.wav [integrated=-12.05 LUFS]
+[2026-09-15 19:25:44] [converterTests] [INFO] Album loudness normalize 3/3: 10 - Storm.flac
+[2026-09-15 19:25:45] [converterTests] [INFO] Album track ready: 10 - Storm.flac [integrated=-11.95 LUFS]
+[2026-09-15 19:25:45] [converterTests] [INFO] Created album WAV: /var/folders/k5/fzyk9mb96rqbc6_vnxv5mh3h0000gn/T/converter-tests.9BDD0944-6570-4285-9673-C9C82E1BB675/Output/album.wav
+[2026-09-15 19:25:45] [converterTests] [INFO] Album source audio: album.wav
+[2026-09-15 19:25:45] [converterTests] [INFO] Full step: use Horizontal_8K.png for main MP4
+[2026-09-15 19:25:45] [converterTests] [INFO] Full step: use Vertical_8K.png for short MP4
+[2026-09-15 19:25:45] [converterTests] [INFO] Full step: image deliverables from Horizontal_8K.png
+[2026-09-15 19:25:45] [converterTests] [INFO] Full step: 4K PNG
+[2026-09-15 19:25:45] [converterTests] [INFO] Full step: NFT assets
+[2026-09-15 19:25:45] [converterTests] [INFO] Created 4K PNG: album_4K.png
+[2026-09-15 19:25:45] [converterTests] [INFO] Full step: 2K PNG
+[2026-09-15 19:25:45] [converterTests] [INFO] Created 2K PNG: album_2K.png
+[2026-09-15 19:25:45] [converterTests] [INFO] Full step: 8K JPG deliverables
+[2026-09-15 19:25:45] [converterTests] [INFO] Created 1MB JPG: album_8K_1MB.jpg
+[2026-09-15 19:25:45] [converterTests] [INFO] Created NFT set: album
+[2026-09-15 19:25:45] [converterTests] [INFO] Full step: 3K PNG
+[2026-09-15 19:25:45] [converterTests] [INFO] Full step: external RF64/BW64 audio deliverables
+[2026-09-15 19:25:45] [converterTests] [INFO] Created 2MB JPG: album_8K_2MB.jpg
+[2026-09-15 19:25:45] [converterTests] [INFO] Created 3K PNG: album_3K.png
+[2026-09-15 19:25:45] [converterTests] [INFO] Full step: 3K JPG deliverables
+[2026-09-15 19:25:45] [converterTests] [INFO] Created 20MB JPG: album_8K_20MB.jpg
+[2026-09-15 19:25:45] [converterTests] [INFO] Created 1MB JPG: album_3K_1MB.jpg
+[2026-09-15 19:25:45] [converterTests] [INFO] Created 5MB JPG: album_3K_5MB.jpg
+[2026-09-15 19:25:46] [converterTests] [INFO] Created external FLAC: album_RF64.flac
+[2026-09-15 19:25:46] [converterTests] [INFO] Created external WAV: album_RF64.wav
+[2026-09-15 19:25:47] [converterTests] [INFO] Created external BW64 WAV: album_BW64.wav
+[2026-09-15 19:25:48] [converterTests] [INFO] Created MP3: album.mp3
+[2026-09-15 19:25:48] [converterTests] [INFO] Created M4A: album.m4a
+[2026-09-15 19:25:48] [converterTests] [INFO] Full step: M4A -> MP4
+[2026-09-15 19:25:48] [converterTests] [INFO] Main video encoders: hevc_videotoolbox, libx265
+[2026-09-15 19:25:49] [converterTests] [INFO] Created MP4: album_8K.mp4 [encoder=hevc_videotoolbox]
+[2026-09-15 19:25:49] [converterTests] [INFO] Full step: portrait short stills
+[2026-09-15 19:25:49] [converterTests] [INFO] Created portrait still: album_Short_8K.png
+[2026-09-15 19:25:49] [converterTests] [INFO] Created 1MB JPG: album_Short_8K_1MB.jpg
+[2026-09-15 19:25:49] [converterTests] [INFO] Created 2MB JPG: album_Short_8K_2MB.jpg
+[2026-09-15 19:25:50] [converterTests] [INFO] Created portrait still: album_Short_CenterCut_8K.png
+[2026-09-15 19:25:50] [converterTests] [INFO] Created 1MB JPG: album_Short_CenterCut_8K_1MB.jpg
+[2026-09-15 19:25:50] [converterTests] [INFO] Created 2MB JPG: album_Short_CenterCut_8K_2MB.jpg
+[2026-09-15 19:25:50] [converterTests] [INFO] Full step: PNG -> Short: album_Short_8K.png
+[2026-09-15 19:25:50] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-15 19:25:51] [converterTests] [INFO] Created portrait short MP4: album_8K_Short.mp4 [encoder=libx264]
+[2026-09-15 19:25:52] [converterTests] [INFO] Created portrait short MP4: album_8K_Short_FullSong.mp4 [encoder=libx264]
+[2026-09-15 19:25:53] [converterTests] [INFO] Created portrait short MP4 (centre cut): album_8K_Short_CenterCut.mp4 [encoder=libx264]
+[2026-09-15 19:25:54] [converterTests] [INFO] Created portrait short MP4 (centre cut): album_8K_Short_FullSong_CenterCut.mp4 [encoder=libx264]
+[2026-09-15 19:25:54] [converterTests] [INFO] Album pipeline complete
+Test Case '-[converterTests.PipelineIntegrationTests testAlbumPipelineSortsMixedAudioNormalizesAndContinuesFullRun]' passed (12.813 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testAlbumRunKeepsOutputFileForTheAlbumWAVOnly]' started.
+[2026-09-15 19:25:55] [converterTests] [INFO] Profile: youtube_master
+[2026-09-15 19:25:55] [converterTests] [INFO] Scheduler profile: total=3 image=2 audio=2 video=1
+[2026-09-15 19:25:55] [converterTests] [INFO] Album pipeline start
+[2026-09-15 19:25:55] [converterTests] [INFO] Album track order: 01.wav, 02.wav
+[2026-09-15 19:25:55] [converterTests] [INFO] Album loudness normalize 1/2: 01.wav
+[2026-09-15 19:25:56] [converterTests] [INFO] Album track ready: 01.wav [integrated=-12.05 LUFS]
+[2026-09-15 19:25:56] [converterTests] [INFO] Album loudness normalize 2/2: 02.wav
+[2026-09-15 19:25:57] [converterTests] [INFO] Album track ready: 02.wav [integrated=-11.95 LUFS]
+[2026-09-15 19:25:57] [converterTests] [INFO] Created album WAV: /var/folders/k5/fzyk9mb96rqbc6_vnxv5mh3h0000gn/T/converter-tests.20F91A64-9682-40D6-905B-5D42580C2EB5/Output/MyAlbum.wav
+[2026-09-15 19:25:57] [converterTests] [INFO] Album source audio: MyAlbum.wav
+[2026-09-15 19:25:57] [converterTests] [INFO] Full step: PNG variants
+[2026-09-15 19:25:57] [converterTests] [INFO] Created 8K PNG: MyAlbum_8K.png
+[2026-09-15 19:25:57] [converterTests] [INFO] Created 4K PNG: MyAlbum_4K.png
+[2026-09-15 19:25:57] [converterTests] [INFO] Full step: NFT assets
+[2026-09-15 19:25:57] [converterTests] [INFO] Full step: 2K PNG
+[2026-09-15 19:25:57] [converterTests] [INFO] Created 2K PNG: MyAlbum_2K.png
+[2026-09-15 19:25:57] [converterTests] [INFO] Full step: 8K JPG deliverables
+[2026-09-15 19:25:57] [converterTests] [INFO] Full step: external RF64/BW64 audio deliverables
+[2026-09-15 19:25:57] [converterTests] [INFO] Created 1MB JPG: MyAlbum_8K_1MB.jpg
+[2026-09-15 19:25:57] [converterTests] [INFO] Created 2MB JPG: MyAlbum_8K_2MB.jpg
+[2026-09-15 19:25:57] [converterTests] [INFO] Created NFT set: MyAlbum
+[2026-09-15 19:25:57] [converterTests] [INFO] Full step: 3K PNG
+[2026-09-15 19:25:57] [converterTests] [INFO] Created 20MB JPG: MyAlbum_8K_20MB.jpg
+[2026-09-15 19:25:57] [converterTests] [INFO] Created 3K PNG: MyAlbum_3K.png
+[2026-09-15 19:25:57] [converterTests] [INFO] Full step: 3K JPG deliverables
+[2026-09-15 19:25:57] [converterTests] [INFO] Created 1MB JPG: MyAlbum_3K_1MB.jpg
+[2026-09-15 19:25:57] [converterTests] [INFO] Created 5MB JPG: MyAlbum_3K_5MB.jpg
+[2026-09-15 19:25:58] [converterTests] [INFO] Created external FLAC: MyAlbum_RF64.flac
+[2026-09-15 19:25:58] [converterTests] [INFO] Created external WAV: MyAlbum_RF64.wav
+[2026-09-15 19:25:58] [converterTests] [INFO] Created external BW64 WAV: MyAlbum_BW64.wav
+[2026-09-15 19:26:00] [converterTests] [INFO] Created MP3: MyAlbum.mp3
+[2026-09-15 19:26:00] [converterTests] [INFO] Created M4A: MyAlbum.m4a
+[2026-09-15 19:26:00] [converterTests] [INFO] Full step: M4A -> MP4
+[2026-09-15 19:26:00] [converterTests] [INFO] Main video encoders: hevc_videotoolbox, libx265
+[2026-09-15 19:26:01] [converterTests] [INFO] Created MP4: MyAlbum_8K.mp4 [encoder=hevc_videotoolbox]
+[2026-09-15 19:26:01] [converterTests] [INFO] Full step: portrait short stills
+[2026-09-15 19:26:01] [converterTests] [INFO] Created portrait still: MyAlbum_Short_8K.png
+[2026-09-15 19:26:01] [converterTests] [INFO] Created 1MB JPG: MyAlbum_Short_8K_1MB.jpg
+[2026-09-15 19:26:01] [converterTests] [INFO] Created 2MB JPG: MyAlbum_Short_8K_2MB.jpg
+[2026-09-15 19:26:01] [converterTests] [INFO] Created portrait still: MyAlbum_Short_CenterCut_8K.png
+[2026-09-15 19:26:01] [converterTests] [INFO] Created 1MB JPG: MyAlbum_Short_CenterCut_8K_1MB.jpg
+[2026-09-15 19:26:01] [converterTests] [INFO] Created 2MB JPG: MyAlbum_Short_CenterCut_8K_2MB.jpg
+[2026-09-15 19:26:01] [converterTests] [INFO] Full step: PNG -> Short: MyAlbum_Short_8K.png
+[2026-09-15 19:26:01] [converterTests] [INFO] Short video encoders: libx264, h264_videotoolbox
+[2026-09-15 19:26:02] [converterTests] [INFO] Created portrait short MP4: MyAlbum_8K_Short.mp4 [encoder=libx264]
+[2026-09-15 19:26:04] [converterTests] [INFO] Created portrait short MP4: MyAlbum_8K_Short_FullSong.mp4 [encoder=libx264]
+[2026-09-15 19:26:04] [converterTests] [INFO] Created portrait short MP4 (centre cut): MyAlbum_8K_Short_CenterCut.mp4 [encoder=libx264]
+[2026-09-15 19:26:05] [converterTests] [INFO] Created portrait short MP4 (centre cut): MyAlbum_8K_Short_FullSong_CenterCut.mp4 [encoder=libx264]
+[2026-09-15 19:26:05] [converterTests] [INFO] Album pipeline complete
+Test Case '-[converterTests.PipelineIntegrationTests testAlbumRunKeepsOutputFileForTheAlbumWAVOnly]' passed (10.366 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testAudioConversionMatrixProducesVerifiedOutputs]' started.
+[2026-09-15 19:26:07] [converterTests] [INFO] Created WAV: audio_flac.wav
+[2026-09-15 19:26:09] [converterTests] [INFO] Created MP3: audio_flac.mp3
+[2026-09-15 19:26:12] [converterTests] [INFO] Created M4A: audio_flac.m4a
+[2026-09-15 19:26:14] [converterTests] [INFO] Created FLAC: audio_wav.flac
+[2026-09-15 19:26:16] [converterTests] [INFO] Created MP3: audio_wav.mp3
+[2026-09-15 19:26:19] [converterTests] [INFO] Created M4A: audio_wav.m4a
+[2026-09-15 19:26:21] [converterTests] [INFO] Created WAV: audio_mp3.wav
+[2026-09-15 19:26:22] [converterTests] [INFO] Created FLAC: audio_mp3.flac
+[2026-09-15 19:26:25] [converterTests] [INFO] Created M4A: audio_mp3.m4a
+[2026-09-15 19:26:27] [converterTests] [INFO] Created WAV: audio_m4a.wav
+[2026-09-15 19:26:29] [converterTests] [INFO] Created MP3: audio_m4a.mp3
+[2026-09-15 19:26:31] [converterTests] [INFO] Created FLAC: audio_m4a.flac
+Test Case '-[converterTests.PipelineIntegrationTests testAudioConversionMatrixProducesVerifiedOutputs]' passed (25.883 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testAudioTranscodesIgnoreAttachedVideoStreams]' started.
+[2026-09-15 19:26:33] [converterTests] [INFO] Created WAV: flac_artwork.wav
+[2026-09-15 19:26:35] [converterTests] [INFO] Created WAV: mp3_artwork.wav
+Test Case '-[converterTests.PipelineIntegrationTests testAudioTranscodesIgnoreAttachedVideoStreams]' passed (3.739 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testBassBatchResolvesTheFilterSetOncePerRun]' started.
+[2026-09-15 19:26:35] [converterTests] [INFO] Bass boost one.wav: frequency=80Hz gain=3dB
+[2026-09-15 19:26:38] [converterTests] [INFO] Created bass-adjusted media: one_bass_80Hz_3dB.wav
+[2026-09-15 19:26:38] [converterTests] [INFO] Bass boost two.wav: frequency=80Hz gain=3dB
+[2026-09-15 19:26:41] [converterTests] [INFO] Created bass-adjusted media: two_bass_80Hz_3dB.wav
+Test Case '-[converterTests.PipelineIntegrationTests testBassBatchResolvesTheFilterSetOncePerRun]' passed (5.759 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testBassBoostProcessesAudioAndMP4Inputs]' started.
+[2026-09-15 19:26:41] [converterTests] [INFO] Bass boost bass_flac.flac: frequency=80Hz gain=5dB
+[2026-09-15 19:26:44] [converterTests] [INFO] Created bass-adjusted media: bass_flac_bass.flac
+[2026-09-15 19:26:44] [converterTests] [INFO] Bass boost bass_m4a.m4a: frequency=80Hz gain=5dB
+[2026-09-15 19:26:47] [converterTests] [INFO] Created bass-adjusted media: bass_m4a_bass.m4a
+[2026-09-15 19:26:47] [converterTests] [INFO] Bass boost bass_mp3.mp3: frequency=80Hz gain=5dB
+[2026-09-15 19:26:50] [converterTests] [INFO] Created bass-adjusted media: bass_mp3_bass.mp3
+[2026-09-15 19:26:50] [converterTests] [INFO] Bass boost bass_video.mp4: frequency=80Hz gain=5dB
+[2026-09-15 19:26:53] [converterTests] [INFO] Created bass-adjusted media: bass_video_bass.mp4
+[2026-09-15 19:26:53] [converterTests] [INFO] Bass boost bass_wav.wav: frequency=80Hz gain=5dB
+[2026-09-15 19:26:56] [converterTests] [INFO] Created bass-adjusted media: bass_wav_bass.wav
+Test Case '-[converterTests.PipelineIntegrationTests testBassBoostProcessesAudioAndMP4Inputs]' passed (18.412 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testBassBoostRefusesToPublishClippedOutput]' started.
+[2026-09-15 19:27:04] [converterTests] [INFO] Created bass-adjusted media: quiet_low_bass.wav
+Test Case '-[converterTests.PipelineIntegrationTests testBassBoostRefusesToPublishClippedOutput]' passed (4.679 seconds).
+Test Case '-[converterTests.PipelineIntegrationTests testBassNegativeGainReducesLowBandEnergy]' started.
+[2026-09-15 19:27:07] [converterTests] [INFO] Created bass-adjusted media: bass_cut_source_bass_80Hz_m5dB.wav

@@ -1,0 +1,825 @@
+514 warnings generated.
+/Users/node4/Downloads/Converter/Converter/Sources/BW64Bridge/bw64_bridge.cpp:208:5: warning: variable 'chnaChunk' of type 'shared_ptr<bw64::ChnaChunk>' can be declared 'const' [misc-const-correctness]
+  208 |     auto chnaChunk = std::make_shared<bw64::ChnaChunk>();
+      |     ^
+      |          const 
+/Users/node4/Downloads/Converter/Converter/Sources/BW64Bridge/bw64_bridge.cpp:272:5: warning: 3 adjacent parameters of 'bw64_write_from_f32le_file' of convertible types are easily swapped by mistake [bugprone-easily-swappable-parameters]
+  272 |     uint16_t channels,
+      |     ^~~~~~~~~~~~~~~~~~
+  273 |     uint32_t sample_rate,
+      |     ~~~~~~~~~~~~~~~~~~~~~
+  274 |     uint16_t bit_depth,
+      |     ~~~~~~~~~~~~~~~~~~
+/Users/node4/Downloads/Converter/Converter/Sources/BW64Bridge/bw64_bridge.cpp:272:14: note: the first parameter in the range is 'channels'
+  272 |     uint16_t channels,
+      |              ^~~~~~~~
+/Users/node4/Downloads/Converter/Converter/Sources/BW64Bridge/bw64_bridge.cpp:274:14: note: the last parameter in the range is 'bit_depth'
+  274 |     uint16_t bit_depth,
+      |              ^~~~~~~~~
+/Users/node4/Downloads/Converter/Converter/Sources/BW64Bridge/bw64_bridge.cpp:272:5: note: 
+  272 |     uint16_t channels,
+      |     ^
+/Users/node4/Downloads/Converter/Converter/Sources/BW64Bridge/bw64_bridge.cpp:273:5: note: 'uint16_t' and 'uint32_t' may be implicitly converted: 'uint16_t' (as 'unsigned short') -> 'uint32_t' (as 'unsigned int'), 'uint32_t' (as 'unsigned int') -> 'uint16_t' (as 'unsigned short')
+  273 |     uint32_t sample_rate,
+      |     ^
+Sources/ThirdParty/libbw64/bw64/bw64.hpp:51:34: warning: the parameter 'chnaChunk' of type 'std::shared_ptr<ChnaChunk>' is copied for each invocation but only used as a const reference; consider making it a const reference [performance-unnecessary-value-param]
+   51 |       std::shared_ptr<ChnaChunk> chnaChunk = nullptr,
+      |                                  ^
+      |       const                     &
+Sources/ThirdParty/libbw64/bw64/bw64.hpp:52:34: warning: the parameter 'axmlChunk' of type 'std::shared_ptr<AxmlChunk>' is copied for each invocation but only used as a const reference; consider making it a const reference [performance-unnecessary-value-param]
+   52 |       std::shared_ptr<AxmlChunk> axmlChunk = nullptr) {
+      |                                  ^
+      |       const                     &
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:24:5: warning: constructors that are callable with a single argument must be marked explicit to avoid unintentional implicit conversions [misc-explicit-constructor]
+   24 |     ChunkHeader(uint32_t id = 0, uint64_t size = 0, uint64_t position = 0)
+      |     ^
+      |     explicit 
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:24:17: warning: 3 adjacent parameters of 'ChunkHeader' of convertible types are easily swapped by mistake [bugprone-easily-swappable-parameters]
+   24 |     ChunkHeader(uint32_t id = 0, uint64_t size = 0, uint64_t position = 0)
+      |                 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:24:26: note: the first parameter in the range is 'id'
+   24 |     ChunkHeader(uint32_t id = 0, uint64_t size = 0, uint64_t position = 0)
+      |                          ^~
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:24:62: note: the last parameter in the range is 'position'
+   24 |     ChunkHeader(uint32_t id = 0, uint64_t size = 0, uint64_t position = 0)
+      |                                                              ^~~~~~~~
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:24:17: note: 
+   24 |     ChunkHeader(uint32_t id = 0, uint64_t size = 0, uint64_t position = 0)
+      |                 ^
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:24:34: note: 'uint32_t' and 'uint64_t' may be implicitly converted: 'uint32_t' (as 'unsigned int') -> 'uint64_t' (as 'unsigned long long'), 'uint64_t' (as 'unsigned long long') -> 'uint32_t' (as 'unsigned int')
+   24 |     ChunkHeader(uint32_t id = 0, uint64_t size = 0, uint64_t position = 0)
+      |                                  ^
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:26:14: warning: member variable 'id' has public visibility [misc-non-private-member-variables-in-classes]
+   26 |     uint32_t id;
+      |              ^
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:27:14: warning: member variable 'size' has public visibility [misc-non-private-member-variables-in-classes]
+   27 |     uint64_t size;
+      |              ^
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:28:14: warning: member variable 'position' has public visibility [misc-non-private-member-variables-in-classes]
+   28 |     uint64_t position;
+      |              ^
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:58:5: warning: single-argument constructors must be marked explicit to avoid unintentional implicit conversions [misc-explicit-constructor]
+   58 |     UnknownChunk(uint32_t id) { chunkId_ = id; }
+      |     ^
+      |     explicit 
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:59:40: warning: 2 adjacent parameters of 'UnknownChunk' of convertible types are easily swapped by mistake [bugprone-easily-swappable-parameters]
+   59 |     UnknownChunk(std::istream& stream, uint32_t id, uint64_t size) {
+      |                                        ^~~~~~~~~~~~~~~~~~~~~~~~~~
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:59:49: note: the first parameter in the range is 'id'
+   59 |     UnknownChunk(std::istream& stream, uint32_t id, uint64_t size) {
+      |                                                 ^~
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:59:62: note: the last parameter in the range is 'size'
+   59 |     UnknownChunk(std::istream& stream, uint32_t id, uint64_t size) {
+      |                                                              ^~~~
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:59:40: note: 
+   59 |     UnknownChunk(std::istream& stream, uint32_t id, uint64_t size) {
+      |                                        ^
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:59:53: note: 'uint32_t' and 'uint64_t' may be implicitly converted: 'uint32_t' (as 'unsigned int') -> 'uint64_t' (as 'unsigned long long'), 'uint64_t' (as 'unsigned long long') -> 'uint32_t' (as 'unsigned int')
+   59 |     UnknownChunk(std::istream& stream, uint32_t id, uint64_t size) {
+      |                                                     ^
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:62:30: warning: narrowing conversion from 'uint64_t' (aka 'unsigned long long') to signed type 'streamsize' (aka 'long') is implementation-defined [bugprone-narrowing-conversions]
+   62 |       stream.read(&data_[0], size);
+      |                              ^
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:84:15: warning: 3 adjacent parameters of 'ExtraData' of convertible types are easily swapped by mistake [bugprone-easily-swappable-parameters]
+   84 |     ExtraData(uint16_t validBitsPerSample, uint32_t dwChannelMask,
+      |               ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   85 |               uint16_t subFormat, std::string subFormatString)
+      |               ~~~~~~~~~~~~~~~~~~
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:84:24: note: the first parameter in the range is 'validBitsPerSample'
+   84 |     ExtraData(uint16_t validBitsPerSample, uint32_t dwChannelMask,
+      |                        ^~~~~~~~~~~~~~~~~~
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:85:24: note: the last parameter in the range is 'subFormat'
+   85 |               uint16_t subFormat, std::string subFormatString)
+      |                        ^~~~~~~~~
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:84:15: note: 
+   84 |     ExtraData(uint16_t validBitsPerSample, uint32_t dwChannelMask,
+      |               ^
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:84:44: note: 'uint16_t' and 'uint32_t' may be implicitly converted: 'uint16_t' (as 'unsigned short') -> 'uint32_t' (as 'unsigned int'), 'uint32_t' (as 'unsigned int') -> 'uint16_t' (as 'unsigned short')
+   84 |     ExtraData(uint16_t validBitsPerSample, uint32_t dwChannelMask,
+      |                                            ^
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:89:28: warning: parameter 'subFormatString' of type 'std::string' (aka 'basic_string<char>') is passed by value and only copied once; consider moving it to avoid unnecessary copies [performance-unnecessary-value-param]
+   11 |           subFormatString_(subFormatString) {}
+      |                            ^              
+      |                            std::move(     )
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:120:21: warning: 3 adjacent parameters of 'FormatInfoChunk' of convertible types are easily swapped by mistake [bugprone-easily-swappable-parameters]
+  120 |     FormatInfoChunk(uint16_t channels, uint32_t sampleRate, uint32_t bitDepth,
+      |                     ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:120:30: note: the first parameter in the range is 'channels'
+  120 |     FormatInfoChunk(uint16_t channels, uint32_t sampleRate, uint32_t bitDepth,
+      |                              ^~~~~~~~
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:120:70: note: the last parameter in the range is 'bitDepth'
+  120 |     FormatInfoChunk(uint16_t channels, uint32_t sampleRate, uint32_t bitDepth,
+      |                                                                      ^~~~~~~~
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:120:21: note: 
+  120 |     FormatInfoChunk(uint16_t channels, uint32_t sampleRate, uint32_t bitDepth,
+      |                     ^
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:120:40: note: 'uint16_t' and 'uint32_t' may be implicitly converted: 'uint16_t' (as 'unsigned short') -> 'uint32_t' (as 'unsigned int'), 'uint32_t' (as 'unsigned int') -> 'uint16_t' (as 'unsigned short')
+  120 |     FormatInfoChunk(uint16_t channels, uint32_t sampleRate, uint32_t bitDepth,
+      |                                        ^
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:126:20: warning: 'extraData' could be moved here [performance-use-std-move]
+  126 |       extraData_ = extraData;
+      |                    ^~~~~~~~~
+      |                    std::move(extraData)
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:126:20: warning: parameter 'extraData' of type 'std::shared_ptr<ExtraData>' is passed by value and only copied once; consider moving it to avoid unnecessary copies [performance-unnecessary-value-param]
+  126 |       extraData_ = extraData;
+      |                    ^        
+      |                    std::move( )
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:242:5: warning: single-argument constructors must be marked explicit to avoid unintentional implicit conversions [misc-explicit-constructor]
+  242 |     AxmlChunk(const std::string& axml) {
+      |     ^
+      |     explicit 
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:267:31: warning: the const qualified parameter 'trackRef' of type 'const std::string' (aka 'const basic_string<char>') is copied for each invocation; consider making it a reference [performance-unnecessary-value-param]
+  267 |             const std::string trackRef, const std::string& packRef) {
+      |                               ^
+      |                              &
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:355:5: warning: single-argument constructors must be marked explicit to avoid unintentional implicit conversions [misc-explicit-constructor]
+  355 |     ChnaChunk(std::vector<AudioId> audioIds) : audioIds_(audioIds){};
+      |     ^
+      |     explicit 
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:355:58: warning: parameter 'audioIds' of type 'std::vector<AudioId>' is passed by value and only copied once; consider moving it to avoid unnecessary copies [performance-unnecessary-value-param]
+  355 |     ChnaChunk(std::vector<AudioId> audioIds) : audioIds_(audioIds){};
+      |                                                          ^       
+      |                                                          std::move( )
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:359:56: warning: performing an implicit widening conversion to type '__size_t' (aka 'unsigned long') of a multiplication performed in type 'int' [bugprone-implicit-widening-of-multiplication-result]
+  359 |       return sizeof(numTracks()) + sizeof(numUids()) + numUids() * 40;
+      |                                                        ^
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:359:56: note: make conversion explicit to silence this warning
+    3 |       return sizeof(numTracks()) + sizeof(numUids()) + numUids() * 40;
+      |                                                        ^~~~~~~~~~~~~~
+      |                                                        static_cast<__size_t>( )
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:359:56: note: perform multiplication in a wider type
+  359 |       return sizeof(numTracks()) + sizeof(numUids()) + numUids() * 40;
+      |                                                        ^~~~~~~~~
+      |                                                        static_cast<long>( )
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:365:12: warning: variable 'audioId' of type 'bw64::AudioId' can be declared 'const' [misc-const-correctness]
+  365 |       for (auto audioId : audioIds()) {
+      |            ^
+      |                 const 
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:380:12: warning: variable 'audioId' of type 'bw64::AudioId' can be declared 'const' [misc-const-correctness]
+  380 |       for (auto audioId : audioIds()) {
+      |            ^
+      |                 const 
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:395:5: warning: constructors that are callable with a single argument must be marked explicit to avoid unintentional implicit conversions [misc-explicit-constructor]
+  395 |     DataSize64Chunk(
+      |     ^
+      |     explicit 
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:396:9: warning: 2 adjacent parameters of 'DataSize64Chunk' of similar type ('uint64_t') are easily swapped by mistake [bugprone-easily-swappable-parameters]
+  396 |         uint64_t bw64Size = 0, uint64_t dataSize = 0,
+      |         ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:396:18: note: the first parameter in the range is 'bw64Size'
+  396 |         uint64_t bw64Size = 0, uint64_t dataSize = 0,
+      |                  ^~~~~~~~
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:396:41: note: the last parameter in the range is 'dataSize'
+  396 |         uint64_t bw64Size = 0, uint64_t dataSize = 0,
+      |                                         ^~~~~~~~
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:398:60: warning: parameter 'table' of type 'std::map<uint32_t, uint64_t>' (aka 'std::map<unsigned int, unsigned long long>') is passed by value and only copied once; consider moving it to avoid unnecessary copies [performance-unnecessary-value-param]
+  398 |         : bw64Size_(bw64Size), dataSize_(dataSize), table_(table) {
+      |                                                            ^    
+      |                                                            std::move( )
+Sources/ThirdParty/libbw64/bw64/parser.hpp:29:29: warning: 2 adjacent parameters of 'parseFormatInfoChunk' of convertible types are easily swapped by mistake [bugprone-easily-swappable-parameters]
+   29 |       std::istream& stream, uint32_t id, uint64_t size) {
+      |                             ^~~~~~~~~~~~~~~~~~~~~~~~~~
+Sources/ThirdParty/libbw64/bw64/parser.hpp:29:38: note: the first parameter in the range is 'id'
+   29 |       std::istream& stream, uint32_t id, uint64_t size) {
+      |                                      ^~
+Sources/ThirdParty/libbw64/bw64/parser.hpp:29:51: note: the last parameter in the range is 'size'
+   29 |       std::istream& stream, uint32_t id, uint64_t size) {
+      |                                                   ^~~~
+Sources/ThirdParty/libbw64/bw64/parser.hpp:29:29: note: 
+   29 |       std::istream& stream, uint32_t id, uint64_t size) {
+      |                             ^
+Sources/ThirdParty/libbw64/bw64/parser.hpp:29:42: note: 'uint32_t' and 'uint64_t' may be implicitly converted: 'uint32_t' (as 'unsigned int') -> 'uint64_t' (as 'unsigned long long'), 'uint64_t' (as 'unsigned long long') -> 'uint32_t' (as 'unsigned int')
+   29 |       std::istream& stream, uint32_t id, uint64_t size) {
+      |                                          ^
+Sources/ThirdParty/libbw64/bw64/parser.hpp:107:52: warning: 2 adjacent parameters of 'parseAxmlChunk' of convertible types are easily swapped by mistake [bugprone-easily-swappable-parameters]
+  107 |                                                    uint32_t id, uint64_t size) {
+      |                                                    ^~~~~~~~~~~~~~~~~~~~~~~~~~
+Sources/ThirdParty/libbw64/bw64/parser.hpp:107:61: note: the first parameter in the range is 'id'
+  107 |                                                    uint32_t id, uint64_t size) {
+      |                                                             ^~
+Sources/ThirdParty/libbw64/bw64/parser.hpp:107:74: note: the last parameter in the range is 'size'
+  107 |                                                    uint32_t id, uint64_t size) {
+      |                                                                          ^~~~
+Sources/ThirdParty/libbw64/bw64/parser.hpp:107:52: note: 
+  107 |                                                    uint32_t id, uint64_t size) {
+      |                                                    ^
+Sources/ThirdParty/libbw64/bw64/parser.hpp:107:65: note: 'uint32_t' and 'uint64_t' may be implicitly converted: 'uint32_t' (as 'unsigned int') -> 'uint64_t' (as 'unsigned long long'), 'uint64_t' (as 'unsigned long long') -> 'uint32_t' (as 'unsigned int')
+  107 |                                                    uint32_t id, uint64_t size) {
+      |                                                                 ^
+Sources/ThirdParty/libbw64/bw64/parser.hpp:115:27: warning: narrowing conversion from 'uint64_t' (aka 'unsigned long long') to signed type 'streamsize' (aka 'long') is implementation-defined [bugprone-narrowing-conversions]
+  115 |     stream.read(&data[0], size);
+      |                           ^
+Sources/ThirdParty/libbw64/bw64/parser.hpp:138:52: warning: 2 adjacent parameters of 'parseChnaChunk' of convertible types are easily swapped by mistake [bugprone-easily-swappable-parameters]
+  138 |                                                    uint32_t id, uint64_t size) {
+      |                                                    ^~~~~~~~~~~~~~~~~~~~~~~~~~
+Sources/ThirdParty/libbw64/bw64/parser.hpp:138:61: note: the first parameter in the range is 'id'
+  138 |                                                    uint32_t id, uint64_t size) {
+      |                                                             ^~
+Sources/ThirdParty/libbw64/bw64/parser.hpp:138:74: note: the last parameter in the range is 'size'
+  138 |                                                    uint32_t id, uint64_t size) {
+      |                                                                          ^~~~
+Sources/ThirdParty/libbw64/bw64/parser.hpp:138:52: note: 
+  138 |                                                    uint32_t id, uint64_t size) {
+      |                                                    ^
+Sources/ThirdParty/libbw64/bw64/parser.hpp:138:65: note: 'uint32_t' and 'uint64_t' may be implicitly converted: 'uint32_t' (as 'unsigned int') -> 'uint64_t' (as 'unsigned long long'), 'uint64_t' (as 'unsigned long long') -> 'uint32_t' (as 'unsigned int')
+  138 |                                                    uint32_t id, uint64_t size) {
+      |                                                                 ^
+Sources/ThirdParty/libbw64/bw64/parser.hpp:154:7: warning: variable 'audioId' of type 'AudioId' can be declared 'const' [misc-const-correctness]
+  154 |       auto audioId = parseAudioId(stream);
+      |       ^
+      |            const 
+Sources/ThirdParty/libbw64/bw64/parser.hpp:173:29: warning: 2 adjacent parameters of 'parseDataSize64Chunk' of convertible types are easily swapped by mistake [bugprone-easily-swappable-parameters]
+  173 |       std::istream& stream, uint32_t id, uint64_t size) {
+      |                             ^~~~~~~~~~~~~~~~~~~~~~~~~~
+Sources/ThirdParty/libbw64/bw64/parser.hpp:173:38: note: the first parameter in the range is 'id'
+  173 |       std::istream& stream, uint32_t id, uint64_t size) {
+      |                                      ^~
+Sources/ThirdParty/libbw64/bw64/parser.hpp:173:51: note: the last parameter in the range is 'size'
+  173 |       std::istream& stream, uint32_t id, uint64_t size) {
+      |                                                   ^~~~
+Sources/ThirdParty/libbw64/bw64/parser.hpp:173:29: note: 
+  173 |       std::istream& stream, uint32_t id, uint64_t size) {
+      |                             ^
+Sources/ThirdParty/libbw64/bw64/parser.hpp:173:42: note: 'uint32_t' and 'uint64_t' may be implicitly converted: 'uint32_t' (as 'unsigned int') -> 'uint64_t' (as 'unsigned long long'), 'uint64_t' (as 'unsigned long long') -> 'uint32_t' (as 'unsigned int')
+  173 |       std::istream& stream, uint32_t id, uint64_t size) {
+      |                                          ^
+Sources/ThirdParty/libbw64/bw64/parser.hpp:200:18: warning: narrowing conversion from 'uint64_t' (aka 'unsigned long long') to signed type 'off_type' (aka 'long long') is implementation-defined [bugprone-narrowing-conversions]
+  200 |     stream.seekg(size - 28u - (12u * tableLength), std::ios::cur);
+      |                  ^
+Sources/ThirdParty/libbw64/bw64/parser.hpp:200:32: warning: performing an implicit widening conversion to type 'uint64_t' (aka 'unsigned long long') of a multiplication performed in type 'unsigned int' [bugprone-implicit-widening-of-multiplication-result]
+  200 |     stream.seekg(size - 28u - (12u * tableLength), std::ios::cur);
+      |                                ^
+Sources/ThirdParty/libbw64/bw64/parser.hpp:200:32: note: make conversion explicit to silence this warning
+    7 |     stream.seekg(size - 28u - (12u * tableLength), std::ios::cur);
+      |                                ^~~~~~~~~~~~~~~~~
+      |                                static_cast<uint64_t>( )
+Sources/ThirdParty/libbw64/bw64/parser.hpp:200:32: note: perform multiplication in a wider type
+  200 |     stream.seekg(size - 28u - (12u * tableLength), std::ios::cur);
+      |                                ^~~
+      |                                static_cast<uint64_t>( )
+Sources/ThirdParty/libbw64/bw64/parser.hpp:206:52: warning: 2 adjacent parameters of 'parseDataChunk' of convertible types are easily swapped by mistake [bugprone-easily-swappable-parameters]
+  206 |                                                    uint32_t id, uint64_t size) {
+      |                                                    ^~~~~~~~~~~~~~~~~~~~~~~~~~
+Sources/ThirdParty/libbw64/bw64/parser.hpp:206:61: note: the first parameter in the range is 'id'
+  206 |                                                    uint32_t id, uint64_t size) {
+      |                                                             ^~
+Sources/ThirdParty/libbw64/bw64/parser.hpp:206:74: note: the last parameter in the range is 'size'
+  206 |                                                    uint32_t id, uint64_t size) {
+      |                                                                          ^~~~
+Sources/ThirdParty/libbw64/bw64/parser.hpp:206:52: note: 
+  206 |                                                    uint32_t id, uint64_t size) {
+      |                                                    ^
+Sources/ThirdParty/libbw64/bw64/parser.hpp:206:65: note: 'uint32_t' and 'uint64_t' may be implicitly converted: 'uint32_t' (as 'unsigned int') -> 'uint64_t' (as 'unsigned long long'), 'uint64_t' (as 'unsigned long long') -> 'uint32_t' (as 'unsigned int')
+  206 |                                                    uint32_t id, uint64_t size) {
+      |                                                                 ^
+Sources/ThirdParty/libbw64/bw64/parser.hpp:220:18: warning: narrowing conversion from 'uint64_t' (aka 'unsigned long long') to signed type 'streamoff' (aka 'long long') is implementation-defined [bugprone-narrowing-conversions]
+  220 |     stream.seekg(header.position + 8u);
+      |                  ^
+Sources/ThirdParty/libbw64/bw64/reader.hpp:41:5: warning: single-argument constructors must be marked explicit to avoid unintentional implicit conversions [misc-explicit-constructor]
+   41 |     Bw64Reader(const char* filename) {
+      |     ^
+      |     explicit 
+Sources/ThirdParty/libbw64/bw64/reader.hpp:51:9: warning: variable 'chunkHeader' of type 'ChunkHeader' can be declared 'const' [misc-const-correctness]
+   51 |         auto chunkHeader = parseHeader();
+      |         ^
+      |              const 
+Sources/ThirdParty/libbw64/bw64/reader.hpp:56:9: warning: variable 'ds64Chunk' of type 'std::shared_ptr<DataSize64Chunk>' can be declared 'const' [misc-const-correctness]
+   56 |         auto ds64Chunk =
+      |         ^
+      |              const 
+Sources/ThirdParty/libbw64/bw64/reader.hpp:62:12: warning: variable 'chunkHeader' of type 'bw64::ChunkHeader' can be declared 'const' [misc-const-correctness]
+   62 |       for (auto chunkHeader : chunkHeaders_) {
+      |            ^
+      |                 const 
+Sources/ThirdParty/libbw64/bw64/reader.hpp:64:11: warning: variable 'chunk' of type 'std::shared_ptr<Chunk>' can be declared 'const' [misc-const-correctness]
+   64 |           auto chunk = parseChunk(fileStream_, chunkHeader);
+      |           ^
+      |                const 
+Sources/ThirdParty/libbw64/bw64/reader.hpp:69:7: warning: variable 'fmtChunk' of type 'std::shared_ptr<FormatInfoChunk>' can be declared 'const' [misc-const-correctness]
+   69 |       auto fmtChunk = formatChunk();
+      |       ^
+      |            const 
+Sources/ThirdParty/libbw64/bw64/reader.hpp:114:63: warning: the const qualified parameter 'chunk' of type 'const std::shared_ptr<Chunk>' is copied for each invocation; consider making it a reference [performance-unnecessary-value-param]
+  114 |                        [chunkId](const std::shared_ptr<Chunk> chunk) {
+      |                                                               ^
+      |                                                              &
+Sources/ThirdParty/libbw64/bw64/reader.hpp:124:7: warning: variable 'chunk' of type 'std::__wrap_iter<const std::shared_ptr<bw64::Chunk> *>' can be declared 'const' [misc-const-correctness]
+  124 |       auto chunk = std::find_if(chunks.begin(), chunks.end(),
+      |       ^
+      |            const 
+Sources/ThirdParty/libbw64/bw64/reader.hpp:125:72: warning: the const qualified parameter 'chunk' of type 'const std::shared_ptr<Chunk>' is copied for each invocation; consider making it a reference [performance-unnecessary-value-param]
+  125 |                                 [chunkId](const std::shared_ptr<Chunk> chunk) {
+      |                                                                        ^
+      |                                                                       &
+Sources/ThirdParty/libbw64/bw64/reader.hpp:193:7: warning: variable 'foundHeader' of type 'std::__wrap_iter<const bw64::ChunkHeader *>' can be declared 'const' [misc-const-correctness]
+  193 |       auto foundHeader = std::find_if(
+      |       ^
+      |            const 
+Sources/ThirdParty/libbw64/bw64/reader.hpp:207:7: warning: variable 'frameOffset' of type 'int64_t' (aka 'long long') can be declared 'const' [misc-const-correctness]
+  207 |       int64_t frameOffset =
+      |       ^
+      |               const 
+Sources/ThirdParty/libbw64/bw64/reader.hpp:209:7: warning: variable 'chunkPosition' of type 'uint64_t' (aka 'unsigned long long') can be declared 'const' [misc-const-correctness]
+  209 |       uint64_t chunkPosition =
+      |       ^
+      |                const 
+Sources/ThirdParty/libbw64/bw64/reader.hpp:223:27: warning: narrowing conversion from 'uint64_t' (aka 'unsigned long long') to signed type 'streamoff' (aka 'long long') is implementation-defined [bugprone-narrowing-conversions]
+  223 |         fileStream_.seekg(dataChunkOffset + frameOffset);
+      |                           ^
+Sources/ThirdParty/libbw64/bw64/reader.hpp:226:27: warning: narrowing conversion from 'uint64_t' (aka 'unsigned long long') to signed type 'streamoff' (aka 'long long') is implementation-defined [bugprone-narrowing-conversions]
+  226 |         fileStream_.seekg(chunkPosition);
+      |                           ^
+Sources/ThirdParty/libbw64/bw64/reader.hpp:228:27: warning: narrowing conversion from 'uint64_t' (aka 'unsigned long long') to signed type 'streamoff' (aka 'long long') is implementation-defined [bugprone-narrowing-conversions]
+  228 |         fileStream_.seekg(chunkPosition + dataChunk()->size());
+      |                           ^
+Sources/ThirdParty/libbw64/bw64/reader.hpp:241:15: warning: incorrect std::enable_if usage detected; use 'typename std::enable_if<...>::type' [bugprone-incorrect-enable-if]
+  241 |               typename = std::enable_if<std::is_floating_point<T>::value>>
+      |               ^                                                          
+      |                          typename                                        ::type
+Sources/ThirdParty/libbw64/bw64/reader.hpp:247:44: warning: narrowing conversion from 'uint64_t' (aka 'unsigned long long') to signed type 'streamsize' (aka 'long') is implementation-defined [bugprone-narrowing-conversions]
+  247 |       fileStream_.read(&rawDataBuffer_[0], frames * blockAlignment());
+      |                                            ^
+Sources/ThirdParty/libbw64/bw64/reader.hpp:289:7: warning: variable 'foundHeader' of type 'std::__wrap_iter<bw64::ChunkHeader *>' can be declared 'const' [misc-const-correctness]
+  289 |       auto foundHeader = std::find_if(
+      |       ^
+      |            const 
+Sources/ThirdParty/libbw64/bw64/reader.hpp:303:7: warning: variable 'position' of type 'uint64_t' (aka 'unsigned long long') can be declared 'const' [misc-const-correctness]
+  303 |       uint64_t position = fileStream_.tellg();
+      |       ^
+      |                const 
+Sources/ThirdParty/libbw64/bw64/reader.hpp:306:7: warning: variable 'chunkSize64' of type 'uint64_t' (aka 'unsigned long long') can be declared 'const' [misc-const-correctness]
+  306 |       uint64_t chunkSize64 = getChunkSize64(chunkId, chunkSize);
+      |       ^
+      |                const 
+Sources/ThirdParty/libbw64/bw64/reader.hpp:310:29: warning: 2 adjacent parameters of 'getChunkSize64' of convertible types are easily swapped by mistake [bugprone-easily-swappable-parameters]
+  310 |     uint64_t getChunkSize64(uint32_t id, uint64_t chunkSize) {
+      |                             ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Sources/ThirdParty/libbw64/bw64/reader.hpp:310:38: note: the first parameter in the range is 'id'
+  310 |     uint64_t getChunkSize64(uint32_t id, uint64_t chunkSize) {
+      |                                      ^~
+Sources/ThirdParty/libbw64/bw64/reader.hpp:310:51: note: the last parameter in the range is 'chunkSize'
+  310 |     uint64_t getChunkSize64(uint32_t id, uint64_t chunkSize) {
+      |                                                   ^~~~~~~~~
+Sources/ThirdParty/libbw64/bw64/reader.hpp:310:29: note: 
+  310 |     uint64_t getChunkSize64(uint32_t id, uint64_t chunkSize) {
+      |                             ^
+Sources/ThirdParty/libbw64/bw64/reader.hpp:310:42: note: 'uint32_t' and 'uint64_t' may be implicitly converted: 'uint32_t' (as 'unsigned int') -> 'uint64_t' (as 'unsigned long long'), 'uint64_t' (as 'unsigned long long') -> 'uint32_t' (as 'unsigned int')
+  310 |     uint64_t getChunkSize64(uint32_t id, uint64_t chunkSize) {
+      |                                          ^
+Sources/ThirdParty/libbw64/bw64/reader.hpp:331:29: warning: narrowing conversion from 'uint64_t' (aka 'unsigned long long') to signed type 'off_type' (aka 'long long') is implementation-defined [bugprone-narrowing-conversions]
+  331 |           fileStream_.seekg(chunkHeader.size, std::ios::cur);
+      |                             ^
+Sources/ThirdParty/libbw64/bw64/reader.hpp:334:29: warning: narrowing conversion from 'uint64_t' (aka 'unsigned long long') to signed type 'off_type' (aka 'long long') is implementation-defined [bugprone-narrowing-conversions]
+  334 |           fileStream_.seekg(chunkHeader.size + 1, std::ios::cur);
+      |                             ^
+Sources/ThirdParty/libbw64/bw64/utils.hpp:10:10: warning: circular header file dependency detected while including 'chunks.hpp', please check the include path [misc-header-include-cycle]
+   10 | #include "chunks.hpp"
+      |          ^
+Sources/ThirdParty/libbw64/bw64/chunks.hpp:12:10: note: 'utils.hpp' included from here
+   12 | #include "utils.hpp"
+      |          ^
+Sources/ThirdParty/libbw64/bw64/reader.hpp:12:10: note: 'chunks.hpp' included from here
+   12 | #include "chunks.hpp"
+      |          ^
+Sources/ThirdParty/libbw64/bw64/utils.hpp:17:14: warning: use of a signed integer operand with a binary bitwise operator [bugprone-signed-bitwise]
+   17 |       return (p[3] << 24) | (p[2] << 16) | (p[1] << 8) | p[0];
+      |              ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ~
+Sources/ThirdParty/libbw64/bw64/utils.hpp:17:15: warning: use of a signed integer operand with a binary bitwise operator [bugprone-signed-bitwise]
+   17 |       return (p[3] << 24) | (p[2] << 16) | (p[1] << 8) | p[0];
+      |               ^~~~ ~~
+Sources/ThirdParty/libbw64/bw64/utils.hpp:17:30: warning: use of a signed integer operand with a binary bitwise operator [bugprone-signed-bitwise]
+   17 |       return (p[3] << 24) | (p[2] << 16) | (p[1] << 8) | p[0];
+      |                              ^~~~ ~~
+Sources/ThirdParty/libbw64/bw64/utils.hpp:17:45: warning: use of a signed integer operand with a binary bitwise operator [bugprone-signed-bitwise]
+   17 |       return (p[3] << 24) | (p[2] << 16) | (p[1] << 8) | p[0];
+      |                                             ^~~~ ~~
+Sources/ThirdParty/libbw64/bw64/utils.hpp:37:70: warning: the parameter 'chunk' of type 'std::shared_ptr<bw64::ChnaChunk>' is copied for each invocation but only used as a const reference; consider making it a const reference [performance-unnecessary-value-param]
+   37 |     void writeChunk(std::ostream& stream, std::shared_ptr<ChunkType> chunk,
+      |                                                                      ^
+      |                                           const                     &
+Sources/ThirdParty/libbw64/bw64/utils.hpp:37:70: warning: the parameter 'chunk' of type 'std::shared_ptr<bw64::Chunk>' is copied for each invocation but only used as a const reference; consider making it a const reference [performance-unnecessary-value-param]
+   37 |     void writeChunk(std::ostream& stream, std::shared_ptr<ChunkType> chunk,
+      |                                                                      ^
+      |                                           const                     &
+Sources/ThirdParty/libbw64/bw64/utils.hpp:37:70: warning: the parameter 'chunk' of type 'std::shared_ptr<bw64::DataChunk>' is copied for each invocation but only used as a const reference; consider making it a const reference [performance-unnecessary-value-param]
+   37 |     void writeChunk(std::ostream& stream, std::shared_ptr<ChunkType> chunk,
+      |                                                                      ^
+      |                                           const                     &
+Sources/ThirdParty/libbw64/bw64/utils.hpp:37:70: warning: the parameter 'chunk' of type 'std::shared_ptr<bw64::DataSize64Chunk>' is copied for each invocation but only used as a const reference; consider making it a const reference [performance-unnecessary-value-param]
+   37 |     void writeChunk(std::ostream& stream, std::shared_ptr<ChunkType> chunk,
+      |                                                                      ^
+      |                                           const                     &
+Sources/ThirdParty/libbw64/bw64/utils.hpp:37:70: warning: the parameter 'chunk' of type 'std::shared_ptr<bw64::FormatInfoChunk>' is copied for each invocation but only used as a const reference; consider making it a const reference [performance-unnecessary-value-param]
+   37 |     void writeChunk(std::ostream& stream, std::shared_ptr<ChunkType> chunk,
+      |                                                                      ^
+      |                                           const                     &
+Sources/ThirdParty/libbw64/bw64/utils.hpp:60:15: warning: incorrect std::enable_if usage detected; use 'typename std::enable_if<...>::type' [bugprone-incorrect-enable-if]
+   60 |               typename = std::enable_if<std::is_floating_point<T>::value>>
+      |               ^                                                          
+      |                          typename                                        ::type
+Sources/ThirdParty/libbw64/bw64/utils.hpp:62:27: warning: 2 adjacent parameters of 'decodePcmSamples' of convertible types are easily swapped by mistake [bugprone-easily-swappable-parameters]
+   62 |                           uint64_t numberOfSamples, uint16_t bitsPerSample) {
+      |                           ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Sources/ThirdParty/libbw64/bw64/utils.hpp:62:36: note: the first parameter in the range is 'numberOfSamples'
+   62 |                           uint64_t numberOfSamples, uint16_t bitsPerSample) {
+      |                                    ^~~~~~~~~~~~~~~
+Sources/ThirdParty/libbw64/bw64/utils.hpp:62:62: note: the last parameter in the range is 'bitsPerSample'
+   62 |                           uint64_t numberOfSamples, uint16_t bitsPerSample) {
+      |                                                              ^~~~~~~~~~~~~
+Sources/ThirdParty/libbw64/bw64/utils.hpp:62:27: note: 
+   62 |                           uint64_t numberOfSamples, uint16_t bitsPerSample) {
+      |                           ^
+Sources/ThirdParty/libbw64/bw64/utils.hpp:62:53: note: 'uint64_t' and 'uint16_t' may be implicitly converted: 'uint64_t' (as 'unsigned long long') -> 'uint16_t' (as 'unsigned short'), 'uint16_t' (as 'unsigned short') -> 'uint64_t' (as 'unsigned long long')
+   62 |                           uint64_t numberOfSamples, uint16_t bitsPerSample) {
+      |                                                     ^
+Sources/ThirdParty/libbw64/bw64/utils.hpp:63:7: warning: variable 'bytesPerSample' of type 'uint16_t' (aka 'unsigned short') can be declared 'const' [misc-const-correctness]
+   63 |       uint16_t bytesPerSample = bitsPerSample / 8;
+      |       ^
+      |                const 
+Sources/ThirdParty/libbw64/bw64/utils.hpp:66:11: warning: variable 'sampleValue' of type 'int16_t' (aka 'short') can be declared 'const' [misc-const-correctness]
+   66 |           int16_t sampleValue = (inBuffer[i * bytesPerSample + 1] & 0xff) << 8 |
+      |           ^
+      |                   const 
+Sources/ThirdParty/libbw64/bw64/utils.hpp:66:33: warning: narrowing conversion from 'int' to signed type 'int16_t' (aka 'short') is implementation-defined [bugprone-narrowing-conversions]
+   66 |           int16_t sampleValue = (inBuffer[i * bytesPerSample + 1] & 0xff) << 8 |
+      |                                 ^
+Sources/ThirdParty/libbw64/bw64/utils.hpp:66:33: warning: use of a signed integer operand with a binary bitwise operator [bugprone-signed-bitwise]
+   66 |           int16_t sampleValue = (inBuffer[i * bytesPerSample + 1] & 0xff) << 8 |
+      |                                 ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ~
+Sources/ThirdParty/libbw64/bw64/utils.hpp:66:34: warning: use of a signed integer operand with a binary bitwise operator [bugprone-signed-bitwise]
+   66 |           int16_t sampleValue = (inBuffer[i * bytesPerSample + 1] & 0xff) << 8 |
+      |                                  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ~
+Sources/ThirdParty/libbw64/bw64/utils.hpp:67:34: warning: use of a signed integer operand with a binary bitwise operator [bugprone-signed-bitwise]
+   67 |                                 (inBuffer[i * bytesPerSample] & 0xff);
+      |                                  ^~~~~~~~~~~~~~~~~~~~~~~~~~~~ ~
+Sources/ThirdParty/libbw64/bw64/utils.hpp:68:26: warning: narrowing conversion from 'int' to 'float' [bugprone-narrowing-conversions]
+   68 |           outBuffer[i] = sampleValue / 32768.f;
+      |                          ^
+Sources/ThirdParty/libbw64/bw64/utils.hpp:72:11: warning: variable 'sampleValue' of type 'int32_t' (aka 'int') can be declared 'const' [misc-const-correctness]
+   72 |           int32_t sampleValue =
+      |           ^
+      |                   const 
+Sources/ThirdParty/libbw64/bw64/utils.hpp:73:15: warning: use of a signed integer operand with a binary bitwise operator [bugprone-signed-bitwise]
+   73 |               (inBuffer[i * bytesPerSample + 2] & 0xff) << 24 |
+      |               ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   74 |               (inBuffer[i * bytesPerSample + 1] & 0xff) << 16 |
+      |               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ~
+Sources/ThirdParty/libbw64/bw64/utils.hpp:73:16: warning: use of a signed integer operand with a binary bitwise operator [bugprone-signed-bitwise]
+   73 |               (inBuffer[i * bytesPerSample + 2] & 0xff) << 24 |
+      |                ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ~
+Sources/ThirdParty/libbw64/bw64/utils.hpp:74:15: warning: use of a signed integer operand with a binary bitwise operator [bugprone-signed-bitwise]
+   74 |               (inBuffer[i * bytesPerSample + 1] & 0xff) << 16 |
+      |               ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ~~
+Sources/ThirdParty/libbw64/bw64/utils.hpp:74:16: warning: use of a signed integer operand with a binary bitwise operator [bugprone-signed-bitwise]
+   74 |               (inBuffer[i * bytesPerSample + 1] & 0xff) << 16 |
+      |                ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ~
+Sources/ThirdParty/libbw64/bw64/utils.hpp:75:15: warning: use of a signed integer operand with a binary bitwise operator [bugprone-signed-bitwise]
+   75 |               (inBuffer[i * bytesPerSample] & 0xff) << 8;
+      |               ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ~~
+Sources/ThirdParty/libbw64/bw64/utils.hpp:75:16: warning: use of a signed integer operand with a binary bitwise operator [bugprone-signed-bitwise]
+   75 |               (inBuffer[i * bytesPerSample] & 0xff) << 8;
+      |                ^~~~~~~~~~~~~~~~~~~~~~~~~~~~ ~
+Sources/ThirdParty/libbw64/bw64/utils.hpp:76:26: warning: narrowing conversion from 'int32_t' (aka 'int') to 'float' [bugprone-narrowing-conversions]
+   76 |           outBuffer[i] = sampleValue / 2147483647.f;
+      |                          ^
+Sources/ThirdParty/libbw64/bw64/utils.hpp:80:11: warning: variable 'sampleValue' of type 'int32_t' (aka 'int') can be declared 'const' [misc-const-correctness]
+   80 |           int32_t sampleValue =
+      |           ^
+      |                   const 
+Sources/ThirdParty/libbw64/bw64/utils.hpp:81:15: warning: use of a signed integer operand with a binary bitwise operator [bugprone-signed-bitwise]
+   81 |               (inBuffer[i * bytesPerSample + 3] & 0xff) << 24 |
+      |               ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   82 |               (inBuffer[i * bytesPerSample + 2] & 0xff) << 16 |
+      |               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   83 |               (inBuffer[i * bytesPerSample + 1] & 0xff) << 8 |
+      |               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ~
+Sources/ThirdParty/libbw64/bw64/utils.hpp:81:16: warning: use of a signed integer operand with a binary bitwise operator [bugprone-signed-bitwise]
+   81 |               (inBuffer[i * bytesPerSample + 3] & 0xff) << 24 |
+      |                ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ~
+Sources/ThirdParty/libbw64/bw64/utils.hpp:82:15: warning: use of a signed integer operand with a binary bitwise operator [bugprone-signed-bitwise]
+   82 |               (inBuffer[i * bytesPerSample + 2] & 0xff) << 16 |
+      |               ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ~~
+Sources/ThirdParty/libbw64/bw64/utils.hpp:82:16: warning: use of a signed integer operand with a binary bitwise operator [bugprone-signed-bitwise]
+   82 |               (inBuffer[i * bytesPerSample + 2] & 0xff) << 16 |
+      |                ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ~
+Sources/ThirdParty/libbw64/bw64/utils.hpp:83:15: warning: use of a signed integer operand with a binary bitwise operator [bugprone-signed-bitwise]
+   83 |               (inBuffer[i * bytesPerSample + 1] & 0xff) << 8 |
+      |               ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ~~
+Sources/ThirdParty/libbw64/bw64/utils.hpp:83:16: warning: use of a signed integer operand with a binary bitwise operator [bugprone-signed-bitwise]
+   83 |               (inBuffer[i * bytesPerSample + 1] & 0xff) << 8 |
+      |                ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ~
+Sources/ThirdParty/libbw64/bw64/utils.hpp:84:16: warning: use of a signed integer operand with a binary bitwise operator [bugprone-signed-bitwise]
+   84 |               (inBuffer[i * bytesPerSample] & 0xff);
+      |                ^~~~~~~~~~~~~~~~~~~~~~~~~~~~ ~
+Sources/ThirdParty/libbw64/bw64/utils.hpp:85:26: warning: narrowing conversion from 'int32_t' (aka 'int') to 'float' [bugprone-narrowing-conversions]
+   85 |           outBuffer[i] = sampleValue / 2147483647.f;
+      |                          ^
+Sources/ThirdParty/libbw64/bw64/utils.hpp:96:15: warning: incorrect std::enable_if usage detected; use 'typename std::enable_if<...>::type' [bugprone-incorrect-enable-if]
+   96 |               typename = std::enable_if<std::is_floating_point<T>::value>>
+      |               ^                                                          
+      |                          typename                                        ::type
+Sources/ThirdParty/libbw64/bw64/utils.hpp:109:15: warning: incorrect std::enable_if usage detected; use 'typename std::enable_if<...>::type' [bugprone-incorrect-enable-if]
+  109 |               typename = std::enable_if<std::is_floating_point<T>::value>>
+      |               ^                                                          
+      |                          typename                                        ::type
+Sources/ThirdParty/libbw64/bw64/utils.hpp:111:27: warning: 2 adjacent parameters of 'encodePcmSamples' of convertible types are easily swapped by mistake [bugprone-easily-swappable-parameters]
+  111 |                           uint64_t numberOfSamples, uint16_t bitsPerSample) {
+      |                           ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Sources/ThirdParty/libbw64/bw64/utils.hpp:111:36: note: the first parameter in the range is 'numberOfSamples'
+  111 |                           uint64_t numberOfSamples, uint16_t bitsPerSample) {
+      |                                    ^~~~~~~~~~~~~~~
+Sources/ThirdParty/libbw64/bw64/utils.hpp:111:62: note: the last parameter in the range is 'bitsPerSample'
+  111 |                           uint64_t numberOfSamples, uint16_t bitsPerSample) {
+      |                                                              ^~~~~~~~~~~~~
+Sources/ThirdParty/libbw64/bw64/utils.hpp:111:27: note: 
+  111 |                           uint64_t numberOfSamples, uint16_t bitsPerSample) {
+      |                           ^
+Sources/ThirdParty/libbw64/bw64/utils.hpp:111:53: note: 'uint64_t' and 'uint16_t' may be implicitly converted: 'uint64_t' (as 'unsigned long long') -> 'uint16_t' (as 'unsigned short'), 'uint16_t' (as 'unsigned short') -> 'uint64_t' (as 'unsigned long long')
+  111 |                           uint64_t numberOfSamples, uint16_t bitsPerSample) {
+      |                                                     ^
+Sources/ThirdParty/libbw64/bw64/utils.hpp:112:7: warning: variable 'bytesPerSample' of type 'uint16_t' (aka 'unsigned short') can be declared 'const' [misc-const-correctness]
+  112 |       uint16_t bytesPerSample = bitsPerSample / 8;
+      |       ^
+      |                const 
+Sources/ThirdParty/libbw64/bw64/utils.hpp:115:11: warning: variable 'sampleValueClipped' of type 'float' can be declared 'const' [misc-const-correctness]
+  115 |           auto sampleValueClipped = clipSample(inBuffer[i]);
+      |           ^
+      |                const 
+Sources/ThirdParty/libbw64/bw64/utils.hpp:116:11: warning: variable 'sampleValue' of type 'int16_t' (aka 'short') can be declared 'const' [misc-const-correctness]
+  116 |           int16_t sampleValue =
+      |           ^
+      |                   const 
+Sources/ThirdParty/libbw64/bw64/utils.hpp:118:43: warning: narrowing conversion from 'int' to signed type 'char' is implementation-defined [bugprone-narrowing-conversions]
+  118 |           outBuffer[i * bytesPerSample] = sampleValue & 0xff;
+      |                                           ^
+Sources/ThirdParty/libbw64/bw64/utils.hpp:118:43: warning: use of a signed integer operand with a binary bitwise operator [bugprone-signed-bitwise]
+  118 |           outBuffer[i * bytesPerSample] = sampleValue & 0xff;
+      |                                           ^~~~~~~~~~~ ~
+Sources/ThirdParty/libbw64/bw64/utils.hpp:119:47: warning: narrowing conversion from 'int' to signed type 'char' is implementation-defined [bugprone-narrowing-conversions]
+  119 |           outBuffer[i * bytesPerSample + 1] = (sampleValue >> 8) & 0xff;
+      |                                               ^
+Sources/ThirdParty/libbw64/bw64/utils.hpp:119:47: warning: use of a signed integer operand with a binary bitwise operator [bugprone-signed-bitwise]
+  119 |           outBuffer[i * bytesPerSample + 1] = (sampleValue >> 8) & 0xff;
+      |                                               ^~~~~~~~~~~~~~~~~~ ~
+Sources/ThirdParty/libbw64/bw64/utils.hpp:119:48: warning: use of a signed integer operand with a binary bitwise operator [bugprone-signed-bitwise]
+  119 |           outBuffer[i * bytesPerSample + 1] = (sampleValue >> 8) & 0xff;
+      |                                                ^~~~~~~~~~~ ~~
+Sources/ThirdParty/libbw64/bw64/utils.hpp:123:11: warning: variable 'sampleValueClipped' of type 'float' can be declared 'const' [misc-const-correctness]
+  123 |           auto sampleValueClipped = clipSample(inBuffer[i]);
+      |           ^
+      |                const 
+Sources/ThirdParty/libbw64/bw64/utils.hpp:124:11: warning: variable 'sampleValue' of type 'int32_t' (aka 'int') can be declared 'const' [misc-const-correctness]
+  124 |           int32_t sampleValue =
+      |           ^
+      |                   const 
+Sources/ThirdParty/libbw64/bw64/utils.hpp:126:43: warning: narrowing conversion from 'int' to signed type 'char' is implementation-defined [bugprone-narrowing-conversions]
+  126 |           outBuffer[i * bytesPerSample] = sampleValue & 0xff;
+      |                                           ^
+Sources/ThirdParty/libbw64/bw64/utils.hpp:126:43: warning: use of a signed integer operand with a binary bitwise operator [bugprone-signed-bitwise]
+  126 |           outBuffer[i * bytesPerSample] = sampleValue & 0xff;
+      |                                           ^~~~~~~~~~~ ~
+Sources/ThirdParty/libbw64/bw64/utils.hpp:127:47: warning: narrowing conversion from 'int' to signed type 'char' is implementation-defined [bugprone-narrowing-conversions]
+  127 |           outBuffer[i * bytesPerSample + 1] = (sampleValue >> 8) & 0xff;
+      |                                               ^
+Sources/ThirdParty/libbw64/bw64/utils.hpp:127:47: warning: use of a signed integer operand with a binary bitwise operator [bugprone-signed-bitwise]
+  127 |           outBuffer[i * bytesPerSample + 1] = (sampleValue >> 8) & 0xff;
+      |                                               ^~~~~~~~~~~~~~~~~~ ~
+Sources/ThirdParty/libbw64/bw64/utils.hpp:127:48: warning: use of a signed integer operand with a binary bitwise operator [bugprone-signed-bitwise]
+  127 |           outBuffer[i * bytesPerSample + 1] = (sampleValue >> 8) & 0xff;
+      |                                                ^~~~~~~~~~~ ~~
+Sources/ThirdParty/libbw64/bw64/utils.hpp:128:47: warning: narrowing conversion from 'int' to signed type 'char' is implementation-defined [bugprone-narrowing-conversions]
+  128 |           outBuffer[i * bytesPerSample + 2] = (sampleValue >> 16) & 0xff;
+      |                                               ^
+Sources/ThirdParty/libbw64/bw64/utils.hpp:128:47: warning: use of a signed integer operand with a binary bitwise operator [bugprone-signed-bitwise]
+  128 |           outBuffer[i * bytesPerSample + 2] = (sampleValue >> 16) & 0xff;
+      |                                               ^~~~~~~~~~~~~~~~~~~ ~
+Sources/ThirdParty/libbw64/bw64/utils.hpp:128:48: warning: use of a signed integer operand with a binary bitwise operator [bugprone-signed-bitwise]
+  128 |           outBuffer[i * bytesPerSample + 2] = (sampleValue >> 16) & 0xff;
+      |                                                ^~~~~~~~~~~ ~~
+Sources/ThirdParty/libbw64/bw64/utils.hpp:132:11: warning: variable 'sampleValueClipped' of type 'float' can be declared 'const' [misc-const-correctness]
+  132 |           auto sampleValueClipped = clipSample(inBuffer[i]);
+      |           ^
+      |                const 
+Sources/ThirdParty/libbw64/bw64/utils.hpp:133:11: warning: variable 'sampleValue' of type 'int32_t' (aka 'int') can be declared 'const' [misc-const-correctness]
+  133 |           int32_t sampleValue =
+      |           ^
+      |                   const 
+Sources/ThirdParty/libbw64/bw64/utils.hpp:135:43: warning: narrowing conversion from 'int' to signed type 'char' is implementation-defined [bugprone-narrowing-conversions]
+  135 |           outBuffer[i * bytesPerSample] = sampleValue & 0xff;
+      |                                           ^
+Sources/ThirdParty/libbw64/bw64/utils.hpp:135:43: warning: use of a signed integer operand with a binary bitwise operator [bugprone-signed-bitwise]
+  135 |           outBuffer[i * bytesPerSample] = sampleValue & 0xff;
+      |                                           ^~~~~~~~~~~ ~
+Sources/ThirdParty/libbw64/bw64/utils.hpp:136:47: warning: narrowing conversion from 'int' to signed type 'char' is implementation-defined [bugprone-narrowing-conversions]
+  136 |           outBuffer[i * bytesPerSample + 1] = (sampleValue >> 8) & 0xff;
+      |                                               ^
+Sources/ThirdParty/libbw64/bw64/utils.hpp:136:47: warning: use of a signed integer operand with a binary bitwise operator [bugprone-signed-bitwise]
+  136 |           outBuffer[i * bytesPerSample + 1] = (sampleValue >> 8) & 0xff;
+      |                                               ^~~~~~~~~~~~~~~~~~ ~
+Sources/ThirdParty/libbw64/bw64/utils.hpp:136:48: warning: use of a signed integer operand with a binary bitwise operator [bugprone-signed-bitwise]
+  136 |           outBuffer[i * bytesPerSample + 1] = (sampleValue >> 8) & 0xff;
+      |                                                ^~~~~~~~~~~ ~~
+Sources/ThirdParty/libbw64/bw64/utils.hpp:137:47: warning: narrowing conversion from 'int' to signed type 'char' is implementation-defined [bugprone-narrowing-conversions]
+  137 |           outBuffer[i * bytesPerSample + 2] = (sampleValue >> 16) & 0xff;
+      |                                               ^
+Sources/ThirdParty/libbw64/bw64/utils.hpp:137:47: warning: use of a signed integer operand with a binary bitwise operator [bugprone-signed-bitwise]
+  137 |           outBuffer[i * bytesPerSample + 2] = (sampleValue >> 16) & 0xff;
+      |                                               ^~~~~~~~~~~~~~~~~~~ ~
+Sources/ThirdParty/libbw64/bw64/utils.hpp:137:48: warning: use of a signed integer operand with a binary bitwise operator [bugprone-signed-bitwise]
+  137 |           outBuffer[i * bytesPerSample + 2] = (sampleValue >> 16) & 0xff;
+      |                                                ^~~~~~~~~~~ ~~
+Sources/ThirdParty/libbw64/bw64/utils.hpp:138:47: warning: narrowing conversion from 'int' to signed type 'char' is implementation-defined [bugprone-narrowing-conversions]
+  138 |           outBuffer[i * bytesPerSample + 3] = (sampleValue >> 24) & 0xff;
+      |                                               ^
+Sources/ThirdParty/libbw64/bw64/utils.hpp:138:47: warning: use of a signed integer operand with a binary bitwise operator [bugprone-signed-bitwise]
+  138 |           outBuffer[i * bytesPerSample + 3] = (sampleValue >> 24) & 0xff;
+      |                                               ^~~~~~~~~~~~~~~~~~~ ~
+Sources/ThirdParty/libbw64/bw64/utils.hpp:138:48: warning: use of a signed integer operand with a binary bitwise operator [bugprone-signed-bitwise]
+  138 |           outBuffer[i * bytesPerSample + 3] = (sampleValue >> 24) & 0xff;
+      |                                                ^~~~~~~~~~~ ~~
+Sources/ThirdParty/libbw64/bw64/writer.hpp:51:52: warning: the parameter 'additionalChunks' of type 'std::vector<std::shared_ptr<Chunk>>' is copied for each invocation but only used as a const reference; consider making it a const reference [performance-unnecessary-value-param]
+   51 |                std::vector<std::shared_ptr<Chunk>> additionalChunks) {
+      |                                                    ^
+      |                const                              &
+Sources/ThirdParty/libbw64/bw64/writer.hpp:60:7: warning: variable 'formatChunk' of type 'shared_ptr<bw64::FormatInfoChunk>' can be declared 'const' [misc-const-correctness]
+   60 |       auto formatChunk =
+      |       ^
+      |            const 
+Sources/ThirdParty/libbw64/bw64/writer.hpp:64:12: warning: variable 'chunk' of type 'std::shared_ptr<bw64::Chunk>' can be declared 'const' [misc-const-correctness]
+   64 |       for (auto chunk : additionalChunks) {
+      |            ^
+      |                 const 
+Sources/ThirdParty/libbw64/bw64/writer.hpp:64:17: warning: loop variable is copied but only used as const reference; consider making it a const reference [performance-for-range-copy]
+   64 |       for (auto chunk : additionalChunks) {
+      |                 ^
+      |            const  &
+Sources/ThirdParty/libbw64/bw64/writer.hpp:71:7: warning: variable 'dataChunk' of type 'shared_ptr<bw64::DataChunk>' can be declared 'const' [misc-const-correctness]
+   71 |       auto dataChunk = std::make_shared<DataChunk>();
+      |       ^
+      |            const 
+Sources/ThirdParty/libbw64/bw64/writer.hpp:82:5: warning: an exception may be thrown in function '~Bw64Writer' which should not throw exceptions [bugprone-exception-escape]
+   82 |     ~Bw64Writer() {
+      |     ^
+/opt/homebrew/Cellar/llvm/23.1.1/bin/../include/c++/v1/__new/exceptions.h:74:3: note: frame #0: unhandled exception of type 'bad_array_new_length' may be thrown in function '__throw_bad_array_new_length' here
+   74 |   throw bad_array_new_length();
+      |   ^
+/opt/homebrew/Cellar/llvm/23.1.1/bin/../include/c++/v1/__memory/allocator.h:88:7: note: frame #1: function 'allocate' calls function '__throw_bad_array_new_length' here
+   88 |       std::__throw_bad_array_new_length();
+      |       ^
+/opt/homebrew/Cellar/llvm/23.1.1/bin/../include/c++/v1/__memory/allocate_at_least.h:46:86: note: frame #2: function '__allocate_at_least<std::allocator<char>, std::allocator_traits<std::allocator<char>>>' calls function 'allocate' here
+   46 |   return __allocation_result<typename _Traits::pointer, typename _Traits::size_type>(__alloc.allocate(__n), __n);
+      |                                                                                      ^
+/opt/homebrew/Cellar/llvm/23.1.1/bin/../include/c++/v1/string:2187:21: note: frame #3: function '__allocate_long_buffer' calls function '__allocate_at_least<std::allocator<char>, std::allocator_traits<std::allocator<char>>>' here
+ 2187 |     auto __buffer = std::__allocate_at_least(__alloc, __align_allocation_size(__min_capacity));
+      |                     ^
+/opt/homebrew/Cellar/llvm/23.1.1/bin/../include/c++/v1/string:2199:12: note: frame #4: function '__allocate_long_buffer' calls function '__allocate_long_buffer' here
+ 2199 |     return __allocate_long_buffer(__alloc, __size, __size);
+      |            ^
+/opt/homebrew/Cellar/llvm/23.1.1/bin/../include/c++/v1/string:2224:20: note: frame #5: function '__init_internal_buffer' calls function '__allocate_long_buffer' here
+ 2224 |       __rep_.__l = __allocate_long_buffer(__alloc_, __size);
+      |                    ^
+/opt/homebrew/Cellar/llvm/23.1.1/bin/../include/c++/v1/string:2592:17: note: frame #6: function '__init' calls function '__init_internal_buffer' here
+ 2592 |   pointer __p = __init_internal_buffer(__sz);
+      |                 ^
+/opt/homebrew/Cellar/llvm/23.1.1/bin/../include/c++/v1/string:1025:5: note: frame #7: function 'basic_string' calls function '__init' here
+ 1025 |     __init(__s, __n);
+      |     ^
+Sources/ThirdParty/libbw64/bw64/utils.hpp:21:14: note: frame #8: function 'fourCCToStr' calls function 'basic_string' here
+   21 |       return std::string(reinterpret_cast<char*>(&value), 4);
+      |              ^
+Sources/ThirdParty/libbw64/bw64/writer.hpp:278:43: note: frame #9: function 'chunkHeader' calls function 'fourCCToStr' here
+  278 |       errorMsg << "no chunk with id '" << utils::fourCCToStr(id) << "' found";
+      |                                           ^
+Sources/ThirdParty/libbw64/bw64/writer.hpp:265:21: note: frame #10: function 'seekChunk' calls function 'chunkHeader' here
+  265 |       auto header = chunkHeader(id);
+      |                     ^
+Sources/ThirdParty/libbw64/bw64/writer.hpp:230:7: note: frame #11: function 'finalizeDataChunk' calls function 'seekChunk' here
+  230 |       seekChunk(utils::fourCC("data"));
+      |       ^
+Sources/ThirdParty/libbw64/bw64/writer.hpp:83:7: note: frame #12: function '~Bw64Writer' calls function 'finalizeDataChunk' here
+   83 |       finalizeDataChunk();
+      |       ^
+Sources/ThirdParty/libbw64/bw64/writer.hpp:84:12: warning: variable 'chunk' of type 'std::shared_ptr<bw64::Chunk>' can be declared 'const' [misc-const-correctness]
+   84 |       for (auto chunk : postDataChunks_) {
+      |            ^
+      |                 const 
+Sources/ThirdParty/libbw64/bw64/writer.hpp:84:17: warning: loop variable is copied but only used as const reference; consider making it a const reference [performance-for-range-copy]
+   84 |       for (auto chunk : postDataChunks_) {
+      |                 ^
+      |            const  &
+Sources/ThirdParty/libbw64/bw64/writer.hpp:110:63: warning: the const qualified parameter 'chunk' of type 'const std::shared_ptr<Chunk>' is copied for each invocation; consider making it a reference [performance-unnecessary-value-param]
+  110 |                        [chunkId](const std::shared_ptr<Chunk> chunk) {
+      |                                                               ^
+      |                                                              &
+Sources/ThirdParty/libbw64/bw64/writer.hpp:120:7: warning: variable 'chunk' of type 'std::__wrap_iter<const std::shared_ptr<bw64::Chunk> *>' can be declared 'const' [misc-const-correctness]
+  120 |       auto chunk = std::find_if(chunks.begin(), chunks.end(),
+      |       ^
+      |            const 
+Sources/ThirdParty/libbw64/bw64/writer.hpp:121:72: warning: the const qualified parameter 'chunk' of type 'const std::shared_ptr<Chunk>' is copied for each invocation; consider making it a reference [performance-unnecessary-value-param]
+  121 |                                 [chunkId](const std::shared_ptr<Chunk> chunk) {
+      |                                                                        ^
+      |                                                                       &
+Sources/ThirdParty/libbw64/bw64/writer.hpp:158:50: warning: the parameter 'chunk' of type 'std::shared_ptr<ChnaChunk>' is copied for each invocation but only used as a const reference; consider making it a const reference [performance-unnecessary-value-param]
+  158 |     void setChnaChunk(std::shared_ptr<ChnaChunk> chunk) {
+      |                                                  ^
+      |                       const                     &
+Sources/ThirdParty/libbw64/bw64/writer.hpp:164:7: warning: variable 'last_position' of type 'pos_type' (aka 'fpos<__mbstate_t>') can be declared 'const' [misc-const-correctness]
+  164 |       auto last_position = fileStream_.tellp();
+      |       ^
+      |            const 
+Sources/ThirdParty/libbw64/bw64/writer.hpp:169:46: warning: the parameter 'chunk' of type 'std::shared_ptr<Chunk>' is copied for each invocation but only used as a const reference; consider making it a const reference [performance-unnecessary-value-param]
+  169 |     void setAxmlChunk(std::shared_ptr<Chunk> chunk) {
+      |                                              ^
+      |                       const                 &
+Sources/ThirdParty/libbw64/bw64/writer.hpp:184:7: warning: variable 'last_position' of type 'pos_type' (aka 'fpos<__mbstate_t>') can be declared 'const' [misc-const-correctness]
+  184 |       auto last_position = fileStream_.tellp();
+      |       ^
+      |            const 
+Sources/ThirdParty/libbw64/bw64/writer.hpp:186:7: warning: variable 'endPos' of type 'uint64_t' (aka 'unsigned long long') can be declared 'const' [misc-const-correctness]
+  186 |       uint64_t endPos = fileStream_.tellp();
+      |       ^
+      |                const 
+Sources/ThirdParty/libbw64/bw64/writer.hpp:193:7: warning: variable 'RiffId' of type 'uint32_t' (aka 'unsigned int') can be declared 'const' [misc-const-correctness]
+  193 |       uint32_t RiffId = utils::fourCC("RIFF");
+      |       ^
+      |                const 
+Sources/ThirdParty/libbw64/bw64/writer.hpp:194:7: warning: variable 'fileSize' of type 'uint32_t' (aka 'unsigned int') can be declared 'const' [misc-const-correctness]
+  194 |       uint32_t fileSize = UINT32_MAX;
+      |       ^
+      |                const 
+Sources/ThirdParty/libbw64/bw64/writer.hpp:195:7: warning: variable 'WaveId' of type 'uint32_t' (aka 'unsigned int') can be declared 'const' [misc-const-correctness]
+  195 |       uint32_t WaveId = utils::fourCC("WAVE");
+      |       ^
+      |                const 
+Sources/ThirdParty/libbw64/bw64/writer.hpp:203:7: warning: variable 'last_position' of type 'pos_type' (aka 'fpos<__mbstate_t>') can be declared 'const' [misc-const-correctness]
+  203 |       auto last_position = fileStream_.tellp();
+      |       ^
+      |            const 
+Sources/ThirdParty/libbw64/bw64/writer.hpp:211:9: warning: variable 'fileSize' of type 'uint32_t' (aka 'unsigned int') can be declared 'const' [misc-const-correctness]
+  211 |         uint32_t fileSize = static_cast<uint32_t>(riffChunkSize());
+      |         ^
+      |                  const 
+Sources/ThirdParty/libbw64/bw64/writer.hpp:218:7: warning: variable 'ds64Chunk' of type 'shared_ptr<bw64::DataSize64Chunk>' can be declared 'const' [misc-const-correctness]
+  218 |       auto ds64Chunk = std::make_shared<DataSize64Chunk>();
+      |       ^
+      |            const 
+Sources/ThirdParty/libbw64/bw64/writer.hpp:229:7: warning: variable 'last_position' of type 'pos_type' (aka 'fpos<__mbstate_t>') can be declared 'const' [misc-const-correctness]
+  229 |       auto last_position = fileStream_.tellp();
+      |       ^
+      |            const 
+Sources/ThirdParty/libbw64/bw64/writer.hpp:238:48: warning: the parameter 'chunk' of type 'std::shared_ptr<bw64::Chunk>' is copied for each invocation but only used as a const reference; consider making it a const reference [performance-unnecessary-value-param]
+  238 |     void writeChunk(std::shared_ptr<ChunkType> chunk) {
+      |                                                ^
+      |                     const                     &
+Sources/ThirdParty/libbw64/bw64/writer.hpp:238:48: warning: the parameter 'chunk' of type 'std::shared_ptr<bw64::DataChunk>' is copied for each invocation but only used as a const reference; consider making it a const reference [performance-unnecessary-value-param]
+  238 |     void writeChunk(std::shared_ptr<ChunkType> chunk) {
+      |                                                ^
+      |                     const                     &
+Sources/ThirdParty/libbw64/bw64/writer.hpp:238:48: warning: the parameter 'chunk' of type 'std::shared_ptr<bw64::FormatInfoChunk>' is copied for each invocation but only used as a const reference; consider making it a const reference [performance-unnecessary-value-param]
+  238 |     void writeChunk(std::shared_ptr<ChunkType> chunk) {
+      |                                                ^
+      |                     const                     &
+Sources/ThirdParty/libbw64/bw64/writer.hpp:240:9: warning: variable 'position' of type 'uint64_t' (aka 'unsigned long long') can be declared 'const' [misc-const-correctness]
+  240 |         uint64_t position = fileStream_.tellp();
+      |         ^
+      |                  const 
+Sources/ThirdParty/libbw64/bw64/writer.hpp:250:7: warning: variable 'position' of type 'uint64_t' (aka 'unsigned long long') can be declared 'const' [misc-const-correctness]
+  250 |       uint64_t position = fileStream_.tellp();
+      |       ^
+      |                const 
+Sources/ThirdParty/libbw64/bw64/writer.hpp:258:7: warning: variable 'last_position' of type 'pos_type' (aka 'fpos<__mbstate_t>') can be declared 'const' [misc-const-correctness]
+  258 |       auto last_position = fileStream_.tellp();
+      |       ^
+      |            const 
+Sources/ThirdParty/libbw64/bw64/writer.hpp:260:49: warning: parameter 'chunk' of type 'std::shared_ptr<bw64::ChnaChunk>' is passed by value and only copied once; consider moving it to avoid unnecessary copies [performance-unnecessary-value-param]
+   11 |       utils::writeChunk<ChunkType>(fileStream_, chunk, chunkSizeForHeader(id));
+      |                                                 ^    
+      |                                                 std::move( )
+Sources/ThirdParty/libbw64/bw64/writer.hpp:260:49: warning: parameter 'chunk' of type 'std::shared_ptr<bw64::DataSize64Chunk>' is passed by value and only copied once; consider moving it to avoid unnecessary copies [performance-unnecessary-value-param]
+  260 |       utils::writeChunk<ChunkType>(fileStream_, chunk, chunkSizeForHeader(id));
+      |                                                 ^    
+      |                                                 std::move( )
+Sources/ThirdParty/libbw64/bw64/writer.hpp:265:7: warning: variable 'header' of type 'ChunkHeader' can be declared 'const' [misc-const-correctness]
+  265 |       auto header = chunkHeader(id);
+      |       ^
+      |            const 
+Sources/ThirdParty/libbw64/bw64/writer.hpp:267:25: warning: narrowing conversion from 'uint64_t' (aka 'unsigned long long') to signed type 'streamoff' (aka 'long long') is implementation-defined [bugprone-narrowing-conversions]
+  267 |       fileStream_.seekp(header.position);
+      |                         ^
+Sources/ThirdParty/libbw64/bw64/writer.hpp:271:7: warning: variable 'foundHeader' of type 'std::__wrap_iter<bw64::ChunkHeader *>' can be declared 'const' [misc-const-correctness]
+  271 |       auto foundHeader = std::find_if(
+      |       ^
+      |            const 
+Sources/ThirdParty/libbw64/bw64/writer.hpp:291:15: warning: incorrect std::enable_if usage detected; use 'typename std::enable_if<...>::type' [bugprone-incorrect-enable-if]
+  291 |               typename = std::enable_if<std::is_floating_point<T>::value>>
+      |               ^                                                          
+      |                          typename                                        ::type
+Sources/ThirdParty/libbw64/bw64/writer.hpp:293:7: warning: variable 'bytesWritten' of type 'uint64_t' (aka 'unsigned long long') can be declared 'const' [misc-const-correctness]
+  293 |       uint64_t bytesWritten = frames * formatChunk()->blockAlignment();
+      |       ^
+      |                const 
+Sources/ThirdParty/libbw64/bw64/writer.hpp:298:45: warning: narrowing conversion from 'uint64_t' (aka 'unsigned long long') to signed type 'streamsize' (aka 'long') is implementation-defined [bugprone-narrowing-conversions]
+  298 |       fileStream_.write(&rawDataBuffer_[0], bytesWritten);
+      |                                             ^
+Suppressed 311 warnings (311 in non-user code).
+Use -header-filter=.* or leave it as default to display errors from all non-system headers. Use -system-headers to display errors from system headers as well.
