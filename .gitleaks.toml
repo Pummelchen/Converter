@@ -1,0 +1,22 @@
+# gitleaks configuration.
+#
+# The default ruleset stays enabled; this file adds one narrow, documented exception. It never
+# excludes a file or a commit — only the literal text that produced the false positive.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Documented false positives (keep the pattern as narrow as the evidence)"
+
+# False positive, verified by hand at 6cee542 (Sources/converter/Config.swift, then line 432):
+# `generic-api-key` fires on the *config-key name* that follows a `codecKey:` parameter label,
+# because the constant is long, upper case and high entropy. The matched text is
+# "SHORT_MP4_VIDEO_CODEC" — one of the keys listed in ProjectConfig.supportedKeys, never a
+# credential, and no value is ever interpolated next to it. Trufflehog independently reports 0
+# findings over the same history (11 595 chunks, 112 MB), so this is a scanner quirk rather than
+# an unverified secret. Matching only the `codecKey:` label plus one upper-case token keeps the
+# exception from widening to real `*_KEY=value` assignments.
+regexTarget = "line"
+regexes = [
+  '''codecKey:\s*"SHORT_MP4_VIDEO_CODEC"''',
+]

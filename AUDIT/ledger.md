@@ -6,9 +6,9 @@ Session: `2026-09-14` · branch `audit/2026-09-14` · baseline commit `40bfadd`
 
 | status | count |
 |---|---|
-| START | 54 |
+| START | 47 |
 | PROGRESS | 0 |
-| TEST | 0 |
+| TEST | 7 |
 | AUDIT | 0 |
 | DONE | 104 |
 | BLOCKED | 0 |
@@ -19,7 +19,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
-| #0101 | S1 | repo/CI | .github/workflows/ci.yml:11-49 | CI builds on macos-26 with Swift 6.3.3, below the 6.4 standard | toolchain | START |  |
+| #0101 | S1 | repo/CI | .github/workflows/ci.yml:11-49 | CI builds on macos-26 with Swift 6.3.3, below the 6.4 standard | toolchain | TEST |  |
 | #0103 | S1 | repo/release | converter, docs/BINARY_PROVENANCE.md, docs/converter.sha256 | Shipped release binary was built with Swift 6.3.3 / Xcode 26.6 | artefact | START |  |
 
 ## Blocked (0)
@@ -30,11 +30,11 @@ _none_
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
-| #0104 | S2 | repo/docs | README.md:89,93; CONTRIBUTING.md:15; docs/RELEASE_CHECKLIST.md:7; docs/KNOWN_GOOD_VERSIONS.md:3; docs/BINARY_PROVENANCE.md:16 | Toolchain and release build-path documentation stale for Swift 6.4 | docs | START |  |
-| #0105 | S2 | repo/security | .gitleaks.toml (new) | Permanent gitleaks false positive blocks the secrets-clean claim | security | START |  |
+| #0104 | S2 | repo/docs | README.md:89,93; CONTRIBUTING.md:15; docs/RELEASE_CHECKLIST.md:7; docs/KNOWN_GOOD_VERSIONS.md:3; docs/BINARY_PROVENANCE.md:16 | Toolchain and release build-path documentation stale for Swift 6.4 | docs | TEST |  |
+| #0105 | S2 | repo/security | .gitleaks.toml (new) | Permanent gitleaks false positive blocks the secrets-clean claim | security | TEST |  |
 | #0106 | S2 | repo/tooling | .swift-format (new) + Sources/** | Swift formatter installed but unconfigured and never enforced | tooling | START |  |
-| #0107 | S2 | AUDIT/tools | AUDIT/tools/*.py | In-repo audit tooling has no annotations, ruff or mypy configuration | tooling | START |  |
-| #0108 | S2 | Sources/ThirdParty | Sources/ThirdParty/libbw64/UPSTREAM.md | Vendored libbw64 is patched but recorded as verbatim | docs | START |  |
+| #0107 | S2 | AUDIT/tools | AUDIT/tools/*.py | In-repo audit tooling has no annotations, ruff or mypy configuration | tooling | TEST |  |
+| #0108 | S2 | Sources/ThirdParty | Sources/ThirdParty/libbw64/UPSTREAM.md | Vendored libbw64 is patched but recorded as verbatim | docs | TEST |  |
 | #0114 | S2 | converter/audio-QC | Sources/converter/AudioPipeline.swift:1675-1720; Actions.swift:698,1349 | Delivery QC ceilings never gate the published deliverables | verification | START |  |
 | #0115 | S2 | converter/audio-QC | Sources/converter/AudioPipeline.swift:672-680,368 | A failed loudness QC is published with a warning instead of failing | verification | START |  |
 | #0116 | S2 | converter/ProcessRunner | Sources/converter/ProcessRunner.swift:273-274 | Success path drains child pipes without a deadline and can hang forever | robustness | START |  |
@@ -46,8 +46,8 @@ _none_
 | #0123 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:840-943 | Padding verifiers report success without measuring | verification | START |  |
 | #0124 | S2 | converter/PipelineCore | Sources/converter/PipelineCore.swift:730-734 | Audio duration checks use the container duration and reject valid MP4 sources | logic | START |  |
 | #0125 | S2 | converter/PipelineCore | Sources/converter/PipelineCore.swift:577-596 | A failed replace can leave a partial destination and then delete the good backup | data-loss | START |  |
-| #0109 | S3 | repo/tooling | .swiftlint.yml (new) | Swift linter runs with an implicit, unpinned rule set | tooling | START |  |
-| #0110 | S3 | repo/CI | .github/workflows/ci.yml | CI does not run the static-analysis half of the toolchain | tooling | START |  |
+| #0109 | S3 | repo/tooling | .swiftlint.yml (new) | Swift linter runs with an implicit, unpinned rule set | tooling | TEST |  |
+| #0110 | S3 | repo/CI | .github/workflows/ci.yml | CI does not run the static-analysis half of the toolchain | tooling | TEST |  |
 | #0111 | S3 | BW64Bridge | Sources/BW64Bridge/bw64_bridge.cpp:208 | clang-tidy misc-const-correctness on the chna chunk handle | style | START |  |
 | #0112 | S3 | BW64Bridge | Sources/BW64Bridge/bw64_bridge.cpp:272 | clang-tidy bugprone-easily-swappable-parameters on the C ABI boundary | safety | START |  |
 | #0126 | S3 | converter/CLI | Sources/converter/CLI.swift:67-69 | -visualsubs accepts extra positional arguments and lets an option override them | logic | START |  |
@@ -1433,7 +1433,7 @@ _none_
 - **commit sha:** 8ede5fd
 - **notes:** Not folded into #0022 because the naming unit tests use empty placeholder files and would all need real media if preflight moved ahead of the rename; needs its own design (probe-only preflight of the chosen file before renaming).
 
-### #0101 · S1 · START · CI builds on macos-26 with Swift 6.3.3, below the 6.4 standard
+### #0101 · S1 · TEST · CI builds on macos-26 with Swift 6.3.3, below the 6.4 standard
 
 - **project/module:** repo/CI
 - **file:line:** .github/workflows/ci.yml:11-49
@@ -1441,6 +1441,8 @@ _none_
 - **host-used:** local
 - **discovered-by:** L0/§1
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0101 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
+- **fix-summary:** CI on the xcode-27 image asserting Swift 6.4 (#0101); docs and the release copy step updated for 6.4 with a --show-bin-path example (#0104); narrow documented gitleaks exception, full history scans clean (#0105); audit Python annotated and passing mypy --strict + ruff under pyproject.toml (#0107); vendored libbw64 patch and locally authored version.hpp recorded in UPSTREAM.md (#0108); .swiftlint.yml pins the previously implicit rule set (#0109); static-analysis CI job added (#0110).
+- **evidence-after:** scripts/lint-budget.sh reports 470/19 with no new violations; ./scripts/check-python.sh reports ruff+mypy clean and render_ledger.py regenerates ledger.md byte-for-byte; gitleaks full history reports 0 with the new config; docs/ci.yml validated as YAML.
 
 ### #0102 · S2 · DONE · Manifest still declares swift-tools-version 6.3.3
 
@@ -1463,7 +1465,7 @@ _none_
 - **discovered-by:** L7
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0103 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
 
-### #0104 · S2 · START · Toolchain and release build-path documentation stale for Swift 6.4
+### #0104 · S2 · TEST · Toolchain and release build-path documentation stale for Swift 6.4
 
 - **project/module:** repo/docs
 - **file:line:** README.md:89,93; CONTRIBUTING.md:15; docs/RELEASE_CHECKLIST.md:7; docs/KNOWN_GOOD_VERSIONS.md:3; docs/BINARY_PROVENANCE.md:16
@@ -1471,8 +1473,10 @@ _none_
 - **host-used:** local
 - **discovered-by:** L0
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0104 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
+- **fix-summary:** CI on the xcode-27 image asserting Swift 6.4 (#0101); docs and the release copy step updated for 6.4 with a --show-bin-path example (#0104); narrow documented gitleaks exception, full history scans clean (#0105); audit Python annotated and passing mypy --strict + ruff under pyproject.toml (#0107); vendored libbw64 patch and locally authored version.hpp recorded in UPSTREAM.md (#0108); .swiftlint.yml pins the previously implicit rule set (#0109); static-analysis CI job added (#0110).
+- **evidence-after:** scripts/lint-budget.sh reports 470/19 with no new violations; ./scripts/check-python.sh reports ruff+mypy clean and render_ledger.py regenerates ledger.md byte-for-byte; gitleaks full history reports 0 with the new config; docs/ci.yml validated as YAML.
 
-### #0105 · S2 · START · Permanent gitleaks false positive blocks the secrets-clean claim
+### #0105 · S2 · TEST · Permanent gitleaks false positive blocks the secrets-clean claim
 
 - **project/module:** repo/security
 - **file:line:** .gitleaks.toml (new)
@@ -1480,6 +1484,8 @@ _none_
 - **host-used:** local
 - **discovered-by:** L5
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0105 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
+- **fix-summary:** CI on the xcode-27 image asserting Swift 6.4 (#0101); docs and the release copy step updated for 6.4 with a --show-bin-path example (#0104); narrow documented gitleaks exception, full history scans clean (#0105); audit Python annotated and passing mypy --strict + ruff under pyproject.toml (#0107); vendored libbw64 patch and locally authored version.hpp recorded in UPSTREAM.md (#0108); .swiftlint.yml pins the previously implicit rule set (#0109); static-analysis CI job added (#0110).
+- **evidence-after:** scripts/lint-budget.sh reports 470/19 with no new violations; ./scripts/check-python.sh reports ruff+mypy clean and render_ledger.py regenerates ledger.md byte-for-byte; gitleaks full history reports 0 with the new config; docs/ci.yml validated as YAML.
 
 ### #0106 · S2 · START · Swift formatter installed but unconfigured and never enforced
 
@@ -1490,7 +1496,7 @@ _none_
 - **discovered-by:** L0/§1
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0106 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
 
-### #0107 · S2 · START · In-repo audit tooling has no annotations, ruff or mypy configuration
+### #0107 · S2 · TEST · In-repo audit tooling has no annotations, ruff or mypy configuration
 
 - **project/module:** AUDIT/tools
 - **file:line:** AUDIT/tools/*.py
@@ -1498,8 +1504,10 @@ _none_
 - **host-used:** local
 - **discovered-by:** L0/§1
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0107 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
+- **fix-summary:** CI on the xcode-27 image asserting Swift 6.4 (#0101); docs and the release copy step updated for 6.4 with a --show-bin-path example (#0104); narrow documented gitleaks exception, full history scans clean (#0105); audit Python annotated and passing mypy --strict + ruff under pyproject.toml (#0107); vendored libbw64 patch and locally authored version.hpp recorded in UPSTREAM.md (#0108); .swiftlint.yml pins the previously implicit rule set (#0109); static-analysis CI job added (#0110).
+- **evidence-after:** scripts/lint-budget.sh reports 470/19 with no new violations; ./scripts/check-python.sh reports ruff+mypy clean and render_ledger.py regenerates ledger.md byte-for-byte; gitleaks full history reports 0 with the new config; docs/ci.yml validated as YAML.
 
-### #0108 · S2 · START · Vendored libbw64 is patched but recorded as verbatim
+### #0108 · S2 · TEST · Vendored libbw64 is patched but recorded as verbatim
 
 - **project/module:** Sources/ThirdParty
 - **file:line:** Sources/ThirdParty/libbw64/UPSTREAM.md
@@ -1507,8 +1515,10 @@ _none_
 - **host-used:** local
 - **discovered-by:** L5
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0108 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
+- **fix-summary:** CI on the xcode-27 image asserting Swift 6.4 (#0101); docs and the release copy step updated for 6.4 with a --show-bin-path example (#0104); narrow documented gitleaks exception, full history scans clean (#0105); audit Python annotated and passing mypy --strict + ruff under pyproject.toml (#0107); vendored libbw64 patch and locally authored version.hpp recorded in UPSTREAM.md (#0108); .swiftlint.yml pins the previously implicit rule set (#0109); static-analysis CI job added (#0110).
+- **evidence-after:** scripts/lint-budget.sh reports 470/19 with no new violations; ./scripts/check-python.sh reports ruff+mypy clean and render_ledger.py regenerates ledger.md byte-for-byte; gitleaks full history reports 0 with the new config; docs/ci.yml validated as YAML.
 
-### #0109 · S3 · START · Swift linter runs with an implicit, unpinned rule set
+### #0109 · S3 · TEST · Swift linter runs with an implicit, unpinned rule set
 
 - **project/module:** repo/tooling
 - **file:line:** .swiftlint.yml (new)
@@ -1516,8 +1526,10 @@ _none_
 - **host-used:** local
 - **discovered-by:** L0
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0109 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
+- **fix-summary:** CI on the xcode-27 image asserting Swift 6.4 (#0101); docs and the release copy step updated for 6.4 with a --show-bin-path example (#0104); narrow documented gitleaks exception, full history scans clean (#0105); audit Python annotated and passing mypy --strict + ruff under pyproject.toml (#0107); vendored libbw64 patch and locally authored version.hpp recorded in UPSTREAM.md (#0108); .swiftlint.yml pins the previously implicit rule set (#0109); static-analysis CI job added (#0110).
+- **evidence-after:** scripts/lint-budget.sh reports 470/19 with no new violations; ./scripts/check-python.sh reports ruff+mypy clean and render_ledger.py regenerates ledger.md byte-for-byte; gitleaks full history reports 0 with the new config; docs/ci.yml validated as YAML.
 
-### #0110 · S3 · START · CI does not run the static-analysis half of the toolchain
+### #0110 · S3 · TEST · CI does not run the static-analysis half of the toolchain
 
 - **project/module:** repo/CI
 - **file:line:** .github/workflows/ci.yml
@@ -1525,6 +1537,8 @@ _none_
 - **host-used:** local
 - **discovered-by:** L0
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0110 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
+- **fix-summary:** CI on the xcode-27 image asserting Swift 6.4 (#0101); docs and the release copy step updated for 6.4 with a --show-bin-path example (#0104); narrow documented gitleaks exception, full history scans clean (#0105); audit Python annotated and passing mypy --strict + ruff under pyproject.toml (#0107); vendored libbw64 patch and locally authored version.hpp recorded in UPSTREAM.md (#0108); .swiftlint.yml pins the previously implicit rule set (#0109); static-analysis CI job added (#0110).
+- **evidence-after:** scripts/lint-budget.sh reports 470/19 with no new violations; ./scripts/check-python.sh reports ruff+mypy clean and render_ledger.py regenerates ledger.md byte-for-byte; gitleaks full history reports 0 with the new config; docs/ci.yml validated as YAML.
 
 ### #0111 · S3 · START · clang-tidy misc-const-correctness on the chna chunk handle
 

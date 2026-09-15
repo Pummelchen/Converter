@@ -1,6 +1,6 @@
 # Known-Good Toolchain and Dependency Versions
 
-Versions recorded from successful local builds and full test runs. These are reference points, not hard pins — the repository only requires Swift tools 6.3.3+, Swift language mode 6, and macOS 15+ (per `.macOS(.v15)` in `Sources/Package.swift`).
+Versions recorded from successful local builds and full test runs. These are reference points, not hard pins — the repository only requires Swift tools 6.4+, Swift language mode 6, and macOS 15+ (per `.macOS(.v15)` in `Sources/Package.swift`).
 
 ## Recorded environment (2026-08-04)
 
@@ -62,6 +62,27 @@ ALAC stream copy into videos, the bridged BW64 writer's bounds, and a clean stri
 - `swift build --package-path Sources -c release -Xswiftc -warnings-as-errors -Xcc -Wall -Xcc -Wextra -Xcc -Werror` — success
 - `swift test --package-path Sources` — 263 tests, 0 failures (~11 min)
 - Release binary rebuilt from `7abe547`; size, SHA-256 and signature recorded in `docs/BINARY_PROVENANCE.md`.
+
+## Recorded environment (2026-09-15, Swift 6.4 re-audit)
+
+Validation after the Swift 6.4 re-audit in `AUDIT/ledger.md` (tasks `#0101`+). This is the first
+record on Swift 6.4 and the first with the strict-concurrency language mode compiled under a 6.4
+toolchain.
+
+| Component | Version | Notes |
+|---|---|---|
+| macOS | 27.0 (26A428) | Apple Silicon (`arm64`) |
+| Xcode | 27.0 (27A266a) | the `xcode-27` GitHub runner image is a public preview on Xcode 27.0 beta 6 (27A5252f) |
+| Swift | 6.4 (`swiftlang-6.4.0.34.1`) | target `arm64-apple-macosx27.0.0`; SwiftPM now builds through xcbuild into `.build/out/Products/` |
+| ffmpeg / ffprobe | 9.0.1 | Homebrew formula `ffmpeg` |
+| ImageMagick (`magick`) | 7.1.2-31 Q16-HDRI aarch64 | Homebrew formula `imagemagick` |
+| swiftlint | 0.65.1 | rule set now pinned in `.swiftlint.yml`; 470 violations, 19 error-level |
+| periphery | 3.8.0 | needs a build with `--enable-index-store` since the 6.4 layout change |
+
+- `swift build --package-path Sources --build-tests -Xswiftc -warnings-as-errors` — success, 0 warnings
+- `swift build --package-path Sources -c release -Xswiftc -warnings-as-errors -Xcc -Wall -Xcc -Wextra -Xcc -Werror` — success
+- `swift test --package-path Sources` — 266 tests, 0 failures, 0 skipped (695 s)
+- Coverage (llvm-cov, `--enable-code-coverage`): 85.42 % lines / 79.33 % regions / 83.71 % functions
 
 ### Real-media validation (2026-08-13)
 

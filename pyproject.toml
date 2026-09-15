@@ -1,0 +1,26 @@
+# Configuration for the repository's own Python: the audit tooling in AUDIT/tools/. The §1
+# standard requires Python 3.14 with full annotations and strict typing, so both tools are
+# configured here and run by scripts/check-python.sh (and by CI). Nothing here is packaged,
+# installed or shipped.
+
+[tool.ruff]
+target-version = "py314"
+line-length = 110
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "DTZ", "EXE", "RUF"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.ruff.lint.per-file-ignores]
+# The two renderers exist to emit long Markdown lines: their string literals are the generated
+# page/table headers and prose, so E501 would only be satisfiable by concatenating them into
+# unreadable fragments. Every other rule stays active for these files.
+"AUDIT/tools/render_ledger.py" = ["E501"]
+"AUDIT/tools/render_wiki.py" = ["E501"]
+
+[tool.mypy]
+python_version = "3.14"
+strict = true
+files = ["AUDIT/tools"]

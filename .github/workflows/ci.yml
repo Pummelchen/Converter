@@ -8,10 +8,14 @@ on:
   workflow_dispatch:
 
 # The Swift package lives at Sources/, so every SwiftPM command uses --package-path Sources.
-# The package requires Swift tools 6.3.3; the macos-26 (Tahoe) runner ships Xcode 26.6, which
-# provides Swift 6.3.3 (macos-15 tops out at Xcode 26.3 / Swift 6.2.4). The toolchain step below
-# pins that expectation and fails loudly if the runner image moves, instead of silently building
-# with whatever Xcode happens to be newest.
+# The package requires Swift tools 6.4 (Sources/Package.swift); the `xcode-27` runner image is the
+# only GitHub-hosted image carrying Xcode 27, and it runs on macOS 27 (arm64 only). It is a public
+# preview whose default Xcode is 27.0 beta 6 (27A5252f), so the toolchain step below pins the
+# expectation to the Swift 6.4 line rather than to one exact build: a beta-to-release move inside
+# 6.4 must not fail the gate, while a move off 6.4 must.
+# https://github.blog/changelog/2026-09-10-xcode-27-runner-image-now-runs-on-macos-27/
+# If that preview image is retired, `macos-26` is the fallback — but it ships Swift 6.3.3 and the
+# assertion below fails there loudly, which is the intended behaviour.
 # Integration tests require ffmpeg/ffprobe (Homebrew formula `ffmpeg`) and ImageMagick (`magick`,
 # Homebrew formula `imagemagick`). Both are installed below with Homebrew's implicit update
 # disabled, and their versions are printed so a change is visible in the log.
@@ -22,7 +26,7 @@ permissions:
 jobs:
   build-and-test:
     name: Swift build and tests (macOS)
-    runs-on: macos-26
+    runs-on: xcode-27
     env:
       CONVERTER_AUTO_INSTALL_DEPS: "0"
       HOMEBREW_NO_AUTO_UPDATE: "1"
@@ -39,14 +43,14 @@ jobs:
 
       - name: Select the required toolchain
         run: |
-          if [ -d /Applications/Xcode_26.6.app ]; then
-            sudo xcode-select -s /Applications/Xcode_26.6.app/Contents/Developer
+          if [ -d /Applications/Xcode_27.0.app ]; then
+            sudo xcode-select -s /Applications/Xcode_27.0.app/Contents/Developer
           fi
           sw_vers
           xcodebuild -version
           swift --version
-          swift --version | grep -q 'Swift version 6.3.3' \
-            || { echo "This package requires Swift 6.3.3 (see Sources/Package.swift)"; exit 1; }
+          swift --version | grep -q 'Swift version 6.4' \
+            || { echo "This package requires Swift 6.4 (see Sources/Package.swift)"; exit 1; }
 
       - name: Install media toolchain (ffmpeg, imagemagick) and swiftlint
         run: |
@@ -72,3 +76,67 @@ jobs:
 
       - name: Test
         run: swift test --package-path Sources
+
+  # The cheap half of the §1 toolchain, on the same image so the Swift tools match the build job.
+  # The expensive checks — sanitizer builds, coverage, the two-engine full-history secret scan —
+  # stay in the documented audit procedure instead of running on every push.
+  static-analysis:
+    name: Static analysis and scanners
+    runs-on: xcode-27
+    env:
+      HOMEBREW_NO_AUTO_UPDATE: "1"
+      HOMEBREW_NO_ANALYTICS: "1"
+      HOMEBREW_NO_ENV_HINTS: "1"
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - name: Install analysers
+        run: |
+          brew install swiftlint semgrep gitleaks cppcheck llvm ruff mypy
+          swiftlint version
+          semgrep --version
+          gitleaks version
+          cppcheck --version
+          ruff --version
+          mypy --version
+
+      # Enforced, not just installed: the tree is formatter-clean under .swift-format (#0106).
+      # `swift format lint` exits non-zero when it reports any finding.
+      - name: Swift format (no diffs)
+        run: >
+          swift format lint --recursive --parallel --configuration .swift-format
+          Sources/converter Sources/Tests
+
+      - name: Swift lint budget
+        run: scripts/lint-budget.sh
+
+      # AUDIT/tools/*.py is the repository's only Python; settings live in pyproject.toml.
+      - name: Python format, lint and strict types
+        run: scripts/check-python.sh
+
+      - name: Secret scan (repository history)
+        run: gitleaks git --config .gitleaks.toml --no-banner --redact=100 .
+
+      - name: SAST (Swift, C, security audit)
+        run: >
+          semgrep scan --error
+          --config p/swift --config p/c --config p/security-audit
+          --exclude Sources/.build --exclude Sources/ThirdParty
+          Sources
+
+      - name: C++ static analysis (cppcheck)
+        run: >
+          cppcheck --enable=all --error-exitcode=1 --std=c++17 --inline-suppr
+          --suppress=missingIncludeSystem
+          -I Sources/ThirdParty/libbw64 -I Sources/BW64Bridge/include
+          Sources/BW64Bridge/bw64_bridge.cpp
+
+      - name: C++ static analysis (clang-tidy)
+        run: >
+          "$(brew --prefix llvm)/bin/clang-tidy"
+          Sources/BW64Bridge/bw64_bridge.cpp
+          -checks='bugprone-*,cert-*,clang-analyzer-*,performance-*,misc-*,-misc-include-cleaner'
+          --warnings-as-errors='bugprone-*,cert-*,clang-analyzer-*'
+          -- -std=c++17 -I Sources/ThirdParty/libbw64 -I Sources/BW64Bridge/include
+          -isysroot "$(xcrun --show-sdk-path)"

@@ -1,0 +1,54 @@
+# SwiftLint configuration.
+#
+# Until now the repository ran SwiftLint with its built-in defaults and pinned the *result* in
+# scripts/lint-budget.json. That ratchet only works while the defaults hold: a SwiftLint upgrade
+# may change a default threshold, and scripts/lint-budget.sh deliberately treats a version change
+# as informational rather than failing. Stating the rules here means the measured rule set can only
+# change when this file changes, and the budget stays a budget for the code rather than for the
+# tool.
+#
+# The thresholds below are exactly SwiftLint 0.65.1's defaults, so this file changes no count
+# (verified: scripts/lint-budget.sh still reports 471 violations / 19 error-level with the same
+# per-rule breakdown). `swiftlint rules` prints the same numbers for the installed binary.
+#
+# Not configured on purpose: every opt-in rule stays off, and the rule set is the default one. The
+# structural rules accepted as debt are file_length, type_body_length, function_body_length,
+# cyclomatic_complexity and line_length; see the #0073 commit for the rationale.
+
+# Paths are deliberately NOT listed here: scripts/lint-budget.sh passes `Sources/converter
+# Sources/Tests` on the command line, and SwiftLint lints the union of `included:` and the CLI
+# paths, which would count every violation twice.
+
+line_length:
+  warning: 120
+  error: 200
+  ignores_urls: false
+  ignores_function_declarations: false
+  ignores_comments: false
+  ignores_interpolated_strings: false
+
+file_length:
+  warning: 400
+  error: 1000
+  ignore_comment_only_lines: false
+
+type_body_length:
+  warning: 250
+  error: 350
+
+function_body_length:
+  warning: 50
+  error: 100
+
+cyclomatic_complexity:
+  warning: 10
+  error: 20
+  ignores_case_statements: false
+
+function_parameter_count:
+  warning: 5
+  error: 8
+
+large_tuple:
+  warning: 2
+  error: 3

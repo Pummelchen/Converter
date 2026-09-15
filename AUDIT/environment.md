@@ -57,19 +57,21 @@ brew install swiftlint periphery gitleaks trufflehog semgrep cppcheck llvm jq
 | `swift build --sanitize=address/undefined/thread` | Xcode 27 toolchain | sanitizer builds for Swift + the C++ bridge | ships with Xcode 27 |
 | `jq` | 1.8.2 | report processing | `brew install jq` |
 | `python3` | 3.14.7 | audit tooling (`AUDIT/tools/*.py`) | system / Homebrew |
+| `ruff` | 0.16.7 | Python formatter + linter (`pyproject.toml`, `scripts/check-python.sh`) | `brew install ruff` |
+| `mypy` | 2.3.1 | Python type checker, `--strict` (`pyproject.toml`) | `brew install mypy` |
 | Docker | 29.8.0 (88096ef005) | disposable Linux toolchains — unused here, see above | Docker Desktop |
 
 ### Coverage of the §1 minimum per language
 
 | Requirement | Swift | C++ (bridge) | Python (audit tooling only) |
 |---|---|---|---|
-| formatter | `swift format` | `clang-format` (LLVM 23.1.1) | `ruff format` (see the tooling task; not yet applied) |
-| linter | swiftlint | clang-tidy | `ruff check` (task) |
-| static analyzer | periphery + compiler | cppcheck + clang-tidy + clang static analyzer | `mypy --strict` (task) |
-| type checker | swiftc, language mode 6, warnings-as-errors | `clang -std=c++17 -Wall -Wextra -Werror` | `mypy --strict` (task) |
-| SAST | semgrep `p/swift`, `p/security-audit` | semgrep `p/c`, `p/security-audit` | semgrep `p/python` (task) |
-| dependency / CVE scanner | **N/A with justification**: no SwiftPM dependencies exist (no `Package.resolved`); the only vendored dependency is libbw64 0.10.0, equal to the latest upstream release (2019-01-28) with no advisories on record. Runtime tools (ffmpeg/ImageMagick) are Homebrew-managed and outside the build; versions recorded above. | same | stdlib only |
-| secret scanner over full history | gitleaks + trufflehog | same | same |
+| formatter | `swift format` (`swift-format` config committed, enforced by `scripts/check-format.sh` and CI — task #0106) | `clang-format` (LLVM 23.1.1) | `ruff format`, enforced by `scripts/check-python.sh` |
+| linter | swiftlint (`.swiftlint.yml` pins the rule set; `scripts/lint-budget.sh` ratchets it) | clang-tidy | `ruff check`, enforced by `scripts/check-python.sh` |
+| static analyzer | periphery + compiler | cppcheck + clang-tidy + clang static analyzer | `mypy --strict` (`pyproject.toml`) |
+| type checker | swiftc, language mode 6, warnings-as-errors | `clang -std=c++17 -Wall -Wextra -Werror` | `mypy --strict` |
+| SAST | semgrep `p/swift`, `p/security-audit` | semgrep `p/c`, `p/security-audit` | semgrep `p/python` (covered by the CI SAST job) |
+| dependency / CVE scanner | **N/A with justification**: no SwiftPM dependencies exist (no `Package.resolved`); the only vendored dependency is libbw64 0.10.0, equal to the latest upstream release (2019-01-28) with no advisories on record. Runtime tools (ffmpeg/ImageMagick) are Homebrew-managed and outside the build; versions recorded above. The vendored tree is hash-compared against the upstream tag in `Sources/ThirdParty/libbw64/UPSTREAM.md`. | same | stdlib only |
+| secret scanner over full history | gitleaks (`.gitleaks.toml` carries one documented false-positive exception) + trufflehog | same | same |
 | sanitizer builds + memory checker | ASan/UBSan/TSan via `swift test --sanitize=…`; macOS has no valgrind, ASan+LeakSanitizer is the memory checker | same (the bridge is compiled into the sanitized build) | n/a |
 | coverage | `swift test --enable-code-coverage` + `llvm-cov` | included (the bridge object is instrumented) | n/a |
 
