@@ -2361,6 +2361,63 @@ final class PipelineIntegrationTests: XCTestCase {
         XCTAssertFalse(FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("art_8K.png").path))
     }
 
+    func testAIPixRefusesToOverwriteItsOwnSource() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["magick"])
+
+        // A master whose name already carries the derived label and whose dimensions are not the
+        // delivery size: `-aipix` used to resize it over itself and delete the backup.
+        let source = try workspace.createImage(name: "Master_8K", ext: "png", width: 640, height: 360)
+        let before = try Data(contentsOf: source)
+
+        let tool = try workspace.makeTool(arguments: ["-aipix"])
+        XCTAssertThrowsError(try tool.aipixFile(source)) { error in
+            XCTAssertTrue(
+                String(describing: error).contains("over its own source"),
+                "expected the self-overwrite refusal, got: \(error)"
+            )
+        }
+        XCTAssertEqual(try Data(contentsOf: source), before, "the source artwork must be untouched")
+    }
+
+    func testRunPixIgnoresPortraitShortStillCompanions() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["magick"])
+
+        // What a full run leaves behind for a portrait short: the still PNG plus its two JPEG
+        // companions. None of them may be picked up again as a source master.
+        _ = try workspace.createImage(name: "1_Short_8K", ext: "png", width: 360, height: 640)
+        _ = try workspace.createImage(name: "1_Short_CenterCut_8K", ext: "png", width: 360, height: 640)
+        _ = try workspace.createImage(name: "1_Short_8K_1MB", ext: "jpg", width: 360, height: 640)
+        _ = try workspace.createImage(name: "1_Short_8K_2MB", ext: "jpg", width: 360, height: 640)
+        let artwork = try workspace.createImage(name: "1", ext: "png")
+
+        let tool = try workspace.makeTool(arguments: ["-run_pix"])
+        let discovered = try tool.sourceImageFiles(matchingExtensions: ["png", "jpg", "jpeg"])
+        XCTAssertEqual(discovered.map(\.lastPathComponent).sorted(), [artwork.lastPathComponent])
+    }
+
+    func testJPGToPNGIntermediateIsRunScopedAndCleanedUp() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["magick"])
+
+        let jpg = try workspace.createImage(name: "master", ext: "jpg")
+        let tool = try workspace.makeTool(arguments: ["-run_pix"])
+
+        let intermediate = try tool.convertJPGToPNGTemp(jpg)
+        XCTAssertTrue(
+            intermediate.lastPathComponent.hasPrefix(".converter-tmp.\(tool.runToken)."),
+            "the working copy must stay in the run-scoped temp namespace: \(intermediate.lastPathComponent)"
+        )
+        XCTAssertFalse(
+            FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("master.png").path),
+            "the intermediate must not be published as a deliverable"
+        )
+
+        tool.cleanupTemps()
+        XCTAssertFalse(FileManager.default.fileExists(atPath: intermediate.path), "the run must clean its temp up")
+    }
+
     func testVisualSubsCreatesVerifiedPNGViaPublishedOutput() throws {
         let workspace = try IntegrationWorkspace()
         try workspace.requireCommands(["magick"])

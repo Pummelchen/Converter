@@ -6,9 +6,9 @@ Session: `2026-09-14` · branch `audit/2026-09-14` · baseline commit `40bfadd`
 
 | status | count |
 |---|---|
-| START | 58 |
+| START | 54 |
 | PROGRESS | 0 |
-| TEST | 0 |
+| TEST | 4 |
 | AUDIT | 0 |
 | DONE | 100 |
 | BLOCKED | 0 |
@@ -19,7 +19,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
-| #0113 | S0 | converter/ImagePipeline | Sources/converter/ImagePipeline.swift:130-168 | An image action can overwrite the user's own source artwork | data-loss | START |  |
+| #0113 | S0 | converter/ImagePipeline | Sources/converter/ImagePipeline.swift:130-168 | An image action can overwrite the user's own source artwork | data-loss | TEST |  |
 | #0101 | S1 | repo/CI | .github/workflows/ci.yml:11-49 | CI builds on macos-26 with Swift 6.3.3, below the 6.4 standard | toolchain | START |  |
 | #0103 | S1 | repo/release | converter, docs/BINARY_PROVENANCE.md, docs/converter.sha256 | Shipped release binary was built with Swift 6.3.3 / Xcode 26.6 | artefact | START |  |
 
@@ -31,7 +31,7 @@ _none_
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
-| #0102 | S2 | Sources/Package.swift | Sources/Package.swift:1 | Manifest still declares swift-tools-version 6.3.3 | toolchain | START |  |
+| #0102 | S2 | Sources/Package.swift | Sources/Package.swift:1 | Manifest still declares swift-tools-version 6.3.3 | toolchain | TEST |  |
 | #0104 | S2 | repo/docs | README.md:89,93; CONTRIBUTING.md:15; docs/RELEASE_CHECKLIST.md:7; docs/KNOWN_GOOD_VERSIONS.md:3; docs/BINARY_PROVENANCE.md:16 | Toolchain and release build-path documentation stale for Swift 6.4 | docs | START |  |
 | #0105 | S2 | repo/security | .gitleaks.toml (new) | Permanent gitleaks false positive blocks the secrets-clean claim | security | START |  |
 | #0106 | S2 | repo/tooling | .swift-format (new) + Sources/** | Swift formatter installed but unconfigured and never enforced | tooling | START |  |
@@ -41,7 +41,7 @@ _none_
 | #0115 | S2 | converter/audio-QC | Sources/converter/AudioPipeline.swift:672-680,368 | A failed loudness QC is published with a warning instead of failing | verification | START |  |
 | #0116 | S2 | converter/ProcessRunner | Sources/converter/ProcessRunner.swift:273-274 | Success path drains child pipes without a deadline and can hang forever | robustness | START |  |
 | #0117 | S2 | converter/PipelineCore | Sources/converter/PipelineCore.swift:492-493; ProcessRunner.swift:145 | Cancelling one operation SIGTERMs unrelated concurrent children | concurrency | START |  |
-| #0118 | S2 | converter/Actions | Sources/converter/Actions.swift:769-771,930-933 | -runpix re-ingests the portrait short JPEG companions | logic | START |  |
+| #0118 | S2 | converter/Actions | Sources/converter/Actions.swift:769-771,930-933 | -runpix re-ingests the portrait short JPEG companions | logic | TEST |  |
 | #0119 | S2 | converter/Config | Sources/converter/Config.swift:411,437 | Filter-graph pixel-format keys are only checked for emptiness | hardening | START |  |
 | #0120 | S2 | converter/Config | Sources/converter/Config.swift:142 | A missing config file is silently ignored, even when named explicitly | logic | START |  |
 | #0121 | S2 | converter/CLI | Sources/converter/CLI.swift:282-286 | --sleep-seconds accepts negative and effectively unbounded values | logic | START |  |
@@ -74,7 +74,7 @@ _none_
 | #0144 | S3 | converter/tests | AUDIT/evidence-2026-09-14/baseline-coverage-gaps.txt | Coverage of three production files is materially incomplete | tests | START |  |
 | #0145 | S3 | converter/VideoPipeline | Sources/converter/VideoPipeline.swift:443-542 | The ffmpeg still-image path does not account for EXIF orientation | logic | START |  |
 | #0146 | S3 | converter/ImagePipeline | Sources/converter/ImagePipeline.swift:101-109,270-278 | JPEG deliverables flatten alpha against an unspecified background | logic | START |  |
-| #0147 | S3 | converter/ImagePipeline | Sources/converter/ImagePipeline.swift:51-67 | The full run leaves its JPG-to-PNG intermediate in the output directory | hygiene | START |  |
+| #0147 | S3 | converter/ImagePipeline | Sources/converter/ImagePipeline.swift:51-67 | The full run leaves its JPG-to-PNG intermediate in the output directory | hygiene | TEST |  |
 | #0148 | S3 | converter/CLI | Sources/converter/CLI.swift:122-123,240-242 | Tilde is never expanded for path options | logic | START |  |
 | #0149 | S3 | converter/PipelineCore | Sources/converter/PipelineCore.swift:539-542 | An absent free-space attribute is reported as no space | robustness | START |  |
 | #0150 | S3 | converter/Support | Sources/converter/Support.swift:42-59 | One static DateFormatter is shared across loggers under per-instance locks | concurrency | START |  |
@@ -1442,7 +1442,7 @@ _none_
 - **discovered-by:** L0/§1
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0101 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
 
-### #0102 · S2 · START · Manifest still declares swift-tools-version 6.3.3
+### #0102 · S2 · TEST · Manifest still declares swift-tools-version 6.3.3
 
 - **project/module:** Sources/Package.swift
 - **file:line:** Sources/Package.swift:1
@@ -1450,6 +1450,8 @@ _none_
 - **host-used:** local
 - **discovered-by:** L0/§1
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0102 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
+- **fix-summary:** Image self-overwrite guard at every image publish site (#0113); isPortraitShortStill sees through the _1MB/_2MB companion labels (#0118); the full run's JPG->PNG working copy is a run-scoped temp (#0147); swift-tools-version 6.4 (#0102).
+- **evidence-after:** AUDIT/evidence-2026-09-14/0113-before.log, 0118-before.log, 0113-0118-0147-after.log, 0101-0118-fullsuite.txt (266 tests, 0 failures, 0 compiler warnings).
 
 ### #0103 · S1 · START · Shipped release binary was built with Swift 6.3.3 / Xcode 26.6
 
@@ -1541,7 +1543,7 @@ _none_
 - **discovered-by:** L3
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0112 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
 
-### #0113 · S0 · START · An image action can overwrite the user's own source artwork
+### #0113 · S0 · TEST · An image action can overwrite the user's own source artwork
 
 - **project/module:** converter/ImagePipeline
 - **file:line:** Sources/converter/ImagePipeline.swift:130-168
@@ -1549,6 +1551,8 @@ _none_
 - **host-used:** local
 - **discovered-by:** R-media P2
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0113 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
+- **fix-summary:** Image self-overwrite guard at every image publish site (#0113); isPortraitShortStill sees through the _1MB/_2MB companion labels (#0118); the full run's JPG->PNG working copy is a run-scoped temp (#0147); swift-tools-version 6.4 (#0102).
+- **evidence-after:** AUDIT/evidence-2026-09-14/0113-before.log, 0118-before.log, 0113-0118-0147-after.log, 0101-0118-fullsuite.txt (266 tests, 0 failures, 0 compiler warnings).
 
 ### #0114 · S2 · START · Delivery QC ceilings never gate the published deliverables
 
@@ -1586,7 +1590,7 @@ _none_
 - **discovered-by:** R-core C3 / R-validate V5
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0117 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
 
-### #0118 · S2 · START · -runpix re-ingests the portrait short JPEG companions
+### #0118 · S2 · TEST · -runpix re-ingests the portrait short JPEG companions
 
 - **project/module:** converter/Actions
 - **file:line:** Sources/converter/Actions.swift:769-771,930-933
@@ -1594,6 +1598,8 @@ _none_
 - **host-used:** local
 - **discovered-by:** R-media P1
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0118 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
+- **fix-summary:** Image self-overwrite guard at every image publish site (#0113); isPortraitShortStill sees through the _1MB/_2MB companion labels (#0118); the full run's JPG->PNG working copy is a run-scoped temp (#0147); swift-tools-version 6.4 (#0102).
+- **evidence-after:** AUDIT/evidence-2026-09-14/0113-before.log, 0118-before.log, 0113-0118-0147-after.log, 0101-0118-fullsuite.txt (266 tests, 0 failures, 0 compiler warnings).
 
 ### #0119 · S2 · START · Filter-graph pixel-format keys are only checked for emptiness
 
@@ -1847,7 +1853,7 @@ _none_
 - **discovered-by:** R-media L-b
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0146 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
 
-### #0147 · S3 · START · The full run leaves its JPG-to-PNG intermediate in the output directory
+### #0147 · S3 · TEST · The full run leaves its JPG-to-PNG intermediate in the output directory
 
 - **project/module:** converter/ImagePipeline
 - **file:line:** Sources/converter/ImagePipeline.swift:51-67
@@ -1855,6 +1861,8 @@ _none_
 - **host-used:** local
 - **discovered-by:** R-media L-c
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0147 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
+- **fix-summary:** Image self-overwrite guard at every image publish site (#0113); isPortraitShortStill sees through the _1MB/_2MB companion labels (#0118); the full run's JPG->PNG working copy is a run-scoped temp (#0147); swift-tools-version 6.4 (#0102).
+- **evidence-after:** AUDIT/evidence-2026-09-14/0113-before.log, 0118-before.log, 0113-0118-0147-after.log, 0101-0118-fullsuite.txt (266 tests, 0 failures, 0 compiler warnings).
 
 ### #0148 · S3 · START · Tilde is never expanded for path options
 

@@ -1,4 +1,4 @@
-// swift-tools-version: 6.3.3
+// swift-tools-version: 6.4
 import PackageDescription
 
 // Upcoming-feature flags adopted ahead of the next language mode. All four already build

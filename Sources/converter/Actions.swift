@@ -415,7 +415,7 @@ extension ConverterTool {
         let ext = sourceImage.pathExtension.lowercasedASCII
         if ext == "jpg" || ext == "jpeg" {
             logger.info("Short step: JPG -> PNG")
-            sourcePNG = try convertJPGToPNG(sourceImage)
+            sourcePNG = try convertJPGToPNGTemp(sourceImage)
         } else {
             sourcePNG = sourceImage
         }
@@ -520,7 +520,7 @@ extension ConverterTool {
         let ext = sourceImage.pathExtension.lowercasedASCII
         if ext == "jpg" || ext == "jpeg" {
             logger.info("Full step: JPG -> PNG")
-            sourcePNG = try await withImagePermit { try self.convertJPGToPNG(sourceImage) }
+            sourcePNG = try await withImagePermit { try self.convertJPGToPNGTemp(sourceImage) }
         } else {
             sourcePNG = sourceImage
         }
@@ -928,7 +928,15 @@ extension ConverterTool {
     // masters. Every _8K discovery path must skip them, or a portrait still gets fed into a
     // landscape pipeline and fails its dimension check.
     func isPortraitShortStill(_ file: URL) -> Bool {
-        let stem = file.stem
+        // The stills ship with `_1MB`/`_2MB` JPEG companions beside the PNG, so the test has to
+        // look through that companion label: `1_Short_8K_1MB` belongs to `1_Short_8K`. Only the
+        // companion labels are stripped here — a general derivative-suffix strip would also
+        // remove the `_8K` this test is looking for.
+        var stem = file.stem
+        for label in ["_1MB", "_2MB", "_5MB", "_20MB"] where stem.hasSuffix(label) {
+            stem = String(stem.dropLast(label.count))
+            break
+        }
         return stem.hasSuffix("_Short_8K") || stem.hasSuffix("_Short_CenterCut_8K")
     }
 
