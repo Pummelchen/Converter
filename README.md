@@ -86,7 +86,7 @@ Project loudness target is `-12 LUFS` for delivery, short-form, and mastering de
 
 ## Build and test
 
-Requires Swift tools 6.4+ (Xcode 27) and macOS 15+. The package lives in `Sources/`, so every SwiftPM command needs `--package-path Sources`.
+Built and tested with Swift 6.4 / Xcode 27 (the manifest's tools-version floor is 6.3.3, so CodeQL's default-setup autobuild can still parse it) and macOS 15+. The package lives in `Sources/`, so every SwiftPM command needs `--package-path Sources`.
 
 ```bash
 swift build --package-path Sources -c release

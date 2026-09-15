@@ -141,11 +141,15 @@ jobs:
           -I Sources/ThirdParty/libbw64 -I Sources/BW64Bridge/include
           Sources/BW64Bridge/bw64_bridge.cpp
 
+      # The vendored libbw64 headers legitimately produce diagnostics of their own, so the gate is
+      # "no first-party finding", not "clang-tidy printed nothing". Measured locally and on node2: 0.
       - name: C++ static analysis (clang-tidy)
-        run: >
+        run: |
           "$(brew --prefix llvm)/bin/clang-tidy"
-          Sources/BW64Bridge/bw64_bridge.cpp
-          -checks='bugprone-*,cert-*,clang-analyzer-*,performance-*,misc-*,-misc-include-cleaner'
-          --warnings-as-errors='bugprone-*,cert-*,clang-analyzer-*'
-          -- -std=c++17 -I Sources/ThirdParty/libbw64 -I Sources/BW64Bridge/include
-          -isysroot "$(xcrun --show-sdk-path)"
+            Sources/BW64Bridge/bw64_bridge.cpp
+            -checks='bugprone-*,cert-*,clang-analyzer-*,performance-*,misc-*,-misc-include-cleaner'
+            -- -std=c++17 -I Sources/ThirdParty/libbw64 -I Sources/BW64Bridge/include
+            -isysroot "$(xcrun --show-sdk-path)" 2>&1 | tee /tmp/clang-tidy.log
+          findings=$(grep -cE 'bw64_bridge\.cpp.*(warning|error):' /tmp/clang-tidy.log || true)
+          echo "first-party clang-tidy findings: $findings"
+          test "$findings" -eq 0
