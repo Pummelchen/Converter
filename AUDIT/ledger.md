@@ -2,24 +2,22 @@
 
 Session: `2026-09-14` · branch `audit/2026-09-14` · baseline commit `40bfadd`
 
-**known-total:158 done:142 open:15 blocked:1 new-this-session:58**
+**known-total:158 done:143 open:14 blocked:1 new-this-session:58**
 
 | status | count |
 |---|---|
 | START | 14 |
 | PROGRESS | 0 |
-| TEST | 1 |
+| TEST | 0 |
 | AUDIT | 0 |
-| DONE | 142 |
+| DONE | 143 |
 | BLOCKED | 1 |
 
 Status gates: START (reproduced/proven + expected behaviour written) → PROGRESS (diff) → TEST (failing-before/passing-after test pasted, full suite green, no new warnings) → AUDIT (cold re-read, all scanners re-run, no baseline regression, no new placeholder) → DONE (committed atomically). BLOCKED needs reason + what was tried + ≥2 options for a human.
 
-## Open S0 / S1 (1)
+## Open S0 / S1 (0)
 
-| id | sev | module | file:line | title | category | status | commit |
-|---|---|---|---|---|---|---|---|
-| #0103 | S1 | repo/release | converter, docs/BINARY_PROVENANCE.md, docs/converter.sha256 | Shipped release binary was built with Swift 6.3.3 / Xcode 26.6 | artefact | TEST |  |
+_none_
 
 ## Blocked (1)
 
@@ -46,7 +44,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 | #0144 | S3 | converter/tests | AUDIT/evidence-2026-09-14/baseline-coverage-gaps.txt | Coverage of three production files is materially incomplete | tests | START |  |
 | #0145 | S3 | converter/VideoPipeline | Sources/converter/VideoPipeline.swift:443-542 | The ffmpeg still-image path does not account for EXIF orientation | logic | START |  |
 
-## Done (142)
+## Done (143)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
@@ -87,6 +85,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 | #0037 | S1 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:1138-1167 | loudnessPreservingQCPolicy has no direct test; 'hot' fixture is not hot | test | DONE | a715956 |
 | #0038 | S1 | converterTests | Sources/Tests/converterTests/PipelineIntegrationTests.swift:126-146 | Orphan temp cleanup untested against a live foreign PID | test | DONE | a53673a |
 | #0101 | S1 | repo/CI | .github/workflows/ci.yml:11-49 | CI builds on macos-26 with Swift 6.3.3, below the 6.4 standard | toolchain | DONE | b72350d |
+| #0103 | S1 | repo/release | converter, docs/BINARY_PROVENANCE.md, docs/converter.sha256 | Shipped release binary was built with Swift 6.3.3 / Xcode 26.6 | artefact | DONE | d7f332d |
 | #0001 | S2 | repo/AUDIT | AUDIT/inventory.md | Phase A: scope inventory, dependency graph, trust boundaries, blast radius | docs | DONE | 5fa6546 |
 | #0002 | S2 | repo/AUDIT | AUDIT/environment.md | Phase A: environment record and audit tooling install (§1/§1b) | docs | DONE | 5fa6546 |
 | #0003 | S2 | repo/AUDIT | AUDIT/baseline.md | Phase A: baseline metrics at 4bb136a (§3) | docs | DONE | 2184906 |
@@ -1458,7 +1457,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **evidence-after:** AUDIT/evidence-2026-09-14/0113-before.log, 0118-before.log, 0113-0118-0147-after.log, 0101-0118-fullsuite.txt (266 tests, 0 failures, 0 compiler warnings).
 - **commit sha:** b94bbf3
 
-### #0103 · S1 · TEST · Shipped release binary was built with Swift 6.3.3 / Xcode 26.6
+### #0103 · S1 · DONE · Shipped release binary was built with Swift 6.3.3 / Xcode 26.6
 
 - **project/module:** repo/release
 - **file:line:** converter, docs/BINARY_PROVENANCE.md, docs/converter.sha256
@@ -1468,6 +1467,7 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0103 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
 - **fix-summary:** Release binary rebuilt from d9aa826 with Swift 6.4 / Xcode 27 (1 696 168 bytes, SHA-256 75de0aa1f82e5ae7e2d64f9e4e801079fbee96c43baa1f346b8f9e1e3dd0d602); -help, -matrix and -doctor pass; docs/converter.sha256 and docs/BINARY_PROVENANCE.md updated in the same commit.
 - **evidence-after:** shasum -a 256 -c docs/converter.sha256 -> converter: OK; ./converter -doctor exit 0.
+- **commit sha:** d7f332d
 
 ### #0104 · S2 · DONE · Toolchain and release build-path documentation stale for Swift 6.4
 

@@ -1745,14 +1745,14 @@
       "location": "converter, docs/BINARY_PROVENANCE.md, docs/converter.sha256",
       "title": "Shipped release binary was built with Swift 6.3.3 / Xcode 26.6",
       "category": "artefact",
-      "status": "TEST",
+      "status": "DONE",
       "host": "local",
       "discovered_by": "L7",
       "session": "2026-09-14",
       "evidence_before": "AUDIT/findings-2026-09-14.md #0103 (verified against the working tree at 40bfadd; see the entry for the quoted lines).",
       "fix_summary": "Release binary rebuilt from d9aa826 with Swift 6.4 / Xcode 27 (1 696 168 bytes, SHA-256 75de0aa1f82e5ae7e2d64f9e4e801079fbee96c43baa1f346b8f9e1e3dd0d602); -help, -matrix and -doctor pass; docs/converter.sha256 and docs/BINARY_PROVENANCE.md updated in the same commit.",
       "evidence_after": "shasum -a 256 -c docs/converter.sha256 -> converter: OK; ./converter -doctor exit 0.",
-      "commit": "",
+      "commit": "d7f332d",
       "notes": ""
     },
     {
