@@ -4,6 +4,26 @@ Notable changes to `converter`. The audit ledger behind these entries is
 [`AUDIT/ledger.json`](AUDIT/ledger.json) (mirrored to the wiki tracker); every task names its evidence,
 its commit and the host that verified it.
 
+## [1.1] - 2026-09-16
+
+Release and identity tooling, plus documentation corrections. **No change to conversion behaviour:
+the executable is byte-for-byte the `v1.0` build.**
+
+- The version is now single-sourced in a root `VERSION` file, with
+  `scripts/check-version-sync.sh` failing when the `CHANGELOG.md` heading or the release-notes
+  filename disagrees, and CI running that gate.
+- `scripts/release.sh` is the release mechanism: a clean scratch build, a `lipo -archs` arm64
+  assertion, a digest and byte count, a dry run by default, and `--publish` refusing unless every
+  precondition holds — dirty tree, wrong `gh` account, a rebuilt binary that is not the committed
+  one, an existing release, a tag that is not `HEAD`, or notes carrying neither the placeholder nor
+  the real digest.
+- `docs/RELEASE_CHECKLIST.md` no longer carries a version in its title, so it is not a second place
+  to bump. Release notes now live in `docs/release-notes-vX.Y.md`.
+- Corrected root-level test counts, the lint budget and the release/build-path facts across
+  `README.md`, `CONTRIBUTING.md`, `AGENTS.md` and `SECURITY.md`.
+- CodeQL's Swift analysis remains switched off (#0160, re-check by 2026-10-15), so a green CodeQL
+  check here does not mean Swift was scanned; the repository's own scanners cover it.
+
 ## [1.0] - 2026-09-16
 
 First stable release. It is the state of the project after two pre-production audits — 162 tasks

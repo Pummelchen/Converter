@@ -18,7 +18,7 @@ size, a wrong codec, silent audio or drifted loudness fails the run instead of
 producing a bad file. It is a single executable (the `converter` product of the
 SwiftPM package under `Sources/`) with a vendored libbw64 and an in-process BW64
 bridge, driven by `config.txt` and an `Output/` working directory. It is at stable
-release `v1.0`, and it is for someone preparing a release-grade media set from
+release `v1.1`, and it is for someone preparing a release-grade media set from
 source files — not for library consumers.
 
 ## Layout
@@ -32,9 +32,11 @@ source files — not for library consumers.
 - `config.txt` — quality, render, loudness and profile settings.
   `album.example.txt` is the template for the git-ignored `album.txt`.
 - `converter` — a committed prebuilt Apple Silicon binary at the repository root.
+- `VERSION` — the one authoritative version, with `scripts/check-version-sync.sh` as its gate.
 - `docs/` — `FORMATS.md`, `KNOWN_GOOD_VERSIONS.md`, `RELEASE_CHECKLIST.md`,
-  `BINARY_PROVENANCE.md`, `converter.sha256`.
-- `scripts/` — the local gates. `AUDIT/` — the audit ledger and its Python tooling.
+  `release-notes-vX.Y.md`, `BINARY_PROVENANCE.md`, `converter.sha256`.
+- `scripts/` — the local gates and `scripts/release.sh`, the release mechanism.
+  `AUDIT/` — the audit ledger and its Python tooling.
 
 ## Build and test
 
@@ -65,17 +67,24 @@ for it rather than assuming it is fast.
 
 ## Identity
 
-**There is no version constant in the Swift sources and no `--version` flag.** The
-release identity lives in `CHANGELOG.md` (`## [1.0] - 2026-09-16`), mirrored by the
-git tag `v1.0` and by the title of `docs/RELEASE_CHECKLIST.md`. The committed
-binary is pinned by **hash, not version**: `docs/converter.sha256`, with the source
-commit, toolchain and build command recorded in `docs/BINARY_PROVENANCE.md`.
+The version is single-sourced in the root **`VERSION`** file and enforced by
+`scripts/check-version-sync.sh`, which fails when the topmost `## [X.Y]` heading of
+`CHANGELOG.md` or the name of `docs/release-notes-vX.Y.md` disagrees with it. CI runs
+that gate, so a half-done bump cannot land. The git tag `v<version>` is the third
+declaration, and `scripts/release.sh` refuses to publish unless it points at `HEAD`.
+
+There is still **no `--version` flag and no version constant in the Swift sources**, so
+the executable cannot report its own version — the tag and the release page are the
+identity. The committed binary is pinned by **hash, not version**:
+`docs/converter.sha256`, with the source commit, toolchain and build command recorded
+in `docs/BINARY_PROVENANCE.md`.
 
 ## Gates
 
 - `build-and-test` (`.github/workflows/ci.yml`, `xcode-27`):
-  `shasum -a 256 -c docs/converter.sha256`; a `swift --version | grep -q 'Swift
-  version 6.4'` assertion; `scripts/lint-budget.sh`; a debug build with
+  `shasum -a 256 -c docs/converter.sha256`; `scripts/check-version-sync.sh`, so a
+  version mirror that disagrees with `VERSION` fails in seconds; a `swift --version |
+  grep -q 'Swift version 6.4'` assertion; `scripts/lint-budget.sh`; a debug build with
   `-warnings-as-errors`; a release build with `-warnings-as-errors -Xcc -Wall
   -Xcc -Wextra -Xcc -Werror`; `swift test --package-path Sources`.
 - `static-analysis`: `scripts/check-format.sh`, `scripts/lint-budget.sh`,
