@@ -1,0 +1,23 @@
+Filename                                  Regions    Missed Regions     Cover   Functions  Missed Functions  Executed       Lines      Missed Lines     Cover    Branches   Missed Branches     Cover
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+BW64Bridge/bw64_bridge.cpp                    123                32    73.98%          12                 1    91.67%         211                64    69.67%          79                37    53.16%
+converter/Actions.swift                       788               273    65.36%         230                73    68.26%        1768               448    74.66%           0                 0         -
+converter/AsyncSemaphore.swift                 37                 2    94.59%          16                 0   100.00%          87                 4    95.40%           0                 0         -
+converter/AudioPipeline.swift                1072               249    76.77%         228                33    85.53%        2600               437    83.19%           0                 0         -
+converter/CLI.swift                           219                53    75.80%          36                 2    94.44%         694                53    92.36%           0                 0         -
+converter/Config.swift                        408                19    95.34%         119                 5    95.80%         549                26    95.26%           0                 0         -
+converter/DependencyBootstrap.swift            92                36    60.87%          32                10    68.75%         264                85    67.80%           0                 0         -
+converter/DependencyInstaller.swift            37                 4    89.19%          18                 0   100.00%         135                 6    95.56%           0                 0         -
+converter/Diagnostics.swift                    58                 6    89.66%          16                 0   100.00%         118                 7    94.07%           0                 0         -
+converter/ImagePipeline.swift                 194                36    81.44%          37                 6    83.78%         397                58    85.39%           0                 0         -
+converter/LosslessAudioPipeline.swift          80                 8    90.00%          20                 4    80.00%         210                12    94.29%           0                 0         -
+converter/Main.swift                           22                22     0.00%           8                 8     0.00%          61                61     0.00%           0                 0         -
+converter/PipelineCore.swift                  528                76    85.61%         170                13    92.35%         995                84    91.56%           0                 0         -
+converter/ProcessRunner.swift                  96                14    85.42%          49                 6    87.76%         268                15    94.40%           0                 0         -
+converter/QualityReporting.swift                7                 0   100.00%           7                 0   100.00%          43                 0   100.00%           0                 0         -
+converter/RIFFChunkWalker.swift                71                12    83.10%          19                 4    78.95%         139                13    90.65%           0                 0         -
+converter/Support.swift                        88                 3    96.59%          42                 0   100.00%         193                 3    98.45%           0                 0         -
+converter/ValidationPipeline.swift            610               111    81.80%         129                32    75.19%        1355               129    90.48%           0                 0         -
+converter/VideoPipeline.swift                 236                29    87.71%          58                 6    89.66%         503                39    92.25%           0                 0         -
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+TOTAL                                        4766               985    79.33%        1246               203    83.71%       10590              1544    85.42%          79                37    53.16%

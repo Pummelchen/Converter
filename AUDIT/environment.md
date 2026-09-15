@@ -94,6 +94,22 @@ clang-tidy Sources/BW64Bridge/bw64_bridge.cpp \
   -std=c++17 -I Sources/ThirdParty/libbw64 -I Sources/BW64Bridge/include -isysroot "$(xcrun --show-sdk-path)"
 ```
 
+### Swift 6.4 build-layout note (periphery / index store)
+
+Swift 6.4 changed the SwiftPM build layout: products now live under
+`Sources/.build/out/Products/Debug/…`, and `.build/debug` is a symlink to it. The index store that
+`periphery scan` consumes is **no longer emitted by a plain build**; it only appears when the build
+is run with the flag, so the analyzer must be preceded by:
+
+```bash
+swift build --package-path Sources --build-tests --enable-index-store
+# index store: Sources/.build/out/Products/Debug/index/store  (reachable as Sources/.build/debug/index/store)
+```
+
+Without it, periphery 3.8.0 fails with
+`Error: index store path does not exist: …/.build/debug/index/store`. The coverage command above is
+unaffected (`.build/debug` resolves through the symlink).
+
 ## Host state
 
 - Nothing was installed on `node1`..`node4`; they already carry Xcode 27.0 / Swift 6.4 and the media
