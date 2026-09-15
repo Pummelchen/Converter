@@ -2,15 +2,15 @@
 
 Session: `2026-09-14` · branch `audit/2026-09-14` · baseline commit `40bfadd`
 
-**known-total:158 done:111 open:47 blocked:0 new-this-session:58**
+**known-total:158 done:142 open:16 blocked:0 new-this-session:58**
 
 | status | count |
 |---|---|
 | START | 16 |
 | PROGRESS | 0 |
-| TEST | 31 |
+| TEST | 0 |
 | AUDIT | 0 |
-| DONE | 111 |
+| DONE | 142 |
 | BLOCKED | 0 |
 
 Status gates: START (reproduced/proven + expected behaviour written) → PROGRESS (diff) → TEST (failing-before/passing-after test pasted, full suite green, no new warnings) → AUDIT (cold re-read, all scanners re-run, no baseline regression, no new placeholder) → DONE (committed atomically). BLOCKED needs reason + what was tried + ≥2 options for a human.
@@ -25,58 +25,27 @@ Status gates: START (reproduced/proven + expected behaviour written) → PROGRES
 
 _none_
 
-## Open S2 / S3 (46)
+## Open S2 / S3 (15)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
 | #0106 | S2 | repo/tooling | .swift-format (new) + Sources/** | Swift formatter installed but unconfigured and never enforced | tooling | START |  |
 | #0114 | S2 | converter/audio-QC | Sources/converter/AudioPipeline.swift:1675-1720; Actions.swift:698,1349 | Delivery QC ceilings never gate the published deliverables | verification | START |  |
 | #0115 | S2 | converter/audio-QC | Sources/converter/AudioPipeline.swift:672-680,368 | A failed loudness QC is published with a warning instead of failing | verification | START |  |
-| #0116 | S2 | converter/ProcessRunner | Sources/converter/ProcessRunner.swift:273-274 | Success path drains child pipes without a deadline and can hang forever | robustness | TEST |  |
-| #0117 | S2 | converter/PipelineCore | Sources/converter/PipelineCore.swift:492-493; ProcessRunner.swift:145 | Cancelling one operation SIGTERMs unrelated concurrent children | concurrency | TEST |  |
-| #0119 | S2 | converter/Config | Sources/converter/Config.swift:411,437 | Filter-graph pixel-format keys are only checked for emptiness | hardening | TEST |  |
-| #0120 | S2 | converter/Config | Sources/converter/Config.swift:142 | A missing config file is silently ignored, even when named explicitly | logic | TEST |  |
-| #0121 | S2 | converter/CLI | Sources/converter/CLI.swift:282-286 | --sleep-seconds accepts negative and effectively unbounded values | logic | TEST |  |
-| #0122 | S2 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:1087-1091 | Canonical PCM equivalence passes when both sides are empty | verification | TEST |  |
 | #0123 | S2 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:840-943 | Padding verifiers report success without measuring | verification | START |  |
 | #0124 | S2 | converter/PipelineCore | Sources/converter/PipelineCore.swift:730-734 | Audio duration checks use the container duration and reject valid MP4 sources | logic | START |  |
-| #0125 | S2 | converter/PipelineCore | Sources/converter/PipelineCore.swift:577-596 | A failed replace can leave a partial destination and then delete the good backup | data-loss | TEST |  |
-| #0111 | S3 | BW64Bridge | Sources/BW64Bridge/bw64_bridge.cpp:208 | clang-tidy misc-const-correctness on the chna chunk handle | style | TEST |  |
-| #0112 | S3 | BW64Bridge | Sources/BW64Bridge/bw64_bridge.cpp:272 | clang-tidy bugprone-easily-swappable-parameters on the C ABI boundary | safety | TEST |  |
-| #0126 | S3 | converter/CLI | Sources/converter/CLI.swift:67-69 | -visualsubs accepts extra positional arguments and lets an option override them | logic | TEST |  |
-| #0127 | S3 | converter/Diagnostics | Sources/converter/Diagnostics.swift:70-93 | -doctor reports success when it could not list the source directory | logic | TEST |  |
 | #0128 | S3 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:1179-1187 | Reused outputs are never checked against the current source | verification | START |  |
-| #0129 | S3 | converter/PipelineCore | Sources/converter/PipelineCore.swift:990-1049 | --num-dots / --max-attempts are unbounded and can exhaust memory | robustness | TEST |  |
 | #0130 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:527-535 | Fade outputs are never checked for an actual fade | verification | START |  |
 | #0131 | S3 | converter/LosslessAudioPipeline | Sources/converter/LosslessAudioPipeline.swift:155-189 | FLAC output bit depth is neither pinned nor verified | verification | START |  |
 | #0132 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:239-277 | An .m4a source with a video track has its video dropped silently | logic | START |  |
 | #0133 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:1480-1488 | A standard MP3 with cover art is re-encoded instead of copied | logic | START |  |
-| #0134 | S3 | converter/VideoPipeline | Sources/converter/VideoPipeline.swift:91-98 | An encoder-independent verification failure is reported as an encoder failure | diagnostics | TEST |  |
-| #0135 | S3 | converter/ProcessRunner | Sources/converter/ProcessRunner.swift:238,275-276 | An allowed exit code can mask a signal death | hardening | TEST |  |
-| #0136 | S3 | converter/ProcessRunner | Sources/converter/ProcessRunner.swift:17-44 | The 64 MiB capture cap keeps the head and drops the tail | diagnostics | TEST |  |
 | #0137 | S3 | converter/PipelineCore | Sources/converter/PipelineCore.swift:552-553 | Temp files are created by check-then-create, not exclusively | hardening | START |  |
 | #0138 | S3 | converter/PipelineCore | Sources/converter/PipelineCore.swift:553-578 | Publishing replaces the destination's permissions with the temp's | hardening | START |  |
-| #0139 | S3 | converter/PipelineCore | Sources/converter/PipelineCore.swift:976-978 | cleanTransients can delete an unrelated hidden file | data-loss | TEST |  |
-| #0140 | S3 | converter/PipelineCore | Sources/converter/PipelineCore.swift:615-629 | Backup recovery claims any hidden *.publish-backup file | data-loss | TEST |  |
-| #0141 | S3 | converter/ProcessRunner | Sources/converter/ProcessRunner.swift:87-104 | ProcessHandle's @unchecked Sendable is broader than its justification | concurrency | TEST |  |
-| #0142 | S3 | converter/Config | Sources/converter/Config.swift:600-608 | requirePositiveRateString accepts inf | logic | TEST |  |
 | #0143 | S3 | converter/Main | Sources/converter/Main.swift:5-58 | The entry point is entirely untested and resolves its own directory unsafely | tests | START |  |
 | #0144 | S3 | converter/tests | AUDIT/evidence-2026-09-14/baseline-coverage-gaps.txt | Coverage of three production files is materially incomplete | tests | START |  |
 | #0145 | S3 | converter/VideoPipeline | Sources/converter/VideoPipeline.swift:443-542 | The ffmpeg still-image path does not account for EXIF orientation | logic | START |  |
-| #0146 | S3 | converter/ImagePipeline | Sources/converter/ImagePipeline.swift:101-109,270-278 | JPEG deliverables flatten alpha against an unspecified background | logic | TEST |  |
-| #0148 | S3 | converter/CLI | Sources/converter/CLI.swift:122-123,240-242 | Tilde is never expanded for path options | logic | TEST |  |
-| #0149 | S3 | converter/PipelineCore | Sources/converter/PipelineCore.swift:539-542 | An absent free-space attribute is reported as no space | robustness | TEST |  |
-| #0150 | S3 | converter/Support | Sources/converter/Support.swift:42-59 | One static DateFormatter is shared across loggers under per-instance locks | concurrency | TEST |  |
-| #0151 | S3 | converter/AsyncSemaphore | Sources/converter/AsyncSemaphore.swift:42-48 | The semaphore's pre-suspension cancellation state is unreachable | dead-code | TEST |  |
-| #0152 | S3 | converter/PipelineCore | Sources/converter/PipelineCore.swift:819-838 | The loudnorm JSON scanner counts braces inside strings | robustness | TEST |  |
-| #0153 | S3 | converter/Config | Sources/converter/Config.swift:171 | Duplicate config keys silently take the last value | logic | TEST |  |
-| #0154 | S3 | converter/Config | Sources/converter/Config.swift:421-424 | A clip length above the hard maximum is clamped silently | logic | TEST |  |
-| #0155 | S3 | converter/CLI | Sources/converter/CLI.swift:756 | Action-scoped options are accepted by every action | logic | TEST |  |
-| #0156 | S3 | converter/CLI | Sources/converter/CLI.swift:303 | --seed 0 is rejected | logic | TEST |  |
-| #0157 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:1734-1736 | The FLAC converter alone lacks the source-overwrite guard | hardening | TEST |  |
-| #0158 | S3 | converter/ProcessRunner | Sources/converter/ProcessRunner.swift:30 | A pipe read error silently truncates captured output | robustness | TEST |  |
 
-## Done (111)
+## Done (142)
 
 | id | sev | module | file:line | title | category | status | commit |
 |---|---|---|---|---|---|---|---|
@@ -162,7 +131,14 @@ _none_
 | #0105 | S2 | repo/security | .gitleaks.toml (new) | Permanent gitleaks false positive blocks the secrets-clean claim | security | DONE | b72350d |
 | #0107 | S2 | AUDIT/tools | AUDIT/tools/*.py | In-repo audit tooling has no annotations, ruff or mypy configuration | tooling | DONE | b72350d |
 | #0108 | S2 | Sources/ThirdParty | Sources/ThirdParty/libbw64/UPSTREAM.md | Vendored libbw64 is patched but recorded as verbatim | docs | DONE | b72350d |
+| #0116 | S2 | converter/ProcessRunner | Sources/converter/ProcessRunner.swift:273-274 | Success path drains child pipes without a deadline and can hang forever | robustness | DONE | 1f0e0d9 |
+| #0117 | S2 | converter/PipelineCore | Sources/converter/PipelineCore.swift:492-493; ProcessRunner.swift:145 | Cancelling one operation SIGTERMs unrelated concurrent children | concurrency | DONE | 1f0e0d9 |
 | #0118 | S2 | converter/Actions | Sources/converter/Actions.swift:769-771,930-933 | -runpix re-ingests the portrait short JPEG companions | logic | DONE | b94bbf3 |
+| #0119 | S2 | converter/Config | Sources/converter/Config.swift:411,437 | Filter-graph pixel-format keys are only checked for emptiness | hardening | DONE | 1f0e0d9 |
+| #0120 | S2 | converter/Config | Sources/converter/Config.swift:142 | A missing config file is silently ignored, even when named explicitly | logic | DONE | 1f0e0d9 |
+| #0121 | S2 | converter/CLI | Sources/converter/CLI.swift:282-286 | --sleep-seconds accepts negative and effectively unbounded values | logic | DONE | 1f0e0d9 |
+| #0122 | S2 | converter/ValidationPipeline | Sources/converter/ValidationPipeline.swift:1087-1091 | Canonical PCM equivalence passes when both sides are empty | verification | DONE | 1f0e0d9 |
+| #0125 | S2 | converter/PipelineCore | Sources/converter/PipelineCore.swift:577-596 | A failed replace can leave a partial destination and then delete the good backup | data-loss | DONE | 1f0e0d9 |
 | #0076 | S3 | converter/Support | Sources/converter/Support.swift:122-126 | cancelledBeforeSuspension can retain a marker for an already-resumed waiter | logic | DONE | 24e52d7 |
 | #0077 | S3 | converter/DependencyBootstrap | Sources/converter/DependencyBootstrap.swift:77-82 | Post-install failure message lists nothing when a tool is present but non-functional | logic | DONE | 2c71af1 |
 | #0078 | S3 | converter/PipelineCore | Sources/converter/PipelineCore.swift:372-379 | ensureWritableDirectory accepts a regular file at OUT_DIR | logic | DONE | 9a721d9 |
@@ -190,7 +166,31 @@ _none_
 | #0100 | S3 | converter/Actions | Sources/converter/Actions.swift (normalizedFullRunSource / resolveFullAudio) | Full-run source is renamed before preflight; a corrupt source loses its original name in the error | logic | DONE | 8ede5fd |
 | #0109 | S3 | repo/tooling | .swiftlint.yml (new) | Swift linter runs with an implicit, unpinned rule set | tooling | DONE | b72350d |
 | #0110 | S3 | repo/CI | .github/workflows/ci.yml | CI does not run the static-analysis half of the toolchain | tooling | DONE | b72350d |
+| #0111 | S3 | BW64Bridge | Sources/BW64Bridge/bw64_bridge.cpp:208 | clang-tidy misc-const-correctness on the chna chunk handle | style | DONE | 1f0e0d9 |
+| #0112 | S3 | BW64Bridge | Sources/BW64Bridge/bw64_bridge.cpp:272 | clang-tidy bugprone-easily-swappable-parameters on the C ABI boundary | safety | DONE | 1f0e0d9 |
+| #0126 | S3 | converter/CLI | Sources/converter/CLI.swift:67-69 | -visualsubs accepts extra positional arguments and lets an option override them | logic | DONE | 1f0e0d9 |
+| #0127 | S3 | converter/Diagnostics | Sources/converter/Diagnostics.swift:70-93 | -doctor reports success when it could not list the source directory | logic | DONE | 1f0e0d9 |
+| #0129 | S3 | converter/PipelineCore | Sources/converter/PipelineCore.swift:990-1049 | --num-dots / --max-attempts are unbounded and can exhaust memory | robustness | DONE | 1f0e0d9 |
+| #0134 | S3 | converter/VideoPipeline | Sources/converter/VideoPipeline.swift:91-98 | An encoder-independent verification failure is reported as an encoder failure | diagnostics | DONE | 1f0e0d9 |
+| #0135 | S3 | converter/ProcessRunner | Sources/converter/ProcessRunner.swift:238,275-276 | An allowed exit code can mask a signal death | hardening | DONE | 1f0e0d9 |
+| #0136 | S3 | converter/ProcessRunner | Sources/converter/ProcessRunner.swift:17-44 | The 64 MiB capture cap keeps the head and drops the tail | diagnostics | DONE | 1f0e0d9 |
+| #0139 | S3 | converter/PipelineCore | Sources/converter/PipelineCore.swift:976-978 | cleanTransients can delete an unrelated hidden file | data-loss | DONE | 1f0e0d9 |
+| #0140 | S3 | converter/PipelineCore | Sources/converter/PipelineCore.swift:615-629 | Backup recovery claims any hidden *.publish-backup file | data-loss | DONE | 1f0e0d9 |
+| #0141 | S3 | converter/ProcessRunner | Sources/converter/ProcessRunner.swift:87-104 | ProcessHandle's @unchecked Sendable is broader than its justification | concurrency | DONE | 1f0e0d9 |
+| #0142 | S3 | converter/Config | Sources/converter/Config.swift:600-608 | requirePositiveRateString accepts inf | logic | DONE | 1f0e0d9 |
+| #0146 | S3 | converter/ImagePipeline | Sources/converter/ImagePipeline.swift:101-109,270-278 | JPEG deliverables flatten alpha against an unspecified background | logic | DONE | 1f0e0d9 |
 | #0147 | S3 | converter/ImagePipeline | Sources/converter/ImagePipeline.swift:51-67 | The full run leaves its JPG-to-PNG intermediate in the output directory | hygiene | DONE | b94bbf3 |
+| #0148 | S3 | converter/CLI | Sources/converter/CLI.swift:122-123,240-242 | Tilde is never expanded for path options | logic | DONE | 1f0e0d9 |
+| #0149 | S3 | converter/PipelineCore | Sources/converter/PipelineCore.swift:539-542 | An absent free-space attribute is reported as no space | robustness | DONE | 1f0e0d9 |
+| #0150 | S3 | converter/Support | Sources/converter/Support.swift:42-59 | One static DateFormatter is shared across loggers under per-instance locks | concurrency | DONE | 1f0e0d9 |
+| #0151 | S3 | converter/AsyncSemaphore | Sources/converter/AsyncSemaphore.swift:42-48 | The semaphore's pre-suspension cancellation state is unreachable | dead-code | DONE | 1f0e0d9 |
+| #0152 | S3 | converter/PipelineCore | Sources/converter/PipelineCore.swift:819-838 | The loudnorm JSON scanner counts braces inside strings | robustness | DONE | 1f0e0d9 |
+| #0153 | S3 | converter/Config | Sources/converter/Config.swift:171 | Duplicate config keys silently take the last value | logic | DONE | 1f0e0d9 |
+| #0154 | S3 | converter/Config | Sources/converter/Config.swift:421-424 | A clip length above the hard maximum is clamped silently | logic | DONE | 1f0e0d9 |
+| #0155 | S3 | converter/CLI | Sources/converter/CLI.swift:756 | Action-scoped options are accepted by every action | logic | DONE | 1f0e0d9 |
+| #0156 | S3 | converter/CLI | Sources/converter/CLI.swift:303 | --seed 0 is rejected | logic | DONE | 1f0e0d9 |
+| #0157 | S3 | converter/AudioPipeline | Sources/converter/AudioPipeline.swift:1734-1736 | The FLAC converter alone lacks the source-overwrite guard | hardening | DONE | 1f0e0d9 |
+| #0158 | S3 | converter/ProcessRunner | Sources/converter/ProcessRunner.swift:30 | A pipe read error silently truncates captured output | robustness | DONE | 1f0e0d9 |
 
 ## Full records
 
@@ -1547,7 +1547,7 @@ _none_
 - **evidence-after:** scripts/lint-budget.sh reports 470/19 with no new violations; ./scripts/check-python.sh reports ruff+mypy clean and render_ledger.py regenerates ledger.md byte-for-byte; gitleaks full history reports 0 with the new config; docs/ci.yml validated as YAML.
 - **commit sha:** b72350d
 
-### #0111 · S3 · TEST · clang-tidy misc-const-correctness on the chna chunk handle
+### #0111 · S3 · DONE · clang-tidy misc-const-correctness on the chna chunk handle
 
 - **project/module:** BW64Bridge
 - **file:line:** Sources/BW64Bridge/bw64_bridge.cpp:208
@@ -1557,8 +1557,9 @@ _none_
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0111 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
 - **fix-summary:** Input validation hardened and made consistent (#0119,#0120,#0121,#0122,#0125,#0126,#0127,#0129,#0134,#0135,#0136,#0141,#0142,#0146,#0149,#0150,#0152,#0153,#0155,#0157,#0158); child processes tracked per permitted operation so cancellation stops only its own work (#0116,#0117); clang-tidy first-party clean (#0111,#0112); six reviewer claims verified and closed with no code change (#0139,#0140,#0148,#0151,#0154,#0156).
 - **evidence-after:** AUDIT/evidence-2026-09-14/0111-0157-fullsuite.txt (273 tests, 0 failures, 0 compiler warnings), 0119-0157-before.log (11 behaviours reproduced unfixed), 0119-0157-after.log, 0148-tilde-probe.log; scripts/lint-budget.sh reports 469/19 with no new violations (ratchet re-recorded downward); clang-tidy reports 0 first-party findings.
+- **commit sha:** 1f0e0d9
 
-### #0112 · S3 · TEST · clang-tidy bugprone-easily-swappable-parameters on the C ABI boundary
+### #0112 · S3 · DONE · clang-tidy bugprone-easily-swappable-parameters on the C ABI boundary
 
 - **project/module:** BW64Bridge
 - **file:line:** Sources/BW64Bridge/bw64_bridge.cpp:272
@@ -1568,6 +1569,7 @@ _none_
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0112 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
 - **fix-summary:** Input validation hardened and made consistent (#0119,#0120,#0121,#0122,#0125,#0126,#0127,#0129,#0134,#0135,#0136,#0141,#0142,#0146,#0149,#0150,#0152,#0153,#0155,#0157,#0158); child processes tracked per permitted operation so cancellation stops only its own work (#0116,#0117); clang-tidy first-party clean (#0111,#0112); six reviewer claims verified and closed with no code change (#0139,#0140,#0148,#0151,#0154,#0156).
 - **evidence-after:** AUDIT/evidence-2026-09-14/0111-0157-fullsuite.txt (273 tests, 0 failures, 0 compiler warnings), 0119-0157-before.log (11 behaviours reproduced unfixed), 0119-0157-after.log, 0148-tilde-probe.log; scripts/lint-budget.sh reports 469/19 with no new violations (ratchet re-recorded downward); clang-tidy reports 0 first-party findings.
+- **commit sha:** 1f0e0d9
 
 ### #0113 · S0 · DONE · An image action can overwrite the user's own source artwork
 
@@ -1599,7 +1601,7 @@ _none_
 - **discovered-by:** R-validate V2
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0115 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
 
-### #0116 · S2 · TEST · Success path drains child pipes without a deadline and can hang forever
+### #0116 · S2 · DONE · Success path drains child pipes without a deadline and can hang forever
 
 - **project/module:** converter/ProcessRunner
 - **file:line:** Sources/converter/ProcessRunner.swift:273-274
@@ -1609,8 +1611,9 @@ _none_
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0116 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
 - **fix-summary:** Input validation hardened and made consistent (#0119,#0120,#0121,#0122,#0125,#0126,#0127,#0129,#0134,#0135,#0136,#0141,#0142,#0146,#0149,#0150,#0152,#0153,#0155,#0157,#0158); child processes tracked per permitted operation so cancellation stops only its own work (#0116,#0117); clang-tidy first-party clean (#0111,#0112); six reviewer claims verified and closed with no code change (#0139,#0140,#0148,#0151,#0154,#0156).
 - **evidence-after:** AUDIT/evidence-2026-09-14/0111-0157-fullsuite.txt (273 tests, 0 failures, 0 compiler warnings), 0119-0157-before.log (11 behaviours reproduced unfixed), 0119-0157-after.log, 0148-tilde-probe.log; scripts/lint-budget.sh reports 469/19 with no new violations (ratchet re-recorded downward); clang-tidy reports 0 first-party findings.
+- **commit sha:** 1f0e0d9
 
-### #0117 · S2 · TEST · Cancelling one operation SIGTERMs unrelated concurrent children
+### #0117 · S2 · DONE · Cancelling one operation SIGTERMs unrelated concurrent children
 
 - **project/module:** converter/PipelineCore
 - **file:line:** Sources/converter/PipelineCore.swift:492-493; ProcessRunner.swift:145
@@ -1620,6 +1623,7 @@ _none_
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0117 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
 - **fix-summary:** Input validation hardened and made consistent (#0119,#0120,#0121,#0122,#0125,#0126,#0127,#0129,#0134,#0135,#0136,#0141,#0142,#0146,#0149,#0150,#0152,#0153,#0155,#0157,#0158); child processes tracked per permitted operation so cancellation stops only its own work (#0116,#0117); clang-tidy first-party clean (#0111,#0112); six reviewer claims verified and closed with no code change (#0139,#0140,#0148,#0151,#0154,#0156).
 - **evidence-after:** AUDIT/evidence-2026-09-14/0111-0157-fullsuite.txt (273 tests, 0 failures, 0 compiler warnings), 0119-0157-before.log (11 behaviours reproduced unfixed), 0119-0157-after.log, 0148-tilde-probe.log; scripts/lint-budget.sh reports 469/19 with no new violations (ratchet re-recorded downward); clang-tidy reports 0 first-party findings.
+- **commit sha:** 1f0e0d9
 
 ### #0118 · S2 · DONE · -runpix re-ingests the portrait short JPEG companions
 
@@ -1633,7 +1637,7 @@ _none_
 - **evidence-after:** AUDIT/evidence-2026-09-14/0113-before.log, 0118-before.log, 0113-0118-0147-after.log, 0101-0118-fullsuite.txt (266 tests, 0 failures, 0 compiler warnings).
 - **commit sha:** b94bbf3
 
-### #0119 · S2 · TEST · Filter-graph pixel-format keys are only checked for emptiness
+### #0119 · S2 · DONE · Filter-graph pixel-format keys are only checked for emptiness
 
 - **project/module:** converter/Config
 - **file:line:** Sources/converter/Config.swift:411,437
@@ -1643,8 +1647,9 @@ _none_
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0119 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
 - **fix-summary:** Input validation hardened and made consistent (#0119,#0120,#0121,#0122,#0125,#0126,#0127,#0129,#0134,#0135,#0136,#0141,#0142,#0146,#0149,#0150,#0152,#0153,#0155,#0157,#0158); child processes tracked per permitted operation so cancellation stops only its own work (#0116,#0117); clang-tidy first-party clean (#0111,#0112); six reviewer claims verified and closed with no code change (#0139,#0140,#0148,#0151,#0154,#0156).
 - **evidence-after:** AUDIT/evidence-2026-09-14/0111-0157-fullsuite.txt (273 tests, 0 failures, 0 compiler warnings), 0119-0157-before.log (11 behaviours reproduced unfixed), 0119-0157-after.log, 0148-tilde-probe.log; scripts/lint-budget.sh reports 469/19 with no new violations (ratchet re-recorded downward); clang-tidy reports 0 first-party findings.
+- **commit sha:** 1f0e0d9
 
-### #0120 · S2 · TEST · A missing config file is silently ignored, even when named explicitly
+### #0120 · S2 · DONE · A missing config file is silently ignored, even when named explicitly
 
 - **project/module:** converter/Config
 - **file:line:** Sources/converter/Config.swift:142
@@ -1654,8 +1659,9 @@ _none_
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0120 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
 - **fix-summary:** Input validation hardened and made consistent (#0119,#0120,#0121,#0122,#0125,#0126,#0127,#0129,#0134,#0135,#0136,#0141,#0142,#0146,#0149,#0150,#0152,#0153,#0155,#0157,#0158); child processes tracked per permitted operation so cancellation stops only its own work (#0116,#0117); clang-tidy first-party clean (#0111,#0112); six reviewer claims verified and closed with no code change (#0139,#0140,#0148,#0151,#0154,#0156).
 - **evidence-after:** AUDIT/evidence-2026-09-14/0111-0157-fullsuite.txt (273 tests, 0 failures, 0 compiler warnings), 0119-0157-before.log (11 behaviours reproduced unfixed), 0119-0157-after.log, 0148-tilde-probe.log; scripts/lint-budget.sh reports 469/19 with no new violations (ratchet re-recorded downward); clang-tidy reports 0 first-party findings.
+- **commit sha:** 1f0e0d9
 
-### #0121 · S2 · TEST · --sleep-seconds accepts negative and effectively unbounded values
+### #0121 · S2 · DONE · --sleep-seconds accepts negative and effectively unbounded values
 
 - **project/module:** converter/CLI
 - **file:line:** Sources/converter/CLI.swift:282-286
@@ -1665,8 +1671,9 @@ _none_
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0121 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
 - **fix-summary:** Input validation hardened and made consistent (#0119,#0120,#0121,#0122,#0125,#0126,#0127,#0129,#0134,#0135,#0136,#0141,#0142,#0146,#0149,#0150,#0152,#0153,#0155,#0157,#0158); child processes tracked per permitted operation so cancellation stops only its own work (#0116,#0117); clang-tidy first-party clean (#0111,#0112); six reviewer claims verified and closed with no code change (#0139,#0140,#0148,#0151,#0154,#0156).
 - **evidence-after:** AUDIT/evidence-2026-09-14/0111-0157-fullsuite.txt (273 tests, 0 failures, 0 compiler warnings), 0119-0157-before.log (11 behaviours reproduced unfixed), 0119-0157-after.log, 0148-tilde-probe.log; scripts/lint-budget.sh reports 469/19 with no new violations (ratchet re-recorded downward); clang-tidy reports 0 first-party findings.
+- **commit sha:** 1f0e0d9
 
-### #0122 · S2 · TEST · Canonical PCM equivalence passes when both sides are empty
+### #0122 · S2 · DONE · Canonical PCM equivalence passes when both sides are empty
 
 - **project/module:** converter/ValidationPipeline
 - **file:line:** Sources/converter/ValidationPipeline.swift:1087-1091
@@ -1676,6 +1683,7 @@ _none_
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0122 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
 - **fix-summary:** Input validation hardened and made consistent (#0119,#0120,#0121,#0122,#0125,#0126,#0127,#0129,#0134,#0135,#0136,#0141,#0142,#0146,#0149,#0150,#0152,#0153,#0155,#0157,#0158); child processes tracked per permitted operation so cancellation stops only its own work (#0116,#0117); clang-tidy first-party clean (#0111,#0112); six reviewer claims verified and closed with no code change (#0139,#0140,#0148,#0151,#0154,#0156).
 - **evidence-after:** AUDIT/evidence-2026-09-14/0111-0157-fullsuite.txt (273 tests, 0 failures, 0 compiler warnings), 0119-0157-before.log (11 behaviours reproduced unfixed), 0119-0157-after.log, 0148-tilde-probe.log; scripts/lint-budget.sh reports 469/19 with no new violations (ratchet re-recorded downward); clang-tidy reports 0 first-party findings.
+- **commit sha:** 1f0e0d9
 
 ### #0123 · S2 · START · Padding verifiers report success without measuring
 
@@ -1695,7 +1703,7 @@ _none_
 - **discovered-by:** R-audio A2
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0124 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
 
-### #0125 · S2 · TEST · A failed replace can leave a partial destination and then delete the good backup
+### #0125 · S2 · DONE · A failed replace can leave a partial destination and then delete the good backup
 
 - **project/module:** converter/PipelineCore
 - **file:line:** Sources/converter/PipelineCore.swift:577-596
@@ -1705,8 +1713,9 @@ _none_
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0125 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
 - **fix-summary:** Input validation hardened and made consistent (#0119,#0120,#0121,#0122,#0125,#0126,#0127,#0129,#0134,#0135,#0136,#0141,#0142,#0146,#0149,#0150,#0152,#0153,#0155,#0157,#0158); child processes tracked per permitted operation so cancellation stops only its own work (#0116,#0117); clang-tidy first-party clean (#0111,#0112); six reviewer claims verified and closed with no code change (#0139,#0140,#0148,#0151,#0154,#0156).
 - **evidence-after:** AUDIT/evidence-2026-09-14/0111-0157-fullsuite.txt (273 tests, 0 failures, 0 compiler warnings), 0119-0157-before.log (11 behaviours reproduced unfixed), 0119-0157-after.log, 0148-tilde-probe.log; scripts/lint-budget.sh reports 469/19 with no new violations (ratchet re-recorded downward); clang-tidy reports 0 first-party findings.
+- **commit sha:** 1f0e0d9
 
-### #0126 · S3 · TEST · -visualsubs accepts extra positional arguments and lets an option override them
+### #0126 · S3 · DONE · -visualsubs accepts extra positional arguments and lets an option override them
 
 - **project/module:** converter/CLI
 - **file:line:** Sources/converter/CLI.swift:67-69
@@ -1716,8 +1725,9 @@ _none_
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0126 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
 - **fix-summary:** Input validation hardened and made consistent (#0119,#0120,#0121,#0122,#0125,#0126,#0127,#0129,#0134,#0135,#0136,#0141,#0142,#0146,#0149,#0150,#0152,#0153,#0155,#0157,#0158); child processes tracked per permitted operation so cancellation stops only its own work (#0116,#0117); clang-tidy first-party clean (#0111,#0112); six reviewer claims verified and closed with no code change (#0139,#0140,#0148,#0151,#0154,#0156).
 - **evidence-after:** AUDIT/evidence-2026-09-14/0111-0157-fullsuite.txt (273 tests, 0 failures, 0 compiler warnings), 0119-0157-before.log (11 behaviours reproduced unfixed), 0119-0157-after.log, 0148-tilde-probe.log; scripts/lint-budget.sh reports 469/19 with no new violations (ratchet re-recorded downward); clang-tidy reports 0 first-party findings.
+- **commit sha:** 1f0e0d9
 
-### #0127 · S3 · TEST · -doctor reports success when it could not list the source directory
+### #0127 · S3 · DONE · -doctor reports success when it could not list the source directory
 
 - **project/module:** converter/Diagnostics
 - **file:line:** Sources/converter/Diagnostics.swift:70-93
@@ -1727,6 +1737,7 @@ _none_
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0127 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
 - **fix-summary:** Input validation hardened and made consistent (#0119,#0120,#0121,#0122,#0125,#0126,#0127,#0129,#0134,#0135,#0136,#0141,#0142,#0146,#0149,#0150,#0152,#0153,#0155,#0157,#0158); child processes tracked per permitted operation so cancellation stops only its own work (#0116,#0117); clang-tidy first-party clean (#0111,#0112); six reviewer claims verified and closed with no code change (#0139,#0140,#0148,#0151,#0154,#0156).
 - **evidence-after:** AUDIT/evidence-2026-09-14/0111-0157-fullsuite.txt (273 tests, 0 failures, 0 compiler warnings), 0119-0157-before.log (11 behaviours reproduced unfixed), 0119-0157-after.log, 0148-tilde-probe.log; scripts/lint-budget.sh reports 469/19 with no new violations (ratchet re-recorded downward); clang-tidy reports 0 first-party findings.
+- **commit sha:** 1f0e0d9
 
 ### #0128 · S3 · START · Reused outputs are never checked against the current source
 
@@ -1737,7 +1748,7 @@ _none_
 - **discovered-by:** R-media P3
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0128 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
 
-### #0129 · S3 · TEST · --num-dots / --max-attempts are unbounded and can exhaust memory
+### #0129 · S3 · DONE · --num-dots / --max-attempts are unbounded and can exhaust memory
 
 - **project/module:** converter/PipelineCore
 - **file:line:** Sources/converter/PipelineCore.swift:990-1049
@@ -1747,6 +1758,7 @@ _none_
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0129 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
 - **fix-summary:** Input validation hardened and made consistent (#0119,#0120,#0121,#0122,#0125,#0126,#0127,#0129,#0134,#0135,#0136,#0141,#0142,#0146,#0149,#0150,#0152,#0153,#0155,#0157,#0158); child processes tracked per permitted operation so cancellation stops only its own work (#0116,#0117); clang-tidy first-party clean (#0111,#0112); six reviewer claims verified and closed with no code change (#0139,#0140,#0148,#0151,#0154,#0156).
 - **evidence-after:** AUDIT/evidence-2026-09-14/0111-0157-fullsuite.txt (273 tests, 0 failures, 0 compiler warnings), 0119-0157-before.log (11 behaviours reproduced unfixed), 0119-0157-after.log, 0148-tilde-probe.log; scripts/lint-budget.sh reports 469/19 with no new violations (ratchet re-recorded downward); clang-tidy reports 0 first-party findings.
+- **commit sha:** 1f0e0d9
 
 ### #0130 · S3 · START · Fade outputs are never checked for an actual fade
 
@@ -1784,7 +1796,7 @@ _none_
 - **discovered-by:** R-validate V6
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0133 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
 
-### #0134 · S3 · TEST · An encoder-independent verification failure is reported as an encoder failure
+### #0134 · S3 · DONE · An encoder-independent verification failure is reported as an encoder failure
 
 - **project/module:** converter/VideoPipeline
 - **file:line:** Sources/converter/VideoPipeline.swift:91-98
@@ -1794,8 +1806,9 @@ _none_
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0134 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
 - **fix-summary:** Input validation hardened and made consistent (#0119,#0120,#0121,#0122,#0125,#0126,#0127,#0129,#0134,#0135,#0136,#0141,#0142,#0146,#0149,#0150,#0152,#0153,#0155,#0157,#0158); child processes tracked per permitted operation so cancellation stops only its own work (#0116,#0117); clang-tidy first-party clean (#0111,#0112); six reviewer claims verified and closed with no code change (#0139,#0140,#0148,#0151,#0154,#0156).
 - **evidence-after:** AUDIT/evidence-2026-09-14/0111-0157-fullsuite.txt (273 tests, 0 failures, 0 compiler warnings), 0119-0157-before.log (11 behaviours reproduced unfixed), 0119-0157-after.log, 0148-tilde-probe.log; scripts/lint-budget.sh reports 469/19 with no new violations (ratchet re-recorded downward); clang-tidy reports 0 first-party findings.
+- **commit sha:** 1f0e0d9
 
-### #0135 · S3 · TEST · An allowed exit code can mask a signal death
+### #0135 · S3 · DONE · An allowed exit code can mask a signal death
 
 - **project/module:** converter/ProcessRunner
 - **file:line:** Sources/converter/ProcessRunner.swift:238,275-276
@@ -1805,8 +1818,9 @@ _none_
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0135 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
 - **fix-summary:** Input validation hardened and made consistent (#0119,#0120,#0121,#0122,#0125,#0126,#0127,#0129,#0134,#0135,#0136,#0141,#0142,#0146,#0149,#0150,#0152,#0153,#0155,#0157,#0158); child processes tracked per permitted operation so cancellation stops only its own work (#0116,#0117); clang-tidy first-party clean (#0111,#0112); six reviewer claims verified and closed with no code change (#0139,#0140,#0148,#0151,#0154,#0156).
 - **evidence-after:** AUDIT/evidence-2026-09-14/0111-0157-fullsuite.txt (273 tests, 0 failures, 0 compiler warnings), 0119-0157-before.log (11 behaviours reproduced unfixed), 0119-0157-after.log, 0148-tilde-probe.log; scripts/lint-budget.sh reports 469/19 with no new violations (ratchet re-recorded downward); clang-tidy reports 0 first-party findings.
+- **commit sha:** 1f0e0d9
 
-### #0136 · S3 · TEST · The 64 MiB capture cap keeps the head and drops the tail
+### #0136 · S3 · DONE · The 64 MiB capture cap keeps the head and drops the tail
 
 - **project/module:** converter/ProcessRunner
 - **file:line:** Sources/converter/ProcessRunner.swift:17-44
@@ -1816,6 +1830,7 @@ _none_
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0136 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
 - **fix-summary:** Input validation hardened and made consistent (#0119,#0120,#0121,#0122,#0125,#0126,#0127,#0129,#0134,#0135,#0136,#0141,#0142,#0146,#0149,#0150,#0152,#0153,#0155,#0157,#0158); child processes tracked per permitted operation so cancellation stops only its own work (#0116,#0117); clang-tidy first-party clean (#0111,#0112); six reviewer claims verified and closed with no code change (#0139,#0140,#0148,#0151,#0154,#0156).
 - **evidence-after:** AUDIT/evidence-2026-09-14/0111-0157-fullsuite.txt (273 tests, 0 failures, 0 compiler warnings), 0119-0157-before.log (11 behaviours reproduced unfixed), 0119-0157-after.log, 0148-tilde-probe.log; scripts/lint-budget.sh reports 469/19 with no new violations (ratchet re-recorded downward); clang-tidy reports 0 first-party findings.
+- **commit sha:** 1f0e0d9
 
 ### #0137 · S3 · START · Temp files are created by check-then-create, not exclusively
 
@@ -1835,7 +1850,7 @@ _none_
 - **discovered-by:** R-core C7
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0138 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
 
-### #0139 · S3 · TEST · cleanTransients can delete an unrelated hidden file
+### #0139 · S3 · DONE · cleanTransients can delete an unrelated hidden file
 
 - **project/module:** converter/PipelineCore
 - **file:line:** Sources/converter/PipelineCore.swift:976-978
@@ -1845,8 +1860,9 @@ _none_
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0139 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
 - **fix-summary:** Input validation hardened and made consistent (#0119,#0120,#0121,#0122,#0125,#0126,#0127,#0129,#0134,#0135,#0136,#0141,#0142,#0146,#0149,#0150,#0152,#0153,#0155,#0157,#0158); child processes tracked per permitted operation so cancellation stops only its own work (#0116,#0117); clang-tidy first-party clean (#0111,#0112); six reviewer claims verified and closed with no code change (#0139,#0140,#0148,#0151,#0154,#0156).
 - **evidence-after:** AUDIT/evidence-2026-09-14/0111-0157-fullsuite.txt (273 tests, 0 failures, 0 compiler warnings), 0119-0157-before.log (11 behaviours reproduced unfixed), 0119-0157-after.log, 0148-tilde-probe.log; scripts/lint-budget.sh reports 469/19 with no new violations (ratchet re-recorded downward); clang-tidy reports 0 first-party findings.
+- **commit sha:** 1f0e0d9
 
-### #0140 · S3 · TEST · Backup recovery claims any hidden *.publish-backup file
+### #0140 · S3 · DONE · Backup recovery claims any hidden *.publish-backup file
 
 - **project/module:** converter/PipelineCore
 - **file:line:** Sources/converter/PipelineCore.swift:615-629
@@ -1856,8 +1872,9 @@ _none_
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0140 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
 - **fix-summary:** Input validation hardened and made consistent (#0119,#0120,#0121,#0122,#0125,#0126,#0127,#0129,#0134,#0135,#0136,#0141,#0142,#0146,#0149,#0150,#0152,#0153,#0155,#0157,#0158); child processes tracked per permitted operation so cancellation stops only its own work (#0116,#0117); clang-tidy first-party clean (#0111,#0112); six reviewer claims verified and closed with no code change (#0139,#0140,#0148,#0151,#0154,#0156).
 - **evidence-after:** AUDIT/evidence-2026-09-14/0111-0157-fullsuite.txt (273 tests, 0 failures, 0 compiler warnings), 0119-0157-before.log (11 behaviours reproduced unfixed), 0119-0157-after.log, 0148-tilde-probe.log; scripts/lint-budget.sh reports 469/19 with no new violations (ratchet re-recorded downward); clang-tidy reports 0 first-party findings.
+- **commit sha:** 1f0e0d9
 
-### #0141 · S3 · TEST · ProcessHandle's @unchecked Sendable is broader than its justification
+### #0141 · S3 · DONE · ProcessHandle's @unchecked Sendable is broader than its justification
 
 - **project/module:** converter/ProcessRunner
 - **file:line:** Sources/converter/ProcessRunner.swift:87-104
@@ -1867,8 +1884,9 @@ _none_
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0141 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
 - **fix-summary:** Input validation hardened and made consistent (#0119,#0120,#0121,#0122,#0125,#0126,#0127,#0129,#0134,#0135,#0136,#0141,#0142,#0146,#0149,#0150,#0152,#0153,#0155,#0157,#0158); child processes tracked per permitted operation so cancellation stops only its own work (#0116,#0117); clang-tidy first-party clean (#0111,#0112); six reviewer claims verified and closed with no code change (#0139,#0140,#0148,#0151,#0154,#0156).
 - **evidence-after:** AUDIT/evidence-2026-09-14/0111-0157-fullsuite.txt (273 tests, 0 failures, 0 compiler warnings), 0119-0157-before.log (11 behaviours reproduced unfixed), 0119-0157-after.log, 0148-tilde-probe.log; scripts/lint-budget.sh reports 469/19 with no new violations (ratchet re-recorded downward); clang-tidy reports 0 first-party findings.
+- **commit sha:** 1f0e0d9
 
-### #0142 · S3 · TEST · requirePositiveRateString accepts inf
+### #0142 · S3 · DONE · requirePositiveRateString accepts inf
 
 - **project/module:** converter/Config
 - **file:line:** Sources/converter/Config.swift:600-608
@@ -1878,6 +1896,7 @@ _none_
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0142 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
 - **fix-summary:** Input validation hardened and made consistent (#0119,#0120,#0121,#0122,#0125,#0126,#0127,#0129,#0134,#0135,#0136,#0141,#0142,#0146,#0149,#0150,#0152,#0153,#0155,#0157,#0158); child processes tracked per permitted operation so cancellation stops only its own work (#0116,#0117); clang-tidy first-party clean (#0111,#0112); six reviewer claims verified and closed with no code change (#0139,#0140,#0148,#0151,#0154,#0156).
 - **evidence-after:** AUDIT/evidence-2026-09-14/0111-0157-fullsuite.txt (273 tests, 0 failures, 0 compiler warnings), 0119-0157-before.log (11 behaviours reproduced unfixed), 0119-0157-after.log, 0148-tilde-probe.log; scripts/lint-budget.sh reports 469/19 with no new violations (ratchet re-recorded downward); clang-tidy reports 0 first-party findings.
+- **commit sha:** 1f0e0d9
 
 ### #0143 · S3 · START · The entry point is entirely untested and resolves its own directory unsafely
 
@@ -1906,7 +1925,7 @@ _none_
 - **discovered-by:** R-media L-a
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0145 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
 
-### #0146 · S3 · TEST · JPEG deliverables flatten alpha against an unspecified background
+### #0146 · S3 · DONE · JPEG deliverables flatten alpha against an unspecified background
 
 - **project/module:** converter/ImagePipeline
 - **file:line:** Sources/converter/ImagePipeline.swift:101-109,270-278
@@ -1916,6 +1935,7 @@ _none_
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0146 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
 - **fix-summary:** Input validation hardened and made consistent (#0119,#0120,#0121,#0122,#0125,#0126,#0127,#0129,#0134,#0135,#0136,#0141,#0142,#0146,#0149,#0150,#0152,#0153,#0155,#0157,#0158); child processes tracked per permitted operation so cancellation stops only its own work (#0116,#0117); clang-tidy first-party clean (#0111,#0112); six reviewer claims verified and closed with no code change (#0139,#0140,#0148,#0151,#0154,#0156).
 - **evidence-after:** AUDIT/evidence-2026-09-14/0111-0157-fullsuite.txt (273 tests, 0 failures, 0 compiler warnings), 0119-0157-before.log (11 behaviours reproduced unfixed), 0119-0157-after.log, 0148-tilde-probe.log; scripts/lint-budget.sh reports 469/19 with no new violations (ratchet re-recorded downward); clang-tidy reports 0 first-party findings.
+- **commit sha:** 1f0e0d9
 
 ### #0147 · S3 · DONE · The full run leaves its JPG-to-PNG intermediate in the output directory
 
@@ -1929,7 +1949,7 @@ _none_
 - **evidence-after:** AUDIT/evidence-2026-09-14/0113-before.log, 0118-before.log, 0113-0118-0147-after.log, 0101-0118-fullsuite.txt (266 tests, 0 failures, 0 compiler warnings).
 - **commit sha:** b94bbf3
 
-### #0148 · S3 · TEST · Tilde is never expanded for path options
+### #0148 · S3 · DONE · Tilde is never expanded for path options
 
 - **project/module:** converter/CLI
 - **file:line:** Sources/converter/CLI.swift:122-123,240-242
@@ -1939,8 +1959,9 @@ _none_
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0148 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
 - **fix-summary:** Input validation hardened and made consistent (#0119,#0120,#0121,#0122,#0125,#0126,#0127,#0129,#0134,#0135,#0136,#0141,#0142,#0146,#0149,#0150,#0152,#0153,#0155,#0157,#0158); child processes tracked per permitted operation so cancellation stops only its own work (#0116,#0117); clang-tidy first-party clean (#0111,#0112); six reviewer claims verified and closed with no code change (#0139,#0140,#0148,#0151,#0154,#0156).
 - **evidence-after:** AUDIT/evidence-2026-09-14/0111-0157-fullsuite.txt (273 tests, 0 failures, 0 compiler warnings), 0119-0157-before.log (11 behaviours reproduced unfixed), 0119-0157-after.log, 0148-tilde-probe.log; scripts/lint-budget.sh reports 469/19 with no new violations (ratchet re-recorded downward); clang-tidy reports 0 first-party findings.
+- **commit sha:** 1f0e0d9
 
-### #0149 · S3 · TEST · An absent free-space attribute is reported as no space
+### #0149 · S3 · DONE · An absent free-space attribute is reported as no space
 
 - **project/module:** converter/PipelineCore
 - **file:line:** Sources/converter/PipelineCore.swift:539-542
@@ -1950,8 +1971,9 @@ _none_
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0149 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
 - **fix-summary:** Input validation hardened and made consistent (#0119,#0120,#0121,#0122,#0125,#0126,#0127,#0129,#0134,#0135,#0136,#0141,#0142,#0146,#0149,#0150,#0152,#0153,#0155,#0157,#0158); child processes tracked per permitted operation so cancellation stops only its own work (#0116,#0117); clang-tidy first-party clean (#0111,#0112); six reviewer claims verified and closed with no code change (#0139,#0140,#0148,#0151,#0154,#0156).
 - **evidence-after:** AUDIT/evidence-2026-09-14/0111-0157-fullsuite.txt (273 tests, 0 failures, 0 compiler warnings), 0119-0157-before.log (11 behaviours reproduced unfixed), 0119-0157-after.log, 0148-tilde-probe.log; scripts/lint-budget.sh reports 469/19 with no new violations (ratchet re-recorded downward); clang-tidy reports 0 first-party findings.
+- **commit sha:** 1f0e0d9
 
-### #0150 · S3 · TEST · One static DateFormatter is shared across loggers under per-instance locks
+### #0150 · S3 · DONE · One static DateFormatter is shared across loggers under per-instance locks
 
 - **project/module:** converter/Support
 - **file:line:** Sources/converter/Support.swift:42-59
@@ -1961,8 +1983,9 @@ _none_
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0150 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
 - **fix-summary:** Input validation hardened and made consistent (#0119,#0120,#0121,#0122,#0125,#0126,#0127,#0129,#0134,#0135,#0136,#0141,#0142,#0146,#0149,#0150,#0152,#0153,#0155,#0157,#0158); child processes tracked per permitted operation so cancellation stops only its own work (#0116,#0117); clang-tidy first-party clean (#0111,#0112); six reviewer claims verified and closed with no code change (#0139,#0140,#0148,#0151,#0154,#0156).
 - **evidence-after:** AUDIT/evidence-2026-09-14/0111-0157-fullsuite.txt (273 tests, 0 failures, 0 compiler warnings), 0119-0157-before.log (11 behaviours reproduced unfixed), 0119-0157-after.log, 0148-tilde-probe.log; scripts/lint-budget.sh reports 469/19 with no new violations (ratchet re-recorded downward); clang-tidy reports 0 first-party findings.
+- **commit sha:** 1f0e0d9
 
-### #0151 · S3 · TEST · The semaphore's pre-suspension cancellation state is unreachable
+### #0151 · S3 · DONE · The semaphore's pre-suspension cancellation state is unreachable
 
 - **project/module:** converter/AsyncSemaphore
 - **file:line:** Sources/converter/AsyncSemaphore.swift:42-48
@@ -1972,8 +1995,9 @@ _none_
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0151 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
 - **fix-summary:** Input validation hardened and made consistent (#0119,#0120,#0121,#0122,#0125,#0126,#0127,#0129,#0134,#0135,#0136,#0141,#0142,#0146,#0149,#0150,#0152,#0153,#0155,#0157,#0158); child processes tracked per permitted operation so cancellation stops only its own work (#0116,#0117); clang-tidy first-party clean (#0111,#0112); six reviewer claims verified and closed with no code change (#0139,#0140,#0148,#0151,#0154,#0156).
 - **evidence-after:** AUDIT/evidence-2026-09-14/0111-0157-fullsuite.txt (273 tests, 0 failures, 0 compiler warnings), 0119-0157-before.log (11 behaviours reproduced unfixed), 0119-0157-after.log, 0148-tilde-probe.log; scripts/lint-budget.sh reports 469/19 with no new violations (ratchet re-recorded downward); clang-tidy reports 0 first-party findings.
+- **commit sha:** 1f0e0d9
 
-### #0152 · S3 · TEST · The loudnorm JSON scanner counts braces inside strings
+### #0152 · S3 · DONE · The loudnorm JSON scanner counts braces inside strings
 
 - **project/module:** converter/PipelineCore
 - **file:line:** Sources/converter/PipelineCore.swift:819-838
@@ -1983,8 +2007,9 @@ _none_
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0152 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
 - **fix-summary:** Input validation hardened and made consistent (#0119,#0120,#0121,#0122,#0125,#0126,#0127,#0129,#0134,#0135,#0136,#0141,#0142,#0146,#0149,#0150,#0152,#0153,#0155,#0157,#0158); child processes tracked per permitted operation so cancellation stops only its own work (#0116,#0117); clang-tidy first-party clean (#0111,#0112); six reviewer claims verified and closed with no code change (#0139,#0140,#0148,#0151,#0154,#0156).
 - **evidence-after:** AUDIT/evidence-2026-09-14/0111-0157-fullsuite.txt (273 tests, 0 failures, 0 compiler warnings), 0119-0157-before.log (11 behaviours reproduced unfixed), 0119-0157-after.log, 0148-tilde-probe.log; scripts/lint-budget.sh reports 469/19 with no new violations (ratchet re-recorded downward); clang-tidy reports 0 first-party findings.
+- **commit sha:** 1f0e0d9
 
-### #0153 · S3 · TEST · Duplicate config keys silently take the last value
+### #0153 · S3 · DONE · Duplicate config keys silently take the last value
 
 - **project/module:** converter/Config
 - **file:line:** Sources/converter/Config.swift:171
@@ -1994,8 +2019,9 @@ _none_
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0153 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
 - **fix-summary:** Input validation hardened and made consistent (#0119,#0120,#0121,#0122,#0125,#0126,#0127,#0129,#0134,#0135,#0136,#0141,#0142,#0146,#0149,#0150,#0152,#0153,#0155,#0157,#0158); child processes tracked per permitted operation so cancellation stops only its own work (#0116,#0117); clang-tidy first-party clean (#0111,#0112); six reviewer claims verified and closed with no code change (#0139,#0140,#0148,#0151,#0154,#0156).
 - **evidence-after:** AUDIT/evidence-2026-09-14/0111-0157-fullsuite.txt (273 tests, 0 failures, 0 compiler warnings), 0119-0157-before.log (11 behaviours reproduced unfixed), 0119-0157-after.log, 0148-tilde-probe.log; scripts/lint-budget.sh reports 469/19 with no new violations (ratchet re-recorded downward); clang-tidy reports 0 first-party findings.
+- **commit sha:** 1f0e0d9
 
-### #0154 · S3 · TEST · A clip length above the hard maximum is clamped silently
+### #0154 · S3 · DONE · A clip length above the hard maximum is clamped silently
 
 - **project/module:** converter/Config
 - **file:line:** Sources/converter/Config.swift:421-424
@@ -2005,8 +2031,9 @@ _none_
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0154 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
 - **fix-summary:** Input validation hardened and made consistent (#0119,#0120,#0121,#0122,#0125,#0126,#0127,#0129,#0134,#0135,#0136,#0141,#0142,#0146,#0149,#0150,#0152,#0153,#0155,#0157,#0158); child processes tracked per permitted operation so cancellation stops only its own work (#0116,#0117); clang-tidy first-party clean (#0111,#0112); six reviewer claims verified and closed with no code change (#0139,#0140,#0148,#0151,#0154,#0156).
 - **evidence-after:** AUDIT/evidence-2026-09-14/0111-0157-fullsuite.txt (273 tests, 0 failures, 0 compiler warnings), 0119-0157-before.log (11 behaviours reproduced unfixed), 0119-0157-after.log, 0148-tilde-probe.log; scripts/lint-budget.sh reports 469/19 with no new violations (ratchet re-recorded downward); clang-tidy reports 0 first-party findings.
+- **commit sha:** 1f0e0d9
 
-### #0155 · S3 · TEST · Action-scoped options are accepted by every action
+### #0155 · S3 · DONE · Action-scoped options are accepted by every action
 
 - **project/module:** converter/CLI
 - **file:line:** Sources/converter/CLI.swift:756
@@ -2016,8 +2043,9 @@ _none_
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0155 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
 - **fix-summary:** Input validation hardened and made consistent (#0119,#0120,#0121,#0122,#0125,#0126,#0127,#0129,#0134,#0135,#0136,#0141,#0142,#0146,#0149,#0150,#0152,#0153,#0155,#0157,#0158); child processes tracked per permitted operation so cancellation stops only its own work (#0116,#0117); clang-tidy first-party clean (#0111,#0112); six reviewer claims verified and closed with no code change (#0139,#0140,#0148,#0151,#0154,#0156).
 - **evidence-after:** AUDIT/evidence-2026-09-14/0111-0157-fullsuite.txt (273 tests, 0 failures, 0 compiler warnings), 0119-0157-before.log (11 behaviours reproduced unfixed), 0119-0157-after.log, 0148-tilde-probe.log; scripts/lint-budget.sh reports 469/19 with no new violations (ratchet re-recorded downward); clang-tidy reports 0 first-party findings.
+- **commit sha:** 1f0e0d9
 
-### #0156 · S3 · TEST · --seed 0 is rejected
+### #0156 · S3 · DONE · --seed 0 is rejected
 
 - **project/module:** converter/CLI
 - **file:line:** Sources/converter/CLI.swift:303
@@ -2027,8 +2055,9 @@ _none_
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0156 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
 - **fix-summary:** Input validation hardened and made consistent (#0119,#0120,#0121,#0122,#0125,#0126,#0127,#0129,#0134,#0135,#0136,#0141,#0142,#0146,#0149,#0150,#0152,#0153,#0155,#0157,#0158); child processes tracked per permitted operation so cancellation stops only its own work (#0116,#0117); clang-tidy first-party clean (#0111,#0112); six reviewer claims verified and closed with no code change (#0139,#0140,#0148,#0151,#0154,#0156).
 - **evidence-after:** AUDIT/evidence-2026-09-14/0111-0157-fullsuite.txt (273 tests, 0 failures, 0 compiler warnings), 0119-0157-before.log (11 behaviours reproduced unfixed), 0119-0157-after.log, 0148-tilde-probe.log; scripts/lint-budget.sh reports 469/19 with no new violations (ratchet re-recorded downward); clang-tidy reports 0 first-party findings.
+- **commit sha:** 1f0e0d9
 
-### #0157 · S3 · TEST · The FLAC converter alone lacks the source-overwrite guard
+### #0157 · S3 · DONE · The FLAC converter alone lacks the source-overwrite guard
 
 - **project/module:** converter/AudioPipeline
 - **file:line:** Sources/converter/AudioPipeline.swift:1734-1736
@@ -2038,8 +2067,9 @@ _none_
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0157 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
 - **fix-summary:** Input validation hardened and made consistent (#0119,#0120,#0121,#0122,#0125,#0126,#0127,#0129,#0134,#0135,#0136,#0141,#0142,#0146,#0149,#0150,#0152,#0153,#0155,#0157,#0158); child processes tracked per permitted operation so cancellation stops only its own work (#0116,#0117); clang-tidy first-party clean (#0111,#0112); six reviewer claims verified and closed with no code change (#0139,#0140,#0148,#0151,#0154,#0156).
 - **evidence-after:** AUDIT/evidence-2026-09-14/0111-0157-fullsuite.txt (273 tests, 0 failures, 0 compiler warnings), 0119-0157-before.log (11 behaviours reproduced unfixed), 0119-0157-after.log, 0148-tilde-probe.log; scripts/lint-budget.sh reports 469/19 with no new violations (ratchet re-recorded downward); clang-tidy reports 0 first-party findings.
+- **commit sha:** 1f0e0d9
 
-### #0158 · S3 · TEST · A pipe read error silently truncates captured output
+### #0158 · S3 · DONE · A pipe read error silently truncates captured output
 
 - **project/module:** converter/ProcessRunner
 - **file:line:** Sources/converter/ProcessRunner.swift:30
@@ -2049,4 +2079,5 @@ _none_
 - **evidence-before:** AUDIT/findings-2026-09-14.md #0158 (verified against the working tree at 40bfadd; see the entry for the quoted lines).
 - **fix-summary:** Input validation hardened and made consistent (#0119,#0120,#0121,#0122,#0125,#0126,#0127,#0129,#0134,#0135,#0136,#0141,#0142,#0146,#0149,#0150,#0152,#0153,#0155,#0157,#0158); child processes tracked per permitted operation so cancellation stops only its own work (#0116,#0117); clang-tidy first-party clean (#0111,#0112); six reviewer claims verified and closed with no code change (#0139,#0140,#0148,#0151,#0154,#0156).
 - **evidence-after:** AUDIT/evidence-2026-09-14/0111-0157-fullsuite.txt (273 tests, 0 failures, 0 compiler warnings), 0119-0157-before.log (11 behaviours reproduced unfixed), 0119-0157-after.log, 0148-tilde-probe.log; scripts/lint-budget.sh reports 469/19 with no new violations (ratchet re-recorded downward); clang-tidy reports 0 first-party findings.
+- **commit sha:** 1f0e0d9
 
