@@ -6,8 +6,8 @@ its commit and the host that verified it.
 
 ## [1.0] - 2026-09-16
 
-First stable release. It is the state of the project after two pre-production audits — 161 tasks
-(#0001–#0161, 160 DONE, 1 open watch item) — whose whole point was that a conversion should fail
+First stable release. It is the state of the project after two pre-production audits — 162 tasks
+(#0001–#0162, 161 DONE, 1 BLOCKED) — whose whole point was that a conversion should fail
 loudly rather than publish something wrong.
 
 ### Toolchain

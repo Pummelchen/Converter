@@ -9,7 +9,7 @@ git clone https://github.com/Pummelchen/Converter.git
 cd Converter
 brew install ffmpeg imagemagick        # runtime media tools
 swift build --package-path Sources     # build
-swift test --package-path Sources      # run all tests (263 tests, ~11 min)
+swift test --package-path Sources      # run all tests (278 tests, ~11 min)
 ```
 
 Requires Swift tools 6.4+ (Xcode 27, Swift language mode 6) and macOS 15+, matching the `.macOS(.v15)` platform in `Sources/Package.swift`. See the [wiki](https://github.com/Pummelchen/Converter/wiki) for command reference and configuration details.
@@ -77,7 +77,7 @@ behind that decision.
 ## Lint gate
 
 `scripts/lint-budget.sh` runs swiftlint over `Sources/converter` and `Sources/Tests` and compares
-the result with `scripts/lint-budget.json` (currently 471 violations, 19 error-level). It fails when
+the result with `scripts/lint-budget.json` (currently 151 violations, 21 error-level). It fails when
 violations grow and prints the per-rule delta. The structural rules (`file_length`,
 `type_body_length`, `function_body_length`, `cyclomatic_complexity`) and the 120-character
 `line_length` preference are accepted debt, recorded with their rationale in the `#0073` commit;
@@ -113,7 +113,7 @@ Only when explicitly part of the change:
 
 ```bash
 swift build --package-path Sources -c release
-cp Sources/.build/arm64-apple-macosx/release/converter ./converter
+cp "$(swift build --package-path Sources -c release --show-bin-path)/converter" ./converter
 chmod +x ./converter
 shasum -a 256 converter
 ```
