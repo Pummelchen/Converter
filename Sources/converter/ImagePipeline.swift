@@ -52,7 +52,7 @@ extension ConverterTool {
         }
         let output = cli.outDir.appendingPathComponent(source.stem).appendingPathExtension("png")
         try requireDistinctOutput(output, from: source)
-        if canReuseOutput(output, verifier: { try verifyImageOutput(output, width: dimensions.0, height: dimensions.1, format: "PNG") }) {
+        if canReuseOutput(output, source: source, verifier: { try verifyImageOutput(output, width: dimensions.0, height: dimensions.1, format: "PNG") }) {
             logger.info("Skip existing PNG: \(output.basename)")
             return output
         }
@@ -157,7 +157,7 @@ extension ConverterTool {
         // A source already named `<prefix>_8K`/`_4K` would otherwise resolve to its own path here
         // and be resized over itself (the audio converters have the same guard).
         try requireDistinctOutput(output, from: source)
-        if canReuseOutput(output, verifier: { try verifyImageOutput(output, width: width, height: height, format: "PNG") }) {
+        if canReuseOutput(output, source: source, verifier: { try verifyImageOutput(output, width: width, height: height, format: "PNG") }) {
             logger.info("Skip existing \(label) PNG: \(output.basename)")
             return output
         }
@@ -229,7 +229,7 @@ extension ConverterTool {
             ?? replacingTrailingSuffix(in: source.stem, suffix: "_8K", replacement: "_\(label)")
         let output = cli.outDir.appendingPathComponent(outputName).appendingPathExtension("png")
         try requireDistinctOutput(output, from: source)
-        if canReuseOutput(output, verifier: { try verifyImageOutput(output, width: size, height: size, format: "PNG") }) {
+        if canReuseOutput(output, source: source, verifier: { try verifyImageOutput(output, width: size, height: size, format: "PNG") }) {
             logger.info("Skip existing \(label) PNG: \(output.basename)")
             return output
         }
@@ -268,7 +268,7 @@ extension ConverterTool {
             ?? replacingTrailingSuffix(in: source.stem, suffix: "_8K", replacement: "_4K")
         let output = cli.outDir.appendingPathComponent(outputName).appendingPathExtension("png")
         try requireDistinctOutput(output, from: source)
-        if canReuseOutput(output, verifier: { try verifyImageOutput(output, width: config.image4KWidth, height: config.image4KHeight, format: "PNG") }) {
+        if canReuseOutput(output, source: source, verifier: { try verifyImageOutput(output, width: config.image4KWidth, height: config.image4KHeight, format: "PNG") }) {
             logger.info("Skip existing 4K PNG: \(output.basename)")
             return output
         }
@@ -306,7 +306,7 @@ extension ConverterTool {
 
         let output = cli.outDir.appendingPathComponent(outputStem.map { "\($0)_\(suffix)" } ?? "\(source.stem)_\(suffix)").appendingPathExtension("jpg")
         try requireDistinctOutput(output, from: source)
-        if canReuseOutput(output, verifier: { try verifyImageOutput(output, width: requiredWidth, height: requiredHeight, format: "JPEG", maxBytes: targetBytes) }) {
+        if canReuseOutput(output, source: source, verifier: { try verifyImageOutput(output, width: requiredWidth, height: requiredHeight, format: "JPEG", maxBytes: targetBytes) }) {
             logger.info("Skip existing \(suffix) JPG: \(output.basename)")
             return output
         }
@@ -388,7 +388,7 @@ extension ConverterTool {
 
         let png = cli.outDir.appendingPathComponent(stem).appendingPathExtension("png")
         try requireDistinctOutput(png, from: source)
-        if canReuseOutput(png, verifier: { try verifyImageOutput(png, width: width, height: height, format: "PNG") }) {
+        if canReuseOutput(png, source: source, verifier: { try verifyImageOutput(png, width: width, height: height, format: "PNG") }) {
             logger.info("Skip existing portrait still: \(png.basename)")
         } else {
             let temp = try makeTemp(in: cli.outDir, stem: stem, ext: ".png")
@@ -428,9 +428,9 @@ extension ConverterTool {
             try requireDistinctOutput(output, from: source)
         }
 
-        if canReuseOutput(nft8K, verifier: { try verifyImageOutput(nft8K, width: config.image8KWidth, height: config.image8KWidth, format: "PNG") }) &&
-            canReuseOutput(nft3K, verifier: { try verifyImageOutput(nft3K, width: config.image3KSize, height: config.image3KSize, format: "PNG") }) &&
-            canReuseOutput(nft2K, verifier: { try verifyImageOutput(nft2K, width: config.image2KSize, height: config.image2KSize, format: "PNG") }) {
+        if canReuseOutput(nft8K, source: source, verifier: { try verifyImageOutput(nft8K, width: config.image8KWidth, height: config.image8KWidth, format: "PNG") }) &&
+            canReuseOutput(nft3K, source: source, verifier: { try verifyImageOutput(nft3K, width: config.image3KSize, height: config.image3KSize, format: "PNG") }) &&
+            canReuseOutput(nft2K, source: source, verifier: { try verifyImageOutput(nft2K, width: config.image2KSize, height: config.image2KSize, format: "PNG") }) {
             logger.info("Skip existing NFT set: \(prefix)")
             return NFTOutputs(nft8K: nft8K, nft3K: nft3K, nft2K: nft2K)
         }

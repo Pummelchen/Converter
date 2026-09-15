@@ -695,7 +695,10 @@ extension ConverterTool {
             try self.renderM4AToMP4(
                 imageFile: imageArtifacts.mainVideoImage,
                 audioFile: audioArtifacts.m4a,
-                audioQCPolicy: nil
+                // The flagship deliverable used to be published with no audio QC beyond the loudness
+                // drift and audibility checks; renderM4AToMP4 rebases this to the source, so only what
+                // the AAC encode added can fail it (#0114).
+                audioQCPolicy: self.config.deliveryAudioQCPolicy
             )
         }
         if let shortImage = imageArtifacts.shortVideoImage {
@@ -1354,7 +1357,11 @@ extension ConverterTool {
         }
         logger.info("M4A -> MP4: \(audio.basename) + \(image.basename)")
         let outputOverride = try cli.outputFile.map { try resolveOutputPath($0) }
-        _ = try renderM4AToMP4(imageFile: image, audioFile: audio, audioQCPolicy: nil, outputOverride: outputOverride)
+        _ = try renderM4AToMP4(
+            imageFile: image,
+            audioFile: audio,
+            audioQCPolicy: config.deliveryAudioQCPolicy,
+            outputOverride: outputOverride)
     }
 
     func stepMP4ToShort() throws {

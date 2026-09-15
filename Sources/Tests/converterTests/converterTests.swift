@@ -469,6 +469,45 @@ final class ConverterTests: XCTestCase {
             "the warning must name the effective value, got: \(duplicates)")
     }
 
+    // audit #0143: the entry point is the only code that maps errors to process exit codes, and it had
+    // no test at all. It is now a function of (arguments, environment, current directory).
+    func testEntryPointMapsArgumentErrorsToExitCodeTwo() async throws {
+        let unknownOption = await ConverterMain.run(
+            arguments: ["converter", "--not-an-option"], environment: [:], currentDirectory: "/tmp")
+        XCTAssertEqual(unknownOption, 2)
+
+        let twoActions = await ConverterMain.run(
+            arguments: ["converter", "-full", "-album"], environment: [:], currentDirectory: "/tmp")
+        XCTAssertEqual(twoActions, 2)
+
+        let help = await ConverterMain.run(
+            arguments: ["converter", "-help"], environment: [:], currentDirectory: "/tmp")
+        XCTAssertEqual(help, 0)
+    }
+
+    // audit #0143: a bare `converter` found through PATH used to resolve against the current directory,
+    // so the tool read config.txt and wrote Output in whatever directory the caller happened to be in.
+    func testEntryPointResolvesABareExecutableNameAgainstTheRunningBinary() throws {
+        let bare = ConverterMain.scriptLocation(
+            executablePath: "converter", currentDirectory: "/tmp/somewhere-else", environment: [:])
+        let running = try XCTUnwrap(Bundle.main.executableURL?.standardizedFileURL)
+        XCTAssertEqual(bare.directory.standardizedFileURL.path, running.deletingLastPathComponent().path)
+        XCTAssertNotEqual(bare.directory.standardizedFileURL.path, "/tmp/somewhere-else")
+
+        // A path that does name a directory is still resolved relative to the current directory.
+        let explicit = ConverterMain.scriptLocation(
+            executablePath: "build/converter", currentDirectory: "/tmp/base", environment: [:])
+        XCTAssertEqual(explicit.directory.standardizedFileURL.path, "/tmp/base/build")
+
+        // The CONVERTER_ROOT/CONVERTER_NAME overrides win, which is what the tests rely on.
+        let overridden = ConverterMain.scriptLocation(
+            executablePath: "converter",
+            currentDirectory: "/tmp/base",
+            environment: ["CONVERTER_ROOT": "/opt/converter", "CONVERTER_NAME": "renamed"])
+        XCTAssertEqual(overridden.directory.path, "/opt/converter")
+        XCTAssertEqual(overridden.name, "renamed")
+    }
+
     // audit #0077: after an install, a tool that exists but fails its -version probe was filtered
     // out by an availability test, so the failure message listed nothing at all.
     func testUnusableInstalledToolsAreNamedWithTheirReason() throws {

@@ -743,6 +743,34 @@ final class ConverterTool: Sendable {
         return resolved
     }
 
+    // Every audio artefact is built from stream `0:a:0`, but `format=duration` is the *container*
+    // duration (the longest track). For an MP4/MOV whose video track outlasts its audio, comparing
+    // against the container rejected a perfectly valid source with a misleading duration mismatch
+    // (#0124). Falls back to the container when the stream carries no duration of its own.
+    func audioStreamDuration(_ file: URL) throws -> Double? {
+        if let raw = try ffprobeValue(selector: "a:0", entries: "stream=duration", file: file),
+            let value = Double(raw), value.isFinite, value > 0 {
+            return value
+        }
+        return try mediaDuration(file)
+    }
+
+    // Audio-only counterpart of verifyDurationMatch: measures the source's audio stream, not its
+    // container, so an MP4 with a longer video track is not rejected (#0124).
+    func verifyAudioStreamDurationMatch(source: URL, output: URL, tolerance: Double? = nil) throws {
+        guard let sourceDuration = try audioStreamDuration(source),
+            let outputDuration = try mediaDuration(output)
+        else {
+            throw AppError("Duration probe failed for comparison: src='\(source.path)' out='\(output.path)'")
+        }
+        let delta = abs(sourceDuration - outputDuration)
+        if delta > (tolerance ?? config.durationToleranceSec) {
+            throw AppError(
+                "Audio duration mismatch exceeds tolerance: src=\(sourceDuration) out=\(outputDuration) "
+                    + "delta=\(delta) tol=\(tolerance ?? config.durationToleranceSec)")
+        }
+    }
+
     func ffprobeValue(selector: String? = nil, entries: String, file: URL) throws -> String? {
         let normalizedSelector: String
         if let selector, !selector.isEmpty {

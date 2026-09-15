@@ -320,7 +320,11 @@ extension ConverterTool {
     // ceiling carries no allowance at all: the render is the same decode, so any excess is
     // clipping the render introduced.
     func loudnessPreservingQCPolicy(
-        _ policy: AudioQCPolicy, source: URL, limitDuration: Double? = nil, sampleRate: Int
+        _ policy: AudioQCPolicy,
+        source: URL,
+        limitDuration: Double? = nil,
+        sampleRate: Int,
+        truePeakAllowanceDB: Double = 0.1
     ) throws -> AudioQCPolicy {
         let metrics = try renderDomainQCResult(
             for: source, policy: policy, limitDuration: limitDuration, sampleRate: sampleRate
@@ -335,7 +339,11 @@ extension ConverterTool {
             return measured + allowance
         }
 
-        let truePeak = rebase(policy.maxTruePeakDBTP, measured: metrics.truePeakDBTP, allowance: 0.1, label: "true peak", unit: " dBTP")
+        // The allowance is the overshoot a lossy encoder may legitimately add; MP3 gets the same
+        // wider one the loudness fallback path uses (#0114).
+        let truePeak = rebase(
+            policy.maxTruePeakDBTP, measured: metrics.truePeakDBTP,
+            allowance: truePeakAllowanceDB, label: "true peak", unit: " dBTP")
         let imbalance = rebase(policy.maxStereoImbalanceDB, measured: metrics.stereoImbalanceDB, allowance: 0.1, label: "stereo imbalance", unit: " dB")
         let loudnessRange = rebase(policy.maxLoudnessRange, measured: metrics.loudnessRange, allowance: 0.5, label: "loudness range", unit: "")
         let dcOffset = rebase(policy.maxDCOffset, measured: metrics.dcOffset, allowance: 0.001, label: "DC offset", unit: "")
@@ -892,8 +900,12 @@ extension ConverterTool {
     }
 
     // Project MP3 outputs must satisfy the configured codec, sample-rate, channel, and bitrate floor.
-    func verifyMP3Standard(_ file: URL, requireAudible: Bool = true, qcPolicy: AudioQCPolicy? = nil) throws {
-        try verifyMP3File(file, requireAudible: requireAudible, requireNoVideo: true, qcPolicy: qcPolicy)
+    // `requireNoVideo` can be relaxed for a *source* that carries ID3 artwork, which ffprobe exposes as
+    // a video stream; the standard checks themselves always apply.
+    func verifyMP3Standard(
+        _ file: URL, requireAudible: Bool = true, requireNoVideo: Bool = true, qcPolicy: AudioQCPolicy? = nil
+    ) throws {
+        try verifyMP3File(file, requireAudible: requireAudible, requireNoVideo: requireNoVideo, qcPolicy: qcPolicy)
         let gotRate = Int(try audioField(file, "sample_rate") ?? "")
         let gotChannels = Int(try audioField(file, "channels") ?? "")
         if gotRate != config.mp3SampleRate {
@@ -924,7 +936,18 @@ extension ConverterTool {
         qcPolicy: AudioQCPolicy? = nil
     ) throws {
         try preflightFLACInput(file, requireAudible: requireAudible, requireNoVideo: requireNoVideo)
-        try verifyAudioOutput(file, codec: "flac", sampleRate: sampleRate, channels: channels, requireAudible: requireAudible, qcPolicy: qcPolicy)
+        // The depth is verified, not just requested: an unpinned encoder used to follow the source, so
+        // the archival FLAC could disagree with the 24-bit WAV in the same release (#0131).
+        try verifyAudioOutput(
+            file,
+            codec: "flac",
+            sampleRate: sampleRate,
+            channels: channels,
+            sampleFormat: ProjectConfig.flacSampleFormat,
+            bitsPerRawSample: ProjectConfig.flacBitsPerRawSample,
+            requireAudible: requireAudible,
+            qcPolicy: qcPolicy
+        )
     }
 
     func verifyM4AFile(
@@ -1183,8 +1206,17 @@ extension ConverterTool {
         )
     }
 
-    func canReuseOutput(_ file: URL, verifier: () throws -> Void) -> Bool {
+    // `source` is optional because a few callers have no single input to compare against. When it is
+    // given, an output older than the input it was derived from is rebuilt: the previous behaviour
+    // reused deliverables whenever the *output* still verified, so replacing a source with a
+    // different file of the same dimensions/duration kept the stale render (#0128).
+    func canReuseOutput(_ file: URL, source: URL? = nil, verifier: () throws -> Void) -> Bool {
         guard !cli.overwrite, fileManager.fileExists(atPath: file.path) else {
+            return false
+        }
+        if let source, isNewer(source, than: file) {
+            logger.info(
+                "Rebuilding \(file.basename): its source \(source.basename) is newer than the existing output.")
             return false
         }
         do {
@@ -1193,6 +1225,19 @@ extension ConverterTool {
         } catch {
             return false
         }
+    }
+
+    // True when `candidate` was modified after `reference`. An unreadable timestamp is treated as
+    // "not newer" so a filesystem without mtimes keeps the previous reuse behaviour.
+    func isNewer(_ candidate: URL, than reference: URL) -> Bool {
+        let keys: Set<URLResourceKey> = [.contentModificationDateKey]
+        guard
+            let candidateDate = try? candidate.resourceValues(forKeys: keys).contentModificationDate,
+            let referenceDate = try? reference.resourceValues(forKeys: keys).contentModificationDate
+        else {
+            return false
+        }
+        return candidateDate > referenceDate
     }
 
     func stripTrailingDerivedImageSuffix(from stem: String) -> String {

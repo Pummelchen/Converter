@@ -106,6 +106,12 @@ struct ProjectConfig {
     // effective sigma is (value - 1) * 2, so 10 is already ~18.
     static let maximumAIPixSharpness = 10.0
 
+    // The archival FLAC is held to the same 24-bit standard as the internal WAV and the ALAC
+    // deliverables. Without pinning it, ffmpeg derives the depth from the source, so the same release
+    // could ship a 16-bit FLAC beside a 24-bit RF64 WAV (#0131).
+    static let flacSampleFormat = "s32"
+    static let flacBitsPerRawSample = 24
+
     // Hard ceiling for a short-form excerpt. The renderer clamps to it, so configuration has to be
     // rejected above it instead of quietly producing a shorter excerpt than the one configured.
     static let shortMP4AbsoluteMaximumSeconds: Double = 58.0

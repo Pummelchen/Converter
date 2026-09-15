@@ -364,7 +364,7 @@ extension ConverterTool {
             durationCheck: { try self.verifyDurationMatch(source: audioFile, output: $0) }
         )
 
-        if canReuseOutput(output, verifier: { try self.verifyRenderedVideo(output, spec: spec) }) {
+        if canReuseOutput(output, source: audioFile, verifier: { try self.verifyRenderedVideo(output, spec: spec) }) {
             logger.info("Skip existing MP4: \(output.basename)")
             return output
         }
@@ -432,7 +432,7 @@ extension ConverterTool {
             durationCheck: { try self.verifyShortMP4Duration($0, source: input) }
         )
 
-        if canReuseOutput(output, verifier: { try self.verifyRenderedVideo(output, spec: spec) }) {
+        if canReuseOutput(output, source: input, verifier: { try self.verifyRenderedVideo(output, spec: spec) }) {
             logger.info("Skip existing short MP4: \(output.basename)")
             return output
         }
@@ -523,7 +523,7 @@ extension ConverterTool {
             }
         )
 
-        if canReuseOutput(output, verifier: { try self.verifyRenderedVideo(output, spec: spec) }) {
+        if canReuseOutput(output, source: audioFile, verifier: { try self.verifyRenderedVideo(output, spec: spec) }) {
             logger.info("Skip existing \(fillMode.label): \(output.basename)")
             return output
         }

@@ -1359,9 +1359,15 @@ final class PipelineIntegrationTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: mp3Out.path))
         XCTAssertTrue(FileManager.default.fileExists(atPath: wavOut.path))
         XCTAssertTrue(FileManager.default.fileExists(atPath: flacOut.path))
-        try tool.verifyTailFadeOutput(mp3Out, sourceExtension: "mp3", expectedDuration: try XCTUnwrap(try tool.mediaDuration(mp3)))
-        try tool.verifyTailFadeOutput(wavOut, sourceExtension: "wav", expectedDuration: try XCTUnwrap(try tool.mediaDuration(wav)))
-        try tool.verifyTailFadeOutput(flacOut, sourceExtension: "flac", expectedDuration: try XCTUnwrap(try tool.mediaDuration(flac)))
+        try tool.verifyTailFadeOutput(
+            mp3Out, sourceExtension: "mp3", expectedDuration: try XCTUnwrap(try tool.mediaDuration(mp3)),
+            fadeSeconds: 0.5)
+        try tool.verifyTailFadeOutput(
+            wavOut, sourceExtension: "wav", expectedDuration: try XCTUnwrap(try tool.mediaDuration(wav)),
+            fadeSeconds: 0.5)
+        try tool.verifyTailFadeOutput(
+            flacOut, sourceExtension: "flac", expectedDuration: try XCTUnwrap(try tool.mediaDuration(flac)),
+            fadeSeconds: 0.5)
         XCTAssertThrowsError(try tool.requireVideoStream(mp3Out))
         XCTAssertThrowsError(try tool.requireVideoStream(wavOut))
         XCTAssertThrowsError(try tool.requireVideoStream(flacOut))
@@ -1605,9 +1611,15 @@ final class PipelineIntegrationTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: mp3Out.path))
         XCTAssertTrue(FileManager.default.fileExists(atPath: wavOut.path))
         XCTAssertTrue(FileManager.default.fileExists(atPath: flacOut.path))
-        try tool.verifyTailFadeOutput(mp3Out, sourceExtension: "mp3", expectedDuration: try XCTUnwrap(try tool.mediaDuration(mp3)) - 0.5)
-        try tool.verifyTailFadeOutput(wavOut, sourceExtension: "wav", expectedDuration: try XCTUnwrap(try tool.mediaDuration(wav)) - 0.5)
-        try tool.verifyTailFadeOutput(flacOut, sourceExtension: "flac", expectedDuration: try XCTUnwrap(try tool.mediaDuration(flac)) - 0.5)
+        try tool.verifyTailFadeOutput(
+            mp3Out, sourceExtension: "mp3", expectedDuration: try XCTUnwrap(try tool.mediaDuration(mp3)) - 0.5,
+            fadeSeconds: 0.75)
+        try tool.verifyTailFadeOutput(
+            wavOut, sourceExtension: "wav", expectedDuration: try XCTUnwrap(try tool.mediaDuration(wav)) - 0.5,
+            fadeSeconds: 0.75)
+        try tool.verifyTailFadeOutput(
+            flacOut, sourceExtension: "flac", expectedDuration: try XCTUnwrap(try tool.mediaDuration(flac)) - 0.5,
+            fadeSeconds: 0.75)
         XCTAssertThrowsError(try tool.requireVideoStream(mp3Out))
         XCTAssertThrowsError(try tool.requireVideoStream(wavOut))
         XCTAssertThrowsError(try tool.requireVideoStream(flacOut))
@@ -3357,6 +3369,71 @@ final class PipelineIntegrationTests: XCTestCase {
         try tool.verifyMP3Standard(deliverable, qcPolicy: nil)
         try tool.verifySourceLoudnessPreserved(source: reference, output: deliverable)
         XCTAssertFalse(FileManager.default.fileExists(atPath: workspace.output.appendingPathComponent("track.mp3").path))
+    }
+
+    // audit #0124: `format=duration` is the container duration, i.e. the longest track. An MP4 whose
+    // video ran longer than its audio used to fail every audio action with a misleading duration
+    // mismatch even though the audio was intact.
+    func testAudioPaddingUsesTheAudioStreamDurationWhenTheVideoOutlastsIt() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe"])
+
+        let wav = try workspace.createAudio(name: "short_audio", ext: "wav", duration: 1.0)
+        let mp4 = workspace.output.appendingPathComponent("outlasting_video.mp4")
+        _ = try workspace.runner().run("ffmpeg", [
+            "-hide_banner", "-nostdin", "-v", "error", "-y",
+            "-f", "lavfi", "-i", "color=c=black:s=320x180:r=24:d=3",
+            "-i", wav.path,
+            "-map", "0:v:0", "-map", "1:a:0",
+            "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac",
+            mp4.path
+        ])
+
+        let tool = try workspace.makeTool(arguments: ["-silence", "0.5"])
+        let container = try XCTUnwrap(try tool.mediaDuration(mp4))
+        let audio = try XCTUnwrap(try tool.audioStreamDuration(mp4))
+        XCTAssertGreaterThan(container, audio + 1.0, "fixture must have a video track that outlasts the audio")
+
+        let spec = try tool.cli.silenceSpec()
+        let expected = tool.silenceExpectedDuration(sourceDuration: audio, spec: spec)
+        let output = try tool.addSilenceToMedia(mp4, spec: spec)
+        try tool.verifySilenceOutput(output, source: mp4, expectedDuration: expected, spec: spec)
+    }
+
+    // audit #0133: ffprobe reports an ID3 APIC cover as a video stream, so a standard-conforming MP3
+    // with artwork was "not the delivery standard" and was re-encoded into a second lossy generation
+    // instead of being copied byte for byte.
+    func testFullRunCopiesAStandardMP3WithCoverArtInsteadOfReencodingIt() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe", "magick"])
+
+        let cover = try workspace.createImage(name: "cover", ext: "png")
+        // A standard-conforming source: 48 kHz, stereo, 320 kbps (the floor is 300 kbps).
+        let standard = workspace.output.appendingPathComponent("standard.mp3")
+        _ = try workspace.runner().run("ffmpeg", [
+            "-hide_banner", "-nostdin", "-v", "error", "-y",
+            "-f", "lavfi", "-i", "sine=frequency=440:duration=1.2:sample_rate=48000",
+            "-ac", "2", "-c:a", "libmp3lame", "-b:a", "320k", "-ar", "48000",
+            standard.path
+        ])
+        let tagged = workspace.output.appendingPathComponent("tagged.mp3")
+        _ = try workspace.runner().run("ffmpeg", [
+            "-hide_banner", "-nostdin", "-v", "error", "-y",
+            "-i", standard.path,
+            "-i", cover.path,
+            "-map", "0:a:0", "-map", "1:v:0",
+            "-c:a", "copy", "-c:v", "copy", "-id3v2_version", "3",
+            "-disposition:v:0", "attached_pic",
+            tagged.path
+        ])
+
+        let tool = try workspace.makeTool(arguments: ["-full"])
+        XCTAssertTrue(try tool.hasVideoStream(tagged), "the fixture must expose the cover as a video stream")
+        let output = try tool.fullRunMP3Deliverable(
+            source: tagged, internalWAV: standard, outputStem: "copied")
+        XCTAssertEqual(
+            try tool.crc32(for: output), try tool.crc32(for: tagged),
+            "a standard MP3 with artwork must be copied byte for byte")
     }
 
     // audit #0023: a plain 16-bit/44.1 kHz RIFF WAV used to be normalised in place, destroying the

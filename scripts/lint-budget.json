@@ -1,6 +1,6 @@
 {
   "swiftlint": "0.65.1",
-  "total": 469,
+  "total": 461,
   "errors": 19,
   "by_rule": {
     "cyclomatic_complexity": 8,
@@ -9,7 +9,7 @@
     "function_parameter_count": 2,
     "inclusive_language": 22,
     "large_tuple": 2,
-    "line_length": 397,
+    "line_length": 389,
     "type_body_length": 6
   },
   "note": "Ratchet, not a target: the structural rules (file_length, type_body_length, function_body_length, cyclomatic_complexity) and the 120-character line_length preference are deferred with the rationale in the #0073 commit. Lower this budget when violations are removed; never raise it without a written reason."
