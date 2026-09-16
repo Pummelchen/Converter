@@ -44,6 +44,26 @@ Batch actions name each output after its own source file instead.
 | Archival | `*_RF64.flac`, `*_RF64.wav`, `*_BW64.wav` |
 | Video | main MP4 (7680×4320) + four portrait shorts (4320×7680) |
 
+Here is a real run — a 12-second test track and one landscape PNG, about a minute of work — and the
+27 files it left behind. The source audio is renamed to `1_source.flac` and never modified; the
+artwork keeps its own name:
+
+```text
+1.wav  1.m4a  1.mp3                       audio deliverables
+1_RF64.wav  1_RF64.flac  1_BW64.wav       archival companions
+1_8K.png  1_4K.png  1_3K.png  1_2K.png    image deliverables
+1_NFT8K.png  1_NFT3K.png  1_NFT2K.png     NFT squares
+1_8K_1MB.jpg  1_8K_2MB.jpg  1_8K_20MB.jpg  sized JPEG exports
+1_3K_1MB.jpg  1_3K_5MB.jpg
+1_Short_8K.png  1_Short_CenterCut_8K.png  short framings as stills
+1_Short_8K_1MB.jpg  1_Short_8K_2MB.jpg    (each with 1MB / 2MB JPEGs)
+1_Short_CenterCut_8K_1MB.jpg  1_Short_CenterCut_8K_2MB.jpg
+1_8K.mp4                                  main video, 7680x4320
+1_8K_Short.mp4                            portrait short, image fitted
+1_8K_Short_CenterCut.mp4                  portrait short, frame filled
+1_source.flac                             your untouched original
+```
+
 The four shorts give you both framings, each with a full-length companion when the song runs past
 the cap — `min(SHORT_MP4_CLIP_SECONDS, 58)` seconds, so lowering the configured cap also lowers the
 companion threshold:
@@ -53,6 +73,9 @@ companion threshold:
 - `_8K_Short_FullSong.mp4` and `_8K_Short_FullSong_CenterCut.mp4`
 
 Both framings are also saved as stills, so the artwork is usable without pulling a frame out of a video: `<prefix>_Short_8K.png` and `<prefix>_Short_CenterCut_8K.png` at full portrait resolution, each with a `_1MB.jpg` and `_2MB.jpg` export.
+
+The [wiki](https://github.com/Pummelchen/Converter/wiki) walks this example through step by step, and
+[Recipes](https://github.com/Pummelchen/Converter/wiki/Recipes) covers one task at a time.
 
 ## Documentation
 
