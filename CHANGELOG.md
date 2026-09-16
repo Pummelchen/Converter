@@ -12,11 +12,17 @@ the executable is byte-for-byte the `v1.0` build.**
 - The version is now single-sourced in a root `VERSION` file, with
   `scripts/check-version-sync.sh` failing when the `CHANGELOG.md` heading or the release-notes
   filename disagrees, and CI running that gate.
-- `scripts/release.sh` is the release mechanism: a clean scratch build, a `lipo -archs` arm64
-  assertion, a digest and byte count, a dry run by default, and `--publish` refusing unless every
-  precondition holds — dirty tree, wrong `gh` account, a rebuilt binary that is not the committed
-  one, an existing release, a tag that is not `HEAD`, or notes carrying neither the placeholder nor
-  the real digest.
+- `scripts/release.sh` is the release mechanism: a clean canonical build (the products are removed
+  first, so the warning scan cannot pass vacuously over an incremental build), a `lipo -archs` arm64
+  assertion, the digest and byte count, a dry run by default, and `--publish` refusing on a dirty
+  tree, the wrong `gh` account, an existing Release, a tag that is not `HEAD`, or notes carrying
+  neither the placeholder nor the real digest and size.
+- The build is content-deterministic but **not bit-reproducible**: the linker's `LC_UUID` and the
+  ad-hoc signature over it are regenerated on every link — measured at 85 bytes of 1 715 256 against
+  the committed file, with identical section sizes — and a `swift build --scratch-path` build differs
+  in size and in 17 664 bytes, because the module metadata follows the build directory.
+  `release.sh` therefore builds canonically and publishes the **committed** binary, which is the
+  artifact CI's checksum gate and `docs/BINARY_PROVENANCE.md` already describe.
 - `docs/RELEASE_CHECKLIST.md` no longer carries a version in its title, so it is not a second place
   to bump. Release notes now live in `docs/release-notes-vX.Y.md`.
 - Corrected root-level test counts, the lint budget and the release/build-path facts across
