@@ -1,9 +1,0 @@
-# audit #0039 AFTER: fix applied; swift test --filter testAsyncSemaphore (new tests plus the three existing semaphore tests)
-Test Case '-[converterTests.converterTests testAsyncSemaphoreCancellationBeforeSuspensionStillThrows]' passed (0.001 seconds).
-Test Case '-[converterTests.converterTests testAsyncSemaphoreCancellationResumesOnlyTheCancelledWaiter]' passed (0.263 seconds).
-Test Case '-[converterTests.converterTests testAsyncSemaphoreWaitFastPathRefusesCancelledTask]' passed (0.002 seconds).
-Test Case '-[converterTests.converterTests testAsyncSemaphoreWithPermitCapsConcurrencyAndReleasesOnThrow]' passed (0.108 seconds).
-Test Case '-[converterTests.converterTests testAsyncSemaphoreWithPermitRefusesCancelledTask]' passed (0.001 seconds).
-	 Executed 5 tests, with 0 failures (0 unexpected) in 0.375 (0.376) seconds
-	 Executed 5 tests, with 0 failures (0 unexpected) in 0.375 (0.376) seconds
-	 Executed 5 tests, with 0 failures (0 unexpected) in 0.375 (0.377) seconds

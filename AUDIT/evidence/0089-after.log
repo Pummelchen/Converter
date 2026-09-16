@@ -1,3 +1,0 @@
-$ swift test --package-path Sources --filter testVideoRenderStreamCopiesAnAlreadyStandardALACSource   # fix applied
-	 Executed 1 test, with 0 failures (0 unexpected) in 3.497 (3.497) seconds
-	 Executed 1 test, with 0 failures (0 unexpected) in 3.497 (3.498) seconds

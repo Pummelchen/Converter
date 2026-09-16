@@ -1,8 +1,0 @@
-# audit #0064 BEFORE, part 1: AsyncSemaphore deliberately broken so every class is capped at ONE job (a serial scheduler; the profile still advertises image=2 audio=2 total=3). The OLD test only asserted <= and passes vacuously.
-Test Case '-[converterTests.PipelineIntegrationTests testSchedulerRespectsResourceClassLimits]' passed (1.084 seconds).
-
-# audit #0064 BEFORE, part 2: same serial scheduler, REWRITTEN test: the exact-cap assertions and the wide-profile control fail.
-/Users/node4/Downloads/Converter-wt/runtime/Sources/Tests/converterTests/PipelineIntegrationTests.swift:2185: error: -[converterTests.PipelineIntegrationTests testSchedulerRespectsResourceClassLimits] : XCTAssertEqual failed: ("1") is not equal to ("2") - image cap not reached or exceeded
-/Users/node4/Downloads/Converter-wt/runtime/Sources/Tests/converterTests/PipelineIntegrationTests.swift:2189: error: -[converterTests.PipelineIntegrationTests testSchedulerRespectsResourceClassLimits] : XCTAssertEqual failed: ("1") is not equal to ("2") - audio cap not reached or exceeded
-/Users/node4/Downloads/Converter-wt/runtime/Sources/Tests/converterTests/PipelineIntegrationTests.swift:2221: error: -[converterTests.PipelineIntegrationTests testSchedulerRespectsResourceClassLimits] : XCTAssertGreaterThan failed: ("1") is not greater than ("1") - the counter must observe concurrent jobs
-Test Case '-[converterTests.PipelineIntegrationTests testSchedulerRespectsResourceClassLimits]' failed (6.077 seconds).

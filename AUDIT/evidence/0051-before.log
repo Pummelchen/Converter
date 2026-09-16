@@ -1,7 +1,0 @@
-$ git stash push -- PipelineCore.swift Diagnostics.swift AudioPipeline.swift   # fix NOT applied
-
-$ swift test --package-path Sources --filter testNoiseVerifiesPaddingOncePerFile
-unexpected ffmpeg invocation count: 47
-
-$ swift test --package-path Sources --filter testBassBatchResolvesTheFilterSetOncePerRun
-must be resolved once per run: ["-hide_banner -filters", "-hide_banner -filters"]

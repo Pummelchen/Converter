@@ -98,13 +98,11 @@ jobs:
 
       - name: Install analysers
         run: |
-          brew install swiftlint semgrep gitleaks cppcheck llvm ruff mypy
+          brew install swiftlint semgrep gitleaks cppcheck llvm
           swiftlint version
           semgrep --version
           gitleaks version
           cppcheck --version
-          ruff --version
-          mypy --version
 
       # Enforced since #0106: .swift-format owns the layout (4-space indent, 120 columns, no trailing
       # commas) and .swiftlint.yml carries SwiftLint's documented allowance for the wrapped-declaration
@@ -116,10 +114,6 @@ jobs:
 
       - name: Swift lint budget
         run: scripts/lint-budget.sh
-
-      # AUDIT/tools/*.py is the repository's only Python; settings live in pyproject.toml.
-      - name: Python format, lint and strict types
-        run: scripts/check-python.sh
 
       - name: Secret scan (repository history)
         run: gitleaks git --config .gitleaks.toml --no-banner --redact=100 .

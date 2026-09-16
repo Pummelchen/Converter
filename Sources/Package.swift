@@ -6,8 +6,8 @@
 // floor it failed with "package 'sources' is using Swift tools version 6.4.0 but the installed
 // version is 6.3.3" (PR #24, job 104457722762). Swift is therefore switched off in the repository's
 // CodeQL default setup until that image moves to Swift 6.4 — re-check by 2026-10-15, tracked as
-// #0160 in AUDIT/ledger.md. CodeQL still runs for actions, c-cpp and python, and the repository's own
-// static analysis (semgrep, gitleaks, cppcheck, clang-tidy, swiftlint, ruff, mypy) is unaffected.
+// #0160 in the wiki Audit Tracker. CodeQL still runs for actions, c-cpp and python, and the
+// repository's own static analysis (semgrep, gitleaks, cppcheck, clang-tidy, swiftlint) is unaffected.
 import PackageDescription
 
 // Upcoming-feature flags adopted ahead of the next language mode. All four already build

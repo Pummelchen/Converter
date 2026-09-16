@@ -45,7 +45,7 @@ Note: ffmpeg 9.0.1 is a major-version step up from the 8.1.2 recorded above and 
 
 ## Recorded environment (2026-09-14)
 
-Validation after the pre-production audit (`AUDIT/ledger.md`, 100 tasks): verify-before-publish
+Validation after the pre-production audit (100 tasks): verify-before-publish
 hardening, cancellation-aware fan-outs, host-scoped temp files, EXIF-oriented image classification,
 ALAC stream copy into videos, the bridged BW64 writer's bounds, and a clean strict-C++ build.
 
@@ -56,7 +56,7 @@ ALAC stream copy into videos, the bridged BW64 writer's bounds, and a clean stri
 | Swift | 6.3.3 (`swiftlang-6.3.3.1.3`) | swift-driver 1.148.6 |
 | ffmpeg / ffprobe | 9.0.1 | Homebrew formula `ffmpeg` |
 | ImageMagick (`magick`) | 7.1.2-31 Q16-HDRI aarch64 | Homebrew formula `imagemagick` |
-| swiftlint | 0.65.1 | 472 violations, 19 error-level (all structural; see `AUDIT/evidence/0073-swiftlint-after.txt`) |
+| swiftlint | 0.65.1 | 472 violations, 19 error-level (all structural) |
 
 - `swift build --package-path Sources` — success, clean under `-warnings-as-errors`
 - `swift build --package-path Sources -c release -Xswiftc -warnings-as-errors -Xcc -Wall -Xcc -Wextra -Xcc -Werror` — success
@@ -65,7 +65,7 @@ ALAC stream copy into videos, the bridged BW64 writer's bounds, and a clean stri
 
 ## Recorded environment (2026-09-15, Swift 6.4 re-audit)
 
-Validation after the Swift 6.4 re-audit in `AUDIT/ledger.md` (tasks `#0101`+). This is the first
+Validation after the Swift 6.4 re-audit (tasks `#0101`+). This is the first
 record on Swift 6.4 and the first with the strict-concurrency language mode compiled under a 6.4
 toolchain.
 

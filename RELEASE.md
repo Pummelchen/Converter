@@ -218,8 +218,7 @@ Leave previous releases' notes and performance tables alone.
 - **Gates** `scripts/check-format.sh` (**the report is the gate** — `swift format
   lint` exits 0 even when it reports differences), `scripts/lint-budget.sh` (a
   ratchet against `scripts/lint-budget.json`: 151 violations, 21 error-level, pinned
-  to `swiftlint` 0.65.1), `scripts/check-python.sh` (`ruff` plus `mypy --strict` over
-  `AUDIT/tools`), `shasum -a 256 -c docs/converter.sha256`, the `Swift version 6.4`
+  to `swiftlint` 0.65.1), `shasum -a 256 -c docs/converter.sha256`, the `Swift version 6.4`
   assertion, both `-warnings-as-errors` builds (the release one also carrying
   `-Xcc -Wall -Xcc -Wextra -Xcc -Werror`), and `swift test --package-path Sources` —
   **278 tests, around 11 minutes, doing real media processing**, so it is not a fast
@@ -229,7 +228,7 @@ Leave previous releases' notes and performance tables alone.
   `--check-level=exhaustive`, and clang-tidy requiring **zero** first-party findings.
 - **Traps** a `swiftlint` version change is reported but does not fail the ratchet.
   Swift is **deliberately switched off** in this repository's CodeQL default setup
-  (#0160, re-check by 2026-10-15), because the autobuild image ships Swift 6.3.3 and
+  (#0160 in the wiki Audit Tracker, re-check by 2026-10-15), because the autobuild image ships Swift 6.3.3 and
   cannot parse the 6.4 manifest — do not read a green CodeQL check as Swift coverage.
   Swift 6.4's SwiftPM writes to `.build/out/Products/<config>/`, so ask
   `--show-bin-path` rather than spelling a path. The binary is thin `arm64`,

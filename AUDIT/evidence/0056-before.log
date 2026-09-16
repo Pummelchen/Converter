@@ -1,7 +1,0 @@
-$ swift test --package-path Sources --filter testMP4ToShortUsesTheConfiguredScaler   # helper present, scaler flags NOT applied
-/Users/node4/Downloads/Converter/Converter/Sources/Tests/converterTests/PipelineIntegrationTests.swift:495: error: -[converterTests.PipelineIntegrationTests testMP4ToShortUsesTheConfiguredScaler] : XCTAssertTrue failed - the filter must scale to the portrait frame: crop=min(iw\,ih*9/16):ih,fps=2,scale=90:160,format=yuv420p,setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709:range=limited
-/Users/node4/Downloads/Converter/Converter/Sources/Tests/converterTests/PipelineIntegrationTests.swift:496: error: -[converterTests.PipelineIntegrationTests testMP4ToShortUsesTheConfiguredScaler] : XCTAssertTrue failed - the filter must use the configured scaler: crop=min(iw\,ih*9/16):ih,fps=2,scale=90:160,format=yuv420p,setparams=color_primaries=bt709:color_trc=bt709:colorspace=bt709:range=limited
-Test Case '-[converterTests.PipelineIntegrationTests testMP4ToShortUsesTheConfiguredScaler]' failed (0.056 seconds).
-	 Executed 1 test, with 2 failures (0 unexpected) in 0.056 (0.056) seconds
-	 Executed 1 test, with 2 failures (0 unexpected) in 0.056 (0.056) seconds
-	 Executed 1 test, with 2 failures (0 unexpected) in 0.056 (0.057) seconds

@@ -1,3 +1,0 @@
-$ swift test --package-path Sources --filter 'BW64\|FreeSpace\|SizeEstimate'   # fix applied
-	 Executed 5 tests, with 0 failures (0 unexpected) in 2.658 (2.660) seconds
-	 Executed 1 test, with 0 failures (0 unexpected) in 0.008 (0.008) seconds
