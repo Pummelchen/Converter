@@ -61,6 +61,15 @@ that hash. Verified with `cmp -l`, `otool -l LC_UUID` and `codesign -dvvv` on bo
   operator; `docs/RELEASE_CHECKLIST.md` keeps it as an owner step.
 - **The clean-machine auto-install path was not run** (`CONVERTER_AUTO_INSTALL_DEPS=1`), for the same
   reason.
+- **The GitHub Actions jobs on the release commit had not run.** Every job that needs the
+  `xcode-27` image was still queued when this release was cut — jobs on that image have been
+  waiting for hours, which is a runner-capacity problem on GitHub's side, not a failure. **Not
+  checked, therefore**, and no CI result is claimed. Every check those jobs perform was run
+  locally on the release commit instead and is reported above: the formatter, the lint budget, the
+  Python checks, the version gate, the checksum, `gitleaks` over all 343 commits, `semgrep`,
+  `cppcheck`, `clang-tidy`, the `-warnings-as-errors` debug build, the strict release build, the
+  serial suite (278 tests) and the `lipo -archs` assertion. The only jobs that did run were the
+  `ubuntu-latest` CodeQL analyses, which passed.
 
 ## Checksums
 
