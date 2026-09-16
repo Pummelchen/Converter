@@ -41,6 +41,11 @@ jobs:
       - name: Verify the committed release binary
         run: shasum -a 256 -c docs/converter.sha256
 
+      # The version is single-sourced (VERSION) and every mirror must agree. Cheap and needs no
+      # toolchain, so it runs before the expensive steps: a half-done bump fails in seconds.
+      - name: Verify the version is single-sourced
+        run: scripts/check-version-sync.sh
+
       - name: Select the required toolchain
         run: |
           if [ -d /Applications/Xcode_27.0.app ]; then

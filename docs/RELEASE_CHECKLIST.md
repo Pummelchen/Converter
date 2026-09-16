@@ -1,6 +1,9 @@
-# Release 1.0 Checklist
+# Release Checklist
 
-Checklist for declaring the converter stable as Release v1.0. Track blockers as linked GitHub issues.
+The manual half of a release. The mechanical half is `scripts/release.sh`, which owns the build, the
+architecture assertion, the digest and the publication; `scripts/check-version-sync.sh` owns the
+version. This list deliberately carries no version in its title — the version lives in `VERSION` and
+nowhere else. Track blockers as linked GitHub issues.
 
 ## Build and test validation
 

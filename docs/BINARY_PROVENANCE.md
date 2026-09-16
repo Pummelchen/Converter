@@ -19,6 +19,21 @@ and a rebuild can be compared.
 | Architecture | Mach-O thin `arm64` |
 | Signature | adhoc / linker-signed (no Developer ID; the binary is not notarised) |
 
+## Reproducibility
+
+**A rebuild of the same sources does not reproduce this hash.** The build is content-deterministic
+but not bit-reproducible: the linker emits a fresh `LC_UUID` on every link, and the ad-hoc signature
+covers it. Measured on this toolchain, a clean canonical rebuild matched the committed file in size
+(1 715 256 bytes) and in every section size, and differed in 85 bytes — the UUID and the signature.
+
+Build in the **canonical location**. A `swift build --scratch-path …` build is a different binary
+rather than a differently-signed one: compared with the committed file it differed in size and in
+17 664 bytes, because the Swift module metadata follows the build directory.
+
+So the checksum pins the file, not the sources. `scripts/release.sh` therefore builds in the
+canonical location as a gate and publishes the *committed* binary, and a rebuild is never compared
+to it by hash alone.
+
 ## Verifying the committed binary
 
 ```bash
