@@ -1,7 +1,0 @@
-$ git stash push -- Sources/converter/PipelineCore.swift Sources/converter/Actions.swift   # fix NOT applied
-$ swift test --package-path Sources --filter testFullRunClassifiesEXIFRotatedJPEGByDisplayedOrientation
-/Users/node4/Downloads/Converter/Converter/Sources/converter/Actions.swift:368: error: -[converterTests.PipelineIntegrationTests testFullRunClassifiesEXIFRotatedJPEGByDisplayedOrientation] : failed: caught error: "Full pipeline expects either Horizontal_8K.png for direct render or exactly one landscape source image (.png/.jpg/.jpeg) in '/var/folders/k5/fzyk9mb96rqbc6_vnxv5mh3h0000gn/T/converter-tests.89B51F32-EF62-4535-A015-D6E03EA368C0/Output'."
-Test Case '-[converterTests.PipelineIntegrationTests testFullRunClassifiesEXIFRotatedJPEGByDisplayedOrientation]' failed (0.296 seconds).
-	 Executed 1 test, with 1 failure (1 unexpected) in 0.296 (0.297) seconds
-	 Executed 1 test, with 1 failure (1 unexpected) in 0.296 (0.297) seconds
-	 Executed 1 test, with 1 failure (1 unexpected) in 0.296 (0.297) seconds

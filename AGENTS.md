@@ -36,7 +36,6 @@ source files — not for library consumers.
 - `docs/` — `FORMATS.md`, `KNOWN_GOOD_VERSIONS.md`, `RELEASE_CHECKLIST.md`,
   `release-notes-vX.Y.md`, `BINARY_PROVENANCE.md`, `converter.sha256`.
 - `scripts/` — the local gates and `scripts/release.sh`, the release mechanism.
-  `AUDIT/` — the audit ledger and its Python tooling.
 
 ## Build and test
 
@@ -88,7 +87,7 @@ in `docs/BINARY_PROVENANCE.md`.
   `-warnings-as-errors`; a release build with `-warnings-as-errors -Xcc -Wall
   -Xcc -Wextra -Xcc -Werror`; `swift test --package-path Sources`.
 - `static-analysis`: `scripts/check-format.sh`, `scripts/lint-budget.sh`,
-  `scripts/check-python.sh`, `gitleaks git --config .gitleaks.toml`, `semgrep`
+  `gitleaks git --config .gitleaks.toml`, `semgrep`
   (`p/swift`, `p/c`, `p/security-audit`), `cppcheck --enable=all
   --check-level=exhaustive`, and `clang-tidy` requiring **zero** first-party
   findings.
@@ -110,7 +109,8 @@ in `docs/BINARY_PROVENANCE.md`.
   a `swiftlint` version change is reported but does not fail.
 - **Swift is deliberately disabled in this repository's CodeQL default setup**,
   because the autobuild runner ships Swift 6.3.3, below the package's 6.4 floor
-  (`Sources/Package.swift` comment; tracked as #0160 with a re-check date).
+  (`Sources/Package.swift` comment; tracked as #0160 in the wiki Audit Tracker with a
+  re-check date).
 - `CONVERTER_AUTO_INSTALL_DEPS` is **off by default**. Setting it to `1` opts into
   `brew install` and — if Homebrew is absent — into downloading and executing
   Homebrew's installer (`curl … | bash`).

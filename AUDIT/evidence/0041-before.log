@@ -1,9 +1,0 @@
-$ git diff ...   # timeout/stderr fix NOT applied (signature shim only)
-$ swift test --package-path Sources --filter testInstallerSubprocessReportsStderrAndTimesOut
-/Users/node4/Downloads/Converter/Converter/Sources/Tests/converterTests/converterTests.swift:233: error: -[converterTests.converterTests testInstallerSubprocessReportsStderrAndTimesOut] : XCTAssertTrue failed - stderr must be reported: Dependency installer failed: /var/folders/k5/fzyk9mb96rqbc6_vnxv5mh3h0000gn/T/converter-fake-tools-EF388DF2-47F2-4F8E-BA8E-806F452CA833/failing-installer  exited with status 3
-/Users/node4/Downloads/Converter/Converter/Sources/Tests/converterTests/converterTests.swift:238: error: -[converterTests.converterTests testInstallerSubprocessReportsStderrAndTimesOut] : XCTAssertThrowsError failed: did not throw an error
-/Users/node4/Downloads/Converter/Converter/Sources/Tests/converterTests/converterTests.swift:244: error: -[converterTests.converterTests testInstallerSubprocessReportsStderrAndTimesOut] : XCTAssertLessThan failed: ("10.592453002929688") is not less than ("5.0") - the watchdog must end a hung installer
-Test Case '-[converterTests.converterTests testInstallerSubprocessReportsStderrAndTimesOut]' failed (11.168 seconds).
-	 Executed 1 test, with 3 failures (0 unexpected) in 11.168 (11.169) seconds
-	 Executed 1 test, with 3 failures (0 unexpected) in 11.168 (11.169) seconds
-	 Executed 1 test, with 3 failures (0 unexpected) in 11.168 (11.170) seconds

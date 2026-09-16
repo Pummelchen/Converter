@@ -1,5 +1,0 @@
-$ swift test --package-path Sources --filter testMP4ToShortUsesTheConfiguredScaler   # fix applied
-Test Case '-[converterTests.PipelineIntegrationTests testMP4ToShortUsesTheConfiguredScaler]' passed (0.003 seconds).
-	 Executed 1 test, with 0 failures (0 unexpected) in 0.003 (0.004) seconds
-	 Executed 1 test, with 0 failures (0 unexpected) in 0.003 (0.004) seconds
-	 Executed 1 test, with 0 failures (0 unexpected) in 0.003 (0.004) seconds

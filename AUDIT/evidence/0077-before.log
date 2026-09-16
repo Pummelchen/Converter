@@ -1,8 +1,0 @@
-$ helper present with the old presence-only filter, fix NOT applied
-$ swift test --package-path Sources --filter testUnusableInstalledToolsAreNamedWithTheirReason
-/Users/node4/Downloads/Converter/Converter/Sources/Tests/converterTests/converterTests.swift:322: error: -[converterTests.converterTests testUnusableInstalledToolsAreNamedWithTheirReason] : XCTAssertEqual failed: ("0") is not equal to ("1") - only the broken tool belongs in the message: []
-/Users/node4/Downloads/Converter/Converter/Sources/Tests/converterTests/converterTests.swift:323: error: -[converterTests.converterTests testUnusableInstalledToolsAreNamedWithTheirReason] : XCTUnwrap failed: expected non-nil value of type "String" - the broken tool must be listed: []
-Test Case '-[converterTests.converterTests testUnusableInstalledToolsAreNamedWithTheirReason]' failed (0.052 seconds).
-	 Executed 1 test, with 2 failures (0 unexpected) in 0.052 (0.052) seconds
-	 Executed 1 test, with 2 failures (0 unexpected) in 0.052 (0.052) seconds
-	 Executed 1 test, with 2 failures (0 unexpected) in 0.052 (0.053) seconds

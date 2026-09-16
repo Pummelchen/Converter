@@ -1,8 +1,8 @@
 # Changelog
 
-Notable changes to `converter`. The audit ledger behind these entries is
-[`AUDIT/ledger.json`](AUDIT/ledger.json) (mirrored to the wiki tracker); every task names its evidence,
-its commit and the host that verified it.
+Notable changes to `converter`. Open work is tracked in the wiki
+[Audit Tracker](https://github.com/Pummelchen/Converter/wiki/Audit-Tracker), which is the only
+tracker for this repository.
 
 ## [1.1] - 2026-09-16
 

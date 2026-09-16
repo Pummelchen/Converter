@@ -1,4 +1,0 @@
-$ swift test --package-path Sources --filter testInstallerSubprocessReportsStderrAndTimesOut   # fix applied
-	 Executed 1 test, with 0 failures (0 unexpected) in 1.270 (1.271) seconds
-	 Executed 1 test, with 0 failures (0 unexpected) in 1.270 (1.271) seconds
-	 Executed 1 test, with 0 failures (0 unexpected) in 1.270 (1.272) seconds

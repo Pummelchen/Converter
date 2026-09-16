@@ -1,9 +1,0 @@
-$ Strengthened test-gap coverage:
-  testMainVideoFallsBackToSoftwareHEVCWhenHardwareIsUnavailable: Executed 1 test, with 0 failure
-  testFadeOutDoesNotEnforceDeliveryQCPolicy: Executed 1 test, with 0 failure
-  testMasterCanonicalWAVFallsBackWhenTwoPassMeasurementIsOutOfRange: Executed 1 test, with 0 failure
-  testShortCapBoundaryAndFullSongCompanionDecision: Executed 1 test, with 0 failure
-  testDoctorReportsACorruptSourceImage: Executed 1 test, with 0 failure
-  testDoctorReportsACorruptSourceAudio: Executed 1 test, with 0 failure
-  testDoctorReportsAMissingInputDirectory: Executed 1 test, with 0 failure
-  testDoctorPassesOnHealthyWorkspace: Executed 1 test, with 0 failure

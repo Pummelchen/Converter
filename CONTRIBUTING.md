@@ -94,10 +94,6 @@ swiftlint version change is reported as a warning instead of a failure — re-re
 git config core.hooksPath .githooks
 ```
 
-The audit's batch helpers (`AUDIT/tools/commit_one.py`, `commit_task.py`) enforce the same rule at
-commit time and refuse to commit when a tracked file is modified but unstaged; set
-`AUDIT_ALLOW_DIRTY=1` only when that is deliberate.
-
 ## Documentation sync
 
 Keep these consistent with any behavior change:

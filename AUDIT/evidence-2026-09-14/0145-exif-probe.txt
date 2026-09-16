@@ -1,8 +1,0 @@
-#0145 probe: does ffmpeg auto-rotate a still-image input by its EXIF orientation?
-
-fixture: 320x180 JPEG with EXIF Orientation=6 (RightTop, i.e. display rotated 90 CW)
-
-ffmpeg default  -> 180x320
-ffmpeg -noautorotate -> 320x180
-
-Result: the default path DOES rotate (180x320), which agrees with the EXIF-aware imageDimensions probe, so #0145 is not a defect. The pipeline passes no -noautorotate.

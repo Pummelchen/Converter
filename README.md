@@ -63,6 +63,7 @@ Both framings are also saved as stills, so the artwork is usable without pulling
 | [docs/FORMATS.md](./docs/FORMATS.md) | Input/output formats per command |
 | [docs/KNOWN_GOOD_VERSIONS.md](./docs/KNOWN_GOOD_VERSIONS.md) | Verified toolchain versions and calibration measurements |
 | [CONTRIBUTING.md](./CONTRIBUTING.md) | Development guide |
+| [RELEASE.md](./RELEASE.md) | The release and build standard, and how a release is cut |
 
 ## Behaviour worth knowing
 
@@ -96,6 +97,21 @@ swift test --package-path Sources     # 278 tests, ~11 min
 ```
 
 A prebuilt `converter` binary ships at the repository root. CI runs the build and full suite on every push and PR to `main` ([ci.yml](./.github/workflows/ci.yml)).
+
+## Releases
+
+The current version is **1.1**, single-sourced in [`VERSION`](./VERSION). Releases are published on
+[GitHub Releases](https://github.com/Pummelchen/Converter/releases) with the `converter` binary and
+`converter.sha256` attached; `scripts/release.sh` cuts one and is a dry run unless given `--publish`.
+Verify a download with:
+
+```bash
+shasum -a 256 -c converter.sha256
+```
+
+The binary is Apple Silicon (`arm64`) only, ad-hoc/linker-signed and **not notarized**, so macOS
+quarantines it. Once the checksum verifies, clear the flag with
+`xattr -dr com.apple.quarantine ./converter`.
 
 ## Runtime dependencies
 

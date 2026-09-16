@@ -1,8 +1,0 @@
-$ old PID-only parsing restored (fix NOT applied), hostToken API kept so the test compiles
-$ swift test --package-path Sources --filter testOrphanCleanupLeavesOtherHostsTempFilesAlone
-/Users/node4/Downloads/Converter/Converter/Sources/Tests/converterTests/converterTests.swift:347: error: -[converterTests.converterTests testOrphanCleanupLeavesOtherHostsTempFilesAlone] : XCTAssertTrue failed - this host's temp with a dead PID is reclaimable
-/Users/node4/Downloads/Converter/Converter/Sources/Tests/converterTests/converterTests.swift:356: error: -[converterTests.converterTests testOrphanCleanupLeavesOtherHostsTempFilesAlone] : XCTAssertFalse failed - an untokenized temp must not be reclaimed on PID alone
-Test Case '-[converterTests.converterTests testOrphanCleanupLeavesOtherHostsTempFilesAlone]' failed (0.080 seconds).
-	 Executed 1 test, with 2 failures (0 unexpected) in 0.080 (0.080) seconds
-	 Executed 1 test, with 2 failures (0 unexpected) in 0.080 (0.080) seconds
-	 Executed 1 test, with 2 failures (0 unexpected) in 0.080 (0.081) seconds

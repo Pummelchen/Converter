@@ -1,7 +1,0 @@
-$ Strengthened test-quality assertions, all applied:
-  testRejectsWAVBinaryGarbage: Executed 1 test, with 0 failure
-  testRunHandlesLargeStderrWithoutDeadlock: Executed 1 test, with 0 failure
-  testLoudScanReportsFourSummaryLines: Executed 1 test, with 0 failure
-  testBassUsesSettingsSpecificSuffixForManualValues: Executed 1 test, with 0 failure
-  testSchedulerProfileKeepsExpectedConcurrencyCaps: Executed 1 test, with 0 failure
-  help-text tests: Executed 7 tests, with 0 failure
