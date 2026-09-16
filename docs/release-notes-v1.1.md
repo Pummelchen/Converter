@@ -37,6 +37,19 @@ identical — verify with the checksum block at the end.
   `scripts/lint-budget.sh` and the suites recorded in `docs/KNOWN_GOOD_VERSIONS.md`.
 - `AGENTS.md` and `RELEASE.md` now carry the account-wide release and build rules.
 
+## Note — the build is not bit-reproducible
+
+Two builds of the same source produce the same size and the same code, but not the same bytes: the
+linker's `LC_UUID` is regenerated on every link, and the ad-hoc signature covers it. Measured against
+the committed binary, a clean canonical rebuild differed in **85 bytes of 1 715 256**, with identical
+section sizes. A `--scratch-path` build differs far more — in size and in 17 664 bytes — because the
+module metadata follows the build directory, which is why `scripts/release.sh` builds in the
+canonical location and publishes the **committed** binary.
+
+The consequence is worth stating plainly: the checksum pins *the file*, not the sources. The
+published artifact is the same bytes as `v1.0`'s; a rebuild of the same sources will not reproduce
+that hash. Verified with `cmp -l`, `otool -l LC_UUID` and `codesign -dvvv` on both files.
+
 ## Checks that did not run
 
 - **CodeQL's Swift analysis is still switched off** (#0160). GitHub's default-setup runner

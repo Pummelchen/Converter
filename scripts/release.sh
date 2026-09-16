@@ -8,6 +8,17 @@
 # A dry run is the default and touches nothing remote. `--publish` is the explicit flag (§1.2.6):
 # it refuses unless every precondition holds, and it never weakens a check to make one pass.
 #
+# Two facts about this build shape the script:
+#
+#   * The published artifact is the **committed** `converter`, not the one just built. The build is
+#     content-deterministic but not bit-reproducible: two canonical builds match in size and code
+#     and differ only in the linker's LC_UUID and the ad-hoc signature over it (measured: 85 bytes
+#     of 1 715 256). Shipping the committed file keeps the digest, `docs/BINARY_PROVENANCE.md` and
+#     CI's `shasum -c` gate pointing at the same bytes.
+#   * The build must therefore happen in the canonical location. A `--scratch-path` build is a
+#     different binary, not merely a differently-signed one: the probe differed in size and in
+#     17 664 bytes, because the module metadata follows the build directory.
+#
 # Usage: scripts/release.sh            # dry run: build, assert the arch, report the digest
 #        scripts/release.sh --publish  # tag and publish, after a clean dry run
 set -euo pipefail
@@ -16,8 +27,6 @@ cd "$(dirname "$0")/.."
 repo=Pummelchen/Converter
 asset=converter
 checksum=docs/converter.sha256
-provenance=docs/BINARY_PROVENANCE.md
-source_commit_recorded_at=8d2a70758a15327d70e5d073f69ffc994772fe2c
 
 publish=0
 [ "${1:-}" = "--publish" ] && publish=1
@@ -33,7 +42,7 @@ step() { printf '\n== %s\n' "$*"; }
 
 step "preconditions"
 
-# The version is single-sourced. Read it through the gate so a malformed or half-bumped identity
+# The version is single-sourced. Read it through the gate, so a malformed or half-bumped identity
 # stops the release here rather than after a build.
 version="$(tr -d '[:space:]' <VERSION)"
 scripts/check-version-sync.sh >/dev/null || die "identity is out of sync; see the gate's output above"
@@ -59,14 +68,14 @@ echo "gh: $account"
 
 # ---------------------------------------------------------------- gates (§1.5)
 
-# The scratch build is the point: a warning scan over an *incremental* build compiles nothing and
-# passes vacuously, so this always uses a fresh path (§1.5).
-step "clean scratch build (warnings are errors)"
-scratch="$(mktemp -d "${TMPDIR:-/tmp}/converter-release.XXXXXX")"
-trap 'rm -rf "$scratch"' EXIT
-log="$scratch/build.log"
+# §1.5.4 — the clean build. A warning scan over an *incremental* build compiles nothing and passes
+# vacuously, so the products are removed first: that is what makes this a scratch build, while the
+# build itself stays in the canonical location the provenance records.
+step "clean release build (warnings are errors)"
+rm -rf Sources/.build
+log="${TMPDIR:-/tmp}/converter-release-build.log"
 
-if ! swift build --package-path Sources --scratch-path "$scratch" -c release \
+if ! swift build --package-path Sources -c release \
   -Xswiftc -warnings-as-errors -Xcc -Wall -Xcc -Wextra -Xcc -Werror >"$log" 2>&1; then
   tail -40 "$log" >&2
   die "the release build failed"
@@ -80,52 +89,43 @@ if grep -qE '^[^ ]+\.(swift|metal|c|h|m|mm):[0-9]+:[0-9]+: warning:' "$log"; the
 fi
 echo "release build clean, no compiler warnings"
 
-bin_dir="$(swift build --package-path Sources --scratch-path "$scratch" -c release --show-bin-path)"
+bin_dir="$(swift build --package-path Sources -c release --show-bin-path)"
 built="$bin_dir/$asset"
 [ -x "$built" ] || die "no executable at $built"
 
-# §1.2.2 — assert the architecture, do not assume it. A fat binary is a release defect.
+# §1.2.2 — assert the architecture, do not assume it, on the artifact that will be published.
 step "architecture"
-archs="$(lipo -archs "$built")"
-[ "$archs" = "arm64" ] || die "lipo -archs reports '$archs'; a release must be arm64 only (M1-M6)"
-echo "lipo -archs: $archs"
+for candidate in "./$asset" "$built"; do
+  archs="$(lipo -archs "$candidate")"
+  [ "$archs" = "arm64" ] || die "lipo -archs on $candidate reports '$archs'; a release must be arm64 only (M1-M6)"
+  echo "lipo -archs $(basename "$candidate"): $archs"
+done
 
 # ---------------------------------------------------------------- the artifact
 
-step "artifact"
-digest="$(shasum -a 256 "$built" | awk '{print $1}')"
-bytes="$(stat -f '%z' "$built")"
+# §1.2.5 — never publish a binary without a digest beside it, and never publish bytes other than the
+# ones the digest and the provenance record describe.
+step "artifact (committed)"
+shasum -a 256 -c "$checksum" >/dev/null || die "the committed $asset does not match $checksum"
+digest="$(shasum -a 256 "./$asset" | awk '{print $1}')"
+bytes="$(stat -f '%z' "./$asset")"
+echo "file:    $asset"
 echo "SHA-256: $digest"
 echo "bytes:   $bytes"
 
-committed_digest="$(awk '{print $1}' "$checksum")"
-committed_name="$(awk '{print $2}' "$checksum")"
-[ "$committed_name" = "$asset" ] || die "$checksum names '$committed_name', not '$asset'"
-
-if [ "$digest" = "$committed_digest" ]; then
-  echo "matches the committed $checksum — the binary is unchanged from the last build"
+fresh_digest="$(shasum -a 256 "$built" | awk '{print $1}')"
+if [ "$fresh_digest" = "$digest" ]; then
+  echo "the clean build is bit-identical to the committed binary"
 else
-  cat >&2 <<EOF
-release: the rebuilt binary differs from the committed one.
-  committed: $committed_digest
-  rebuilt:   $digest ($bytes bytes)
-
-Commit the new binary first, so the tag names the bytes it publishes:
-  cp "$built" ./$asset && chmod +x ./$asset
-  printf '%s  %s\n' "$digest" "$asset" > $checksum
-  # then update the size, source commit and toolchain in $provenance
-The record in $provenance currently names $source_commit_recorded_at.
-EOF
-  [ "$publish" -eq 0 ] || die "refusing to publish a digest that is not the committed one"
-  echo "release: dry run only — nothing was published"
-  exit 0
+  echo "the clean build differs from the committed binary, as expected: the linker's LC_UUID and"
+  echo "the ad-hoc signature over it are not reproducible. The committed binary is what ships."
 fi
 
 # ---------------------------------------------------------------- dry run stops here
 
 if [ "$publish" -eq 0 ]; then
   step "dry run"
-  echo "would tag $tag and publish $repo with $asset ($bytes bytes) and $checksum"
+  echo "would tag $tag and publish $repo with the committed $asset ($bytes bytes) and $checksum"
   echo "release: dry run complete — nothing was tagged or published"
   exit 0
 fi
@@ -144,13 +144,13 @@ else
   die "$notes carries neither the §1.8 placeholders nor the real digest and size"
 fi
 
-rendered="$scratch/notes.md"
+rendered="${TMPDIR:-/tmp}/converter-release-notes-${tag}.md"
 sed -e "s/SHA256_PENDING/$digest/g" -e "s/ARCHIVE_BYTES_PENDING/$bytes/g" "$notes" >"$rendered"
 grep -q "$digest" "$rendered" || die "the rendered notes do not quote the digest"
 
 gh release view "$tag" --repo "$repo" >/dev/null 2>&1 && die "release $tag already exists"
 
-# §1.4 — HEAD is the tag. Create the tag from the clean HEAD if it is absent, and refuse if an
+# §1.4 — HEAD is the tag. Create the tag from the clean HEAD when it is absent, and refuse when an
 # existing tag points somewhere else, because then the published bytes are not the tagged source.
 if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
   tagged="$(git rev-list -n1 "$tag")"
@@ -164,7 +164,7 @@ fi
 
 git push origin "refs/tags/$tag"
 
-gh release create "$tag" "$built" "$checksum" \
+gh release create "$tag" "./$asset" "$checksum" \
   --repo "$repo" \
   --title "Converter $version" \
   --notes-file "$rendered" \
