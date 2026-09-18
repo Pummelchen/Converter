@@ -109,7 +109,8 @@ in `docs/BINARY_PROVENANCE.md`.
   a `swiftlint` version change is reported but does not fail.
 - **Swift is deliberately disabled in this repository's CodeQL default setup**,
   because the autobuild runner ships Swift 6.3.3, below the package's 6.4 floor
-  (`Sources/Package.swift` comment; tracked as #0160 in the wiki Audit Tracker with a
+  (`Sources/Package.swift` comment; tracked as #0160 in the wiki [Project
+  Tracker](https://github.com/Pummelchen/Converter/wiki/Project-Tracker) with a
   re-check date).
 - `CONVERTER_AUTO_INSTALL_DEPS` is **off by default**. Setting it to `1` opts into
   `brew install` and — if Homebrew is absent — into downloading and executing
@@ -122,6 +123,26 @@ in `docs/BINARY_PROVENANCE.md`.
   rather than half-written.
 - `album.txt` is git-ignored; copy `album.example.txt` to create it for
   `-wavtoalbum` / `-mp3toalbum`.
+
+## Task tracker
+
+Open work lives in exactly one place: the wiki's **[Project Tracker](https://github.com/Pummelchen/Converter/wiki/Project-Tracker)**.
+It is a single table under `## Tasks`, and it is the only backlog — no Open/Blocked/
+Parked sections, no second list, status is a column rather than a heading.
+
+The rules that govern the table — the columns, the four types, the three statuses, the
+S/M/L sizes, ownership, and the ordering that *is* the priority — are defined once in
+[`docs/task-table-standard.md`](docs/task-table-standard.md). Read it before adding,
+changing or closing a row.
+
+- **An epic is a project, not a row.** Split it until each row is one independently
+  closable outcome.
+- **IDs are stable and never reused.** Closing deletes the row; the gap is correct.
+- **Every row has a next step.** If you cannot name one, split it, block it or park it.
+- **History does not live in the table.** What was tried, measured or rejected goes to
+  `CHANGELOG.md` and the closing commit; the open row links to the evidence.
+- **Update a row the moment its state changes**, and read the table top to bottom
+  before starting work — the top Open row is the default next task.
 
 ## Releasing
 
