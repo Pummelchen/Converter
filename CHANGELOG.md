@@ -4,6 +4,28 @@ Notable changes to `converter`. Open work is tracked in the wiki
 [Audit Tracker](https://github.com/Pummelchen/Converter/wiki/Audit-Tracker), which is the only
 tracker for this repository.
 
+## [1.3] - 2026-10-31
+
+Raw `-bass` access, plus the fixes from the post-`v1.2` code audit.
+
+- **`-bass` applies the requested cut/boost literally.** The automatic headroom attenuation and
+  encoded-peak check introduced in `v1.2` are removed: `-bass 80 4` boosts exactly 4 dB even when
+  the render reaches full scale, because the operator checks the result by ear. ffmpeg's own
+  bounds (frequency up to 999999 Hz, gain within ±900 dB) are still enforced.
+- **JPEG image paths fixed.** `-run_pix` on a `.jpg`/`.jpeg` used to publish deliverables under the
+  run-scoped temp name that cleanup then deleted; deliverables are named from the source now. A
+  discovered JPEG portrait no longer fails the still step of `-full`.
+- **Output collisions refused.** `--output-file` on `-m4atomp4`, `-short` and the album can no
+  longer replace a render input, and the distinct-path guard resolves symlink aliases.
+- **Video colour correctness.** RGB→YUV conversion now uses the tagged matrix (BT.709) instead of
+  swscale's BT.601 default; `VIDEO_COLOR_RANGE=limited/full` and mixed-case encoder/scaler/
+  pixel-format tokens canonicalise instead of failing verification; a mixed encoder ladder tags
+  each rung for its own codec (`avc1`/`hvc1`).
+- **Robustness.** Non-finite durations are rejected instead of trapping, a truncated capture keeps
+  valid UTF-8, an executable lookup requires a regular file, QC fails when integrated loudness
+  cannot be measured, and `-clean` no longer requires ffmpeg/magick.
+- The committed `converter` binary was regenerated.
+
 ## [1.2] - 2026-10-31
 
 `-bass` now protects headroom instead of refusing a hot boost or publishing clipped samples, and the

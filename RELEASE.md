@@ -184,10 +184,11 @@ Leave previous releases' notes and performance tables alone.
 
 # Part 2 — This repository
 
-## Converter — Swift, semantic version, 3 releases
+## Converter — Swift, semantic version, 4 releases
 
-- **Identity** semantic version, `vX.Y`. `v1.2` is the current release (2026-10-31);
-  `v1.1` (`d567ba5`, 2026-09-16) and `v1.0` (`d47025f`, 2026-09-15) are the earlier ones. The one
+- **Identity** semantic version, `vX.Y`. `v1.3` is the current release (2026-10-31);
+  `v1.2` (`51dbc60`, 2026-10-31), `v1.1` (`d567ba5`, 2026-09-16) and `v1.0` (`d47025f`,
+  2026-09-15) are the earlier ones. The one
   authoritative value is the root **`VERSION`** file:
   `scripts/check-version-sync.sh` fails when the topmost `## [X.Y]` heading of
   `CHANGELOG.md` or the name of `docs/release-notes-vX.Y.md` disagrees with it, and CI

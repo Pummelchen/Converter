@@ -123,7 +123,7 @@ A prebuilt `converter` binary ships at the repository root. CI runs the build an
 
 ## Releases
 
-The current version is **1.2**, single-sourced in [`VERSION`](./VERSION). Releases are published on
+The current version is **1.3**, single-sourced in [`VERSION`](./VERSION). Releases are published on
 [GitHub Releases](https://github.com/Pummelchen/Converter/releases) with the `converter` binary and
 `converter.sha256` attached; `scripts/release.sh` cuts one and is a dry run unless given `--publish`.
 Verify a download with:
