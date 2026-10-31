@@ -1047,8 +1047,42 @@ final class PipelineIntegrationTests: XCTestCase {
         try tool.verifyDuration(output, expectedSeconds: spec.endSeconds, label: "fadeout output")
     }
 
-    // audit #0020: a bass boost that drives the 24-bit staging WAV past full scale must fail
-    // with a clear message instead of publishing a clipped file with no indication.
+    // A hot boost is protected, not refused: the float render's overshoot becomes attenuation
+    // before the 24-bit staging pass, so the published file has no full-scale samples.
+    func testBassBoostAppliesHeadroomInsteadOfClipping() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe"])
+        // The production ceiling: the shared test config tolerates a million clipped samples.
+        try workspace.overwriteConfig(IntegrationWorkspace.defaultConfig + "\nAUDIO_QC_MAX_CLIPPED_SAMPLES=0\n")
+        // A 50 Hz tone at about -1 dBFS (the sine source sits near -21 dBFS before gain):
+        // +5 dB below 80 Hz pushes it ~4 dB over full scale.
+        let hotLow = try workspace.createHotAudio(name: "sub_bass", ext: "wav", frequency: 50, gainDB: 20)
+        let tool = try workspace.makeTool(arguments: ["-bass", "80", "5"])
+        let boost = BassBoostSpec(frequencyHz: 80, gainDB: 5)
+        let hotOutput = try tool.bassBoostMedia(hotLow, spec: boost)
+        XCTAssertEqual(hotOutput.lastPathComponent, "sub_bass_bass.wav")
+        try tool.verifyBassOutput(hotOutput, source: hotLow)
+
+        let metrics = try tool.audioQCResult(for: hotOutput, policy: tool.config.deliveryAudioQCPolicy).metrics
+        XCTAssertEqual(metrics.clippedSamples, 0, "headroom must remove every full-scale sample")
+        let peak = try XCTUnwrap(metrics.peakLevelDBFS)
+        XCTAssertLessThanOrEqual(peak, -0.05, "the staging ceiling is -0.1 dBFS")
+        XCTAssertGreaterThan(peak, -1.0, "only the overshoot is removed, not the boost")
+
+        // Lossy output targets true peak, so MP3 decoding does not reintroduce clipping.
+        let hotMP3 = try workspace.createHotAudio(name: "sub_bass_mp3", ext: "mp3", frequency: 50, gainDB: 20)
+        let mp3Output = try tool.bassBoostMedia(hotMP3, spec: boost)
+        let mp3Metrics = try tool.audioQCResult(for: mp3Output, policy: tool.config.deliveryAudioQCPolicy).metrics
+        XCTAssertEqual(mp3Metrics.clippedSamples, 0)
+        if let truePeak = mp3Metrics.truePeakDBTP {
+            XCTAssertLessThanOrEqual(truePeak, -0.5, "MP3 must stay below the -1 dBTP target")
+        }
+
+        // The same boost on material with headroom still works.
+        let quiet = try workspace.createAudio(name: "quiet_low", ext: "wav", frequency: 50)
+        XCTAssertNoThrow(try tool.bassBoostMedia(quiet, spec: boost))
+    }
+
     // audit #0021: every failed rung must be reported. The padded-MP4 ladder used to keep only
     // the last error, hiding the first rung's (usually real) cause.
     func testPaddedMP4EncoderLadderReportsEveryFailedRung() throws {
@@ -1066,25 +1100,6 @@ final class PipelineIntegrationTests: XCTestCase {
             XCTAssertTrue(message.contains("libx264:"), message)
             XCTAssertTrue(message.contains("libx265:"), message)
         }
-    }
-
-    func testBassBoostRefusesToPublishClippedOutput() throws {
-        let workspace = try IntegrationWorkspace()
-        try workspace.requireCommands(["ffmpeg", "ffprobe"])
-        // The production ceiling: the shared test config tolerates a million clipped samples.
-        try workspace.overwriteConfig(IntegrationWorkspace.defaultConfig + "\nAUDIO_QC_MAX_CLIPPED_SAMPLES=0\n")
-        // A 50 Hz tone at about -1 dBFS (the sine source sits near -21 dBFS before gain):
-        // +5 dB below 80 Hz pushes it ~4 dB over full scale.
-        let hotLow = try workspace.createHotAudio(name: "sub_bass", ext: "wav", frequency: 50, gainDB: 20)
-        let tool = try workspace.makeTool(arguments: ["-bass", "80", "5"])
-        let boost = BassBoostSpec(frequencyHz: 80, gainDB: 5)
-        XCTAssertThrowsError(try tool.bassBoostMedia(hotLow, spec: boost)) { error in
-            XCTAssertTrue("\(error)".contains("clip"), "\(error)")
-        }
-        XCTAssertFalse(FileManager.default.fileExists(atPath: workspace.output.path + "/sub_bass_bass.wav"))
-        // The same boost on material with headroom still works.
-        let quiet = try workspace.createAudio(name: "quiet_low", ext: "wav", frequency: 50)
-        XCTAssertNoThrow(try tool.bassBoostMedia(quiet, spec: boost))
     }
 
     func testBassBoostProcessesAudioAndMP4Inputs() throws {

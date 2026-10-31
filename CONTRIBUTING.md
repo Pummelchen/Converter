@@ -12,7 +12,7 @@ swift build --package-path Sources     # build
 swift test --package-path Sources      # run all tests (278 tests, ~11 min)
 ```
 
-Requires Swift tools 6.4+ (Xcode 27, Swift language mode 6) and macOS 15+, matching the `.macOS(.v15)` platform in `Sources/Package.swift`. See the [wiki](https://github.com/Pummelchen/Converter/wiki) for command reference and configuration details.
+Requires Swift tools 6.4+ (built and tested with Swift 6.4.2 / Xcode 27.2, Swift language mode 6) and macOS 15+, matching the `.macOS(.v15)` platform in `Sources/Package.swift`. See the [wiki](https://github.com/Pummelchen/Converter/wiki) for command reference and configuration details.
 
 ## Style
 

@@ -1,6 +1,7 @@
 // swift-tools-version: 6.4
 // The audited standard, and what CI enforces: the `xcode-27` runner image asserts `Swift version 6.4`
-// and builds with -warnings-as-errors.
+// and builds with -warnings-as-errors. Recorded locally on Swift 6.4.2 / Xcode 27.2 (see
+// docs/KNOWN_GOOD_VERSIONS.md); the gate stays on the 6.4 line so a patch move does not fail it.
 //
 // GitHub's CodeQL default setup could not follow: its autobuild runner ships Swift 6.3.3, so with this
 // floor it failed with "package 'sources' is using Swift tools version 6.4.0 but the installed
@@ -10,13 +11,18 @@
 // repository's own static analysis (semgrep, gitleaks, cppcheck, clang-tidy, swiftlint) is unaffected.
 import PackageDescription
 
-// Upcoming-feature flags adopted ahead of the next language mode. All four already build
+// Upcoming-feature flags adopted ahead of the next language mode. All of them already build
 // clean, so they act as ratchets: new code cannot reintroduce what they forbid.
 //
+// NonisolatedNonsendingByDefault is adopted together with explicit `@concurrent` annotations on
+// the media entry points. The feature makes a `nonisolated` async function run on its caller's
+// actor, which is wrong for this tool: the scheduler deliberately runs blocking ffmpeg/magick
+// work off the caller's executor (`ConverterTool.execute`, the album/full/runpix steps and
+// `ConverterMain.run`). Naming those functions `@concurrent`, and `AsyncSemaphore.withPermit`'s
+// operation, keeps the executor they had under Swift 6 mode while moving the default to the
+// caller's actor everywhere the tool does not opt out.
+//
 // Deliberately NOT adopted:
-//   - NonisolatedNonsendingByDefault — changes which executor `nonisolated` async work runs
-//     on. The scheduler deliberately runs blocking media tools off the caller's actor, so
-//     this is a real behavioral change for no functional gain.
 //   - InternalImportsByDefault — governs library API surface; irrelevant to an executable.
 //   - StrictMemorySafety — needs `-strict-memory-safety` (the upcoming-feature spelling is a
 //     no-op) and flags ~40 sites, most of them `String(format:)` rather than genuine
@@ -25,7 +31,8 @@ let upcomingFeatures: [SwiftSetting] = [
     .enableUpcomingFeature("ExistentialAny"),
     .enableUpcomingFeature("MemberImportVisibility"),
     .enableUpcomingFeature("InferIsolatedConformances"),
-    .enableUpcomingFeature("ImmutableWeakCaptures")
+    .enableUpcomingFeature("ImmutableWeakCaptures"),
+    .enableUpcomingFeature("NonisolatedNonsendingByDefault")
 ]
 
 let package = Package(

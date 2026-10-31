@@ -4,6 +4,30 @@ Notable changes to `converter`. Open work is tracked in the wiki
 [Audit Tracker](https://github.com/Pummelchen/Converter/wiki/Audit-Tracker), which is the only
 tracker for this repository.
 
+## [1.2] - 2026-10-31
+
+`-bass` now protects headroom instead of refusing a hot boost or publishing clipped samples, and the
+toolchain standard moves to Swift 6.4.2 / Xcode 27.2.
+
+- **`-bass` renders in float, measures, then attenuates the overshoot.** A boost that would push the
+  24-bit staging WAV past full scale (for example `-bass 80 4` on a master that already peaks near
+  0 dBFS) used to fail the run with an error after the fact. The boost is now rendered into a float
+  WAV, its sample peak (and, for lossy outputs, true peak) measured, and exactly the overshoot is
+  removed with a linear gain before the 24-bit stage: lossless targets -0.1 dBFS sample peak, MP3/
+  M4A/MP4 target -1 dBTP so decoding cannot reintroduce clipping. The boost curve is unchanged; only
+  the overall level moves, so nothing is limited or compressed. One INFO line reports the applied
+  attenuation.
+- **One error line per failure, not two.** `processBatch` logged a failure and then rethrew it, and
+  the top-level handler logged it again; the fail-fast path now lets the top-level handler report it
+  once, while `--continue-on-error` still logs each failure as it happens.
+- **Swift 6.4.2 / Xcode 27.2 is the recorded standard.** `NonisolatedNonsendingByDefault` is adopted,
+  with `@concurrent` on `ConverterMain.run`, `ConverterTool.execute`, the full/album/runpix steps and
+  the fan-out pipelines, plus `AsyncSemaphore.withPermit`'s operation, so blocking ffmpeg/magick work
+  still leaves the caller's actor. The remaining supported upstream features are documented as
+  deliberately not adopted in `Sources/Package.swift`; the audit is recorded in
+  `docs/KNOWN_GOOD_VERSIONS.md`.
+- The committed `converter` binary was regenerated for both changes.
+
 ## [1.1] - 2026-09-16
 
 Release and identity tooling, plus documentation corrections. **No change to conversion behaviour:

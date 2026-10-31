@@ -14,6 +14,7 @@ struct ConverterMain {
     // The whole entry point, with its inputs as parameters and the process exit code as its result.
     // Nothing here calls exit() directly, so every branch — including the argument-parse failure that
     // must exit 2 — can be driven by a test (#0143).
+    @concurrent
     static func run(
         arguments: [String],
         environment rawEnvironment: [String: String],

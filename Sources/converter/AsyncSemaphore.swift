@@ -82,7 +82,9 @@ actor AsyncSemaphore {
         available = min(limit, available + 1)
     }
 
-    func withPermit<T: Sendable>(_ operation: @escaping @Sendable () async throws -> T) async throws -> T {
+    // The operation is `@concurrent`: it runs blocking ffmpeg/magick work, so it must leave the
+    // semaphore's actor executor rather than inherit it (NonisolatedNonsendingByDefault).
+    func withPermit<T: Sendable>(_ operation: @escaping @concurrent @Sendable () async throws -> T) async throws -> T {
         try await wait()
         // Cancellation can land between signal() handing this task the permit and the task
         // running again; the permit then goes straight back instead of into a doomed job.

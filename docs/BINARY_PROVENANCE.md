@@ -9,13 +9,13 @@ and a rebuild can be compared.
 | Field | Value |
 |---|---|
 | File | `converter` |
-| Size | 1 715 256 bytes |
-| SHA-256 | `6aba6b23aaa329157b57fb8ae3781c44949fb02f91db243cb76c023f0cbd9ad5` |
-| Source commit | `8d2a70758a15327d70e5d073f69ffc994772fe2c` |
-| Build command | `swift build --package-path Sources -c release -Xswiftc -warnings-as-errors -Xcc -Wall -Xcc -Wextra -Xcc -Werror` |
-| Swift | 6.4 (`swiftlang-6.4.0.34.1`), target `arm64-apple-macosx27.0.0` |
-| Xcode | 27.0 (27A266a) |
-| macOS | 27.0 (26A428) |
+| Size | 1 733 624 bytes |
+| SHA-256 | `cc229d0e2ec5916539a1080f4d7811b79b906923b92a780a6b8d36d0ecca955a` |
+| Source commit | `v1.2` (the tag points at this release commit) |
+| Build command | `swift build --package-path Sources -c release` |
+| Swift | 6.4 (`swiftlang-6.4.2.1.9`), target `arm64-apple-macosx27.2.0` |
+| Xcode | 27.2 (27B52) |
+| macOS | 27.2 (26B123) |
 | Architecture | Mach-O thin `arm64` |
 | Signature | adhoc / linker-signed (no Developer ID; the binary is not notarised) |
 
@@ -64,6 +64,8 @@ see `docs/KNOWN_GOOD_VERSIONS.md` for the measurement behind that decision.
 
 | Date | Source commit | SHA-256 | Notes |
 |---|---|---|---|
+| 2026-10-31 | `v1.2` | `cc229d0e…cca955a` | Rebuilt on Swift 6.4.2 / Xcode 27.2 with `NonisolatedNonsendingByDefault` + `@concurrent`, and `-bass` headroom protection (float render measured, attenuated before the 24-bit stage). |
+| 2026-10-31 | `b32928b` + local change | `99a1f044…5b8499d` | Rebuilt after `-bass` stopped refusing a boost that reaches full scale: the clipping measurement is now a one-line warning and the boosted file is published. |
 | 2026-09-15 | `0ffed12` | `6aba6b23…cbd9ad5` | Rebuilt on the converted toolchain after the formatter adoption and the account-wide Swift 6.4 work; verified with `-help`, `-matrix` and `-doctor`. |
 | 2026-09-15 | `cc6b379` | `6661fe37…9ebc024` | Rebuilt after the delivery-QC, duration, reuse and verification fixes; verified with `-help`, `-matrix` and `-doctor`. |
 | 2026-09-15 | `d9aa826` | `75de0aa1…dd0d602` | Rebuilt under the Swift 6.4 / Xcode 27 standard at the end of the re-audit; verified with `-help`, `-matrix` and `-doctor`. |

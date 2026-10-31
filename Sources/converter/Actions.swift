@@ -161,11 +161,13 @@ extension ConverterTool {
                 maybeSleep()
             } catch {
                 let message = error.localizedDescription
-                logger.error(message)
                 failures.append(message)
+                // The thrown path is reported once by the top-level handler in Main; logging it
+                // here as well printed the same error twice.
                 if !cli.continueOnError {
                     throw error
                 }
+                logger.error(message)
             }
         }
 
@@ -490,7 +492,7 @@ extension ConverterTool {
         return audio
     }
 
-    func fullRunImageArtifacts(deliveryPrefix: String) async throws -> FullRunImageArtifacts {
+    @concurrent func fullRunImageArtifacts(deliveryPrefix: String) async throws -> FullRunImageArtifacts {
         let horizontal = try namedFullRunImage("Horizontal_8K.png")
         let vertical = try namedFullRunImage("Vertical_8K.png")
 
@@ -532,7 +534,7 @@ extension ConverterTool {
         )
     }
 
-    func fullImagePipeline(sourceImage: URL, deliveryPrefix: String? = nil) async throws -> ImageArtifacts {
+    @concurrent func fullImagePipeline(sourceImage: URL, deliveryPrefix: String? = nil) async throws -> ImageArtifacts {
         let sourcePNG: URL
         let ext = sourceImage.pathExtension.lowercasedASCII
         if ext == "jpg" || ext == "jpeg" {
@@ -593,7 +595,9 @@ extension ConverterTool {
             eightK: variants.eightK, fourK: variants.fourK, threeK: threeK, twoK: twoK, nft8K: nft.nft8K)
     }
 
-    func fullImagePipelineFromDirect8K(_ sourcePNG: URL, deliveryPrefix: String? = nil) async throws -> ImageArtifacts {
+    @concurrent func fullImagePipelineFromDirect8K(
+        _ sourcePNG: URL, deliveryPrefix: String? = nil
+    ) async throws -> ImageArtifacts {
         logger.info("Full step: image deliverables from \(sourcePNG.basename)")
 
         async let fourKTask: URL = withImagePermit {
@@ -655,7 +659,7 @@ extension ConverterTool {
     // Every deliverable is written under `releaseStem`; the source is only ever read. For the
     // archival companions the highest-quality reachable source is used: the FLAC or WAV original
     // itself (bit-exact FLAC), or the internal WAV decoded from an MP3.
-    func fullAudioPreparation(sourceAudio: URL, releaseStem: String) async throws -> AudioArtifacts {
+    @concurrent func fullAudioPreparation(sourceAudio: URL, releaseStem: String) async throws -> AudioArtifacts {
         let ext = sourceAudio.pathExtension.lowercasedASCII
         // resolveFullAudio already validated the source before renaming it to `1_source`, so the
         // normalized file must not be preflighted twice (#0100).
@@ -709,7 +713,7 @@ extension ConverterTool {
         }
     }
 
-    func runFullProductionPipeline(sourceAudio audio: URL) async throws {
+    @concurrent func runFullProductionPipeline(sourceAudio audio: URL) async throws {
         // Every generated file — images included — carries the release name.
         let releaseStem = fullRunReleaseStem(for: audio)
         async let imageArtifactsTask = fullRunImageArtifacts(deliveryPrefix: releaseStem)
@@ -768,7 +772,7 @@ extension ConverterTool {
         try cleanTransients()
     }
 
-    func stepFull() async throws {
+    @concurrent func stepFull() async throws {
         logger.info("Full pipeline start")
         // Validate the discovered source before resolveFullAudio renames it to 1_source: a corrupt
         // file must fail under the name the user supplied, and a failed run must not leave the
@@ -788,7 +792,7 @@ extension ConverterTool {
         try preflightAudioSourceForTranscode(candidates[0])
     }
 
-    func stepAlbum() async throws {
+    @concurrent func stepAlbum() async throws {
         logger.info("Album pipeline start")
         let album = try buildNumberedAlbumFromDirectory()
         logger.info("Album source audio: \(album.basename)")
@@ -803,7 +807,7 @@ extension ConverterTool {
         try files(in: cli.srcDir, matchingExtensions: extensions).filter { !isPortraitShortStill($0) }
     }
 
-    func stepRunPix() async throws {
+    @concurrent func stepRunPix() async throws {
         let images = try sourceImageFiles(matchingExtensions: ["png", "jpg", "jpeg"])
         if images.isEmpty {
             throw AppError("No source images found in '\(cli.srcDir.path)'.")
@@ -1489,7 +1493,7 @@ extension ConverterTool {
         }
     }
 
-    func execute() async throws {
+    @concurrent func execute() async throws {
         switch cli.action {
         case .album:
             try await stepAlbum()

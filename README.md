@@ -110,7 +110,7 @@ Project loudness target is `-12 LUFS` for delivery, short-form, and mastering de
 
 ## Build and test
 
-Requires Swift tools 6.4+ (Xcode 27) and macOS 15+. The package lives in `Sources/`, so every SwiftPM command needs `--package-path Sources`.
+Requires Swift tools 6.4+ (built and tested with Swift 6.4.2 / Xcode 27.2) and macOS 15+. The package lives in `Sources/`, so every SwiftPM command needs `--package-path Sources`.
 
 ```bash
 swift build --package-path Sources -c release
@@ -123,7 +123,7 @@ A prebuilt `converter` binary ships at the repository root. CI runs the build an
 
 ## Releases
 
-The current version is **1.1**, single-sourced in [`VERSION`](./VERSION). Releases are published on
+The current version is **1.2**, single-sourced in [`VERSION`](./VERSION). Releases are published on
 [GitHub Releases](https://github.com/Pummelchen/Converter/releases) with the `converter` binary and
 `converter.sha256` attached; `scripts/release.sh` cuts one and is a dry run unless given `--publish`.
 Verify a download with:

@@ -244,6 +244,52 @@ To produce an M3-tuned local build anyway (not for distribution):
 swift build --package-path Sources -c release -Xswiftc -Xllvm -Xswiftc -mcpu=apple-m3 -Xcc -mcpu=apple-m3
 ```
 
+## Recorded environment (2026-10-31, Swift 6.4.2 / Xcode 27.2)
+
+Validation after moving the recorded standard to the Swift 6.4.2 toolchain that shipped with
+Xcode 27.2, and after adopting `NonisolatedNonsendingByDefault` with explicit `@concurrent`
+annotations (see the feature audit below).
+
+| Component | Version | Notes |
+|---|---|---|
+| macOS | 27.2 (26B123) | Apple Silicon (`arm64`) |
+| Xcode | 27.2 (27B52) | |
+| Swift | 6.4.2 (`swiftlang-6.4.2.1.9`) | target `arm64-apple-macosx27.2.0` |
+| ffmpeg / ffprobe | 9.0.2 | Homebrew formula `ffmpeg` |
+| ImageMagick (`magick`) | 7.1.2-34 Q16-HDRI aarch64 | Homebrew formula `imagemagick` |
+| swiftlint | 0.65.1 | 151 violations (21 error-level), matching `scripts/lint-budget.json` |
+| periphery | 3.8.0 | |
+
+- `swift build --package-path Sources -Xswiftc -warnings-as-errors` — success, 0 warnings
+- `swift build --package-path Sources -c release -Xswiftc -warnings-as-errors -Xcc -Wall -Xcc -Wextra -Xcc -Werror` — success
+- `swift test --package-path Sources` — 278 tests, 0 failures, 0 skipped (778 s)
+- Release binary rebuilt; size, SHA-256 and provenance recorded in `docs/BINARY_PROVENANCE.md`.
+
+### Swift 6.4 feature audit
+
+`swiftc -print-supported-features` on this toolchain lists six upcoming features. Four were
+already adopted as ratchets; this audit adopted the fifth and documented the two it leaves out.
+
+- **Adopted — `NonisolatedNonsendingByDefault`.** A `nonisolated` async function now runs on its
+  caller's actor by default. The scheduler relies on blocking ffmpeg/magick work leaving the
+  caller's executor, so every media entry point (`ConverterTool.execute`, the full/album/runpix
+  steps, the fan-out pipelines and `ConverterMain.run`) is marked `@concurrent`, as is
+  `AsyncSemaphore.withPermit`'s operation. Without those annotations, permitted work would
+  serialise on the semaphore actor's executor and `main` would run the whole run on the main actor.
+- **Already in use:** strict-concurrency Swift 6 mode, `Mutex` from `Synchronization` for all
+  shared mutable state, `any` on every existential (`ExistentialAny`), `#fileID`/`#line` error
+  provenance, and the remaining adopted ratchets (`MemberImportVisibility`,
+  `InferIsolatedConformances`, `ImmutableWeakCaptures`).
+- **Not adopted — `InternalImportsByDefault`:** governs library API surface; this product is an
+  executable with no exported API, so it cannot change anything.
+- **Not adopted — `StrictMemorySafety`:** the flag reports every `String(format:)` call as a
+  memory-safety concern. The genuine unsafe surface is already confined to small, audited
+  `loadUnaligned`/`kill` helpers; the flag would bury them rather than protect them.
+- **Stable 6.4 features evaluated and not used:** `Span`/`RawSpan` have no unaligned-load API on
+  this toolchain, so the CRC and RIFF readers keep `UnsafeRawBufferPointer.loadUnaligned`, which
+  they already use; `InlineArray` does not beat the slice-by-8 `[UInt32]` tables; `borrow`/`mutate`
+  accessors have no computed property here whose copy they would remove.
+
 ## How to collect these versions locally
 
 ```bash
