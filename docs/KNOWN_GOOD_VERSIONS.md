@@ -308,6 +308,20 @@ durations could trap or pass; and `-clean` demanded the media toolchain.
   headroom attenuation and the encoded-peak check were removed, so `-bass 80 4` boosts exactly 4 dB
   whether or not the result reaches full scale; the operator judges the output by ear.
 
+## `v1.4` (2026-10-31)
+
+Same machine standard as `v1.3`: macOS 27.2 (26B123), Xcode 27.2, Swift 6.4.2
+(`swiftlang-6.4.2.1.9`), target `arm64-apple-macosx27.2.0`.
+
+- `scripts/check-format.sh` — clean
+- `scripts/lint-budget.sh` — 149 violations (21 error-level), within the 151/21 budget
+- `swift build --package-path Sources -c release -Xswiftc -warnings-as-errors -Xcc -Wall -Xcc -Wextra -Xcc -Werror` — success, no warnings
+- `lipo -archs ./converter` — `arm64`
+- Targeted `swift test --filter` runs over the changed paths — 0 failures
+- `./converter -doctor` — pass
+- **Full suite not run:** `AGENTS.md` prohibits it. CI's `build-and-test` job is the full-suite gate.
+- Committed binary rebuilt; checksum and provenance updated. Released as `v1.4`.
+
 ## How to collect these versions locally
 
 ```bash

@@ -8,7 +8,7 @@ nowhere else. Track blockers as linked GitHub issues.
 ## Build and test validation
 
 - [ ] `swift build --package-path Sources -c release` succeeds on a clean checkout (macOS 15+, Apple Silicon, Swift tools 6.4+ / Xcode 27)
-- [ ] `swift test --package-path Sources` passes fully (see `docs/KNOWN_GOOD_VERSIONS.md` for the current recorded baseline)
+- [ ] Targeted `swift test --package-path Sources --filter …` tests for the changed paths pass (full-suite runs are prohibited for agents, see `AGENTS.md`; CI runs the suite)
 - [ ] CI workflow (`.github/workflows/ci.yml`) green on the release commit
 - [ ] Manual smoke test on representative (non-private) media: `-full`, `-album`, `-short`, `-nfttoshort`, one audio batch action, `-doctor`
 

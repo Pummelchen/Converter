@@ -184,11 +184,11 @@ Leave previous releases' notes and performance tables alone.
 
 # Part 2 — This repository
 
-## Converter — Swift, semantic version, 4 releases
+## Converter — Swift, semantic version, 5 releases
 
-- **Identity** semantic version, `vX.Y`. `v1.3` is the current release (2026-10-31);
-  `v1.2` (`51dbc60`, 2026-10-31), `v1.1` (`d567ba5`, 2026-09-16) and `v1.0` (`d47025f`,
-  2026-09-15) are the earlier ones. The one
+- **Identity** semantic version, `vX.Y`. `v1.4` is the current release (2026-10-31);
+  `v1.3` (`b5064ca`, 2026-10-31), `v1.2` (`51dbc60`, 2026-10-31), `v1.1` (`d567ba5`,
+  2026-09-16) and `v1.0` (`d47025f`, 2026-09-15) are the earlier ones. The one
   authoritative value is the root **`VERSION`** file:
   `scripts/check-version-sync.sh` fails when the topmost `## [X.Y]` heading of
   `CHANGELOG.md` or the name of `docs/release-notes-vX.Y.md` disagrees with it, and CI
@@ -221,9 +221,11 @@ Leave previous releases' notes and performance tables alone.
   ratchet against `scripts/lint-budget.json`: 151 violations, 21 error-level, pinned
   to `swiftlint` 0.65.1), `shasum -a 256 -c docs/converter.sha256`, the `Swift version 6.4`
   assertion, both `-warnings-as-errors` builds (the release one also carrying
-  `-Xcc -Wall -Xcc -Wextra -Xcc -Werror`), and `swift test --package-path Sources` —
-  **285 tests, around 11 minutes, doing real media processing**, so it is not a fast
-  gate and two of them must not overlap on an 8 GB machine. `.github/workflows/ci.yml`
+  `-Xcc -Wall -Xcc -Wextra -Xcc -Werror`), and `swift test --package-path Sources` in
+  CI — **285 tests, around 11 minutes, doing real media processing**, so it is not a fast
+  gate and two of them must not overlap on an 8 GB machine. Local and agent validation runs
+  only the targeted `--filter` tests that cover the change; full-suite runs are prohibited
+  for agents (`AGENTS.md`). `.github/workflows/ci.yml`
   runs these on the `xcode-27` image as `build-and-test` and `static-analysis`, the
   latter adding gitleaks over the full history, semgrep, cppcheck at
   `--check-level=exhaustive`, and clang-tidy requiring **zero** first-party findings.

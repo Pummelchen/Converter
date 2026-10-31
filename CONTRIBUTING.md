@@ -9,7 +9,7 @@ git clone https://github.com/Pummelchen/Converter.git
 cd Converter
 brew install ffmpeg imagemagick        # runtime media tools
 swift build --package-path Sources     # build
-swift test --package-path Sources      # run all tests (285 tests, ~11 min)
+swift test --package-path Sources --filter ConverterTests.<testName>  # targeted test
 ```
 
 Requires Swift tools 6.4+ (built and tested with Swift 6.4.2 / Xcode 27.2, Swift language mode 6) and macOS 15+, matching the `.macOS(.v15)` platform in `Sources/Package.swift`. See the [wiki](https://github.com/Pummelchen/Converter/wiki) for command reference and configuration details.
@@ -33,11 +33,13 @@ CI fails on either.
 ```bash
 swift build --package-path Sources            # build/typecheck
 swift build --package-path Sources -c release # release build
-swift test --package-path Sources             # full test suite
 swift test --package-path Sources --filter ConverterTests.<testName>  # focused test
 ```
 
 Integration tests perform real media processing with `ffmpeg`/`ffprobe`/`magick` in isolated temporary workspaces; they never touch your `Output/` directory.
+
+Full-suite runs are prohibited for agents (`AGENTS.md`): they do not find bugs and do not solve
+reported problems. Run only the targeted tests that cover your change. CI may still run the suite.
 
 Dependency auto-install is disabled in tests; for manual dependency checks without install side effects:
 

@@ -9,9 +9,9 @@ and a rebuild can be compared.
 | Field | Value |
 |---|---|
 | File | `converter` |
-| Size | 1 731 464 bytes |
-| SHA-256 | `e4bfe74109c053a1676e9a1aafefd77f0924e2b71c3222230b17472760aa800f` |
-| Source commit | `v1.3` (the tag points at this release commit) |
+| Size | 1 696 888 bytes |
+| SHA-256 | `de55324dc0fec335842dc5e7d5ab472c51e53a588511ef1190eed8651a0c5392` |
+| Source commit | `v1.4` (the tag points at this release commit) |
 | Build command | `swift build --package-path Sources -c release` |
 | Swift | 6.4 (`swiftlang-6.4.2.1.9`), target `arm64-apple-macosx27.2.0` |
 | Xcode | 27.2 (27B52) |
@@ -24,7 +24,7 @@ and a rebuild can be compared.
 **A rebuild of the same sources does not reproduce this hash.** The build is content-deterministic
 but not bit-reproducible: the linker emits a fresh `LC_UUID` on every link, and the ad-hoc signature
 covers it. Measured on this toolchain, a clean canonical rebuild matched the committed file in size
-(1 715 256 bytes) and in every section size, and differed in 85 bytes — the UUID and the signature.
+and in every section size, and differed in 85 bytes — the UUID and the signature.
 
 Build in the **canonical location**. A `swift build --scratch-path …` build is a different binary
 rather than a differently-signed one: compared with the committed file it differed in size and in
@@ -64,6 +64,7 @@ see `docs/KNOWN_GOOD_VERSIONS.md` for the measurement behind that decision.
 
 | Date | Source commit | SHA-256 | Notes |
 |---|---|---|---|
+| 2026-10-31 | `v1.4` | `de55324d…0c5392` | Rebuilt after preserve-loudness renders stopped re-applying delivery QC, video audio became an untouched stream copy, and the `-shortest`/`-t` audio truncation was fixed. |
 | 2026-10-31 | post-`v1.2` audit | `e4bfe741…aa800f` | Rebuilt after the post-release audit: `-run_pix` JPEG naming, JPEG portrait stills, output-collision guards, mixed-codec tag, BT.709 conversion, range canonicalisation, bass fail-closed/peak verification, duration and capture hardening. |
 | 2026-10-31 | `v1.2` | `cc229d0e…cca955a` | Rebuilt on Swift 6.4.2 / Xcode 27.2 with `NonisolatedNonsendingByDefault` + `@concurrent`, and `-bass` applies the requested gain literally; the headroom attenuation and encoded-peak check were removed at the operator's request. |
 | 2026-10-31 | `b32928b` + local change | `99a1f044…5b8499d` | Rebuilt after `-bass` stopped refusing a boost that reaches full scale: the clipping measurement is now a one-line warning and the boosted file is published. |

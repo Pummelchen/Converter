@@ -18,7 +18,7 @@ size, a wrong codec, silent audio or drifted loudness fails the run instead of
 producing a bad file. It is a single executable (the `converter` product of the
 SwiftPM package under `Sources/`) with a vendored libbw64 and an in-process BW64
 bridge, driven by `config.txt` and an `Output/` working directory. It is at stable
-release `v1.3`, and it is for someone preparing a release-grade media set from
+release `v1.4`, and it is for someone preparing a release-grade media set from
 source files — not for library consumers.
 
 ## Layout

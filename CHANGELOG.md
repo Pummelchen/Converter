@@ -4,6 +4,25 @@ Notable changes to `converter`. Open work is tracked in the wiki
 [Audit Tracker](https://github.com/Pummelchen/Converter/wiki/Audit-Tracker), which is the only
 tracker for this repository.
 
+## [1.4] - 2026-10-31
+
+Preserve-loudness renders no longer re-apply delivery QC, and video audio is muxed untouched.
+
+- **M4A, MP3, the main MP4 and every short are no longer judged against delivery ceilings.** The
+  source-relative rebase and its "Source already exceeds delivery QC" log are removed. Material the
+  operator mastered hot — true peak above -1 dBTP, full-scale samples — now publishes instead of
+  failing an encode that changed nothing. Codec, sample rate, channels, audibility, duration and
+  loudness preservation are still verified.
+- **Video audio is never staged or processed.** `-m4atomp4`, `-short`, `-nfttoshort` and
+  `-mp4toshort` feed the source straight to the muxer: a project-standard ALAC stream is copied
+  bit-for-bit, anything else is encoded directly to ALAC. The 96 kHz staging WAV detour is gone.
+- **Fixed truncated audio in rendered videos.** `-shortest` combined with `-t` dropped whole
+  compressed audio packets, so a 12 s ALAC source produced 11.43 s of audio. Each render path now
+  caps with `-t` alone.
+- **Repository rule.** Agents no longer run the full test suite: it is prohibited because it does
+  not find bugs and does not solve reported problems. Local validation uses targeted `--filter`
+  tests plus the format and lint gates; CI may still run the suite.
+
 ## [1.3] - 2026-10-31
 
 Raw `-bass` access, plus the fixes from the post-`v1.2` code audit.

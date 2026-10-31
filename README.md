@@ -116,14 +116,14 @@ Requires Swift tools 6.4+ (built and tested with Swift 6.4.2 / Xcode 27.2) and m
 swift build --package-path Sources -c release
 # The product path moved with the Swift 6.4 build system, so ask SwiftPM for it instead of hardcoding it.
 cp "$(swift build --package-path Sources -c release --show-bin-path)/converter" ./converter && chmod +x ./converter
-swift test --package-path Sources     # 285 tests, ~11 min
+swift test --package-path Sources --filter ConverterTests.<testName>  # targeted test
 ```
 
-A prebuilt `converter` binary ships at the repository root. CI runs the build and full suite on every push and PR to `main` ([ci.yml](./.github/workflows/ci.yml)).
+A prebuilt `converter` binary ships at the repository root. Full-suite runs are prohibited locally (`AGENTS.md`); CI runs the build and full suite on every push and PR to `main` ([ci.yml](./.github/workflows/ci.yml)).
 
 ## Releases
 
-The current version is **1.3**, single-sourced in [`VERSION`](./VERSION). Releases are published on
+The current version is **1.4**, single-sourced in [`VERSION`](./VERSION). Releases are published on
 [GitHub Releases](https://github.com/Pummelchen/Converter/releases) with the `converter` binary and
 `converter.sha256` attached; `scripts/release.sh` cuts one and is a dry run unless given `--publish`.
 Verify a download with:
