@@ -46,12 +46,15 @@ there rather than at the root.
 swift build --package-path Sources -c release
 cp "$(swift build --package-path Sources -c release --show-bin-path)/converter" ./converter && chmod +x ./converter
 
-swift test --package-path Sources
 swift test --package-path Sources --filter ConverterTests.<testName>
 ```
 
-The suite performs **real media processing**: 285 tests, roughly 11 minutes. Plan
-for it rather than assuming it is fast.
+**Never run the full test suite.** An unfiltered `swift test --package-path Sources`
+is prohibited in this repository: full-suite runs are considered useless — they do
+not find bugs and do not solve reported problems. Run only the targeted tests that
+cover the change, plus `scripts/check-format.sh` and `scripts/lint-budget.sh`.
+
+CI may run the suite. An agent must not.
 
 ## Run
 
