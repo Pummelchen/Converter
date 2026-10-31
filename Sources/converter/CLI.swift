@@ -496,11 +496,14 @@ struct CLIOptions {
                 gainDB: BassBoostSpec.defaultGainDB
             )
         }
-        guard let frequency = Double(actionArgs[0]), frequency.isFinite, frequency > 0 else {
-            throw AppError("Bass frequency must be a positive number of Hz.")
+        // ffmpeg's bass filter accepts frequency 0..999999 Hz and gain -900..900 dB; anything
+        // outside that is rejected by ffmpeg mid-render, and an extreme finite gain can overflow
+        // the float staging render to infinity before the headroom measurement.
+        guard let frequency = Double(actionArgs[0]), frequency.isFinite, frequency > 0, frequency <= 999_999 else {
+            throw AppError("Bass frequency must be positive and no more than 999999 Hz.")
         }
-        guard let gain = Double(actionArgs[1]), gain.isFinite else {
-            throw AppError("Bass gain must be a finite number of dB.")
+        guard let gain = Double(actionArgs[1]), gain.isFinite, abs(gain) <= 900 else {
+            throw AppError("Bass gain must be between -900 and 900 dB.")
         }
         return BassBoostSpec(frequencyHz: frequency, gainDB: gain)
     }

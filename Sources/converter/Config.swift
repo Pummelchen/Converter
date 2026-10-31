@@ -283,7 +283,7 @@ struct ProjectConfig {
         case "DURATION_TOLERANCE_SEC": durationToleranceSec = try parseDouble(key, value)
         case "CRC_CHUNK_BYTES": crcChunkBytes = try parseInt(key, value)
         case "WAV_SAMPLE_RATE": wavSampleRate = try parseInt(key, value)
-        case "WAV_CODEC": wavCodec = value
+        case "WAV_CODEC": wavCodec = value.lowercasedASCII
         case "WAV_CHANNELS": wavChannels = try parseInt(key, value)
         case "WAV_WRITE_BEXT": wavWriteBext = try parseInt(key, value)
         case "MP3_SAMPLE_RATE": mp3SampleRate = try parseInt(key, value)
@@ -318,14 +318,14 @@ struct ProjectConfig {
         case "VIDEO_MP4_AUDIO_SAMPLE_RATE": videoMP4AudioSampleRate = try parseInt(key, value)
         case "VIDEO_MP4_WIDTH": videoMP4Width = try parseInt(key, value)
         case "VIDEO_MP4_HEIGHT": videoMP4Height = try parseInt(key, value)
-        case "VIDEO_MP4_SCALE_FILTER": videoMP4ScaleFilter = value
-        case "VIDEO_MP4_PIXEL_FORMAT": videoMP4PixelFormat = value
+        case "VIDEO_MP4_SCALE_FILTER": videoMP4ScaleFilter = value.lowercasedASCII
+        case "VIDEO_MP4_PIXEL_FORMAT": videoMP4PixelFormat = value.lowercasedASCII
         case "VIDEO_MP4_TAG": videoMP4Tag = value
         case "VIDEO_MP4_VERIFY_CODEC": videoMP4VerifyCodec = value
         case "VIDEO_COLOR_PRIMARIES": videoColorPrimaries = value
         case "VIDEO_COLOR_TRANSFER": videoColorTransfer = value
         case "VIDEO_COLOR_SPACE": videoColorSpace = value
-        case "VIDEO_COLOR_RANGE": videoColorRange = value
+        case "VIDEO_COLOR_RANGE": videoColorRange = canonicalColorRange(value)
         case "SHORT_MP4_CLIP_SECONDS": shortMP4ClipSeconds = value
         case "SHORT_MP4_FPS": shortMP4FPS = value
         case "SHORT_MP4_SCALE_W": shortMP4ScaleW = try parseInt(key, value)
@@ -602,6 +602,19 @@ private let allowedScaleFilters: Set<String> = [
 
 // ffmpegFilterRangeValue maps tv/pc onto the filter spelling; both spellings are accepted.
 private let allowedColorRanges: Set<String> = ["tv", "pc", "limited", "full"]
+
+// ffprobe normalises the range to tv/pc (`-color_range limited` is reported as `tv`), so store the
+// canonical spelling the verifier compares against instead of the operator's alias.
+private func canonicalColorRange(_ value: String) -> String {
+    switch value.lowercasedASCII {
+    case "limited":
+        return "tv"
+    case "full":
+        return "pc"
+    default:
+        return value.lowercasedASCII
+    }
+}
 
 private func requireAllowedValue(_ value: String, _ allowed: Set<String>, _ name: String) throws {
     try requireNonEmpty(value, name)

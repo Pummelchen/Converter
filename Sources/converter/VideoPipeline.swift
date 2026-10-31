@@ -25,6 +25,20 @@ extension ConverterTool {
         return ["-preset", preset, "-crf", crf]
     }
 
+    // The configured tag belongs to the verified codec, but a mixed ladder can fall through to the
+    // other family: `-tag:v hvc1` on an H.264 rung is rejected by ffmpeg ("Tag hvc1 incompatible
+    // with output codec id"), so name the tag for the encoder actually being run.
+    func videoTag(forEncoder encoder: String, configured: String) -> String {
+        switch verifyCodec(forEncoder: encoder) {
+        case "h264":
+            return "avc1"
+        case "hevc":
+            return configured.lowercasedASCII == "hev1" ? "hev1" : "hvc1"
+        default:
+            return configured
+        }
+    }
+
     private func mp4RenderTail(spec: VideoOutputSpec, tag: String?, audioStreamCopy: Bool) -> [String] {
         var args = [
             "-pix_fmt", spec.pixelFormat,
@@ -187,7 +201,11 @@ extension ConverterTool {
                     preset: encode.softwarePreset,
                     crf: encode.softwareCRF
                 )
-                arguments += mp4RenderTail(spec: spec, tag: encode.tag, audioStreamCopy: encode.audioStreamCopy)
+                arguments += mp4RenderTail(
+                    spec: spec,
+                    tag: encode.tag.map { videoTag(forEncoder: encoder, configured: $0) },
+                    audioStreamCopy: encode.audioStreamCopy
+                )
                 _ = try runner.run("ffmpeg", arguments + [temp.path])
                 try verifyRenderedVideo(temp, spec: spec, codec: verifyCodec(forEncoder: encoder))
                 try encoderIndependent { try publishTemp(temp, to: encode.output) }
@@ -239,7 +257,8 @@ extension ConverterTool {
             // A portrait source smaller than the frame is upscaled here, so it needs the
             // configured high-quality scaler rather than ffmpeg's default.
             framing =
-                "scale=w=\(width):h=\(height):force_original_aspect_ratio=decrease:flags=\(scaleQualityFlags),"
+                "scale=w=\(width):h=\(height):force_original_aspect_ratio=decrease:"
+                + "flags=\(scaleQualityFlags):\(scaleColorConversionOptions),"
                 + "pad=\(width):\(height):(ow-iw)/2:(oh-ih)/2:color=black"
         case .centerCut:
             // `increase` guarantees both axes reach the target, so the centred crop never
@@ -247,7 +266,8 @@ extension ConverterTool {
             // (a 7680x4320 master contributes only its middle 2430x4320), so it uses the
             // configured high-quality scaler rather than the default.
             framing =
-                "scale=w=\(width):h=\(height):force_original_aspect_ratio=increase:flags=\(scaleQualityFlags),"
+                "scale=w=\(width):h=\(height):force_original_aspect_ratio=increase:"
+                + "flags=\(scaleQualityFlags):\(scaleColorConversionOptions),"
                 + "crop=\(width):\(height)"
         }
         return framing + ",fps=\(config.shortMP4FPS),format=\(config.shortMP4PixelFormat)," + colorParameterFilter()
@@ -262,6 +282,14 @@ extension ConverterTool {
     // cost time and buy precision, which is the trade this pipeline wants.
     private var scaleQualityFlags: String {
         "\(config.videoMP4ScaleFilter)+accurate_rnd+full_chroma_int"
+    }
+
+    // swscale converts RGB to YUV with BT.601 coefficients unless told otherwise, while every
+    // output is tagged with config.videoColorSpace (bt709 by default). `setparams` only writes
+    // metadata, so the matrix has to be named on the scale that performs the conversion.
+    private var scaleColorConversionOptions: String {
+        let range = ["pc", "full"].contains(config.videoColorRange.lowercasedASCII) ? "pc" : "tv"
+        return "out_color_matrix=\(config.videoColorSpace):out_range=\(range)"
     }
 
     private func colorParameterFilter() -> String {
@@ -359,6 +387,10 @@ extension ConverterTool {
             throw AppError("Unable to read numeric audio duration from: \(audioFile.path)")
         }
         let output = try outputOverride ?? resolveOutputPath("\(audioFile.stem)_8K.mp4")
+        // --output-file must not be able to replace either render input: Output is both the
+        // source and the destination directory, so a name collision would destroy the only copy.
+        try requireDistinctOutput(output, from: imageFile)
+        try requireDistinctOutput(output, from: audioFile)
 
         let spec = VideoOutputSpec(
             width: config.videoMP4Width,
@@ -401,7 +433,8 @@ extension ConverterTool {
                     "-t", ffmpegArg("%.6f", duration)
                 ],
                 videoFilter:
-                    "scale=\(config.videoMP4Width):\(config.videoMP4Height):flags=\(scaleQualityFlags),"
+                    "scale=\(config.videoMP4Width):\(config.videoMP4Height):"
+                    + "flags=\(scaleQualityFlags):\(scaleColorConversionOptions),"
                     + "format=\(config.videoMP4PixelFormat)," + colorParameterFilter(),
                 encoderLadder: encoders,
                 vtQuality: config.videoMP4VTQuality,
@@ -489,7 +522,8 @@ extension ConverterTool {
     // needs the same configured scaler as the other short paths instead of ffmpeg's default.
     func mp4ToShortVideoFilter() -> String {
         "crop=min(iw\\,ih*9/16):ih," + "fps=\(config.shortMP4FPS),"
-            + "scale=\(config.shortMP4ScaleW):\(config.shortMP4ScaleH):flags=\(scaleQualityFlags),"
+            + "scale=\(config.shortMP4ScaleW):\(config.shortMP4ScaleH):"
+            + "flags=\(scaleQualityFlags):\(scaleColorConversionOptions),"
             + "format=\(config.shortMP4PixelFormat)," + colorParameterFilter()
     }
 
@@ -524,6 +558,9 @@ extension ConverterTool {
         let output = cli.outDir
             .appendingPathComponent(outputStem ?? portraitShortMP4Stem(forAudioStem: audioFile.stem))
             .appendingPathExtension("mp4")
+        // An audio-only .mp4 is a valid short source, and its stem can resolve back to itself
+        // (a source already named _Short/_8K_Short); publishing would replace the input.
+        try requireDistinctOutput(output, from: audioFile)
 
         let spec = VideoOutputSpec(
             width: config.shortMP4ScaleW,

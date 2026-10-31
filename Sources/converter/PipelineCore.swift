@@ -477,6 +477,14 @@ final class ConverterTool: Sendable {
             try ensureWritableDirectory(cli.outDir)
             return
         }
+        if cli.action == .clean {
+            // Cleaning only needs the output directory: a Mac that has not installed ffmpeg yet
+            // must still be able to remove this tool's transient files.
+            try ensureWritableDirectory(cli.outDir)
+            recoverPublishBackups()
+            cleanupOrphanedConverterTempFiles()
+            return
+        }
         try ensureDirectory(cli.srcDir)
         try ensureWritableDirectory(cli.outDir)
         recoverPublishBackups()
@@ -812,10 +820,12 @@ final class ConverterTool: Sendable {
     }
 
     func mediaDuration(_ file: URL) throws -> Double? {
-        guard let value = try ffprobeValue(entries: "format=duration", file: file) else {
+        guard let value = try ffprobeValue(entries: "format=duration", file: file),
+            let duration = Double(value), duration.isFinite
+        else {
             return nil
         }
-        return Double(value)
+        return duration
     }
 
     // One `magick identify` answers geometry, format, colorspace, and EXIF orientation together.

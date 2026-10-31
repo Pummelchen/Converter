@@ -229,7 +229,13 @@ extension ConverterTool {
             )
 
             var issues: [String] = []
-            if !metrics.analysisLimited, let integratedLUFS = metrics.integratedLUFS {
+            if !metrics.analysisLimited {
+                // A loudnorm field of "-inf" parses to nil. Treating that as "no check" let a
+                // sparse-click file with no measurable programme loudness pass the floor.
+                guard let integratedLUFS = metrics.integratedLUFS else {
+                    issues.append("integrated loudness could not be measured")
+                    return AudioQCResult(policy: policy, metrics: metrics, passed: false, issues: issues)
+                }
                 if integratedLUFS < policy.minimumLUFS || integratedLUFS > policy.maximumLUFS {
                     issues.append(
                         String(
@@ -1062,6 +1068,9 @@ extension ConverterTool {
         guard let sourceDuration = try mediaDuration(source), let outputDuration = try mediaDuration(output) else {
             throw AppError("Duration probe failed for comparison: src='\(source.path)' out='\(output.path)'")
         }
+        guard sourceDuration.isFinite, outputDuration.isFinite else {
+            throw AppError("Duration probe returned a non-finite value: src='\(source.path)' out='\(output.path)'")
+        }
         let delta = abs(sourceDuration - outputDuration)
         if delta > (tolerance ?? config.durationToleranceSec) {
             throw AppError(
@@ -1077,7 +1086,15 @@ extension ConverterTool {
         ).metrics
         let outputMetrics = try audioQCResult(for: output, policy: config.deliveryAudioQCPolicy).metrics
 
-        if let sourceLUFS = sourceMetrics.integratedLUFS, let outputLUFS = outputMetrics.integratedLUFS {
+        if let sourceLUFS = sourceMetrics.integratedLUFS {
+            // Do not fall back to a peak comparison when only the output lost its loudness
+            // measurement: peaks can match while the render's sustained energy is gone.
+            guard let outputLUFS = outputMetrics.integratedLUFS, outputLUFS.isFinite else {
+                throw AppError(
+                    "Unable to compare integrated loudness: source measures \(sourceLUFS) LUFS but the "
+                        + "output has none (\(output.path))."
+                )
+            }
             let delta = abs(sourceLUFS - outputLUFS)
             if delta > toleranceDB {
                 throw AppError(

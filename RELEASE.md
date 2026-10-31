@@ -221,7 +221,7 @@ Leave previous releases' notes and performance tables alone.
   to `swiftlint` 0.65.1), `shasum -a 256 -c docs/converter.sha256`, the `Swift version 6.4`
   assertion, both `-warnings-as-errors` builds (the release one also carrying
   `-Xcc -Wall -Xcc -Wextra -Xcc -Werror`), and `swift test --package-path Sources` —
-  **278 tests, around 11 minutes, doing real media processing**, so it is not a fast
+  **285 tests, around 11 minutes, doing real media processing**, so it is not a fast
   gate and two of them must not overlap on an 8 GB machine. `.github/workflows/ci.yml`
   runs these on the `xcode-27` image as `build-and-test` and `static-analysis`, the
   latter adding gitleaks over the full history, semgrep, cppcheck at

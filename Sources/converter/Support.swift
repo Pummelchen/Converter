@@ -308,6 +308,17 @@ private func parseTimecodeComponent(
     return Double(parsed)
 }
 
+// A byte cap must not end in the middle of a UTF-8 scalar: String(data:encoding:) then returns nil
+// for the whole buffer and the captured diagnostic is lost. Only used when a cap actually truncates,
+// so dropping trailing non-ASCII bytes costs a few characters, not the message.
+func trimToUTF8ScalarBoundary(_ data: Data) -> Data {
+    var trimmed = data
+    while let last = trimmed.last, last & 0x80 != 0 {
+        trimmed.removeLast()
+    }
+    return trimmed
+}
+
 func formatCommand(_ executable: String, _ arguments: [String]) -> String {
     ([executable] + arguments).map { argument in
         if argument.contains(where: { $0.isWhitespace || $0 == "\"" || $0 == "'" }) {

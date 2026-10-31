@@ -790,6 +790,17 @@ final class ConverterTests: XCTestCase {
         )
     }
 
+    func testConfigCanonicalisesCaseAndRangeAliases() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.overwriteConfig(
+            IntegrationWorkspace.defaultConfig
+                + "\nWAV_CODEC=PCM_S24LE\nVIDEO_MP4_SCALE_FILTER=LANCZOS\nVIDEO_COLOR_RANGE=LIMITED\n")
+        let loaded = try loadConfig(from: workspace)
+        XCTAssertEqual(loaded.wavCodec, "pcm_s24le", "ffmpeg encoder names are case-sensitive")
+        XCTAssertEqual(loaded.videoMP4ScaleFilter, "lanczos", "swscale flag names are case-sensitive")
+        XCTAssertEqual(loaded.videoColorRange, "tv", "ffprobe reports limited as tv")
+    }
+
     func testBassParsesDefaultsAndManualValues() throws {
         let root = URL(fileURLWithPath: "/tmp/converter-test")
         let defaultOptions = try CLIOptions.parse(
@@ -839,6 +850,26 @@ final class ConverterTests: XCTestCase {
             ).bassBoostSpec()
         ) { error in
             XCTAssertTrue(error.localizedDescription.contains("positive"))
+        }
+        XCTAssertThrowsError(
+            try CLIOptions.parse(
+                arguments: ["-bass", "80", "1000"],
+                environment: [:],
+                scriptDirectory: root,
+                scriptName: "converter"
+            ).bassBoostSpec()
+        ) { error in
+            XCTAssertTrue(error.localizedDescription.contains("900"))
+        }
+        XCTAssertThrowsError(
+            try CLIOptions.parse(
+                arguments: ["-bass", "1000000", "5"],
+                environment: [:],
+                scriptDirectory: root,
+                scriptName: "converter"
+            ).bassBoostSpec()
+        ) { error in
+            XCTAssertTrue(error.localizedDescription.contains("999999"))
         }
     }
 
@@ -3621,6 +3652,47 @@ final class ConverterTests: XCTestCase {
         )
         XCTAssertEqual(same.samples, 1_000)
         XCTAssertEqual(same.failingSamples, 0)
+    }
+
+    // The source and output directories can name the same directory through a symlink; a textual
+    // path comparison then lets a render overwrite its own source.
+    func testRequireDistinctOutputResolvesSymlinkAliases() throws {
+        let workspace = try IntegrationWorkspace()
+        let real = workspace.root.appendingPathComponent("real")
+        try FileManager.default.createDirectory(at: real, withIntermediateDirectories: true)
+        let file = real.appendingPathComponent("art.png")
+        try Data("source".utf8).write(to: file)
+        let link = workspace.root.appendingPathComponent("link")
+        try FileManager.default.createSymbolicLink(at: link, withDestinationURL: real)
+
+        let tool = try workspace.makeTool(arguments: ["-aipix"])
+        XCTAssertThrowsError(try tool.requireDistinctOutput(link.appendingPathComponent("art.png"), from: file))
+    }
+
+    // -clean removes this tool's transients; it must not demand a media toolchain first.
+    func testCleanDoesNotRequireRuntimeDependencyBootstrap() throws {
+        XCTAssertFalse(Action.clean.requiresRuntimeDependencyBootstrap)
+    }
+
+    // A mixed encoder ladder must not carry the HEVC tag onto an H.264 rung; ffmpeg rejects it.
+    func testVideoTagFollowsEncoderFamily() throws {
+        let workspace = try IntegrationWorkspace()
+        let tool = try workspace.makeTool(arguments: ["-full"])
+        XCTAssertEqual(tool.videoTag(forEncoder: "libx264", configured: "hvc1"), "avc1")
+        XCTAssertEqual(tool.videoTag(forEncoder: "libx265", configured: "hvc1"), "hvc1")
+        XCTAssertEqual(tool.videoTag(forEncoder: "libx265", configured: "hev1"), "hev1")
+        XCTAssertEqual(tool.videoTag(forEncoder: "custom", configured: "hvc1"), "hvc1")
+    }
+
+    // --output-file is not checked against the album track list by the CLI, so the render guard is
+    // the only thing standing between a colliding name and a destroyed input.
+    func testAlbumRefusesOutputOverAnInputTrack() throws {
+        let workspace = try IntegrationWorkspace()
+        let track = workspace.output.appendingPathComponent("01.wav")
+        let tool = try workspace.makeTool(arguments: ["-album"])
+        XCTAssertThrowsError(try tool.buildAlbum(from: [track], output: track)) { error in
+            XCTAssertTrue(error.localizedDescription.contains("over its own source"), error.localizedDescription)
+        }
     }
 }
 

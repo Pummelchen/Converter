@@ -326,7 +326,7 @@ final class ProcessRunner: Sendable {
         }
         for (label, capture) in [("stdout", stdout), ("stderr", stderr)] {
             if capture.wasTruncated {
-                logger.debug("Captured \(label) exceeded the cap; the oldest bytes were dropped.")
+                logger.debug("Captured \(label) exceeded the cap; the newest bytes were dropped.")
             }
             if let failure = capture.capturedReadFailure {
                 logger.warn("Reading the child's \(label) failed: \(failure.localizedDescription)")

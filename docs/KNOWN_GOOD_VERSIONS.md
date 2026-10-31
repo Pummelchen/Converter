@@ -290,6 +290,21 @@ already adopted as ratchets; this audit adopted the fifth and documented the two
   they already use; `InlineArray` does not beat the slice-by-8 `[UInt32]` tables; `borrow`/`mutate`
   accessors have no computed property here whose copy they would remove.
 
+### Post-release audit (2026-10-31)
+
+A follow-up audit after `v1.2` fixed nine classes of defect without changing the toolchain:
+`-run_pix` on a JPEG published hidden, cleanup-deleted deliverables; a discovered JPEG portrait
+failed the still step; `--output-file` on `-m4atomp4`/`-short` and the album could overwrite a
+render input (the distinct-path guard also resolves symlink aliases now); a mixed encoder ladder
+carried the HEVC tag onto an H.264 rung; RGB→YUV conversion used BT.601 while tagging BT.709;
+`VIDEO_COLOR_RANGE=limited/full` (and mixed-case encoder/scaler names) never verified; the bass
+headroom path failed open on an unmeasurable peak and did not re-check the encoded file; non-finite
+durations could trap or pass; and `-clean` demanded the media toolchain.
+
+- `swift build --package-path Sources --build-tests -Xswiftc -warnings-as-errors` — success
+- `swift test --package-path Sources` — 285 tests, 0 failures (776 s)
+- Committed binary rebuilt; checksum and provenance updated. No new tag was cut.
+
 ## How to collect these versions locally
 
 ```bash

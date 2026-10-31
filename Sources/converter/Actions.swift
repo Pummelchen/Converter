@@ -535,6 +535,10 @@ extension ConverterTool {
     }
 
     @concurrent func fullImagePipeline(sourceImage: URL, deliveryPrefix: String? = nil) async throws -> ImageArtifacts {
+        // Name deliverables after the source the operator supplied, not the run-scoped temp PNG
+        // that a JPEG is decoded into: a temp-derived prefix would publish hidden files under the
+        // `.converter-tmp.` namespace and the run cleanup would then delete them.
+        let prefix = deliveryPrefix ?? imagePrefix(from: sourceImage.stem)
         let sourcePNG: URL
         let ext = sourceImage.pathExtension.lowercasedASCII
         if ext == "jpg" || ext == "jpeg" {
@@ -545,7 +549,7 @@ extension ConverterTool {
         }
 
         logger.info("Full step: PNG variants")
-        let variants = try await withImagePermit { try self.aipixFile(sourcePNG, deliveryPrefix: deliveryPrefix) }
+        let variants = try await withImagePermit { try self.aipixFile(sourcePNG, deliveryPrefix: prefix) }
 
         async let nftTask: NFTOutputs = withImagePermit {
             self.logger.info("Full step: NFT assets")

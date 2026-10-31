@@ -387,6 +387,49 @@ final class PipelineIntegrationTests: XCTestCase {
     }
 
     // The stills must show exactly what the shorts show: the fitted one pads with black, the
+    // A JPEG source is staged through a run-scoped temp PNG; the deliverables used to inherit that
+    // temp stem, so they were hidden and the run cleanup deleted them.
+    func testRunPixOnJPEGPublishesVisibleDeliverables() async throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["ffmpeg", "ffprobe", "magick"])
+        _ = try workspace.createImage(name: "cover", ext: "jpg", width: 320, height: 180)
+
+        let tool = try workspace.makeTool(arguments: ["-run_pix"])
+        defer { tool.cleanupTemps() }
+        try tool.initializeForExecution()
+        try await tool.stepRunPix()
+
+        for name in ["cover_8K.png", "cover_4K.png", "cover_NFT8K.png", "cover_3K.png", "cover_2K.png"] {
+            let path = workspace.output.appendingPathComponent(name).path
+            XCTAssertTrue(FileManager.default.fileExists(atPath: path), "missing \(name)")
+        }
+        tool.cleanupTemps()
+        let entries = try FileManager.default.contentsOfDirectory(atPath: workspace.output.path)
+        XCTAssertFalse(
+            entries.contains { $0.hasPrefix(".converter-tmp.") },
+            "deliverables must not live in the run-scoped temp namespace: \(entries)")
+    }
+
+    // The full run accepts a discovered portrait as .png/.jpg/.jpeg and classifies it by displayed
+    // orientation, so the still step must not reject a JPEG portrait.
+    func testPortraitShortStillsAcceptJPEGSource() throws {
+        let workspace = try IntegrationWorkspace()
+        try workspace.requireCommands(["magick"])
+        let portrait = try workspace.createImage(name: "portrait", ext: "jpg", width: 180, height: 320)
+
+        let tool = try workspace.makeTool(arguments: ["-full"])
+        defer { tool.cleanupTemps() }
+        try tool.initializeForExecution()
+        let stills = try tool.portraitShortStills(from: portrait, mode: .fit, prefix: "art", sharpenSource: true)
+
+        for file in stills.all {
+            XCTAssertTrue(FileManager.default.fileExists(atPath: file.path), "missing \(file.lastPathComponent)")
+            let dimensions = try XCTUnwrap(try tool.imageDimensions(file))
+            XCTAssertEqual(dimensions.0, tool.config.shortMP4ScaleW, "width of \(file.lastPathComponent)")
+            XCTAssertEqual(dimensions.1, tool.config.shortMP4ScaleH, "height of \(file.lastPathComponent)")
+        }
+    }
+
     // centre cut fills the frame. Verified on pixels, not on the command that produced them.
     func testPortraitShortStillsMatchTheirRenderFraming() throws {
         let workspace = try IntegrationWorkspace()

@@ -425,7 +425,9 @@ extension ConverterTool {
     func portraitShortStills(
         from source: URL, mode: ShortFillMode, prefix: String, sharpenSource: Bool
     ) throws -> PortraitShortStills {
-        try preflightPNGInput(source)
+        // A discovered portrait may be a JPEG (the full run accepts .png/.jpg/.jpeg and classifies
+        // by displayed orientation); ImageMagick already handles both and writes PNG stills.
+        try preflightImageInput(source)
         let width = config.shortMP4ScaleW
         let height = config.shortMP4ScaleH
         // Labelled by framing, then the standard 8K image suffixes, so the stills sit beside

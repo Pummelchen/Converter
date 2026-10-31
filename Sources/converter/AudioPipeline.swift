@@ -58,6 +58,11 @@ extension ConverterTool {
         guard let actualDuration = try mediaDuration(file) else {
             throw AppError("Duration probe failed for \(label): \(file.path)")
         }
+        guard actualDuration.isFinite, expectedSeconds.isFinite else {
+            throw AppError(
+                "Duration mismatch for \(label): got=\(actualDuration) expected=\(expectedSeconds) (non-finite)"
+            )
+        }
         let allowedTolerance = tolerance ?? config.durationToleranceSec
         let delta = abs(actualDuration - expectedSeconds)
         if delta > allowedTolerance {
@@ -603,8 +608,8 @@ extension ConverterTool {
     // so no flat-topped samples reach the published file and nothing has to be limited or
     // compressed. Lossless outputs only need the sample peak below 0 dBFS; lossy encoders can
     // overshoot between samples, so they aim at -1 dBTP instead.
-    func applyBassHeadroom(floatWAV: URL, source: URL, truePeakCeilingDBFS: Double? = nil) throws -> URL {
-        let policy = AudioQCPolicy(
+    func bassHeadroomPolicy() -> AudioQCPolicy {
+        AudioQCPolicy(
             name: "bass-headroom",
             targetLUFS: config.audioQCTargetLUFS,
             lufsTolerance: 200,
@@ -615,24 +620,37 @@ extension ConverterTool {
             maxClippedSamples: config.audioQCMaxClippedSamples,
             minimumAnalysisSeconds: config.audioQCMinimumAnalysisSeconds
         )
-        let metrics = try audioQCResult(for: floatWAV, policy: policy).metrics
-        var required = -Double.infinity
-        if let peak = metrics.peakLevelDBFS ?? metrics.maxVolumeDBFS, peak.isFinite {
-            required = max(required, peak - bassHeadroomCeilingDBFS)
+    }
+
+    func applyBassHeadroom(floatWAV: URL, source: URL, truePeakCeilingDBFS: Double? = nil) throws -> URL {
+        let metrics = try audioQCResult(for: floatWAV, policy: bassHeadroomPolicy()).metrics
+        // Fail closed: an unmeasurable peak must not be treated as "already below the ceiling".
+        guard let peak = metrics.peakLevelDBFS, peak.isFinite else {
+            throw AppError(
+                "Unable to measure the bass-adjusted render peak for \(source.basename); "
+                    + "refusing to stage it without headroom."
+            )
         }
-        if let truePeakCeilingDBFS, let truePeak = metrics.truePeakDBTP, truePeak.isFinite {
+        var required = peak - bassHeadroomCeilingDBFS
+        if let truePeakCeilingDBFS {
+            guard let truePeak = metrics.truePeakDBTP, truePeak.isFinite else {
+                throw AppError(
+                    "Unable to measure the bass-adjusted true peak for \(source.basename); "
+                        + "refusing to stage it without headroom."
+                )
+            }
             required = max(required, truePeak - truePeakCeilingDBFS)
         }
         let stagedStem = "\(source.stem).bass.staged"
-        guard required.isFinite, required > 0 else {
+        guard required > 0 else {
             return try processInternalWAV(
                 floatWAV, filter: "", in: cli.outDir, stem: stagedStem, verifySourceStandard: false)
         }
-        let peak = metrics.peakLevelDBFS.map { String(format: "%.2f", $0) } ?? "n/a"
         let truePeak = metrics.truePeakDBTP.map { String(format: "%.2f", $0) } ?? "n/a"
         logger.info(
-            "Bass adjustment of \(source.basename) peaks at \(peak) dBFS / \(truePeak) dBTP before staging; "
-                + "applying \(String(format: "%.2f", -required)) dB of headroom so the published file does not clip."
+            "Bass adjustment of \(source.basename) peaks at \(String(format: "%.2f", peak)) dBFS / \(truePeak) dBTP "
+                + "before staging; applying \(String(format: "%.2f", -required)) dB of headroom so the "
+                + "published file does not clip."
         )
         return try processInternalWAV(
             floatWAV,
@@ -643,9 +661,24 @@ extension ConverterTool {
         )
     }
 
+    // Also the reuse verifier: a _bass file left by an older build (before headroom protection)
+    // has the right codec and duration but measures full scale here, so it is rebuilt instead of
+    // being accepted. The measured peak also catches resampling overshoot introduced by the final
+    // encode, which the float staging measurement cannot see.
     func verifyBassOutput(_ file: URL, source: URL) throws {
         try verifyTypedAudioOutput(file, sourceExtension: source.pathExtension, source: source, qcPolicy: nil)
         try verifyDurationMatch(source: source, output: file)
+        let metrics = try audioQCResult(for: file, policy: bassHeadroomPolicy()).metrics
+        guard let peak = metrics.peakLevelDBFS, peak.isFinite else {
+            throw AppError("Unable to measure the bass output peak for \(file.basename).")
+        }
+        guard peak <= bassHeadroomCeilingDBFS + 0.05 else {
+            throw AppError(
+                String(
+                    format: "Bass output %@ peaks at %.2f dBFS, above the %.2f dBFS headroom ceiling.",
+                    file.basename, peak, bassHeadroomCeilingDBFS
+                ))
+        }
     }
 
     func bassBoostMedia(_ source: URL, spec: BassBoostSpec) throws -> URL {
@@ -1779,17 +1812,24 @@ extension ConverterTool {
     static let internalWAVBytesPerSample = 3
 
     func estimateWAVBytes(duration: Double, channels: Int) -> UInt64 {
-        guard duration > 0, channels > 0 else { return 0 }
+        guard duration.isFinite, duration > 0, channels > 0 else { return 0 }
         let bytesPerSecond = config.wavSampleRate * channels * Self.internalWAVBytesPerSample
-        return UInt64((duration * Double(bytesPerSecond)).rounded()) + 1_048_576
+        // A constructed container can report a huge or non-finite duration; converting that to
+        // UInt64 would trap. Unknown means "skip the estimate", as with an unreadable free-space
+        // value (#0149).
+        guard let bytes = UInt64(exactly: (duration * Double(bytesPerSecond)).rounded()) else { return 0 }
+        return bytes + 1_048_576
     }
 
     // The BW64 path writes a full-length raw f32le temp and then the BW64 file, so both passes
     // need free space whether or not the source is already a WAV (#0086).
     func estimateBW64Bytes(duration: Double, channels: Int) -> UInt64 {
-        guard duration > 0, channels > 0 else { return 0 }
+        guard duration.isFinite, duration > 0, channels > 0 else { return 0 }
         let bytesPerSecond = config.wavSampleRate * channels * Self.rawFloatBytesPerSample
-        return UInt64((duration * Double(bytesPerSecond)).rounded()) * 2 + 1_048_576
+        guard let bytes = UInt64(exactly: (duration * Double(bytesPerSecond)).rounded()) else { return 0 }
+        let (doubled, overflow) = bytes.multipliedReportingOverflow(by: 2)
+        guard !overflow else { return 0 }
+        return doubled + 1_048_576
     }
 
     func requireFreeSpace(forBytes need: UInt64, label: String) throws {
@@ -1826,7 +1866,12 @@ extension ConverterTool {
     // share a path with the file it is derived from: publishing onto the source would destroy
     // the only original. The guard runs before any probe so it holds even for unreadable input.
     func requireDistinctOutput(_ output: URL, from source: URL) throws {
-        if output.standardizedFileURL.path == source.standardizedFileURL.path {
+        // `standardizedFileURL` normalises `.`/`..` but does not follow symlinks, so the same
+        // inode reached through two spellings (a linked src/out directory, for example) used to
+        // compare as different paths and the publish replaced the source.
+        let outputPath = output.resolvingSymlinksInPath().standardizedFileURL.path
+        let sourcePath = source.resolvingSymlinksInPath().standardizedFileURL.path
+        if outputPath == sourcePath {
             throw AppError(
                 "Refusing to write \(output.basename) over its own source \(source.path); the source must stay untouched."
             )
@@ -2569,6 +2614,11 @@ extension ConverterTool {
     func buildAlbum(from entries: [URL], output: URL) throws -> URL {
         guard !entries.isEmpty else {
             throw AppError("No valid album inputs provided.")
+        }
+        // --output-file is not validated against the track list, so a colliding name would
+        // replace one of the inputs with the rendered album.
+        for entry in entries {
+            try requireDistinctOutput(output, from: entry)
         }
         let channelLayout = config.wavChannels == 1 ? "mono" : "stereo"
         try ensureWritableDirectory(output.deletingLastPathComponent())

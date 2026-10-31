@@ -50,7 +50,7 @@ swift test --package-path Sources
 swift test --package-path Sources --filter ConverterTests.<testName>
 ```
 
-The suite performs **real media processing**: 278 tests, roughly 11 minutes. Plan
+The suite performs **real media processing**: 285 tests, roughly 11 minutes. Plan
 for it rather than assuming it is fast.
 
 ## Run

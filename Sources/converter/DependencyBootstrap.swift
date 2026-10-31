@@ -277,14 +277,27 @@ enum DependencyBootstrapper {
     }
 
     static func executableURL(named name: String, environment: [String: String]) -> URL? {
+        // `isExecutableFile` is an access(X_OK) check, which a searchable *directory* also
+        // passes. Returning a directory here makes the launch fail later with an unrelated
+        // "failed to launch command" instead of "required command not found".
+        func usable(_ url: URL) -> Bool {
+            var isDirectory: ObjCBool = false
+            guard FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory),
+                !isDirectory.boolValue
+            else {
+                return false
+            }
+            return FileManager.default.isExecutableFile(atPath: url.path)
+        }
+
         if name.contains("/") {
             let url = URL(fileURLWithPath: name)
-            return FileManager.default.isExecutableFile(atPath: url.path) ? url : nil
+            return usable(url) ? url : nil
         }
 
         for directory in executableSearchPathEntries(environment: environment) {
             let candidate = URL(fileURLWithPath: directory).appendingPathComponent(name)
-            if FileManager.default.isExecutableFile(atPath: candidate.path) {
+            if usable(candidate) {
                 return candidate
             }
         }
@@ -295,7 +308,7 @@ enum DependencyBootstrapper {
 extension Action {
     var requiresRuntimeDependencyBootstrap: Bool {
         switch self {
-        case .help, .list, .matrix:
+        case .help, .list, .matrix, .clean:
             return false
         default:
             return true

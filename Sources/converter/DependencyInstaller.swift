@@ -103,7 +103,8 @@ private final class InstallerErrorCapture: @unchecked Sendable {
                 self.data.withLock { captured in
                     let remaining = Self.maxCapturedBytes - captured.count
                     if remaining > 0 {
-                        captured.append(chunk.prefix(remaining))
+                        let kept = Data(chunk.prefix(remaining))
+                        captured.append(kept.count == chunk.count ? kept : trimToUTF8ScalarBoundary(kept))
                     }
                 }
             }
