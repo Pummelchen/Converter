@@ -10,14 +10,9 @@ struct AudioQCPolicy: Hashable, Sendable {
     let maxStereoImbalanceDB: Double
     let maxClippedSamples: Int
     let minimumAnalysisSeconds: Double
-    // The integrated-loudness window is symmetric around the target as configured. A
-    // source-relative rebase overrides only the bound the source breaches (#0081), so the
-    // other bound keeps guarding the render; both default to nil in the memberwise init.
-    var minimumLUFSOverride: Double?
-    var maximumLUFSOverride: Double?
 
-    var minimumLUFS: Double { minimumLUFSOverride ?? targetLUFS - lufsTolerance }
-    var maximumLUFS: Double { maximumLUFSOverride ?? targetLUFS + lufsTolerance }
+    var minimumLUFS: Double { targetLUFS - lufsTolerance }
+    var maximumLUFS: Double { targetLUFS + lufsTolerance }
 }
 
 struct AudioQCMetrics: Sendable {
@@ -54,7 +49,6 @@ struct AudioQCResult: Sendable {
 // standard with its own verification.
 enum AudioSegmentDecode: Hashable, Sendable {
     case comparisonClip
-    case renderDomain
 }
 
 // One measurement of a source segment (#0047): the leading `limitDurationMillis` of the
@@ -98,17 +92,4 @@ extension ProjectConfig {
         )
     }
 
-    var shortFormAudioQCPolicy: AudioQCPolicy {
-        AudioQCPolicy(
-            name: "short-form",
-            targetLUFS: shortAudioQCTargetLUFS,
-            lufsTolerance: shortAudioQCLUFSTolerance,
-            maxTruePeakDBTP: audioQCMaxTruePeakDBTP,
-            maxLoudnessRange: shortAudioQCMaxLoudnessRange,
-            maxDCOffset: audioQCMaxDCOffset,
-            maxStereoImbalanceDB: audioQCMaxStereoImbalanceDB,
-            maxClippedSamples: audioQCMaxClippedSamples,
-            minimumAnalysisSeconds: audioQCMinimumAnalysisSeconds
-        )
-    }
 }

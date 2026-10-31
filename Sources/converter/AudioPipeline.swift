@@ -1861,16 +1861,14 @@ extension ConverterTool {
         try requireDistinctOutput(output, from: source)
         try preflightAudioSourceForTranscode(source)
         try requireFFmpegEncoder(alacEncoderName)
-        // The delivery ceilings have to gate the encode as well: this was the only check missing from
-        // the published M4A, so an AAC encode could add clipping, DC offset or a channel imbalance
-        // and still ship. Rebased to the source, so only what the encoder *added* can fail (#0114).
-        let qcPolicy = try loudnessPreservingQCPolicy(
-            config.deliveryAudioQCPolicy, source: source, sampleRate: config.m4aSampleRate)
+        // The M4A is a lossless copy of the source, not a place to apply a delivery policy: it is
+        // verified structurally, for audibility, for duration, and that its loudness still matches
+        // the source. No true-peak/clipping ceiling is imposed on material the operator delivered hot.
         if canReuseOutput(
             output, source: source,
             verifier: {
                 try verifyM4AFile(
-                    output, sampleRate: config.m4aSampleRate, channels: config.m4aChannels, qcPolicy: qcPolicy)
+                    output, sampleRate: config.m4aSampleRate, channels: config.m4aChannels, qcPolicy: nil)
                 try verifyDurationMatch(source: source, output: output)
                 try verifySourceLoudnessPreserved(source: source, output: output, toleranceDB: 1.0)
             })
@@ -1882,8 +1880,8 @@ extension ConverterTool {
         defer { discardTempFile(sourceWAV) }
         let temp = try makeTemp(in: cli.outDir, stem: stem, ext: ".m4a")
         do {
-            try encodeInternalWAVToM4A(sourceWAV, output: temp, qcPolicy: qcPolicy)
-            try verifyM4AFile(temp, sampleRate: config.m4aSampleRate, channels: config.m4aChannels, qcPolicy: qcPolicy)
+            try encodeInternalWAVToM4A(sourceWAV, output: temp, qcPolicy: nil)
+            try verifyM4AFile(temp, sampleRate: config.m4aSampleRate, channels: config.m4aChannels, qcPolicy: nil)
             try verifyDurationMatch(source: source, output: temp)
             try verifySourceLoudnessPreserved(source: source, output: temp, toleranceDB: 1.0)
             try publishTemp(temp, to: output)
@@ -1903,16 +1901,12 @@ extension ConverterTool {
         try requireDistinctOutput(output, from: source)
         try preflightAudioSourceForTranscode(source)
         try requireFFmpegEncoder("libmp3lame")
-        // See convertAudioToM4A: same delivery ceilings, same source-relative rebase (#0114). MP3 is
-        // lossy at a different overshoot, so its true-peak allowance is the lossy one the fallback
-        // path already uses.
-        let qcPolicy = try loudnessPreservingQCPolicy(
-            config.deliveryAudioQCPolicy, source: source, sampleRate: config.mp3SampleRate,
-            truePeakAllowanceDB: 0.3)
+        // See convertAudioToM4A: the encode is verified structurally and for loudness preservation,
+        // not held to a delivery ceiling that would reject material the operator mastered hot.
         if canReuseOutput(
             output, source: source,
             verifier: {
-                try verifyMP3Standard(output, qcPolicy: qcPolicy)
+                try verifyMP3Standard(output, qcPolicy: nil)
                 try verifyDurationMatch(source: source, output: output)
                 try verifySourceLoudnessPreserved(source: source, output: output)
             })
@@ -1924,8 +1918,8 @@ extension ConverterTool {
         defer { discardTempFile(sourceWAV) }
         let temp = try makeTemp(in: cli.outDir, stem: stem, ext: ".mp3")
         do {
-            try encodeInternalWAVToMP3(sourceWAV, output: temp, qcPolicy: qcPolicy)
-            try verifyMP3Standard(temp, qcPolicy: qcPolicy)
+            try encodeInternalWAVToMP3(sourceWAV, output: temp, qcPolicy: nil)
+            try verifyMP3Standard(temp, qcPolicy: nil)
             try verifyDurationMatch(source: source, output: temp)
             try verifySourceLoudnessPreserved(source: source, output: temp)
             try publishTemp(temp, to: output)

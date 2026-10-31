@@ -205,11 +205,9 @@ func ffmpegArg(_ format: String, _ arguments: any CVarArg...) -> String {
 
 // ffmpeg's loudnorm rejects arguments outside its documented ranges — I -70..-5, TP -9..0,
 // LRA 1..50 — and fails with "Error opening output files: Result too large", which surfaces
-// as an unrelated-looking encoder failure several layers up. A policy can legitimately hold
-// values outside those ranges: a source-relative ceiling rebased onto a master that peaks
-// above 0 dBTP produces TP > 0, for example. Clamping only bounds the normalisation target
-// loudnorm would apply; the measured input_i / input_tp / input_lra it reports are unaffected,
-// so measurement stays exact.
+// as an unrelated-looking encoder failure several layers up. Clamping only bounds the
+// normalisation target loudnorm would apply; the measured input_i / input_tp / input_lra it
+// reports are unaffected, so measurement stays exact.
 enum LoudnormArgument {
     static func integrated(_ value: Double) -> String {
         ffmpegArg("%.2f", min(max(value, -70), -5))

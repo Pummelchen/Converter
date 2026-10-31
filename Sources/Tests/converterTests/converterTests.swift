@@ -979,7 +979,6 @@ final class ConverterTests: XCTestCase {
         XCTAssertEqual(config.shortAudioQCTargetLUFS, -12)
         XCTAssertEqual(config.masteringTargetLUFS, -12)
         XCTAssertEqual(config.deliveryAudioQCPolicy.targetLUFS, -12)
-        XCTAssertEqual(config.shortFormAudioQCPolicy.targetLUFS, -12)
         XCTAssertEqual(config.masteringAudioQCPolicy.targetLUFS, -12)
     }
 
@@ -1498,9 +1497,9 @@ final class ConverterTests: XCTestCase {
         )
     }
 
-    // A source-relative true-peak ceiling rebased onto a master that peaks above 0 dBTP once
-    // produced "TP=0.19", which loudnorm rejects with "Result too large" — surfacing as an
-    // encoder failure several layers away from the cause.
+    // loudnorm rejects arguments outside its documented ranges with "Result too large", which
+    // surfaces as an encoder failure several layers away from the cause; a configured target at
+    // the edge of a range must reach it clamped rather than rejected.
     func testLoudnormArgumentsStayInsideFFmpegsAcceptedRanges() throws {
         XCTAssertEqual(LoudnormArgument.truePeak(0.19), "0.00")
         XCTAssertEqual(LoudnormArgument.truePeak(-0.75), "-0.75")

@@ -56,7 +56,10 @@ extension ConverterTool {
             audioStreamCopy
             ? ["-c:a", "copy"]
             : alacAudioArguments(sampleRate: spec.audioSampleRate, channels: 2)
-        args += ["-shortest", "-movflags", "+faststart"]
+        // No `-shortest` here: combined with an explicit `-t` it drops whole compressed audio
+        // packets, truncating the track (a 12 s ALAC song stopped at 11.43 s). Each render path
+        // caps the output with `-t` instead.
+        args += ["-movflags", "+faststart"]
         return args
     }
 
@@ -133,7 +136,6 @@ extension ConverterTool {
         let pixelFormat: String
         let fallbackVerifyCodec: String
         let audioSampleRate: Int
-        let audioQCPolicy: AudioQCPolicy?
         let loudnessSource: URL
         let durationCheck: (URL) throws -> Void
     }
@@ -172,8 +174,10 @@ extension ConverterTool {
         // The audio track, the duration and the loudness do not depend on the video encoder:
         // a failure here must stop the ladder instead of re-rendering on every rung.
         try encoderIndependent {
+            // The audio is muxed from the source, never processed. Loudness preservation is
+            // enforced below; a delivery ceiling would reject material the operator delivered hot.
             try verifyALACAudioOutput(
-                url, sampleRate: spec.audioSampleRate, channels: 2, qcPolicy: spec.audioQCPolicy
+                url, sampleRate: spec.audioSampleRate, channels: 2, qcPolicy: nil
             )
             try spec.durationCheck(url)
             try verifySourceLoudnessPreserved(source: spec.loudnessSource, output: url, toleranceDB: 1.0)
@@ -371,7 +375,7 @@ extension ConverterTool {
     // `outputOverride` is the resolved --output-file of a single-output action (-m4atomp4);
     // the full and album runs never pass one, so their main MP4 always keeps <stem>_8K.mp4.
     func renderM4AToMP4(
-        imageFile: URL, audioFile: URL, audioQCPolicy: AudioQCPolicy?, outputOverride: URL? = nil
+        imageFile: URL, audioFile: URL, outputOverride: URL? = nil
     ) throws -> URL {
         try preflightPNGInput(imageFile)
         try preflightM4AInput(audioFile)
@@ -392,15 +396,15 @@ extension ConverterTool {
         try requireDistinctOutput(output, from: imageFile)
         try requireDistinctOutput(output, from: audioFile)
 
+        // The video render never stages its audio: the source goes straight to the muxer, copied
+        // when it is already standard and re-encoded losslessly into ALAC otherwise.
+        let streamCopy = try canStreamCopyAudioIntoVideo(audioFile, targetSampleRate: config.videoMP4AudioSampleRate)
         let spec = VideoOutputSpec(
             width: config.videoMP4Width,
             height: config.videoMP4Height,
             pixelFormat: config.videoMP4PixelFormat,
             fallbackVerifyCodec: config.videoMP4VerifyCodec,
             audioSampleRate: config.videoMP4AudioSampleRate,
-            audioQCPolicy: try audioQCPolicy.map {
-                try loudnessPreservingQCPolicy($0, source: audioFile, sampleRate: config.videoMP4AudioSampleRate)
-            },
             loudnessSource: audioFile,
             durationCheck: { try self.verifyDurationMatch(source: audioFile, output: $0) }
         )
@@ -410,16 +414,9 @@ extension ConverterTool {
             return output
         }
         let encoders = try requireAvailableEncoderLadder(config.videoEncoderLadder, label: "Main video")
-        let streamCopy = try canStreamCopyAudioIntoVideo(audioFile, targetSampleRate: config.videoMP4AudioSampleRate)
         if !streamCopy {
             try requireFFmpegEncoder(alacEncoderName)
         }
-        let sourceWAV =
-            streamCopy
-            ? nil
-            : try makeInternalWAV(
-                from: audioFile, in: output.deletingLastPathComponent(), stem: "\(audioFile.stem).mainmp4.source")
-        defer { sourceWAV.map(discardTempFile) }
 
         return try renderVideoWithEncoderLadder(
             VideoEncodeSpec(
@@ -429,7 +426,7 @@ extension ConverterTool {
                     "-loop", "1",
                     "-framerate", config.videoMP4InputFPS,
                     "-i", imageFile.path,
-                    "-i", (sourceWAV ?? audioFile).path,
+                    "-i", audioFile.path,
                     "-t", ffmpegArg("%.6f", duration)
                 ],
                 videoFilter:
@@ -449,21 +446,12 @@ extension ConverterTool {
         )
     }
 
-    // Every short — landscape crop, portrait fit, centre cut, full-song — delivers audio at
-    // the short MP4 rate, so its source is judged in that domain (#0015).
-    private func shortRenderQCPolicy(
-        _ policy: AudioQCPolicy, source: URL, limitDuration: Double
-    ) throws -> AudioQCPolicy {
-        try loudnessPreservingQCPolicy(
-            policy, source: source, limitDuration: limitDuration, sampleRate: config.shortMP4AudioSampleRate
-        )
-    }
-
-    func shortenMP4(_ input: URL, audioQCPolicy: AudioQCPolicy?) throws -> URL {
+    func shortenMP4(_ input: URL) throws -> URL {
         try preflightMP4Input(input, requireAudio: true, requireAudibleAudio: true)
         let shortDuration = try effectiveShortClipSeconds(for: input)
         let output = cli.outDir.appendingPathComponent(shortMP4Stem(forInputStem: input.stem)).appendingPathExtension(
             "mp4")
+        let streamCopy = try canStreamCopyAudioIntoVideo(input, targetSampleRate: config.shortMP4AudioSampleRate)
 
         let spec = VideoOutputSpec(
             width: config.shortMP4ScaleW,
@@ -471,9 +459,6 @@ extension ConverterTool {
             pixelFormat: config.shortMP4PixelFormat,
             fallbackVerifyCodec: config.shortMP4VerifyCodec,
             audioSampleRate: config.shortMP4AudioSampleRate,
-            audioQCPolicy: try audioQCPolicy.map {
-                try shortRenderQCPolicy($0, source: input, limitDuration: shortDuration)
-            },
             loudnessSource: input,
             durationCheck: { try self.verifyShortMP4Duration($0, source: input) }
         )
@@ -483,26 +468,18 @@ extension ConverterTool {
             return output
         }
         let encoders = try requireAvailableEncoderLadder(config.shortVideoEncoderLadder, label: "Short video")
-        let streamCopy = try canStreamCopyAudioIntoVideo(input, targetSampleRate: config.shortMP4AudioSampleRate)
         if !streamCopy {
             try requireFFmpegEncoder(alacEncoderName)
         }
-        let sourceWAV =
-            streamCopy
-            ? nil
-            : try makeInternalWAV(
-                from: input, in: cli.outDir, stem: "\(input.stem).shortmp4.source", duration: shortDuration)
-        defer { sourceWAV.map(discardTempFile) }
 
         return try renderVideoWithEncoderLadder(
             VideoEncodeSpec(
                 output: output,
                 inputArguments: [
                     "-hide_banner", "-nostdin", "-v", "error", "-y",
-                    "-ss", "0",
-                    "-t", ffmpegArg("%.6f", shortDuration),
                     "-i", input.path,
-                    "-i", (sourceWAV ?? input).path
+                    "-i", input.path,
+                    "-t", ffmpegArg("%.6f", shortDuration)
                 ],
                 videoFilter: mp4ToShortVideoFilter(),
                 encoderLadder: encoders,
@@ -534,7 +511,6 @@ extension ConverterTool {
     func renderAudioToShortMP4(
         imageFile: URL,
         audioFile: URL,
-        audioQCPolicy: AudioQCPolicy?,
         outputStem: String? = nil,
         skipLengthCap: Bool = false,
         fillMode: ShortFillMode = .fit
@@ -562,15 +538,13 @@ extension ConverterTool {
         // (a source already named _Short/_8K_Short); publishing would replace the input.
         try requireDistinctOutput(output, from: audioFile)
 
+        let streamCopy = try canStreamCopyAudioIntoVideo(audioFile, targetSampleRate: config.shortMP4AudioSampleRate)
         let spec = VideoOutputSpec(
             width: config.shortMP4ScaleW,
             height: config.shortMP4ScaleH,
             pixelFormat: config.shortMP4PixelFormat,
             fallbackVerifyCodec: config.shortMP4VerifyCodec,
             audioSampleRate: config.shortMP4AudioSampleRate,
-            audioQCPolicy: try audioQCPolicy.map {
-                try shortRenderQCPolicy($0, source: audioFile, limitDuration: shortDuration)
-            },
             loudnessSource: audioFile,
             durationCheck: {
                 try self.verifyDuration($0, expectedSeconds: shortDuration, label: verificationLabel, tolerance: 0.5)
@@ -583,17 +557,9 @@ extension ConverterTool {
         }
 
         let encoders = try requireAvailableEncoderLadder(config.shortVideoEncoderLadder, label: "Short video")
-        let streamCopy = try canStreamCopyAudioIntoVideo(audioFile, targetSampleRate: config.shortMP4AudioSampleRate)
         if !streamCopy {
             try requireFFmpegEncoder(alacEncoderName)
         }
-        let sourceWAV =
-            streamCopy
-            ? nil
-            : try makeInternalWAV(
-                from: audioFile, in: cli.outDir, stem: "\(audioFile.stem).portraitshort.source", duration: shortDuration
-            )
-        defer { sourceWAV.map(discardTempFile) }
 
         return try renderVideoWithEncoderLadder(
             VideoEncodeSpec(
@@ -603,7 +569,7 @@ extension ConverterTool {
                     "-loop", "1",
                     "-framerate", config.shortMP4FPS,
                     "-i", imageFile.path,
-                    "-i", (sourceWAV ?? audioFile).path,
+                    "-i", audioFile.path,
                     "-t", ffmpegArg("%.6f", shortDuration)
                 ],
                 videoFilter: shortVideoFilter(mode: fillMode),

@@ -730,11 +730,7 @@ extension ConverterTool {
         let mainVideo = try await withVideoPermit {
             try self.renderM4AToMP4(
                 imageFile: imageArtifacts.mainVideoImage,
-                audioFile: audioArtifacts.m4a,
-                // The flagship deliverable used to be published with no audio QC beyond the loudness
-                // drift and audibility checks; renderM4AToMP4 rebases this to the source, so only what
-                // the AAC encode added can fail it (#0114).
-                audioQCPolicy: self.config.deliveryAudioQCPolicy
+                audioFile: audioArtifacts.m4a
             )
         }
         if let shortImage = imageArtifacts.shortVideoImage {
@@ -763,14 +759,13 @@ extension ConverterTool {
                 try self.renderPortraitShortMP4Variants(
                     imageFile: fittedStills.png,
                     audioFile: audioArtifacts.m4a,
-                    audioQCPolicy: nil,
                     centerCutImage: centerCutStills.png
                 )
             }
         } else {
             logger.info("Full step: MP4 -> Short")
             _ = try await withVideoPermit {
-                try self.shortenMP4(mainVideo, audioQCPolicy: self.config.shortFormAudioQCPolicy)
+                try self.shortenMP4(mainVideo)
             }
         }
         try cleanTransients()
@@ -982,7 +977,6 @@ extension ConverterTool {
         try renderPortraitShortMP4Variants(
             imageFile: image,
             audioFile: audio,
-            audioQCPolicy: nil,
             centerCutImage: try centerCutSourceImage(fallback: image)
         )
     }
@@ -995,7 +989,6 @@ extension ConverterTool {
         try renderPortraitShortMP4Variants(
             imageFile: image,
             audioFile: audio,
-            audioQCPolicy: nil,
             centerCutImage: try centerCutSourceImage(fallback: image)
         )
     }
@@ -1041,14 +1034,12 @@ extension ConverterTool {
     private func renderPortraitShortMP4Variants(
         imageFile: URL,
         audioFile: URL,
-        audioQCPolicy: AudioQCPolicy?,
         centerCutImage: URL? = nil
     ) throws {
-        let qcPolicy = audioQCPolicy ?? config.shortFormAudioQCPolicy
         let shortStem = portraitShortMP4Stem(forAudioStem: audioFile.stem)
         let fullSongStem = fullSongShortMP4Stem(forAudioStem: audioFile.stem)
 
-        _ = try renderAudioToShortMP4(imageFile: imageFile, audioFile: audioFile, audioQCPolicy: qcPolicy)
+        _ = try renderAudioToShortMP4(imageFile: imageFile, audioFile: audioFile)
 
         guard let audioDuration = try mediaDuration(audioFile) else {
             throw AppError("Unable to read numeric audio duration from: \(audioFile.path)")
@@ -1059,7 +1050,6 @@ extension ConverterTool {
             _ = try renderAudioToShortMP4(
                 imageFile: imageFile,
                 audioFile: audioFile,
-                audioQCPolicy: qcPolicy,
                 outputStem: fullSongStem,
                 skipLengthCap: true
             )
@@ -1072,7 +1062,6 @@ extension ConverterTool {
         _ = try renderAudioToShortMP4(
             imageFile: centerCutImage,
             audioFile: audioFile,
-            audioQCPolicy: qcPolicy,
             outputStem: centerCutShortMP4Stem(shortStem),
             fillMode: .centerCut
         )
@@ -1081,7 +1070,6 @@ extension ConverterTool {
             _ = try renderAudioToShortMP4(
                 imageFile: centerCutImage,
                 audioFile: audioFile,
-                audioQCPolicy: qcPolicy,
                 outputStem: centerCutShortMP4Stem(fullSongStem),
                 skipLengthCap: true,
                 fillMode: .centerCut
@@ -1483,7 +1471,6 @@ extension ConverterTool {
         _ = try renderM4AToMP4(
             imageFile: image,
             audioFile: audio,
-            audioQCPolicy: config.deliveryAudioQCPolicy,
             outputOverride: outputOverride)
     }
 
@@ -1493,7 +1480,7 @@ extension ConverterTool {
             files: files, emptyMessage: "No .mp4 files found in '\(cli.srcDir.path)'.", failWhenEmpty: false
         ) { file in
             self.logger.info("MP4 -> Short: \(file.basename)")
-            return try self.shortenMP4(file, audioQCPolicy: self.config.shortFormAudioQCPolicy)
+            return try self.shortenMP4(file)
         }
     }
 
