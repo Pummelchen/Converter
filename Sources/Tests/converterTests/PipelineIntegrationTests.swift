@@ -1090,13 +1090,11 @@ final class PipelineIntegrationTests: XCTestCase {
         try tool.verifyDuration(output, expectedSeconds: spec.endSeconds, label: "fadeout output")
     }
 
-    // A hot boost is protected, not refused: the float render's overshoot becomes attenuation
-    // before the 24-bit staging pass, so the published file has no full-scale samples.
-    func testBassBoostAppliesHeadroomInsteadOfClipping() throws {
+    // The requested cut/boost is applied literally. A hot boost may clip; that is the operator's
+    // call and they check it by ear, so the output is neither attenuated nor refused.
+    func testBassBoostAppliesRequestedGainWithoutAttenuation() throws {
         let workspace = try IntegrationWorkspace()
         try workspace.requireCommands(["ffmpeg", "ffprobe"])
-        // The production ceiling: the shared test config tolerates a million clipped samples.
-        try workspace.overwriteConfig(IntegrationWorkspace.defaultConfig + "\nAUDIO_QC_MAX_CLIPPED_SAMPLES=0\n")
         // A 50 Hz tone at about -1 dBFS (the sine source sits near -21 dBFS before gain):
         // +5 dB below 80 Hz pushes it ~4 dB over full scale.
         let hotLow = try workspace.createHotAudio(name: "sub_bass", ext: "wav", frequency: 50, gainDB: 20)
@@ -1107,18 +1105,16 @@ final class PipelineIntegrationTests: XCTestCase {
         try tool.verifyBassOutput(hotOutput, source: hotLow)
 
         let metrics = try tool.audioQCResult(for: hotOutput, policy: tool.config.deliveryAudioQCPolicy).metrics
-        XCTAssertEqual(metrics.clippedSamples, 0, "headroom must remove every full-scale sample")
+        XCTAssertGreaterThan(metrics.clippedSamples, 0, "the requested boost must not be attenuated")
         let peak = try XCTUnwrap(metrics.peakLevelDBFS)
-        XCTAssertLessThanOrEqual(peak, -0.05, "the staging ceiling is -0.1 dBFS")
-        XCTAssertGreaterThan(peak, -1.0, "only the overshoot is removed, not the boost")
+        XCTAssertGreaterThan(peak, -0.05, "the output reaches full scale as requested")
 
-        // Lossy output targets true peak, so MP3 decoding does not reintroduce clipping.
+        // No lossy-specific headroom either: MP3 is rendered from the same literal boost.
         let hotMP3 = try workspace.createHotAudio(name: "sub_bass_mp3", ext: "mp3", frequency: 50, gainDB: 20)
         let mp3Output = try tool.bassBoostMedia(hotMP3, spec: boost)
         let mp3Metrics = try tool.audioQCResult(for: mp3Output, policy: tool.config.deliveryAudioQCPolicy).metrics
-        XCTAssertEqual(mp3Metrics.clippedSamples, 0)
         if let truePeak = mp3Metrics.truePeakDBTP {
-            XCTAssertLessThanOrEqual(truePeak, -0.5, "MP3 must stay below the -1 dBTP target")
+            XCTAssertGreaterThan(truePeak, -0.9, "MP3 must not be attenuated to the old -1 dBTP target")
         }
 
         // The same boost on material with headroom still works.

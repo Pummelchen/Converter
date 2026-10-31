@@ -6,9 +6,7 @@ extension ConverterTool {
         state.unregister(tempFile: temp)
     }
 
-    func internalWAVArguments(
-        input: URL, output: URL, filter: String? = nil, duration: Double? = nil, codec: String? = nil
-    ) -> [String] {
+    func internalWAVArguments(input: URL, output: URL, filter: String? = nil, duration: Double? = nil) -> [String] {
         var args = [
             "-hide_banner", "-nostdin", "-v", "error", "-y"
         ]
@@ -26,7 +24,7 @@ extension ConverterTool {
             "-vn", "-sn", "-dn",
             "-ac", String(config.wavChannels),
             "-ar", String(config.wavSampleRate),
-            "-c:a", codec ?? config.wavCodec,
+            "-c:a", config.wavCodec,
             "-f", "wav",
             "-rf64", "always",
             "-write_bext", String(config.wavWriteBext),
@@ -70,31 +68,15 @@ extension ConverterTool {
     }
 
     func processInternalWAV(
-        _ sourceWAV: URL,
-        filter: String,
-        in directory: URL? = nil,
-        stem: String? = nil,
-        duration: Double? = nil,
-        codec: String? = nil,
-        verifySourceStandard: Bool = true
+        _ sourceWAV: URL, filter: String, in directory: URL? = nil, stem: String? = nil, duration: Double? = nil
     ) throws -> URL {
-        if verifySourceStandard {
-            try verifyWAVStandard(sourceWAV, qcPolicy: nil)
-        }
+        try verifyWAVStandard(sourceWAV, qcPolicy: nil)
         let tempDirectory = directory ?? cli.outDir
         let temp = try makeTemp(in: tempDirectory, stem: stem ?? "\(sourceWAV.stem).processed", ext: ".wav")
         do {
             _ = try runner.run(
-                "ffmpeg",
-                internalWAVArguments(
-                    input: sourceWAV, output: temp, filter: filter, duration: duration, codec: codec))
-            if let codec, codec != config.wavCodec {
-                try verifyAudioOutput(
-                    temp, codec: codec, sampleRate: config.wavSampleRate, channels: config.wavChannels,
-                    qcPolicy: nil)
-            } else {
-                try verifyWAVStandard(temp, qcPolicy: nil)
-            }
+                "ffmpeg", internalWAVArguments(input: sourceWAV, output: temp, filter: filter, duration: duration))
+            try verifyWAVStandard(temp, qcPolicy: nil)
             return temp
         } catch {
             discardTempFile(temp)

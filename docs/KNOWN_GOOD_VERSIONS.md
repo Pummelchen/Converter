@@ -304,6 +304,9 @@ durations could trap or pass; and `-clean` demanded the media toolchain.
 - `swift build --package-path Sources --build-tests -Xswiftc -warnings-as-errors` — success
 - `swift test --package-path Sources` — 285 tests, 0 failures (776 s)
 - Committed binary rebuilt; checksum and provenance updated. No new tag was cut.
+- **Operator decision after the audit:** `-bass` applies the requested gain literally. The automatic
+  headroom attenuation and the encoded-peak check were removed, so `-bass 80 4` boosts exactly 4 dB
+  whether or not the result reaches full scale; the operator judges the output by ear.
 
 ## How to collect these versions locally
 

@@ -24,12 +24,7 @@ struct LoudnessStaticGainPlan: Equatable {
     let peakConstrained: Bool
 }
 
-// Leave a tenth of a decibel below full scale: a float render attenuated to exactly 0 dBFS can
-// still round up onto the last quantisation step when it is converted to 24-bit integer.
-private let bassHeadroomCeilingDBFS = -0.1
-
 // Standard CRC-32 (IEEE, reflected), slice-by-8. Eight tables let the hot loop consume
-
 // eight bytes per iteration instead of one, which measures ~5x faster on the file sizes
 // --hash actually sees (WAV and MP4 masters in the hundreds of MB). Tables 1-7 are derived
 // from table 0, so all eight necessarily agree on the one polynomial. Built once per
@@ -601,84 +596,11 @@ extension ConverterTool {
         }
     }
 
-    // The bass filter computes in float, but the staging WAV is 24-bit integer: an overshoot is
-    // hard-clipped there and then baked into every deliverable. The boost is therefore rendered
-    // once into a float WAV, its peak measured, and the file attenuated by exactly that overshoot
-    // before the 24-bit staging pass. The boost curve is untouched; only the overall level moves,
-    // so no flat-topped samples reach the published file and nothing has to be limited or
-    // compressed. Lossless outputs only need the sample peak below 0 dBFS; lossy encoders can
-    // overshoot between samples, so they aim at -1 dBTP instead.
-    func bassHeadroomPolicy() -> AudioQCPolicy {
-        AudioQCPolicy(
-            name: "bass-headroom",
-            targetLUFS: config.audioQCTargetLUFS,
-            lufsTolerance: 200,
-            maxTruePeakDBTP: 0,
-            maxLoudnessRange: 50,
-            maxDCOffset: 1,
-            maxStereoImbalanceDB: 200,
-            maxClippedSamples: config.audioQCMaxClippedSamples,
-            minimumAnalysisSeconds: config.audioQCMinimumAnalysisSeconds
-        )
-    }
-
-    func applyBassHeadroom(floatWAV: URL, source: URL, truePeakCeilingDBFS: Double? = nil) throws -> URL {
-        let metrics = try audioQCResult(for: floatWAV, policy: bassHeadroomPolicy()).metrics
-        // Fail closed: an unmeasurable peak must not be treated as "already below the ceiling".
-        guard let peak = metrics.peakLevelDBFS, peak.isFinite else {
-            throw AppError(
-                "Unable to measure the bass-adjusted render peak for \(source.basename); "
-                    + "refusing to stage it without headroom."
-            )
-        }
-        var required = peak - bassHeadroomCeilingDBFS
-        if let truePeakCeilingDBFS {
-            guard let truePeak = metrics.truePeakDBTP, truePeak.isFinite else {
-                throw AppError(
-                    "Unable to measure the bass-adjusted true peak for \(source.basename); "
-                        + "refusing to stage it without headroom."
-                )
-            }
-            required = max(required, truePeak - truePeakCeilingDBFS)
-        }
-        let stagedStem = "\(source.stem).bass.staged"
-        guard required > 0 else {
-            return try processInternalWAV(
-                floatWAV, filter: "", in: cli.outDir, stem: stagedStem, verifySourceStandard: false)
-        }
-        let truePeak = metrics.truePeakDBTP.map { String(format: "%.2f", $0) } ?? "n/a"
-        logger.info(
-            "Bass adjustment of \(source.basename) peaks at \(String(format: "%.2f", peak)) dBFS / \(truePeak) dBTP "
-                + "before staging; applying \(String(format: "%.2f", -required)) dB of headroom so the "
-                + "published file does not clip."
-        )
-        return try processInternalWAV(
-            floatWAV,
-            filter: "volume=\(ffmpegNumber(-required))dB",
-            in: cli.outDir,
-            stem: stagedStem,
-            verifySourceStandard: false
-        )
-    }
-
-    // Also the reuse verifier: a _bass file left by an older build (before headroom protection)
-    // has the right codec and duration but measures full scale here, so it is rebuilt instead of
-    // being accepted. The measured peak also catches resampling overshoot introduced by the final
-    // encode, which the float staging measurement cannot see.
+    // The requested cut/boost is applied literally: the operator checks the result by ear and
+    // decides whether a hot boost is acceptable. No automatic attenuation, limiter or refusal.
     func verifyBassOutput(_ file: URL, source: URL) throws {
         try verifyTypedAudioOutput(file, sourceExtension: source.pathExtension, source: source, qcPolicy: nil)
         try verifyDurationMatch(source: source, output: file)
-        let metrics = try audioQCResult(for: file, policy: bassHeadroomPolicy()).metrics
-        guard let peak = metrics.peakLevelDBFS, peak.isFinite else {
-            throw AppError("Unable to measure the bass output peak for \(file.basename).")
-        }
-        guard peak <= bassHeadroomCeilingDBFS + 0.05 else {
-            throw AppError(
-                String(
-                    format: "Bass output %@ peaks at %.2f dBFS, above the %.2f dBFS headroom ceiling.",
-                    file.basename, peak, bassHeadroomCeilingDBFS
-                ))
-        }
     }
 
     func bassBoostMedia(_ source: URL, spec: BassBoostSpec) throws -> URL {
@@ -705,19 +627,11 @@ extension ConverterTool {
         do {
             let sourceWAV = try makeInternalWAV(from: source, in: cli.outDir, stem: "\(source.stem).bass.source")
             defer { discardTempFile(sourceWAV) }
-            let boostedWAV = try processInternalWAV(
+            let processedWAV = try processInternalWAV(
                 sourceWAV,
                 filter: bassFilter(for: spec),
                 in: cli.outDir,
-                stem: "\(source.stem).bass.processed",
-                codec: "pcm_f32le"
-            )
-            defer { discardTempFile(boostedWAV) }
-            let lossy = ["mp3", "m4a", "mp4"].contains(output.pathExtension.lowercasedASCII)
-            let processedWAV = try applyBassHeadroom(
-                floatWAV: boostedWAV,
-                source: source,
-                truePeakCeilingDBFS: lossy ? -1.0 : nil
+                stem: "\(source.stem).bass.processed"
             )
             defer { discardTempFile(processedWAV) }
             try encodeProcessedWAV(processedWAV, matching: source, to: temp, qcPolicy: nil)

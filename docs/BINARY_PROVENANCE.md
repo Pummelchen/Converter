@@ -9,8 +9,8 @@ and a rebuild can be compared.
 | Field | Value |
 |---|---|
 | File | `converter` |
-| Size | 1 735 320 bytes |
-| SHA-256 | `06d04a3f7a676eb944669043c3dc81976be019700f68b0ac2a3656a356107091` |
+| Size | 1 731 464 bytes |
+| SHA-256 | `e4bfe74109c053a1676e9a1aafefd77f0924e2b71c3222230b17472760aa800f` |
 | Source commit | untagged `main` after `v1.2` (post-release audit fixes) |
 | Build command | `swift build --package-path Sources -c release` |
 | Swift | 6.4 (`swiftlang-6.4.2.1.9`), target `arm64-apple-macosx27.2.0` |
@@ -64,8 +64,8 @@ see `docs/KNOWN_GOOD_VERSIONS.md` for the measurement behind that decision.
 
 | Date | Source commit | SHA-256 | Notes |
 |---|---|---|---|
-| 2026-10-31 | post-`v1.2` audit | `06d04a3f…6107091` | Rebuilt after the post-release audit: `-run_pix` JPEG naming, JPEG portrait stills, output-collision guards, mixed-codec tag, BT.709 conversion, range canonicalisation, bass fail-closed/peak verification, duration and capture hardening. |
-| 2026-10-31 | `v1.2` | `cc229d0e…cca955a` | Rebuilt on Swift 6.4.2 / Xcode 27.2 with `NonisolatedNonsendingByDefault` + `@concurrent`, and `-bass` headroom protection (float render measured, attenuated before the 24-bit stage). |
+| 2026-10-31 | post-`v1.2` audit | `e4bfe741…aa800f` | Rebuilt after the post-release audit: `-run_pix` JPEG naming, JPEG portrait stills, output-collision guards, mixed-codec tag, BT.709 conversion, range canonicalisation, bass fail-closed/peak verification, duration and capture hardening. |
+| 2026-10-31 | `v1.2` | `cc229d0e…cca955a` | Rebuilt on Swift 6.4.2 / Xcode 27.2 with `NonisolatedNonsendingByDefault` + `@concurrent`, and `-bass` applies the requested gain literally; the headroom attenuation and encoded-peak check were removed at the operator's request. |
 | 2026-10-31 | `b32928b` + local change | `99a1f044…5b8499d` | Rebuilt after `-bass` stopped refusing a boost that reaches full scale: the clipping measurement is now a one-line warning and the boosted file is published. |
 | 2026-09-15 | `0ffed12` | `6aba6b23…cbd9ad5` | Rebuilt on the converted toolchain after the formatter adoption and the account-wide Swift 6.4 work; verified with `-help`, `-matrix` and `-doctor`. |
 | 2026-09-15 | `cc6b379` | `6661fe37…9ebc024` | Rebuilt after the delivery-QC, duration, reuse and verification fixes; verified with `-help`, `-matrix` and `-doctor`. |
